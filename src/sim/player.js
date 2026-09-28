@@ -98,6 +98,7 @@ export class Player {
     if (moving) {
       vd = (want ? mag : 0.8) * (this.sprinting ? P.vSprint : P.vRun);
       if (this.dribbling) vd *= P.dribbleSlow;
+      if (this.charging) vd *= 0.8; // zum Schuss hin etwas verlangsamen
     }
     let s = this.speed;
     let hAng = Math.atan2(this.hz, this.hx);
@@ -167,8 +168,9 @@ export class Player {
       return true;
     }
     const sf = this.sprinting ? 1 : 0;
-    const T = P.touchLead + (P.touchLeadSprint - P.touchLead) * sf;
-    const L = P.touchExtra + (P.touchExtraSprint - P.touchExtra) * sf;
+    // Beim Aufladen: kurze Vorbereitungs-Kontakte, der Ball bleibt am Fuß (sonst ist er beim Loslassen weg)
+    const T = this.charging ? 0.32 : P.touchLead + (P.touchLeadSprint - P.touchLead) * sf;
+    const L = this.charging ? 0.05 : P.touchExtra + (P.touchExtraSprint - P.touchExtra) * sf;
     const vt = Math.min(vd, this.speed + 2.5 * T);
     // Stärke so, dass der Spieler den Ball nach T wieder am Fuß hat (+ Vorlage L): Roll-Vorhersage mit
     // derselben Verzögerung wie im Ball-Modell (Rasen + Luft).

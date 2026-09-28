@@ -60,7 +60,7 @@ sie in unter 0,2 s frei (gemessen 0,18 s).
 | `?bande=0.7`, `?abprall=0.62`, `?rollen=0.65` | Stoßzahl Bande, Stoßzahl Rasen, Rollwiderstand Rasen |
 | `?dachhoehe=6`, `?torbreite=3`, `?torhoehe=2` | Käfig-Maße |
 | `?<Parametername>=Wert` | jeder Wert aus `src/sim/params.js`, z. B. `?knuckleF30=3` (stärkeres Flattern) |
-| `?q=0/1/2` | Grafikstufe (Standard: Handy 1, Desktop 2) |
+| `?q=0/1/2` | Grafikstufe fest (Standard: Handy 1, Desktop 2, mit Automatik: bei < ~42 fps erst Auflösung, dann Schatten runter) |
 | `?seed=4711` | fester Zufall (Flatterball, Ballkontakte) |
 | `?debug` | Anzeige Bildrate, Draw-Calls, Dreiecke |
 | `?play` | Startbildschirm überspringen |
@@ -85,6 +85,8 @@ node tools/calibrate.mjs        # Rasenwerte neu auf die FIFA-Ziele stellen
 python3 tests/smoke.py          # Browser (Pixel 7 hoch/quer, Desktop): 0 Fehler, Spielablauf, Bande/Dach im Käfig
 python3 tests/test_touch.py     # echte Touch-Ereignisse: Stick, Pass, Schuss mit Treffpunkt, Knopfgrößen
 python3 tests/perf.py           # CPU- und GPU-Zeit je Bild, Draw-Calls, Dreiecke je Format und Stufe
+python3 tests/test_autoq.py     # Qualitäts-Automatik (ohne ?q=) greift, mit ?q= bleibt alles fest
+python3 tests/test_live.py      # GitHub Pages: HTTP 200, Version = lokal, 0 Fehler, PWA installierbar, offline
 python3 tests/shots.py final    # Fotos nach tests/shots/final/
 python3 tools/fetch_assets.py && python3 tools/make_assets.py   # Assets neu bauen
 ```

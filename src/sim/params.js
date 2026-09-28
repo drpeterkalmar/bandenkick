@@ -107,7 +107,7 @@ export const DEFAULTS = {
   chargeT: 1.0,           // s bis voll aufgeladen
   spinMax: 10,            // U/s Innenseite (Kurve)
   backspinMax: 7,         // U/s Heber/Chip
-  kickBuffer: 0.6,        // s: Pass/Schuss wird so lange vorgemerkt, bis der Ball erreichbar ist
+  kickBuffer: 0.9,        // s: Pass/Schuss wird so lange vorgemerkt, bis der Ball erreichbar ist
 };
 
 // Kurzformen für Peter (deutsch) → interne Namen

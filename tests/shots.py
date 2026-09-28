@@ -9,7 +9,7 @@ with Server() as srv, sync_playwright() as pw:
     s = Session(pw, srv.base, forms[0])
     for i, f in enumerate(forms):
         if i: s.new_context(f)
-        s.open('?nosw&seed=7')
+        s.open('?nosw&seed=7&q=' + ('2' if f == 'desktop' else '1'))
         time.sleep(1.2)
         s.shot(f'{f}_01_start', sub)
         s.ev("__game.start()"); s.frames(5)

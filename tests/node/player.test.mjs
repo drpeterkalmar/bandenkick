@@ -132,6 +132,20 @@ function dribble(sprint, seconds = 6) {
   const ch = kickTest((t) => (t < 0.6 ? inp({ shootHeld: true, cy: -1 }) : inp({ shootRelease: true, cy: -1 })));
   check('Heber (Treffpunkt unten): Abflugwinkel', ch.lk ? ch.lk.elevDeg : 0, 18, 28, '°', 23);
 }
+// 5b) Aufladen im Lauf: Ball bleibt am Fuß, Schuss kommt beim Loslassen (20 Seeds, Laufen und Sprint)
+{
+  let n = 0, late = 0;
+  for (let seed = 1; seed <= 20; seed++) {
+    const g = new Game(P, seed); const pl = g.players[0];
+    pl.place(-6, 0, 0); g.ball.place(-5.6, 0.11, 0);
+    for (let i = 0; i < 3 / DT; i++) {
+      const t = i * DT, held = t < 0.8;
+      const ev = g.step([inp({ mx: 1, sprint: seed % 2 === 0, shootHeld: held, shootRelease: !held && t < 0.8 + 1.5 * DT })]);
+      if (ev.some((e) => e.type === 'kick' && e.kind === 'shot')) { n++; if (t > 0.9) late++; break; }
+    }
+  }
+  check('Schuss nach Aufladen im Lauf ausgelöst', n, 20, 20, '/20', 20, `${late}× später als 0,1 s nach dem Loslassen`);
+}
 // 6) Determinismus des ganzen Spiels: gleiche Eingaben + Seed → gleicher Zustand
 {
   const run = () => {

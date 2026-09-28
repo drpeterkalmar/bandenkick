@@ -75,6 +75,13 @@ hud.root.addEventListener('click', (e) => {
   if (a === 'fetch') { const pl = game.players[0]; game.ball.place(pl.x + Math.cos(pl.face) * 0.6, game.ball.r, pl.z + Math.sin(pl.face) * 0.6); game.state = 'play'; setMode('play'); }
 });
 hud.menuBtn.addEventListener('click', () => setMode(mode === 'play' ? 'pause' : 'play'));
+{
+  const f = (v, d = 2) => v.toFixed(d).replace('.', ',');
+  hud.menu.querySelector('.physics').innerHTML =
+    `Feld ${f(P.fieldL, 0)} × ${f(P.fieldW, 0)} m · Bande ${f(P.boardH, 1)} m · ${P.roof ? `Dachnetz ${f(P.roofH, 1)} m` : `ohne Dach, Netz bis ${f(P.netTop, 1)} m`}<br>` +
+    `Kunstrasen nach FIFA Quality Pro: Abprall 0,72 m · schräg 52 % · Rollen 6,0 m<br>` +
+    `Sprint ${f(P.vSprint, 1)} m/s · Schuss bis ${Math.round(P.shotMax * 3.6)} km/h · Effet bis ${f(P.spinMax, 0)} U/s · Version ${BUILD}`;
+}
 addEventListener('keydown', (e) => { if (e.code === 'Escape') setMode(mode === 'play' ? 'pause' : mode === 'pause' ? 'play' : mode); });
 function startPlay() { setMode('play'); if (game.state !== 'play' || game.t < 0.01) game.kickoff(); }
 
@@ -202,6 +209,7 @@ function frame() {
   } else {
     prev.bx = b.p.x; prev.by = b.p.y; prev.bz = b.p.z; prev.px = pl.x; prev.pz = pl.z; acc = 0;
   }
+  autoQuality(dt);
   const a = mode === 'play' ? Math.min(1, acc / DT) : 1;
   const bx = prev.bx + (b.p.x - prev.bx) * a, by = prev.by + (b.p.y - prev.by) * a, bz = prev.bz + (b.p.z - prev.bz) * a;
   ballMesh.position.set(bx, by, bz);
@@ -231,6 +239,25 @@ function frame() {
 }
 const avg = (a) => (a.length ? a.reduce((s, x) => s + x, 0) / a.length : 0);
 
+// Qualitäts-Automatik (nur ohne ?q=): liegt der Bildabstand im Spiel 3 s lang über 24 ms (< ~42 fps),
+// erst die Auflösung in 0,25er-Schritten bis 1,0 senken, dann die Echtzeit-Schatten abschalten.
+const autoQ = { on: !qs.has('q'), t: 0, sum: 0, n: 0, steps: [] };
+function autoQuality(dt) {
+  if (!autoQ.on || mode !== 'play') return;
+  autoQ.t += dt; autoQ.sum += dt; autoQ.n++;
+  if (autoQ.t < 3) return;
+  const ms = autoQ.sum / autoQ.n * 1000;
+  autoQ.t = autoQ.sum = autoQ.n = 0;
+  if (ms <= 24) return;
+  const d = renderer.getPixelRatio();
+  if (d > 1.01) { renderer.setPixelRatio(Math.max(1, d - 0.25)); resize(); autoQ.steps.push('dpr ' + renderer.getPixelRatio()); }
+  else if (renderer.shadowMap.enabled) {
+    renderer.shadowMap.enabled = false;
+    scene.traverse((o) => { if (o.material) for (const m of [].concat(o.material)) m.needsUpdate = true; });
+    autoQ.steps.push('schatten aus');
+  } else autoQ.on = false;
+}
+
 // ---------------- Debug-API für Tests ----------------
 Object.assign(G, {
   scene, renderer, gcam, inputs: input,
@@ -245,7 +272,7 @@ Object.assign(G, {
   info() {
     const i = renderer.info;
     return { calls: i.render.calls, triangles: i.render.triangles, points: i.render.points, geometries: i.memory.geometries, textures: i.memory.textures, programs: i.programs ? i.programs.length : null,
-      dpr: renderer.getPixelRatio(), size: [renderer.domElement.width, renderer.domElement.height], quality };
+      dpr: renderer.getPixelRatio(), size: [renderer.domElement.width, renderer.domElement.height], quality, shadows: renderer.shadowMap.enabled, auto: { on: autoQ.on, steps: [...autoQ.steps] } };
   },
   perf() {
     const p95 = (a) => { if (!a.length) return null; const b = [...a].sort((x, y) => x - y); return b[Math.floor(b.length * 0.95)]; };

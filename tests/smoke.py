@@ -13,7 +13,7 @@ with Server() as srv, sync_playwright() as pw:
     for i, form in enumerate(['hoch', 'quer', 'desktop']):
         if i: s.new_context(form)
         print(form)
-        s.open('?nosw&seed=11')
+        s.open('?nosw&seed=11&q=' + ('2' if form == 'desktop' else '1'))
         ok('Metal' in str(s.gl), f'WebGL auf der GPU ({s.gl})')
         ok(s.boot_s < 15, f'Boot {s.boot_s:.1f} s')
         s.tap('[data-act="play"]')
@@ -32,7 +32,10 @@ with Server() as srv, sync_playwright() as pw:
         ok(lk and lk['kind'] == 'pass', f"Pass: {lk and round(lk['speed'], 1)} m/s")
         # Schuss 0,6 s halten, Treffpunkt links
         s.ev("__game.placePlayer(-5, 1, 0); __game.placeBall(-4.6, 0.11, 1)")
-        s.ev("__game.input({wx: 1, wz: 0, shootHeld: true, cx: -0.7}, 0.6)"); s.wait_sim(1.0)
+        s.ev("__game.game.players[0].lastKick = null")
+        s.ev("__game.input({wx: 1, wz: 0, shootHeld: true, cx: -0.7}, 0.6)")
+        try: s.pg.wait_for_function("__game.state().lastKick && __game.state().lastKick.kind === 'shot'", timeout=15000)
+        except Exception: pass
         lk = s.state()['lastKick']
         ok(lk and lk['kind'] == 'shot' and lk['sideRps'] < -3, f"Schuss mit Effet: {lk and round(lk['speed'], 1)} m/s, {lk and round(lk['sideRps'], 1)} U/s")
         # Bande und Dach: Ball bleibt im Käfig

@@ -18,7 +18,7 @@ with Server() as srv, sync_playwright() as pw:
     for i, form in enumerate(['hoch', 'quer']):
         if i: s.new_context(form)
         print(form)
-        s.open('?nosw&seed=3')
+        s.open('?nosw&seed=3&q=1')
         s.tap('[data-act="play"]')
         s.frames(5)
         cdp = s.ctx.new_cdp_session(s.pg)
