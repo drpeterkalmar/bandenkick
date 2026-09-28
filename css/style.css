@@ -27,6 +27,7 @@ button { font: inherit; color: inherit; touch-action: none; }
   text-shadow: 0 3px 16px rgba(0,0,0,.55); opacity: 0; transition: opacity .25s, transform .25s; text-align: center; white-space: nowrap; }
 .banner small { display: block; font-size: 18px; font-weight: 600; letter-spacing: 0; }
 .banner.on { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+body.quer .banner { top: 21%; font-size: 46px; }
 
 /* --- Touch-Steuerung --- */
 #touch { position: absolute; inset: 0; display: none; }
@@ -46,7 +47,7 @@ body[data-mode="menu"] #touch, body[data-mode="load"] #touch { display: none; }
 #bShot .mini { width: 46px; height: 46px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff, #ddd 60%, #999); position: relative; box-shadow: inset 0 0 0 2px rgba(0,0,0,.25); }
 #bShot .dot { position: absolute; width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%; background: #e3342f; left: 50%; top: 50%; box-shadow: 0 0 0 2px #fff; }
 #bShot .ring { position: absolute; inset: -9px; border-radius: 50%; pointer-events: none;
-  background: conic-gradient(#ffd84a calc(var(--p, 0) * 1turn), transparent 0); -webkit-mask: radial-gradient(circle, transparent 57px, #000 58px); mask: radial-gradient(circle, transparent 57px, #000 58px); }
+  background: conic-gradient(#ffd84a calc(var(--p, 0) * 1turn), transparent 0); -webkit-mask: radial-gradient(circle, transparent 50px, #000 51px); mask: radial-gradient(circle, transparent 50px, #000 51px); }
 #bPass { width: 80px; height: 80px; }
 #bSprint { width: 66px; height: 66px; font-size: 13px; }
 

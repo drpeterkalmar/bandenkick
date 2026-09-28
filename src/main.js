@@ -216,7 +216,7 @@ function frame() {
   hud.tick(dt);
   const touchUI = document.body.classList.contains('touch');
   hud.setCharge(pl.charging ? Math.min(1, pl.charge / P.chargeT) : 0, touchUI);
-  if (touchUI) hud.setContact(input.touch.shoot ? input.touch.cx : 0, input.touch.shoot ? input.touch.cy : 0);
+  if (touchUI) hud.setContact(raw.shootHeld ? raw.cx : 0, raw.shootHeld ? raw.cy : 0); // wirksamer Treffpunkt (Touch, Gamepad, Test)
   let q = null;
   if (gpuExt) { gpuPoll(); q = gl.createQuery(); gl.beginQuery(gpuExt.TIME_ELAPSED_EXT, q); }
   renderer.render(scene, gcam.cam);
