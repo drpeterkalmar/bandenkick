@@ -70,8 +70,9 @@ class Session:
     def shot(self, name, sub=''):
         d = os.path.join(ROOT, 'tests', 'shots', sub) if sub else os.path.join(ROOT, 'tests', 'shots')
         os.makedirs(d, exist_ok=True)
-        p = os.path.join(d, f'{name}.png')
-        self.pg.screenshot(path=p)
+        # Fotos für das Repo (tests/shots/final) als JPG, Arbeitsfotos als PNG
+        p = os.path.join(d, f'{name}.jpg' if sub == 'final' else f'{name}.png')
+        self.pg.screenshot(path=p, **({'type': 'jpeg', 'quality': 82} if sub == 'final' else {}))
         return p
     def frames(self, n=3, timeout=60000):
         f0 = self.ev("window.__game.frames")

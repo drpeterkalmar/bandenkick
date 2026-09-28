@@ -30,7 +30,7 @@ with sync_playwright() as pw:
         t0 = pg.evaluate("__game.game.t"); pg.wait_for_function(f"__game.game.t > {t0 + 1.2}", timeout=60000)
         lk = pg.evaluate("__game.state().lastKick")
         ok(lk is not None and lk['kind'] == 'shot', f"Schuss live: {lk and round(lk['speed'], 1)} m/s, Effet {lk and round(lk['sideRps'], 1)} U/s")
-        pg.screenshot(path=os.path.join(ROOT, 'tests', 'shots', 'final', f'live_{form}.png'))
+        pg.screenshot(path=os.path.join(ROOT, 'tests', 'shots', 'final', f'live_{form}.jpg'), type='jpeg', quality=82)
         if form == 'quer':
             cdp = ctx.new_cdp_session(pg)
             inst = cdp.send('Page.getInstallabilityErrors')

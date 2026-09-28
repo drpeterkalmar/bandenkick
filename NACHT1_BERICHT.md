@@ -104,6 +104,9 @@ Lauf 20/20 sofort beim Loslassen.
 - **„Reduced Ball Roll“ 2024:** nicht im Volltext – nachgebaut ist Methode 17 aus dem Handbuch 2015 (gleicher Name,
   Rampe wie M03). Sie stimmt mit M03 auf 1 cm überein.
 - Schräger Abprall reagiert auf Drall (±3 U/s → 44–60 %); die Norm schreibt eine Kanone ohne Drall vor.
+- Repo-Historie: Ein Zwischen-Commit enthielt ~40 MB PNG-Testfotos (im aktuellen Stand gelöscht, jetzt JPG). Das
+  Spiel betrifft das nicht; nur der Klon ist größer. Bereinigen ginge nur per History-Rewrite + Force-Push – nicht
+  ungefragt gemacht.
 - Nur eine Figur, keine Gegner, kein Ton, keine Tor-Wiederholung (Nacht 2–4). Torraum-Linien sind gezeichnet,
   die Regel „letzte Hand“ ist noch nicht aktiv.
 
