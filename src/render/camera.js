@@ -76,6 +76,8 @@ export class GameCamera {
     } else {
       const hx = cage.hx, hz = cage.hz;
       const limX = Math.max(0, hx - 3.2), limZ = Math.max(0, hz - 4.6);
+      // Spieler nie tiefer als 3 m unter dem Blickpunkt (unten rechts liegen die Knöpfe)
+      gx = Math.min(gx, player.x + 3.0);
       gx = Math.max(-limX, Math.min(limX, gx));
       gz = Math.max(-limZ, Math.min(limZ, gz));
       this.tx = damp(this.tx, gx, k, dt);

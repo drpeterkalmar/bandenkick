@@ -24,6 +24,7 @@ export class Ball {
     this.net = { depth: 0, x: 0, y: 0, z: 0, tag: '', n: [0, 1, 0] }; // tiefste Netz-Eindellung (Grafik)
     this.events = null;             // Array für Ereignisse (Aufprall), von der Welt gesetzt
     this.restT = 0;
+    this.netWas = false;
   }
 
   place(x, y, z) {
@@ -281,13 +282,14 @@ export class Ball {
       }
       this.w.scale(Math.exp(-12 * h));
       if (depth > net.depth) {
-        if (net.depth === 0 && vn < -2) this.emit('net', -vn, R.tag);
+        if (net.depth === 0 && !this.netWas && vn < -2) this.emit('net', -vn, R.tag); // nur beim Eintauchen
         // Mitte der Eindellung = Lot des Ballmittelpunkts auf die (unverformte) Netzebene
         const dd = r - depth;
         net.depth = depth; net.x = p.x - _n.x * dd; net.y = p.y - _n.y * dd; net.z = p.z - _n.z * dd; net.tag = R.tag; net.n = R.n;
       }
       if (this.contact && R.n[1] !== 0) this.contact = false;
     }
+    this.netWas = net.depth > 0;
   }
 
   integrateOrientation(dt) {

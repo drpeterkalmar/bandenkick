@@ -4,7 +4,7 @@ import { makeParams } from './sim/params.js';
 import { Game, DT } from './sim/step.js';
 import { createRenderer, loadEnvironment, makeSky, makeSun } from './render/scene.js';
 import { buildField } from './render/field.js';
-import { makeBall, makePlayer, posePlayer, Granulate } from './render/actors.js';
+import { makeBall, makeBlob, poseBlob, makePlayer, posePlayer, Granulate } from './render/actors.js';
 import { GameCamera } from './render/camera.js';
 import { Input } from './input/input.js';
 import { buildHud } from './ui/hud.js';
@@ -79,7 +79,7 @@ addEventListener('keydown', (e) => { if (e.code === 'Escape') setMode(mode === '
 function startPlay() { setMode('play'); if (game.state !== 'play' || game.t < 0.01) game.kickoff(); }
 
 // ---------------- Szene aufbauen ----------------
-let field, ballMesh, pm, gran, sunInfo;
+let field, ballMesh, blob, pm, gran, sunInfo;
 async function boot() {
   const texLoader = new THREE.TextureLoader();
   const tl = (u) => texLoader.loadAsync(u);
@@ -99,7 +99,8 @@ async function boot() {
   field = buildField(P, game.cage, { turfColor, turfNormal, grassColor, grassNormal }, renderer);
   scene.add(field.group);
   ballMesh = makeBall(P.ballR);
-  scene.add(ballMesh);
+  blob = makeBlob();
+  scene.add(ballMesh, blob);
   pm = makePlayer(0xff7a1a);
   scene.add(pm.group, pm.marker);
   gran = new Granulate();
@@ -114,7 +115,20 @@ async function boot() {
 // ---------------- Schleife ----------------
 let acc = 0, last = performance.now() / 1000;
 const prev = { bx: 0, by: 0, bz: 0, px: 0, pz: 0 };
-let testInput = null, testUntil = 0, frozen = false;
+let testInput = null, testUntil = 0, frozen = false, heldPrev = false, lastContact = [0, 0];
+// GPU-Zeit je Bild (nur mit ?gpu, falls EXT_disjoint_timer_query_webgl2 vorhanden) – für die Leistungsmessung
+const gl = renderer.getContext();
+const gpuExt = qs.has('gpu') ? gl.getExtension('EXT_disjoint_timer_query_webgl2') : null;
+const gpuQ = [], gpuMs = [];
+function gpuPoll() {
+  while (gpuQ.length) {
+    const q = gpuQ[0];
+    if (!gl.getQueryParameter(q, gl.QUERY_RESULT_AVAILABLE)) break;
+    if (!gl.getParameter(gpuExt.GPU_DISJOINT_EXT)) gpuMs.push(gl.getQueryParameter(q, gl.QUERY_RESULT) / 1e6);
+    gl.deleteQuery(q); gpuQ.shift();
+  }
+  if (gpuMs.length > 240) gpuMs.splice(0, gpuMs.length - 240);
+}
 const ray = new THREE.Raycaster(), ndc = new THREE.Vector2(), ground = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), hit = new THREE.Vector3();
 let rnd = (() => { let s = 12345; return () => ((s = (s * 1103515245 + 12345) >>> 0) / 4294967296); })();
 const perf = { ft: [], raf: [], lastRaf: 0 };
@@ -164,8 +178,13 @@ function frame() {
   const now = t0 / 1000;
   const dt = Math.min(0.1, now - last); last = now;
   let raw = input.sample(now);
-  if (testInput && now < testUntil) raw = { ...raw, ...testInput };
+  if (testInput && game.t < testUntil) raw = { ...raw, ...testInput };
   else if (testInput) { testInput = null; }
+  // Loslass-Flanke und Treffpunkt beim Loslassen einheitlich für echte und Test-Eingaben
+  raw.shootRelease = heldPrev && !raw.shootHeld;
+  if (raw.shootHeld) lastContact = [raw.cx, raw.cy];
+  else if (raw.shootRelease) { raw.cx = lastContact[0]; raw.cy = lastContact[1]; }
+  heldPrev = raw.shootHeld;
   const pl = game.players[0], b = game.ball;
   if (mode === 'play' && !frozen) {
     acc += dt;
@@ -187,6 +206,7 @@ function frame() {
   const bx = prev.bx + (b.p.x - prev.bx) * a, by = prev.by + (b.p.y - prev.by) * a, bz = prev.bz + (b.p.z - prev.bz) * a;
   ballMesh.position.set(bx, by, bz);
   ballMesh.quaternion.set(b.q[1], b.q[2], b.q[3], b.q[0]);
+  poseBlob(blob, bx, by, bz, P.ballR);
   const px = prev.px + (pl.x - prev.px) * a, pz = prev.pz + (pl.z - prev.pz) * a;
   posePlayer(pm, pl, px, pz);
   pm.marker.visible = mode === 'play';
@@ -197,7 +217,10 @@ function frame() {
   const touchUI = document.body.classList.contains('touch');
   hud.setCharge(pl.charging ? Math.min(1, pl.charge / P.chargeT) : 0, touchUI);
   if (touchUI) hud.setContact(input.touch.shoot ? input.touch.cx : 0, input.touch.shoot ? input.touch.cy : 0);
+  let q = null;
+  if (gpuExt) { gpuPoll(); q = gl.createQuery(); gl.beginQuery(gpuExt.TIME_ELAPSED_EXT, q); }
   renderer.render(scene, gcam.cam);
+  if (q) { gl.endQuery(gpuExt.TIME_ELAPSED_EXT); gpuQ.push(q); }
   G.frames++;
   const ft = performance.now() - t0;
   perf.ft.push(ft); if (perf.ft.length > 240) perf.ft.shift();
@@ -224,9 +247,13 @@ Object.assign(G, {
     return { calls: i.render.calls, triangles: i.render.triangles, points: i.render.points, geometries: i.memory.geometries, textures: i.memory.textures, programs: i.programs ? i.programs.length : null,
       dpr: renderer.getPixelRatio(), size: [renderer.domElement.width, renderer.domElement.height], quality };
   },
-  perf() { return { frameCpuMs: avg(perf.ft), rafMs: avg(perf.raf), n: perf.ft.length }; },
+  perf() {
+    const p95 = (a) => { if (!a.length) return null; const b = [...a].sort((x, y) => x - y); return b[Math.floor(b.length * 0.95)]; };
+    return { frameCpuMs: avg(perf.ft), frameCpuP95: p95(perf.ft), rafMs: avg(perf.raf), rafP95: p95(perf.raf), gpuMs: gpuMs.length ? avg(gpuMs) : null, gpuP95: p95(gpuMs), gpuExt: !!gpuExt, n: perf.ft.length };
+  },
+  perfReset() { perf.ft.length = 0; perf.raf.length = 0; gpuMs.length = 0; },
   // Eingabe für Tests: {sx, sy, sprint, pass, shootHeld, cx, cy} für `sec` Sekunden
-  input(o, sec = 0.5) { testInput = { sx: 0, sy: 0, sprint: false, pass: false, shootHeld: false, shootRelease: false, cx: 0, cy: 0, mouseAim: false, ...o }; testUntil = performance.now() / 1000 + sec; },
+  input(o, sec = 0.5) { testInput = { sx: 0, sy: 0, sprint: false, pass: false, shootHeld: false, shootRelease: false, cx: 0, cy: 0, mouseAim: false, ...o }; testUntil = game.t + sec; }, // Dauer in Spielzeit (headless läuft die Uhr ggf. langsamer)
   // Ball direkt anstoßen (Tests/Fotos): from [x,y,z], v [vx,vy,vz], w [rad/s]
   kick({ from, v, w = [0, 0, 0] }) {
     const b = game.ball;

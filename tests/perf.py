@@ -1,0 +1,39 @@
+# Leistung (Gate: Frametime ≤ 16 ms, headless über Metal): je Format und Qualitätsstufe 5 s echtes Spiel
+# (Führen, Schüsse, Netz), dann Mittel/p95 von Bildabstand (rAF), CPU-Zeit je Bild, GPU-Zeit (Timer-Query),
+# Draw-Calls und Dreiecke. Aufruf: python3 tests/perf.py
+import sys, time, json
+sys.path.insert(0, 'tests')
+from util import *
+rows = []
+with Server() as srv, sync_playwright() as pw:
+    s = Session(pw, srv.base, 'hoch')
+    first = True
+    for form in ['hoch', 'quer', 'desktop']:
+        for q in [1, 2]:
+            if not first: s.new_context(form)
+            first = False
+            s.open(f'?nosw&gpu&seed=5&q={q}')
+            s.ev("__game.start()"); s.frames(10)
+            s.ev("__game.placePlayer(-6, 0, 0); __game.placeBall(-5.6, 0.11, 0)")
+            time.sleep(0.5)
+            s.ev("__game.perfReset()")
+            s.ev("__game.input({wx: 1, wz: 0.2, sprint: true}, 1.6)"); s.wait_sim(1.6)
+            s.ev("__game.kick({from:[0, 0.11, 0], v:[3, 25, -2], w:[0,0,0]})"); s.wait_sim(1.0)
+            s.ev("__game.kick({from:[-3, 0.11, 1], v:[24, 4, -2], w:[0,40,0]})"); s.wait_sim(1.2)
+            s.ev("__game.input({wx: -1, wz: 0.3}, 1.2)"); s.wait_sim(1.2)
+            pf = s.ev("__game.perf()"); info = s.ev("__game.info()")
+            rows.append(dict(form=form, q=q, **{k: pf[k] for k in ['rafMs', 'rafP95', 'frameCpuMs', 'frameCpuP95', 'gpuMs', 'gpuP95', 'gpuExt', 'n']},
+                             calls=info['calls'], tris=info['triangles'], dpr=info['dpr'], size=info['size'], err=len(s.errors)))
+            print(json.dumps(rows[-1]), flush=True)
+    s.close()
+f = lambda v: '–' if v is None else f'{v:.1f}'
+print('\n| Format | Stufe | Auflösung | Bildabstand Ø / p95 (ms) | CPU je Bild Ø / p95 (ms) | GPU je Bild Ø / p95 (ms) | Draw-Calls | Dreiecke |')
+print('|---|---|---|---|---|---|---|---|')
+for r in rows:
+    print(f"| {r['form']} | {r['q']} | {r['size'][0]}×{r['size'][1]} (DPR {r['dpr']}) | {f(r['rafMs'])} / {f(r['rafP95'])} | {f(r['frameCpuMs'])} / {f(r['frameCpuP95'])} | {f(r['gpuMs'])} / {f(r['gpuP95'])} | {r['calls']} | {r['tris']:,} |".replace(',', '.'))
+# Gate: Arbeit je Bild (CPU + GPU, jeweils p95) ≤ 16 ms. Der rAF-Abstand headless ist auf diesem Rechner
+# umgebungsbedingt gedrosselt (leere Seite ~25–30 Bilder/s) und wird nur mitprotokolliert.
+worst = max((r['frameCpuP95'] or 0) + (r['gpuP95'] or 0) for r in rows)
+gate = all(r['gpuExt'] for r in rows) and worst <= 16
+print(f'\nArbeit je Bild (CPU p95 + GPU p95), schlechtester Fall: {worst:.1f} ms')
+print('GATE Frametime ≤ 16 ms:', 'BESTANDEN' if gate else 'NICHT bestanden')
