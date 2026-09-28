@@ -38,6 +38,8 @@ with Server() as srv, sync_playwright() as pw:
         s.wait_sim(1.0)
         p1 = s.state()['player']
         touch(cdp, 'touchEnd', [])
+        s.pg.wait_for_function("__game.inputs.touch.stickId === null", timeout=5000)
+        s.frames(3)
         # Bildschirm-oben in Welt: aus der Kamera
         ax = s.ev("(() => { const a = __game.gcam.groundAxes(); return [a.fx, a.fz]; })()")
         dx, dz = p1['x'] - p0['x'], p1['z'] - p0['z']
@@ -50,8 +52,10 @@ with Server() as srv, sync_playwright() as pw:
         s.frames(3)
         box = s.pg.locator('#bPass').bounding_box()
         cx, cy = box['x'] + box['width'] / 2, box['y'] + box['height'] / 2
+        s.ev("__game.game.players[0].lastKick = null")
         touch(cdp, 'touchStart', [(1, (cx, cy))]); time.sleep(0.05); touch(cdp, 'touchEnd', [])
-        s.wait_sim(0.3)
+        try: s.pg.wait_for_function("__game.state().lastKick !== null", timeout=8000)
+        except Exception: pass
         lk = s.state()['lastKick']
         ok(lk is not None and lk['kind'] == 'pass', f"Pass ausgelöst ({lk and round(lk['speed'], 1)} m/s)")
         # 3) Schuss halten 0,7 s mit Finger am rechten Rand des Knopfs → Effet
@@ -72,7 +76,8 @@ with Server() as srv, sync_playwright() as pw:
         lk = s.state()['lastKick']
         ok(charging, 'Schuss lädt auf, solange der Finger liegt')
         exp = min(1, (held + 0.02) / 1.0)
-        ok(lk is not None and lk['kind'] == 'shot' and abs(lk['power'] - min(1, held)) < 0.12, f"Schuss ausgelöst: {lk and round(lk['speed'], 1)} m/s, Ladung {lk and round(lk['power'], 2)} nach {held:.2f} s gehalten")
+        # Ladung ≈ Haltedauer (± ein Bild headless, bis 0,1 s Spielzeit je Bild)
+        ok(lk is not None and lk['kind'] == 'shot' and abs(lk['power'] - min(1, held)) < 0.2, f"Schuss ausgelöst: {lk and round(lk['speed'], 1)} m/s, Ladung {lk and round(lk['power'], 2)} nach {held:.2f} s gehalten")
         ok(lk is not None and abs(lk['sideRps']) > 4, f"Treffpunkt seitlich → Effet ({lk and round(lk['sideRps'], 1)} U/s), Punkt bei {dot}")
         # 4) Kein Scrollen/Zoomen durch Wischen
         sc = s.ev("[scrollX, scrollY, visualViewport ? visualViewport.scale : 1]")

@@ -233,7 +233,7 @@ const avg = (a) => (a.length ? a.reduce((s, x) => s + x, 0) / a.length : 0);
 
 // ---------------- Debug-API für Tests ----------------
 Object.assign(G, {
-  scene, renderer, gcam, input,
+  scene, renderer, gcam, inputs: input,
   start() { startPlay(); },
   mode: () => mode,
   setMode(m) { G.forceMode = m || null; resize(); },
