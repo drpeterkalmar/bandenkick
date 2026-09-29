@@ -23,15 +23,40 @@ Als App installierbar (PWA), läuft offline.
 - **Bots** (Utility-KI, 3 Stärken `?bots=1…3`): Rollen Ballführer / Anspielstation / Absicherung (letzte Hand),
   beim Gegner am Ball Angreifer (stellt zu) / Decker; sie spielen Pässe, **Bandenpässe** (auch zu sich selbst),
   schießen, befreien, hechten.
-- **Training (allein)** im Startmenü bzw. `?solo=1`: Ball und Käfig wie in Nacht 1 (eine Figur, kein Gegner).
+- **Training** im Startmenü (oder ☰ → Training): **9 Übungen** mit 1–3 Sternen und Bestwert (bleibt gespeichert),
+  Hinweiskarte vor dem Start, „Nochmal“ mit einem Tipp. **Schütze:** 🎯 Torwand (leuchtende Scheibe treffen),
+  🦵 Volley-Station (Ballmaschine flankt – Volley, Dropkick, Kopfball, Seitfall-, Fallrückzieher), ↗️ Bandenpass
+  (über die Bande am Dummy vorbei zum Ziel), 🔶 Dribbel-Parcours (Hütchentore auf Zeit), ⚽ Elfmeter, 🔁 Doppelpass.
+  **Torwart:** 🧤 Ballmaschine (12 Schüsse: flach, hoch, Flatterball, Aufsetzer, Bande, Kurve), ⚡ Reaktion,
+  🥅 1 gegen 1. „Freies Training“ = allein mit Ball wie in Nacht 1 (`?solo=1`).
 
 ## Steuerung
 | | |
 |---|---|
-| **Handy** | **Stick links** (Finger irgendwo in der linken Hälfte): laufen, ganz nach außen = Sprint. **Pass:** tippen. **Schuss:** halten = aufladen (0–30 m/s), loslassen = schießen; Finger auf dem Knopf verschieben = Treffpunkt (seitlich Effet, unten Heber, Mitte Vollspann → flattert). **Sprint:** Knopf halten. **⇄** Spieler wechseln (sonst automatisch zum ballnächsten, nach deinem Pass zum Empfänger). |
+| **Handy** | **Stick links** (Finger irgendwo in der linken Hälfte): laufen, ganz nach außen = Sprint. **Pass** und **Schuss** mit Gesten (Tabelle unten), der Ring um den Knopf zeigt Modus und Stärke. **Sprint:** Knopf halten. **⇄** Spieler wechseln (sonst automatisch zum ballnächsten, nach deinem Pass zum Empfänger). |
 | **Als letzte Hand im eigenen Torraum** | Die Knöpfe werden grün umrandet: Schuss-Knopf = **Fangen** (halten), Pass-Knopf = **Hechten** (in Stick-Richtung, ohne Stick zum Ball). Mit Ball: Pass-Knopf = **Abwurf** (auf den Stick bzw. den freiesten Mitspieler), Schuss-Knopf halten = **Abschlag**. Bälle direkt auf den Körper fängst du auch ohne Knopf (`?fanghilfe=0` schaltet das ab). |
-| **Tastatur/Maus** | WASD/Pfeile laufen, Shift Sprint, **C/Tab** Wechsel. Maus zielt. Linksklick/J Pass (Torraum: Hechten/Abwurf), Leertaste/Rechtsklick halten Schuss (Torraum: Fangen/Abschlag); beim Loslassen Q/E Effet, R Heber, F flach. Esc Pause. |
-| **Gamepad** | Linker Stick laufen, A Pass/Hechten/Abwurf, X oder RT Schuss/Fangen/Abschlag, **Y Wechsel**, rechter Stick Treffpunkt, LB/RB Sprint. |
+| **Tastatur/Maus** | WASD/Pfeile laufen, Shift Sprint, **C/Tab** Wechsel. Maus zielt. **J/Enter/Linksklick = Pass-Knopf**, **Leertaste/K/Rechtsklick = Schuss-Knopf** – gleiche Gesten wie am Handy (Torraum: Hechten/Abwurf bzw. Fangen/Abschlag). Esc Pause. |
+| **Gamepad** | Linker Stick laufen, A = Pass-Knopf, X oder RT = Schuss-Knopf (Gesten wie am Handy), **Y Wechsel**, LB/RB Sprint. |
+
+### Gesten (Nacht 2b „Ballgefühl“)
+| Geste | Pass-Knopf | Schuss-Knopf |
+|---|---|---|
+| **tippen** | flacher Pass, Stärke automatisch | kurzer Schuss |
+| **halten** (Standard, sofort ohne Verzögerung) | flacher Pass, Stärke = Haltedauer (Ring →) | **Vollspann** (Ring ⚡), mittig getroffen → Flatterball |
+| **tipp + sofort halten** (2. Druck innerhalb 0,25 s) | **hoch** – Chip 25–45° mit Rückdrall (Ring ⌒) | **angeschnitten** (Ring ↪/↩): Innenrist oder Außenrist, je nach Lage des Balls zum Fuß |
+| **Ball in der Luft** + Schuss | – | automatisch **Volley, Dropkick, Kopfball (auch mit Sprung), Flugkopfball, Seitfallzieher, Fallrückzieher** – je nach Höhe, Winkel und Zeit bis zum Ball. Timing zählt (zu früh/spät = langsamer, zentraler). Nach Seitfall-/Fallrückzieher ~0,8 s am Boden |
+
+- **Pass** geht zum Mitspieler, auf den der Stick zeigt (Kegel ±35°), **in seinen Laufweg** (Vorhalt aus dem echten
+  Rollmodell). Technik automatisch: Innenseite (bis 60° zur Blickrichtung), Außenrist, **Hacke** (nach hinten,
+  Mitspieler nah). Zeigt der Stick auf die Bande, geht der Pass über die Bande. Ohne Stick: bester freier Mitspieler.
+- **Schuss** geht immer aufs Tor: in die Ecke weg vom Tormann; Stick seitlich = flache Ecke, schräg nach vorn = hohe
+  Ecke. Die **Lage** bestimmt die Qualität q (0–1): Blick aufs Tor, Entfernung, Körperstellung, Ball vor dem Fuß,
+  starker/schwacher Fuß, Tempo, springender Ball, Gegner dran. Schlechte Lage = langsamer, zentraler, mehr Streuung.
+  Der letzte Schuss steht im Pause-Menü (Technik, Tempo, q). Anzeige nach jedem Schuss oben links.
+- **Profi-Steuerung** `?treffpunkt=1`: altes Modell aus Nacht 1/2 – Finger auf dem Schuss-Knopf verschieben =
+  Treffpunkt (seitlich Effet, unten Heber, Mitte Vollspann), Tastatur Q/E/R/F.
+- **Zeitlupe** bei Luftbällen (0,9 s, 40 % Tempo, Kamera zoomt leicht) – im Pause-Menü abschaltbar.
+- Beim ersten Start erklärt eine **Hilfekarte** die Gesten; später über ☰ → Steuerung.
 
 **Bewegung „zackig“ (Nacht 2):** kleine Richtungswechsel = Kurve (13 m/s² quer, Tempo bleibt), große = **Stemmschritt**
 (falsche Anteile mit 16 m/s² gebremst, Körper dreht sofort, Abstoß in die neue Richtung), spritziger Antritt
@@ -84,6 +109,15 @@ Ball mit (Sohle/Außenseite). `?zack=0` = altes Gefühl aus Nacht 1 zum Vergleic
 | `?ton=0` | ohne Ton (sonst im Pause-Menü umschaltbar) |
 | `?figur=kapsel` | Kapsel-Figuren statt Rocketbox-Menschen (Rückfall) |
 | `?seed=4711`, `?debug`, `?play` | fester Zufall, Anzeige Bildrate/Draw-Calls, Startbildschirm überspringen |
+| `?doppel=0.25`, `?tipp=0.2` | Gesten: Fenster für den 2. Druck (s), längster Tipp (s) |
+| `?treffpunkt=1` | Profi-Steuerung mit Treffpunkt statt Gesten (altes Modell) |
+| `?kegel=35`, `?innen=60`, `?hacke=120` | Pass: Zielkegel um den Stick (°), bis zu welchem Winkel Innenseite, ab welchem Hacke |
+| `?chipmin=25`, `?chipmax=45` | Chip-Abflugwinkel weit/kurz (°) |
+| `?schusshilfe=1` | Schuss-Hilfe: > 1 = gute Lage zählt mehr (z. B. 1.5 leichter), < 1 = strenger |
+| `?luft=0` | keine automatischen Luftball-Techniken (Volley, Kopfball …) |
+| `?zeitlupe=0` | keine Zeitlupe bei Luftbällen |
+| `?challenge=torwand` | direkt in eine Übung (torwand, volley, bande, dribbel, elfmeter, doppelpass, tw_serie, tw_reaktion, tw_1gegen1) |
+| `?nohelp` | Hilfekarte beim ersten Start überspringen |
 
 ## Technik
 - three.js r186 als ES-Module mit Import-Map (`lib/three/`), **kein Build-Schritt**; GitHub Pages; PWA mit
@@ -92,6 +126,12 @@ Ball mit (Sohle/Außenseite). `?zack=0` = altes Gefühl aus Nacht 1 zum Vergleic
   `world.js` (Käfig), `player.js`, `step.js` (Spielwelt 120 Hz), `lab.js` (FIFA-Prüfverfahren als Simulation).
 - `src/sim/rules.js` (letzte Hand, Torraum, Hände, 6 s, Schnellstart, Uhr), `src/sim/bots.js` (Utility-KI, Bandenpass
   mit gemessener Abprall-Kennzahl der Ballphysik), Schuss-/Pass-API `Player.kickAt({kind, target, technique})`.
+- **Ballgefühl (Nacht 2b):** `src/input/gesture.js` (Gesten-Parser, reine Funktion je Spieltakt; Knopf-Flanken tragen
+  den Zeitstempel des Touch-Ereignisses, damit ein kurzer Tipp auch bei langsamen Bildern kurz bleibt),
+  `src/sim/kickplan.js` (Roll-/Chip-Tabellen, Flugbahn-Löser mit echter Ballphysik), `pass.js` (Laufweg-Vorhalt,
+  Bande), `shot.js` (Qualität q, Eckenwahl), `technique.js` (Technik-Tabellen, Luftball-Bewertung), `air.js`
+  (Luftball-Planer und -Ausführung – Bots nutzen dieselbe API), `challenges.js` (9 Übungen, Ballmaschine, Sterne).
+  `src/render/training.js` (Ballmaschine, Torwand, Hütchen, Dummies, Zielmarken).
 - `src/render/` – Szene, Käfig, Ball/Granulat, `avatars.js` (Rocketbox-Menschen, Lauf-Blend, Leibchen, Posen), Kamera
   je Format. `src/audio/sound.js` – alle Geräusche selbst synthetisiert, per OfflineAudioContext vorgerendert.
   `src/input/` – Touch, Tastatur/Maus, Gamepad.
@@ -116,7 +156,15 @@ node tests/node/selfplay.test.mjs  # 200 Bot-Spiele à 2 × 4 min: keine Hänger
 node tools/calibrate.mjs        # Rasenwerte neu auf die FIFA-Ziele stellen
 python3 tests/smoke.py          # Browser (Pixel 7 hoch/quer, Desktop): 0 Fehler; Training: Führen/Schuss/Bande/Dach;
                                 #   3 gegen 3: Bots spielen, Tor → Schnellstart, Tormann-Knöpfe, Abwurf, Wechsel, Ton
-python3 tests/test_touch.py     # echte Touch-Ereignisse: Stick, Pass, Schuss mit Treffpunkt, Knopfgrößen
+python3 tests/test_touch.py     # echte Touch-Ereignisse: Stick, Pass, Gesten halten / tipp + halten auf beiden Knöpfen
+node tests/node/gesture.test.mjs    # Gesten-Grammatik (halten, tipp + halten, Grenzen, zwei Knöpfe)
+node tests/node/technique.test.mjs  # Technik-Tabellen Pass/Schuss/Luftball
+node tests/node/pass.test.mjs       # 500 Pass-Situationen: Ball erreicht den Laufweg (flach/hoch, p50/p95)
+node tests/node/shot.test.mjs       # Schussqualität q monoton, Trefferquote gute Lage, schlechte Lage langsamer/zentraler
+node tests/node/air.test.mjs        # Ballmaschinen-Serie: jede Luftball-Technik gewählt und trifft, Timing zählt
+node tests/node/challenge.test.mjs  # alle 9 Übungen headless mit Skript-Spieler: Sterne, untätig endet
+python3 tests/shots3.py final   # Fotos Nacht 2b: Aufladering, Training, Torwand, Fallrückzieher, Kopfball, Ergebnis
+python3 tests/perf_vergleich.py [pfad]  # Leistung je Spieltakt/Bild, z. B. gegen einen Worktree eines älteren Stands
 python3 tests/perf.py           # CPU- und GPU-Zeit je Bild, Draw-Calls, Dreiecke je Format und Stufe
 python3 tests/test_autoq.py     # Qualitäts-Automatik (ohne ?q=) greift, mit ?q= bleibt alles fest
 python3 tests/test_live.py      # GitHub Pages: HTTP 200, Version = lokal, 0 Fehler, PWA installierbar, offline
