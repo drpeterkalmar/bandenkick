@@ -29,6 +29,44 @@ export class Player {
     this.plant = 0;               // Stemmschritt 0…1 (Grafik: Körper stemmt sich in die neue Richtung)
     this.plantX = 1; this.plantZ = 0; this.plantT = 99;
     this.bodyOffT = 0;            // kurz keine Körper-Kollision mit dem Ball (nach Mitnahme im Stemmschritt)
+    this.hand = { mode: 'none', t: 0, dx: 1, dz: 0 }; // Tormann: none | hold | dive | ground
+    this.holdT = 0;               // Ball in der Hand seit … s
+    this.catchCd = -1;            // Spielzeit, ab der wieder gefangen werden darf
+  }
+
+  resetHands() { this.hand.mode = 'none'; this.hand.t = 0; this.holdT = 0; }
+
+  // Hechtsprung in Richtung (dx, dz): kurze Flugphase, dann am Boden (siehe stepDive)
+  startDive(dx, dz) {
+    this.hand.mode = 'dive'; this.hand.t = 0; this.hand.dx = dx; this.hand.dz = dz;
+    this.pending = null; this.charging = false;
+  }
+
+  stepDive(dt, game) {
+    const P = this.P, h = this.hand;
+    h.t += dt;
+    if (h.mode === 'dive') {
+      const k = Math.max(0, 1 - h.t / P.diveT);
+      const sp = P.diveSpeed * (0.35 + 0.65 * k);
+      this.vx = h.dx * sp; this.vz = h.dz * sp;
+      if (h.t >= P.diveT) { h.mode = 'ground'; h.t = 0; }
+    } else {
+      const f = Math.exp(-dt * 10); this.vx *= f; this.vz *= f;
+      if (h.t >= P.groundT) { h.mode = game.ball.held === this.id ? 'hold' : 'none'; h.t = 0; }
+    }
+    this.x += this.vx * dt; this.z += this.vz * dt;
+    const lx = game.cage.hx - P.bodyR, lz = game.cage.hz - P.bodyR;
+    this.x = clamp(this.x, -lx, lx); this.z = clamp(this.z, -lz, lz);
+    this.speed = Math.hypot(this.vx, this.vz);
+    this.plant = 0;
+  }
+
+  // Schuss-/Pass-API für Bots und Regeln (der Folgejob baut sie aus): Ziel statt Stick.
+  // kind: 'pass' | 'shot' | 'clear'; target [x, z] (Weltpunkt, bei 'shot' auch Höhe als target[2]);
+  // technique: 'innen' (Innenseite, Effet spinY) | 'vollspann' | 'heber'; speed optional (sonst nach Entfernung);
+  // noise: Streuungs-Faktor (Bot-Stärke); to: Empfänger-Index (Pass). Ausgeführt beim nächsten Ballkontakt.
+  kickAt({ kind = 'pass', target, technique = 'innen', speed, elev, spinY = 0, spinBack = 0, noise = 1, to = -1 } = {}) {
+    this.pending = { kind, api: true, target: [...target], technique, speed, elev, spinY, spinBack, noise, to, dir: [1, 0], age: 0 };
   }
 
   place(x, z, face = 0) {
@@ -44,6 +82,8 @@ export class Player {
   step(dt, inp, game) {
     const P = this.P, ball = game.ball, t = game.t;
     this.touchCd -= dt; this.kickT += dt; this.touchT += dt; this.clearT += dt; this.plantT += dt;
+    if (this.hand.mode === 'dive' || this.hand.mode === 'ground') { this.stepDive(dt, game); return; }
+    const held = ball.held >= 0;
     if (this.pending) { this.pending.age += dt; if (this.pending.age > P.kickBuffer) this.pending = null; }
 
     // --- Eingabe: Stick, Aktionen ---
@@ -74,8 +114,9 @@ export class Player {
     // --- Hilfe: zieht zum Ball, solange der Stick grob dorthin zeigt; deutliche Eingabe → sofort frei ---
     let dirX = sx, dirZ = sz;
     let targetW = 0;
-    const loose = bd < 3 && ball.p.y < 0.6 && Math.hypot(ball.v.x, ball.v.z) < 5;
-    if (want && bd > 0.05 && (this.dribbling || this.pending || loose)) {
+    const loose = !held && bd < 3 && ball.p.y < 0.6 && Math.hypot(ball.v.x, ball.v.z) < 5;
+    if (held) this.dribbling = false;
+    if (!held && want && bd > 0.05 && (this.dribbling || this.pending || loose)) {
       // Treffpunkt: wo der Ball in ~0,35 s ist
       const lead = 0.35;
       const ix = ball.p.x + ball.v.x * lead - this.x, iz = ball.p.z + ball.v.z * lead - this.z;
@@ -88,7 +129,7 @@ export class Player {
         dirX = sx * (1 - w) + (ix / il) * w; dirZ = sz * (1 - w) + (iz / il) * w;
         const l = Math.hypot(dirX, dirZ) || 1; dirX /= l; dirZ /= l;
       }
-    } else if (!want && this.pending && bd < 3) {
+    } else if (!held && !want && this.pending && bd < 3) {
       // Pass/Schuss vorgemerkt, Stick los: zum Ball laufen (Hilfe)
       targetW = 1;
       dirX = bx / bd; dirZ = bz / bd;
@@ -103,6 +144,8 @@ export class Player {
       vd = (want ? mag : 0.8) * (this.sprinting ? P.vSprint : P.vRun);
       if (this.dribbling) vd *= P.dribbleSlow;
       if (this.charging) vd *= 0.8; // zum Schuss hin etwas verlangsamen
+      if (this.hand.mode === 'hold') vd = Math.min(vd, P.vRun * 0.6); // mit Ball in der Hand nur gehen
+      if (inp.speedCap) vd *= inp.speedCap;                              // Bot-Stärke
     }
     if (P.zack) this.moveZack(dt, moving, dirX, dirZ, vd);
     else this.moveOld(dt, moving, dirX, dirZ, vd);
@@ -137,6 +180,7 @@ export class Player {
     const rvx = ball.v.x - this.vx, rvz = ball.v.z - this.vz;
     const rel = Math.hypot(rvx, ball.v.y, rvz);
     let touched = false;
+    if (held) return;
     if (inReach && rel < P.ctrlRelMax) {
       if (this.pending && this.touchCd <= 0.1) {
         this.kick(this.pending, game, rel);
@@ -295,6 +339,7 @@ export class Player {
   afterTouch(game, cd, rel) {
     this.touchCd = cd;
     this.lastTouchT = game.t;
+    if (game.match) game.rules.touch(this);
     this.touchT = 0;
     this.kickFoot = -this.kickFoot;
     game.ball.reseedKnuckle(game.rng);
@@ -307,7 +352,34 @@ export class Player {
     let [dx, dz] = pd.dir;
     let speed, elev, spinSide = 0, spinBack = 0, noiseDeg;
     const sprintPen = this.sprinting ? 1.5 : 0;
-    if (pd.kind === 'pass') {
+    if (pd.api) {
+      // Ziel → Richtung ab der Ballposition beim Kontakt
+      const tx = pd.target[0] - ball.p.x, tz = pd.target[1] - ball.p.z;
+      const D = Math.hypot(tx, tz) || 1;
+      dx = tx / D; dz = tz / D;
+      if (pd.kind === 'pass') {
+        speed = pd.speed ?? passSpeedFor(P, D);
+        elev = (pd.elev ?? 1.5) * DEG;
+        noiseDeg = (1.0 + sprintPen) * pd.noise;
+      } else if (pd.kind === 'clear') {
+        speed = pd.speed ?? 20;
+        elev = (pd.elev ?? 24) * DEG;
+        noiseDeg = (3 + sprintPen) * pd.noise;
+      } else { // Schuss
+        speed = pd.speed ?? 26;
+        const h = pd.target[2] ?? 0.5;
+        // Abflugwinkel für die Zielhöhe (Fallkurve grob ausgeglichen)
+        elev = pd.elev != null ? pd.elev * DEG : Math.atan2(h - ball.p.y + 4.9 * (D / speed) ** 2, D);
+        if (pd.technique === 'innen') spinSide = pd.spinY || 0;
+        if (pd.technique === 'heber') { spinBack = 5 * 2 * Math.PI; }
+        noiseDeg = (0.8 + 1.2 * (speed / P.shotMax) ** 2 + sprintPen) * pd.noise;
+      }
+      spinSide = pd.spinY ? pd.spinY : spinSide;
+      spinBack = pd.spinBack ? pd.spinBack : spinBack;
+      // Ziel hinter dem Spieler (> 100° zur Blickrichtung): nur Hacke/Sohle möglich → kurz und flach
+      const back = Math.cos(this.face) * dx + Math.sin(this.face) * dz < Math.cos(100 * DEG);
+      if (back) { speed = Math.min(speed, 6.5); elev = 2 * DEG; spinSide = 0; spinBack = 0; noiseDeg = Math.max(noiseDeg, 6); }
+    } else if (pd.kind === 'pass') {
       speed = P.passSpeed * (1 + 0.03 * rng.gauss());
       elev = 1.5 * DEG;
       noiseDeg = 1.2 + sprintPen;
@@ -333,41 +405,57 @@ export class Player {
     const bxA = -dz, bzA = dx; // d × ŷ = (d.y·0 − d.z·1, d.z·0 − d.x·0, d.x·1 − d.y·0) = (−dz, 0, dx)
     // Vollspann (Treffpunkt Mitte): kaum Drall (± 0,06 U/s) → Flatterball
     ball.w.set(bxA * spinBack + 0.4 * rng.gauss(), spinSide + 0.4 * rng.gauss(), bzA * spinBack + 0.4 * rng.gauss());
-    if (pd.kind === 'pass') { // Pass: leichter Vorwärtsdrall (rutscht kurz, rollt dann)
+    if (pd.kind === 'pass' && !pd.spinY) { // Pass: leichter Vorwärtsdrall (rutscht kurz, rollt dann)
       ball.w.set(dz * speed / ball.r * 0.3, 0, -dx * speed / ball.r * 0.3);
     }
     if (ball.p.y < ball.r + 0.02) ball.p.y = ball.r + 0.002;
     ball.contact = elev < 2.5 * DEG && ball.p.y < ball.r + 0.01;
     ball.reseedKnuckle(rng);
     this.touchCd = 0.35;
+    this.bodyOffT = 0.3; // der eigene Körper blockt den eigenen Schuss nicht
     this.lastTouchT = game.t;
     this.kickT = 0; this.touchT = 0;
     this.kickFoot = -this.kickFoot;
     this.lastKick = { kind: pd.kind, speed, spinRps: Math.hypot(ball.w.x, ball.w.y, ball.w.z) / (2 * Math.PI), sideRps: spinSide / (2 * Math.PI), elevDeg: elev / DEG, power: pd.power ?? 0, cx: pd.cx ?? 0, cy: pd.cy ?? 0, t: game.t };
-    game.events.push({ type: 'kick', kind: pd.kind, player: this.id, speed, x: ball.p.x, y: ball.p.y, z: ball.p.z, dx, dz });
+    // Empfänger merken (Spielerwechsel zum Empfänger, Bots laufen dem Ball entgegen)
+    let to = pd.to ?? -1;
+    if (to < 0 && pd.kind === 'pass' && game.match) {
+      let best = 0.9;
+      for (const m of game.players) {
+        if (m.team !== this.team || m.id === this.id) continue;
+        const mx = m.x - ball.p.x, mz = m.z - ball.p.z, ml = Math.hypot(mx, mz) || 1;
+        const c = (mx * dx + mz * dz) / ml;
+        if (c > best) { best = c; to = m.id; }
+      }
+    }
+    if (game.match) { game.passTo = pd.kind === 'pass' ? to : -1; game.rules.touch(this); }
+    game.events.push({ type: 'kick', kind: pd.kind, player: this.id, speed, x: ball.p.x, y: ball.p.y, z: ball.p.z, dx, dz, to });
   }
 
-  // Körper als Kapsel: Ball prallt weich ab (e = 0,35 relativ zum Spieler)
+  // Körper als senkrechter Zylinder (Radius 0,22 m, bis 1,85 m Höhe): Ball prallt weich ab (e = 0,35 relativ
+  // zum Spieler). Nur waagrecht – ein Ball kann nie auf einem Spieler liegen bleiben (rutscht vom Kopf ab).
   bodyCollision(game) {
     const ball = game.ball, r = ball.r, R = 0.22;
-    const y = clamp(ball.p.y, 0.15, 1.6);
-    const nx = ball.p.x - this.x, ny = ball.p.y - y, nz = ball.p.z - this.z;
-    const d = Math.hypot(nx, ny, nz);
-    if (d >= r + R || d < 1e-6) return;
-    const ux = nx / d, uy = ny / d, uz = nz / d;
-    ball.p.x = this.x + ux * (r + R); ball.p.y = Math.max(r, y + uy * (r + R)); ball.p.z = this.z + uz * (r + R);
-    const rvx = ball.v.x - this.vx, rvy = ball.v.y, rvz = ball.v.z - this.vz;
-    const vn = rvx * ux + rvy * uy + rvz * uz;
+    if (ball.held >= 0 || ball.p.y > 1.85 + r) return;
+    // Über der Bande einen langsamen Ball nicht gegen die Netze drücken (sonst klemmt er dort fest)
+    if (ball.p.y > game.cage.bH && ball.v.len() < 2) return;
+    const nx = ball.p.x - this.x, nz = ball.p.z - this.z;
+    const d = Math.hypot(nx, nz);
+    if (d >= r + R) return;
+    const ux = d > 1e-6 ? nx / d : Math.cos(this.face), uz = d > 1e-6 ? nz / d : Math.sin(this.face);
+    ball.p.x = this.x + ux * (r + R); ball.p.z = this.z + uz * (r + R);
+    const rvx = ball.v.x - this.vx, rvz = ball.v.z - this.vz;
+    const vn = rvx * ux + rvz * uz;
     if (vn < 0) {
       const j = (1 + 0.35) * vn;
-      ball.v.x -= j * ux; ball.v.y -= j * uy; ball.v.z -= j * uz;
+      ball.v.x -= j * ux; ball.v.z -= j * uz;
       ball.w.scale(0.6);
       if (-vn > 1.5) game.events.push({ type: 'body', player: this.id, speed: -vn, x: ball.p.x, y: ball.p.y, z: ball.p.z });
     }
   }
 
   snapshot() {
-    return { x: this.x, z: this.z, vx: this.vx, vz: this.vz, face: this.face, speed: this.speed, assistW: this.assistW, charging: this.charging, charge: this.charge };
+    return { x: this.x, z: this.z, vx: this.vx, vz: this.vz, face: this.face, speed: this.speed, assistW: this.assistW, charging: this.charging, charge: this.charge, hand: this.hand.mode, team: this.team };
   }
 }
 
@@ -385,6 +473,24 @@ function rollDist(P, u, T) {
   }
   return x;
 }
+// Pass-Tempo, mit dem ein flach gespielter Ball nach D Metern noch vArr m/s hat (Rollmodell wie oben)
+export function passSpeedFor(P, D, vArr = 3.5) {
+  let lo = vArr, hi = 25;
+  for (let i = 0; i < 16; i++) {
+    const u = (lo + hi) / 2;
+    let v = u, x = 0;
+    const A = Math.PI * P.ballR * P.ballR, h = 0.02;
+    while (v > vArr && x < D + 1) {
+      const Re = v * 2 * P.ballR / P.nu;
+      const cd = P.cdSuper + (P.cdSub - P.cdSuper) / (1 + Math.exp((Re - P.reMid) / P.reWidth));
+      const a = P.turfRoll0 + P.turfRoll1 * v + 0.5 * P.rho * A * cd * v * v / (P.ballM * (1 + P.ballK));
+      x += v * h; v -= a * h;
+    }
+    if (x < D) lo = u; else hi = u;
+  }
+  return (lo + hi) / 2 * 1.06; // + Gleitphase direkt nach dem Kontakt
+}
+
 export function solveRollSpeed(P, D, T) {
   let lo = 0, hi = 20;
   for (let i = 0; i < 14; i++) { const mid = (lo + hi) / 2; if (rollDist(P, mid, T) < D) lo = mid; else hi = mid; }

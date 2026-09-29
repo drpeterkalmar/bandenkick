@@ -72,7 +72,7 @@ export const DEFAULTS = {
   roof: 1,                // Dachnetz an/aus (?dach=0)
   roofH: 5.0,             // m
   goalW: 3, goalH: 2, goalD: 1.0, // Tor 3 × 2 m in der Bande, 1 m tief
-  torraum: 4,             // m Halbkreis-Radius (erst ab Nacht 2 aktiv)
+  torraum: 4,             // m Halbkreis-Radius um die Tormitte: nur dort darf die „letzte Hand“ die Hände nehmen
 
   // ---------------- Spieler ----------------
   vSprint: 7.5,           // m/s Höchsttempo Sprint
@@ -122,6 +122,30 @@ export const DEFAULTS = {
   spinMax: 10,            // U/s Innenseite (Kurve)
   backspinMax: 7,         // U/s Heber/Chip
   kickBuffer: 0.9,        // s: Pass/Schuss wird so lange vorgemerkt, bis der Ball erreichbar ist
+
+  // ---------------- Spiel 3 gegen 3 (Plan: „letzte Hand“, Schnellstart, Spielzeit) ----------------
+  perTeam: 3,             // Spieler je Mannschaft
+  botLevel: 2,            // Stärke der Bots 1 (leicht) … 3 (stark)                  [?bots=]
+  dauer: 4,               // min je Halbzeit (2 Halbzeiten)                           [?dauer=]
+  golden: 0,              // 1 = bei Gleichstand Golden Goal statt Unentschieden      [?golden=]
+  anstoss: 0,             // 1 = klassischer Anstoß nach Tor statt Schnellstart        [?anstoss=]
+  // „Letzte Hand“: hinterster Spieler (kleinster Abstand zur eigenen Torlinie), Wechsel erst, wenn ein anderer
+  // mindestens keeperDist näher an der Linie ist, und das mindestens keeperT lang (kein Flackern).
+  keeperDist: 0.5,        // m
+  keeperT: 0.3,           // s
+  holdMax: 6,             // s Ball in der Hand, dann automatisch Abwurf
+  catchReach: 1.0,        // m Reichweite der Hände waagrecht (Körpermitte → Ball, mit Strecken)
+  catchLow: 0.12,         // m … bis zu dieser Höhe (Ballmitte) aufnehmen …
+  catchHigh: 2.35,        // m … bis zu dieser Höhe fangen (mit Strecken)
+  catchMaxRel: 24,        // m/s darüber nur abwehren (Ball prallt ab)
+  diveSpeed: 5.2,         // m/s seitlich beim Hechten
+  diveT: 0.38,            // s Flugphase des Hechtsprungs
+  diveReach: 1.25,        // m Reichweite im Hechtsprung
+  groundT: 0.75,          // s danach am Boden
+  throwSpeed: 11,         // m/s Abwurf (flach geworfen)
+  punt: 21,               // m/s Abschlag aus der Hand
+  celebrateT: 2.6,        // s Jubel nach dem Tor, dann Schnellstart
+  switchT: 0.6,           // s Mindestabstand zwischen automatischen Spielerwechseln
 };
 
 // Kurzformen für Peter (deutsch) → interne Namen
@@ -129,7 +153,7 @@ export const ALIASES = {
   dach: 'roof', sprint: 'vSprint', lauf: 'vRun', antritt: 'tauAcc0', wende: 'aLat', hilfe: 'assist',
   schuss: 'shotMax', pass: 'passSpeed', bande: 'boardEn', netz: 'netH', dachhoehe: 'roofH',
   abprall: 'turfEn', rollen: 'turfRoll0', effet: 'spinMax', torbreite: 'goalW', torhoehe: 'goalH',
-  stemm: 'aPlant', bremse: 'aBrake', kurve: 'curveDeg',
+  stemm: 'aPlant', bremse: 'aBrake', kurve: 'curveDeg', bots: 'botLevel',
 };
 // ?zack=0: Werte des alten Bewegungsmodells (Nacht 1), sofern nicht ausdrücklich übersteuert
 const ZACK0 = { aLat: 6.0, aBrake: 6.5 };
