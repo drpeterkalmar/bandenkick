@@ -55,11 +55,16 @@ with Server() as srv, sync_playwright() as pw:
         # 5) Tor-Jubel: Orange trifft (Bots aus, damit niemand hält)
         s.ev("__game.newGame(); __game.game.rules.phase = 'play'; __game.bots(false)")
         s.ev("__game.placePlayer(5.8, 1.6, 0, 1); __game.placePlayer(4.2, -1.8, 0, 2); __game.placePlayer(6.5, -0.4, Math.PI, 4); __game.placePlayer(9.6, 2.3, Math.PI, 3)")
-        s.ev("__game.kick({from:[6.6, 0.2, 1.0], v:[16, 0.6, -0.3], w:[0,0,0]})")
+        s.ev("__game.kick({from:[6.6, 0.2, 1.0], v:[16, 0.6, -0.3], w:[0,0,0]}); __game.game.rules.touch(__game.game.players[1])")
         s.wait_sim(1.1)
         s.ev("__game.freeze(true)"); s.frames(4)
         s.shot(f'n2_{f}_05_torjubel', sub)
         st = s.state()
+        # Nahaufnahme Jubel (Kamera vor den Torschützen)
+        pj = st['players'][1]
+        s.ev(f"__game.cam([{pj['x'] - 3.2}, 1.6, {pj['z'] + 2.2}], [{pj['x'] + 0.4}, 1.05, {pj['z'] - 0.8}])"); s.frames(20)
+        s.shot(f'n2_{f}_07_jubel_nah', sub)
+        s.ev("__game.cam(null)")
         s.ev("__game.freeze(false)")
         # 6) Pause-Menü (hoch/quer)
         if f != 'desktop':

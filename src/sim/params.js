@@ -134,6 +134,7 @@ export const DEFAULTS = {
   keeperDist: 0.5,        // m
   keeperT: 0.3,           // s
   holdMax: 6,             // s Ball in der Hand, dann automatisch Abwurf
+  fanghilfe: 1,           // Mensch als Tormann fängt Bälle auf den Körper (≤ 55 cm) auch ohne Knopf [?fanghilfe=0]
   catchReach: 1.0,        // m Reichweite der Hände waagrecht (Körpermitte → Ball, mit Strecken)
   catchLow: 0.12,         // m … bis zu dieser Höhe (Ballmitte) aufnehmen …
   catchHigh: 2.35,        // m … bis zu dieser Höhe fangen (mit Strecken)

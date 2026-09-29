@@ -89,10 +89,16 @@ with Server() as srv, sync_playwright() as pw:
         s.ev("__game.input({pass: true}, 0.05)"); s.wait_sim(0.3)
         st = s.state()
         ok(st['ball']['held'] == -1, f"Abwurf per Pass-Taste: Ball frei ({st['ball']['held']})")
-        # Spielerwechsel per Taste (⇄ / C)
+        # Spielerwechsel per Taste (⇄ / C) in ruhiger Szene (Bots aus, Ball liegt)
+        s.ev("__game.newGame(); __game.game.rules.phase = 'play'; __game.bots(false); __game.placeBall(0, 0.11, 3)")
+        s.wait_sim(0.7)
         h0 = s.state()['human']
-        s.ev("__game.input({switch: true}, 0.05)"); s.wait_sim(0.2)
-        ok(s.state()['human'] != h0, f"Spielerwechsel per Taste: {h0} → {s.state()['human']}")
+        s.ev("__game.input({switch: true}, 0.05)"); s.wait_sim(0.3)
+        h1 = s.state()['human']
+        s.ev("__game.input({switch: true}, 0.05)"); s.wait_sim(0.3)
+        h2 = s.state()['human']
+        ok(h1 != h0 and h2 != h1 and all(s.state()['players'][h]['team'] == 0 for h in (h0, h1, h2)), f"Spielerwechsel per Taste: {h0} → {h1} → {h2} (nur Orange)")
+        s.ev("__game.bots(true)")
         ok(s.ev("__game.sound.rendered") is True, 'Ton vorgerendert (19 Klänge + Umgebung)')
         ok(s.small_buttons() == [], f'Knöpfe ≥ 48 px im Spiel: {s.small_buttons()}')
         ok(s.overlaps(['#bShot', '#bPass', '#bSprint', '#bSwitch', '.score', '.iconbtn']) == [], 'Knöpfe überlappen nicht')

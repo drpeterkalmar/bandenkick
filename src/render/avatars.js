@@ -246,7 +246,7 @@ export class Avatar {
     // ---- prozedurale Schichten (nach dem Mischer, im Weltraum der Figur) – nur wenn aktiv (spart Matrix-Updates) ----
     // Stemmschritt: Körper lehnt sich gegen die alte Laufrichtung (bis 22°), Hechtsprung: Rolle
     const plantK = Math.min(1, pl.plant || 0);
-    this.lean += (plantK * 0.38 - this.lean) * Math.min(1, dt * 12);
+    this.lean += (plantK * 0.45 - this.lean) * Math.min(1, dt * 12);
     const diveMode = pl.hand && (pl.hand.mode === 'dive' || pl.hand.mode === 'ground');
     this.dive += ((diveMode ? 1 : 0) - this.dive) * Math.min(1, dt * (diveMode ? 9 : 4));
     const hold = st.holding ? 1 : 0;
@@ -264,14 +264,15 @@ export class Avatar {
       const f = pl.face, vx = pl.vx, vz = pl.vz;
       const along = vx * Math.cos(f) + vz * Math.sin(f), side = -vx * Math.sin(f) + vz * Math.cos(f);
       const l = Math.hypot(along, side) || 1;
-      pitch = -this.lean * (along / l); roll = this.lean * (side / l) * 0.8;
+      // Oberkörper gegen die (alte) Geschwindigkeit: Füße stemmen vor dem Schwerpunkt (bis 26°)
+      pitch = -this.lean * (along / l); roll = -this.lean * (side / l);
     }
     if (this.dive > 0.01) {
       const dx = pl.hand.dx, dz = pl.hand.dz;
       const side = -dx * Math.sin(pl.face) + dz * Math.cos(pl.face); // + = links der Blickrichtung
       roll = (side >= 0 ? -1 : 1) * 1.25 * this.dive;
       this.tilt.position.y = 0.95 - 0.55 * this.dive;
-    } else this.tilt.position.y = 0.95;
+    } else this.tilt.position.y = 0.95 - 0.08 * this.lean / 0.45; // im Stemmschritt leicht in die Knie
     this.tilt.rotation.set(pitch, 0, roll, 'YXZ');
     this.root.updateMatrixWorld(true);
     // Schuss/Pass: Schussbein schwingt nach vorn

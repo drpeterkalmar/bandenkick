@@ -218,6 +218,7 @@ function worldInput(inp) {
     } else {
       o.dive = inp.pass; o.diveX = st ? mx : 0; o.diveZ = st ? mz : 0;
       o.hand = inp.shootHeld || inp.shootRelease;
+      if (P.fanghilfe) { o.autoCatch = true; o.autoReach = 0.55; } // Ball auf den Körper fängt er von selbst
     }
     o.pass = false; o.shootHeld = false; o.shootRelease = false;
   }

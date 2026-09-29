@@ -83,7 +83,8 @@ export class Rules {
       const want = inp.hand || pl.hand.mode === 'dive' || inp.autoCatch;
       if (!want) continue;
       const dx = b.p.x - pl.x, dz = b.p.z - pl.z;
-      let reach = P.catchReach, hi = P.catchHigh, d = Math.hypot(dx, dz);
+      // Fanghilfe (Mensch ohne Knopf): nur Bälle, die ohnehin auf den Körper kommen (autoReach)
+      let reach = !inp.hand && inp.autoReach ? inp.autoReach : P.catchReach, hi = P.catchHigh, d = Math.hypot(dx, dz);
       if (pl.hand.mode === 'dive') { // im Flug: Strecke Körper → ausgestreckte Hände
         const t = clamp(dx * pl.hand.dx + dz * pl.hand.dz, 0, P.diveReach);
         d = Math.hypot(dx - pl.hand.dx * t, dz - pl.hand.dz * t);
