@@ -197,8 +197,8 @@ export class Rules {
     const g = this.g, b = g.ball, pl = g.players[b.held];
     if (!pl) { b.held = -1; return; }
     const f = pl.face, lying = pl.hand.mode === 'dive' || pl.hand.mode === 'ground';
-    const r = lying ? 0.7 : 0.32;
-    b.p.set(pl.x + Math.cos(f) * r, lying ? 0.25 : 1.08, pl.z + Math.sin(f) * r);
+    const r = lying ? 0.7 : 0.4;
+    b.p.set(pl.x + Math.cos(f) * r, lying ? 0.25 : 1.13, pl.z + Math.sin(f) * r);
     b.v.set(pl.vx, 0, pl.vz); b.w.set(0, 0, 0); b.contact = false;
   }
 
@@ -210,11 +210,12 @@ export class Rules {
     const team = side > 0 ? 0 : 1;   // Ball im rechten Tor → Mannschaft 0 trifft
     g.score[team]++;
     let scorer = g.lastTouch;
-    if (scorer >= 0 && g.players[scorer].team !== team) scorer = -1; // Eigentor
-    this.goals.push({ t: this.clock, team, scorer });
+    const own = scorer >= 0 && g.players[scorer].team !== team; // Eigentor: zuletzt ein Gegner am Ball
+    if (own) scorer = -1;
+    this.goals.push({ t: this.clock, team, scorer, own });
     this.phase = 'goal'; this.phaseT = 0;
     this.scoredTeam = team;
-    g.events.push({ type: 'goal', side, team, scorer, speed: g.ball.v.len() });
+    g.events.push({ type: 'goal', side, team, scorer, own, speed: g.ball.v.len() });
     if (this.golden) this.finish();
   }
 

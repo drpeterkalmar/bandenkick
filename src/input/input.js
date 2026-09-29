@@ -8,6 +8,7 @@ export class Input {
     this.keys = new Set();
     this.mouse = { x: 0, y: 0, moved: -99, l: false, r: false, lDown: 0 };
     this.passQueued = false;
+    this.switchQueued = false;
     this.shootWas = false;
     this.lastTouch = -99;
     this.aimWorld = null;         // Maus-Ziel am Boden (von main gesetzt)
@@ -67,6 +68,8 @@ export class Input {
 
     const pass = ui.bPass;
     pass.addEventListener('pointerdown', (e) => { e.preventDefault(); this.passQueued = true; pass.classList.add('down'); this.lastTouch = this.now; document.body.classList.add('touch'); setTimeout(() => pass.classList.remove('down'), 140); });
+    const sw = ui.bSwitch;
+    if (sw) sw.addEventListener('pointerdown', (e) => { e.preventDefault(); this.switchQueued = true; sw.classList.add('down'); setTimeout(() => sw.classList.remove('down'), 140); });
     const sprint = ui.bSprint;
     sprint.addEventListener('pointerdown', (e) => { e.preventDefault(); t.sprintId = e.pointerId; t.sprint = true; cap(sprint, e); sprint.classList.add('down'); });
     const endSprint = (e) => { if (e.pointerId !== t.sprintId) return; t.sprintId = null; t.sprint = false; sprint.classList.remove('down'); };
@@ -77,7 +80,8 @@ export class Input {
       if (e.repeat) return;
       this.keys.add(e.code);
       if (e.code === 'KeyJ' || e.code === 'Enter') this.passQueued = true;
-      if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) e.preventDefault();
+      if (e.code === 'KeyC' || e.code === 'Tab') this.switchQueued = true;
+      if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.code)) e.preventDefault();
     });
     addEventListener('keyup', (e) => this.keys.delete(e.code));
     addEventListener('blur', () => { this.keys.clear(); this.mouse.l = this.mouse.r = false; });
@@ -112,6 +116,7 @@ export class Input {
       const l = Math.hypot(cx, cy); if (l > 1) { cx /= l; cy /= l; }
     }
     let pass = this.passQueued; this.passQueued = false;
+    let swi = this.switchQueued; this.switchQueued = false;
     // Gamepad
     const pads = navigator.getGamepads ? navigator.getGamepads() : [];
     for (const p of pads) {
@@ -121,6 +126,8 @@ export class Input {
       const b = (i) => p.buttons[i] && p.buttons[i].pressed;
       if (b(0) && !this.padA) pass = true;
       this.padA = b(0);
+      if (b(3) && !this.padY) swi = true;
+      this.padY = b(3);
       if (b(2) || b(7)) shoot = true;
       if (b(4) || b(5) || b(6) || b(10)) sprint = true;
       const rx = p.axes[2] || 0, ry = p.axes[3] || 0;
@@ -133,6 +140,6 @@ export class Input {
     if (shoot) this.lastC = [cx, cy];
     else if (release && this.lastC) { [cx, cy] = this.lastC; }
     const mouseAim = now - this.mouse.moved < 2.5 && !document.body.classList.contains('touch');
-    return { sx, sy, sprint, pass, shootHeld: shoot, shootRelease: release, cx, cy, mouseAim };
+    return { sx, sy, sprint, pass, shootHeld: shoot, shootRelease: release, cx, cy, mouseAim, switch: swi };
   }
 }

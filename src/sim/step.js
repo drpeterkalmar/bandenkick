@@ -119,7 +119,8 @@ export class Game {
     const ins = this._ins || (this._ins = []);
     const live = R.phase === 'play' || R.phase === 'kickoff';
     for (let i = 0; i < n; i++) {
-      if (!live) ins[i] = this.bots ? this.bots.formation(i) : EMPTY_INPUT; // Jubel/Halbzeit: zurück in die eigene Hälfte
+      // Torjubel: erst 1,2 s stehen und jubeln, dann (wie in der Halbzeit) zurück in die eigene Hälfte
+      if (!live) ins[i] = this.bots && !(R.phase === 'goal' && R.phaseT < 1.2) ? this.bots.formation(i) : EMPTY_INPUT;
       else if (inputs[i] && (i === this.human || !this.bots)) ins[i] = inputs[i];   // Mensch (ohne Bots: alle)
       else ins[i] = this.bots ? this.bots.input(i) : EMPTY_INPUT;
     }
@@ -193,6 +194,8 @@ export class Game {
     };
     const mates = this.players.filter((p) => p.team === me.team && p.id !== me.id);
     if (inp && inp.switch) {
+      if (this.t - (this.manualT ?? -9) < 0.25) return; // Doppeltipp nicht zweimal wechseln
+      this.manualT = this.t;
       let best = null;
       for (const m of mates) if (!best || ttb(m) < ttb(best)) best = m;
       if (best) this.setHuman(best.id);

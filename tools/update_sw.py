@@ -6,7 +6,7 @@ files = ['index.html', 'manifest.webmanifest', 'css/style.css']
 for d in ['src', 'lib', 'icons', 'assets']:
     for dp, dn, fn in os.walk(os.path.join(ROOT, d)):
         for f in sorted(fn):
-            if f.endswith(('.js', '.png', '.css', '.webp', '.jpg', '.json', '.hdr')) and not f.startswith('.'):
+            if f.endswith(('.js', '.png', '.css', '.webp', '.jpg', '.json', '.hdr', '.glb')) and not f.startswith('.'):
                 files.append(os.path.relpath(os.path.join(dp, f), ROOT))
 files = sorted(set(files))
 h = hashlib.sha256()
