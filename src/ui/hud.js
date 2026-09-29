@@ -11,10 +11,9 @@ export function buildHud(root, canvas) {
   const menuBtn = h('button', 'iconbtn', '☰'); menuBtn.setAttribute('aria-label', 'Menü');
   top.append(score, kick, h('div', 'spacer'), menuBtn);
   const banner = h('div', 'banner');
-  const charge = h('div', 'charge');
-  charge.style.cssText = 'position:absolute;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 18px);width:220px;height:12px;margin-left:-110px;border-radius:6px;background:rgba(0,0,0,.4);overflow:hidden;display:none';
-  const chargeFill = h('div'); chargeFill.style.cssText = 'height:100%;width:0;background:linear-gradient(90deg,#9be15d,#ffd84a,#ff6a3d)';
-  charge.append(chargeFill);
+  // Desktop: Aufladebalken mit Modus (Symbol + Name + Stärke)
+  const charge = h('div', 'charge', '<i></i><span></span>');
+  const chargeFill = charge.firstChild, chargeLbl = charge.lastChild;
 
   // Touch
   const touch = h('div'); touch.id = 'touch';
@@ -22,8 +21,8 @@ export function buildHud(root, canvas) {
   const stickBase = h('div', 'stickbase');
   const stickKnob = h('div', 'stickknob');
   stickBase.append(stickKnob);
-  const bShot = h('button', 'tb', '<span class="ring"></span><span class="mini"><i class="dot"></i></span><span class="kw">Fangen</span><span class="lbl">Schuss (halten)</span>'); bShot.id = 'bShot';
-  const bPass = h('button', 'tb', '<span class="pl">Pass</span>'); bPass.id = 'bPass';
+  const bShot = h('button', 'tb', '<span class="ring"></span><span class="mini"><i class="dot"></i></span><span class="sym"></span><span class="kw">Fangen</span><span class="lbl">Schuss</span>'); bShot.id = 'bShot';
+  const bPass = h('button', 'tb', '<span class="ring"></span><span class="sym"></span><span class="pl">Pass</span>'); bPass.id = 'bPass';
   const bSprint = h('button', 'tb', 'Sprint'); bSprint.id = 'bSprint';
   const bSwitch = h('button', 'tb', '⇄'); bSwitch.id = 'bSwitch'; bSwitch.setAttribute('aria-label', 'Spieler wechseln');
   const hold = h('div', 'holdbar', '<i></i><span>Abwurf in 6 s</span>'); hold.id = 'hold';
@@ -86,7 +85,7 @@ export function buildHud(root, canvas) {
        <li><b>Gamepad:</b> Stick laufen, A Pass/Hechten/Abwurf, X/RT Schuss/Fangen, Y Wechsel, LB/RB Sprint</li>`;
   const setHowto = (touchUI) => root.querySelectorAll('.howto').forEach((u) => { u.innerHTML = howto(touchUI); });
 
-  let bannerT = 0, kickT = 0, lastScore = '', lastKeeper = '';
+  let bannerT = 0, kickT = 0, lastScore = '', lastKeeper = '', lastCharge = null;
   const clock = (sec) => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, '0')}`;
   return {
     root, score, kick, menuBtn, banner, touch, stickZone, stickBase, stickKnob, bShot, bPass, bSprint, bSwitch, dbg, start, menu, credits, canvas, charge, chargeFill, hold,
@@ -106,7 +105,7 @@ export function buildHud(root, canvas) {
       document.body.classList.toggle('kbox', mode === 'box');
       document.body.classList.toggle('khold', mode === 'hold');
       bShot.querySelector('.kw').textContent = mode === 'hold' ? 'Abschlag' : 'Fangen';
-      bShot.querySelector('.lbl').textContent = mode === 'hold' ? 'Abschlag (halten)' : mode === 'box' ? 'Fangen (halten)' : 'Schuss (halten)';
+      bShot.querySelector('.lbl').textContent = mode === 'hold' ? 'Abschlag (halten)' : mode === 'box' ? 'Fangen (halten)' : 'Schuss';
       bPass.querySelector('.pl').textContent = mode === 'hold' ? 'Abwurf' : mode === 'box' ? 'Hechten' : 'Pass';
     },
     setHold(frac, secLeft) {
@@ -125,10 +124,25 @@ export function buildHud(root, canvas) {
       kick.textContent = parts.join(' · ');
       kick.classList.add('on'); kickT = 3.5;
     },
-    setCharge(p, touchUI) {
-      bShot.style.setProperty('--p', p.toFixed(3));
-      charge.style.display = !touchUI && p > 0 ? 'block' : 'none';
-      chargeFill.style.width = (p * 100).toFixed(1) + '%';
+    // Aufladering: st = {kind: 'pass'|'shot', p, sym, color, label, wait, air} oder null
+    setCharge(st, touchUI) {
+      const key = st ? `${st.kind}|${st.sym}|${st.color}|${st.wait ? 1 : 0}|${(st.p || 0).toFixed(2)}|${st.label}` : '';
+      if (key === lastCharge) return;
+      lastCharge = key;
+      for (const b of [bShot, bPass]) {
+        const on = st && (b === bShot ? st.kind === 'shot' : st.kind === 'pass');
+        b.style.setProperty('--p', on && !st.wait ? st.p.toFixed(3) : '0');
+        b.style.setProperty('--rc', on && st.color ? st.color : '#ffd84a');
+        b.classList.toggle('charging', !!on && !st.wait);
+        b.classList.toggle('armed', !!on && !!st.wait);
+        b.querySelector('.sym').textContent = on && !st.wait ? st.sym || '' : '';
+      }
+      const show = !touchUI && st && !st.wait;
+      charge.style.display = show ? 'block' : 'none';
+      if (show) {
+        chargeFill.style.width = (st.p * 100).toFixed(1) + '%'; chargeFill.style.background = st.color || '#ffd84a';
+        chargeLbl.textContent = `${st.sym ? st.sym + ' ' : ''}${st.label || ''}${st.air ? '' : ` ${Math.round(st.p * 100)} %`}`;
+      }
     },
     setContact(cx, cy) {
       const dot = bShot.querySelector('.dot');

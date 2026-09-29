@@ -58,9 +58,24 @@ body[data-mode="menu"] #touch, body[data-mode="load"] #touch { display: none; }
 #bShot { width: 100px; height: 100px; }
 #bShot .mini { width: 46px; height: 46px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff, #ddd 60%, #999); position: relative; box-shadow: inset 0 0 0 2px rgba(0,0,0,.25); }
 #bShot .dot { position: absolute; width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%; background: #e3342f; left: 50%; top: 50%; box-shadow: 0 0 0 2px #fff; }
-#bShot .ring { position: absolute; inset: -9px; border-radius: 50%; pointer-events: none;
-  background: conic-gradient(#ffd84a calc(var(--p, 0) * 1turn), transparent 0); -webkit-mask: radial-gradient(circle, transparent 50px, #000 51px); mask: radial-gradient(circle, transparent 50px, #000 51px); }
+/* Aufladering (beide Knöpfe): Farbe = Modus (--rc), Symbol in der Mitte; nach einem Tipp pulsiert der Rand kurz
+   (Fenster für „tipp + halten“) */
+.tb .ring { position: absolute; inset: -9px; border-radius: 50%; pointer-events: none;
+  background: conic-gradient(var(--rc, #ffd84a) calc(var(--p, 0) * 1turn), rgba(255,255,255,.12) 0); -webkit-mask: radial-gradient(circle, transparent calc(50% - 5px), #000 calc(50% - 4px)); mask: radial-gradient(circle, transparent calc(50% - 5px), #000 calc(50% - 4px)); opacity: 0; transition: opacity .12s; }
+.tb.charging .ring { opacity: 1; }
+.tb.armed .ring { opacity: 1; animation: armed .25s ease-out 1; }
+@keyframes armed { from { opacity: 1; transform: scale(1.08); } to { opacity: .35; transform: scale(1); } }
+.tb .sym { position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%); font-size: 30px; line-height: 1; text-align: center; pointer-events: none; color: var(--rc, #ffd84a); text-shadow: 0 1px 6px rgba(0,0,0,.7); }
+.tb.charging .pl, .tb.charging .mini { opacity: .25; }
+body:not(.treffpunkt) #bShot .mini { display: none; }
+body:not(.treffpunkt) #bShot::before { content: '⚽'; font-size: 30px; opacity: .9; }
+body:not(.treffpunkt) #bShot.charging::before { opacity: 0; }
+body.kbox #bShot::before, body.khold #bShot::before { content: ''; }
 #bPass { width: 80px; height: 80px; }
+.charge { position: absolute; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 18px); width: 260px; height: 26px; margin-left: -130px; border-radius: 13px;
+  background: rgba(0,0,0,.45); overflow: hidden; display: none; pointer-events: none; }
+.charge i { position: absolute; left: 0; top: 0; bottom: 0; width: 0; opacity: .8; }
+.charge span { position: relative; display: block; text-align: center; font-size: 14px; font-weight: 800; line-height: 26px; text-shadow: 0 1px 3px #000; }
 #bSprint { width: 66px; height: 66px; font-size: 13px; }
 
 /* Hochformat */

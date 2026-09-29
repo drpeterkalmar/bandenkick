@@ -108,6 +108,23 @@ export function chooseCorner(game, pl, stick = null, from = null) {
   return best;
 }
 
+// Vorschau ohne Flugbahn-Löser (Anzeige beim Aufladen, jedes Bild): Technik, Ecke, Qualität, Zielpunkt, Streuung
+export function previewShot(game, pl, mode = 'std', stick = null, power = 0.7) {
+  const P = game.P, b = game.ball;
+  const from = [b.p.x, Math.max(b.r, b.p.y), b.p.z];
+  const gx = attackGoalX(game, pl);
+  const corner = chooseCorner(game, pl, stick, from);
+  const curveLeft = corner.lat > 0.05 ? true : corner.lat < -0.05 ? false : (pl.strong || 1) > 0;
+  const fx = Math.cos(pl.face), fz = Math.sin(pl.face);
+  const ballSide = -(from[0] - pl.x) * fz + (from[2] - pl.z) * fx;
+  const { tech, foot } = shotTechnique(mode, curveLeft, ballSide, pl.strong || 1);
+  const Q = shotQuality(shotFeatures(game, pl, [corner.x, corner.y, corner.z], foot), P);
+  const q = Q.qEff, af = aimFactor(q);
+  const aim = [gx, 0.6 + (corner.y - 0.6) * af, corner.z * af];
+  const noiseDeg = (tech === 'vollspann' ? 0.5 : 0.7) + 1.1 * power * power;
+  return { tech, foot, q, corner, aim, noiseDeg: noiseDeg * noiseFactor(q) * (tech === 'aussenrist' ? P.aussenNoise : 1), dist: Math.hypot(aim[0] - from[0], aim[2] - from[2]) };
+}
+
 // Kompletter Schuss-Plan. opts: mode 'std'|'var', power 0…1, stick [x,z]|null, noiseMul (Bots), sowie für Luftbälle
 // tech/speed/spin/qMul/noiseBase/from (Treffpunkt statt Ballposition).
 export function planShot(game, pl, opts = {}) {

@@ -4,6 +4,8 @@ import * as THREE from 'three';
 import { makeParams } from './sim/params.js';
 import { Game, DT } from './sim/step.js';
 import { EMPTY_INPUT } from './sim/player.js';
+import { previewShot } from './sim/shot.js';
+import { techName } from './sim/challenges.js';
 import { createRenderer, loadEnvironment, makeSky, makeSun } from './render/scene.js';
 import { buildField } from './render/field.js';
 import { makeBall, makeBlob, poseBlob, makePlayer, posePlayer, Granulate } from './render/actors.js';
@@ -29,6 +31,7 @@ const quality = {
   avatarShadows: qLevel >= 2,
 };
 if (isTouch) document.body.classList.add('touch');
+if (P.treffpunkt) document.body.classList.add('treffpunkt');
 if (qs.has('debug')) document.body.classList.add('debug');
 const urlSolo = qs.has('solo') || qs.get('modus') === 'training';
 let solo = urlSolo;
@@ -165,7 +168,7 @@ async function boot() {
 let acc = 0, last = performance.now() / 1000;
 const prev = { bx: 0, by: 0, bz: 0, px: new Float64Array(8), pz: new Float64Array(8) };
 function resetPrev() { const b = game.ball; prev.bx = b.p.x; prev.by = b.p.y; prev.bz = b.p.z; game.players.forEach((p, i) => { prev.px[i] = p.x; prev.pz[i] = p.z; }); }
-let testInput = null, testUntil = 0, frozen = false, heldPrev = false, lastContact = [0, 0], chargeHold = 0;
+let testInput = null, testUntil = 0, frozen = false, heldPrev = false, passPrev = false, lastContact = [0, 0], chargeHold = 0, pressSeq = null;
 const gl = renderer.getContext();
 const gpuExt = qs.has('gpu') ? gl.getExtension('EXT_disjoint_timer_query_webgl2') : null;
 const gpuQ = [], gpuMs = [];
@@ -195,7 +198,8 @@ function worldInput(inp) {
   const ax = gcam.groundAxes();
   let mx = inp.sx * ax.rx + inp.sy * ax.fx, mz = inp.sx * ax.rz + inp.sy * ax.fz;
   if (inp.wx !== undefined) { mx = inp.wx; mz = inp.wz; } // Tests: Richtung direkt in Weltkoordinaten
-  const o = { mx, mz, sprint: inp.sprint, pass: inp.pass, shootHeld: inp.shootHeld, shootRelease: inp.shootRelease, cx: inp.cx, cy: inp.cy, aim: false, aimX: 0, aimZ: 0, switch: !!inp.switch };
+  // Knopf-Pegel → Gesten im Spieltakt (halten / tipp + halten); cx/cy nur für ?treffpunkt=1
+  const o = { mx, mz, sprint: inp.sprint, passDown: !!inp.passDown, shotDown: !!inp.shotDown, cx: inp.cx, cy: inp.cy, aim: false, aimX: 0, aimZ: 0, switch: !!inp.switch };
   const pl = me();
   if (inp.mouseAim) {
     ndc.set(input.mouse.x / innerWidth * 2 - 1, -(input.mouse.y / innerHeight) * 2 + 1);
@@ -205,22 +209,23 @@ function worldInput(inp) {
       if (Math.hypot(dx, dz) > 0.5) { o.aim = true; o.aimX = dx; o.aimZ = dz; }
     }
   }
-  // Letzte Hand im Torraum: Knöpfe werden zu Fangen/Hechten bzw. mit Ball zu Abwurf/Abschlag
+  // Letzte Hand im Torraum: Knöpfe werden zu Fangen/Hechten bzw. mit Ball zu Abwurf/Abschlag – sofort auf den Druck
+  // (Flanken, keine Gesten: beim Tormann zählt die Reaktion)
   const km = keeperMode();
   if (km) {
     const st = Math.hypot(mx, mz) > 0.3;
     const dirX = o.aim ? o.aimX : mx, dirZ = o.aim ? o.aimZ : mz, dl = Math.hypot(dirX, dirZ) || 1;
     if (km === 'hold') {
-      o.throw = inp.pass;
-      o.punt = inp.shootRelease;
+      o.throw = inp.passPress;
+      o.punt = inp.shotRelease;
       o.power = Math.min(1.15, 0.45 + chargeHold);
       if (st || o.aim) { o.aimX = pl.x + dirX / dl * 9; o.aimZ = pl.z + dirZ / dl * 9; } else { o.aimX = undefined; o.aimZ = undefined; }
     } else {
-      o.dive = inp.pass; o.diveX = st ? mx : 0; o.diveZ = st ? mz : 0;
-      o.hand = inp.shootHeld || inp.shootRelease;
+      o.dive = inp.passPress; o.diveX = st ? mx : 0; o.diveZ = st ? mz : 0;
+      o.hand = inp.shotDown || inp.shotRelease;
       if (P.fanghilfe) { o.autoCatch = true; o.autoReach = 0.55; } // Ball auf den Körper fängt er von selbst
     }
-    o.pass = false; o.shootHeld = false; o.shootRelease = false;
+    delete o.passDown; delete o.shotDown; // keine Gesten, der Feldspieler-Schuss lädt nicht nebenher
   }
   return o;
 }
@@ -256,6 +261,24 @@ function handleEvents(ev) {
   }
 }
 
+// Aufladering: Knopf, Modus (Farbe + Symbol), Stärke, erwartete Technik – fachlich aus denselben Planern wie der Schuss
+const MODE_LOOK = {
+  vollspann: ['⚡', '#ffc83d', 'Vollspann'], innenrist: ['↪', '#4fd6ff', 'Innenrist'], aussenrist: ['↩', '#ff6fd8', 'Außenrist'],
+  flach: ['→', '#ffffff', 'flach'], chip: ['⌒', '#7dff6a', 'hoch (Chip)'],
+};
+function chargeView(pl, raw) {
+  if (pl.air) return { kind: 'shot', p: 1, sym: '✦', color: '#ffe27a', label: techName(pl.air.tech), air: true };
+  if (pl.armed) return { kind: pl.armed, p: 0, wait: true };
+  if (!pl.charging) return null;
+  const p = Math.min(1, pl.charge / P.chargeT);
+  if (pl.chargeKind === 'pass') { const [sym, color, label] = MODE_LOOK[pl.chargeMode === 'var' ? 'chip' : 'flach']; return { kind: 'pass', p, sym, color, label }; }
+  if (P.treffpunkt) return { kind: 'shot', p, sym: '', color: '#ffd84a', label: 'Schuss' };
+  const ms = raw.mx !== undefined ? raw : null; void ms;
+  const pv = previewShot(game, pl, pl.chargeMode, null, p);
+  const [sym, color, label] = MODE_LOOK[pv.tech] || MODE_LOOK.vollspann;
+  return { kind: 'shot', p, sym, color, label, q: pv.q };
+}
+
 function frame() {
   requestAnimationFrame(frame);
   const t0 = performance.now();
@@ -267,11 +290,22 @@ function frame() {
   let raw = input.sample(now);
   if (testInput && game.t < testUntil) raw = { ...raw, ...testInput };
   else if (testInput) { testInput = null; }
-  // Loslass-Flanke und Treffpunkt beim Loslassen einheitlich für echte und Test-Eingaben
-  raw.shootRelease = heldPrev && !raw.shootHeld;
-  if (raw.shootHeld) { lastContact = [raw.cx, raw.cy]; chargeHold += dt; }
-  else if (raw.shootRelease) { raw.cx = lastContact[0]; raw.cy = lastContact[1]; }
-  heldPrev = raw.shootHeld;
+  // Tests mit alten Feldern: pass = Tipp, shootHeld = halten → Knopf-Pegel
+  if (raw.pass) raw.passDown = true;
+  if (raw.shootHeld) raw.shotDown = true;
+  // Tests: Gesten-Folge (__game.press) in Spielzeit, z. B. Tipp + halten
+  if (pressSeq) {
+    const tt = game.t - pressSeq.t0;
+    for (const [a, b, btn] of pressSeq.seq) if (tt >= a && tt < b) raw[btn === 'pass' ? 'passDown' : 'shotDown'] = true;
+    if (pressSeq.stick && tt < pressSeq.stickT) { raw.wx = pressSeq.stick[0]; raw.wz = pressSeq.stick[1]; }
+    if (tt > Math.max(...pressSeq.seq.map((x) => x[1])) + 0.5) pressSeq = null;
+  }
+  // Flanken (Tormann-Knöpfe) und Treffpunkt beim Loslassen (Profi) einheitlich für echte und Test-Eingaben
+  raw.passPress = raw.passDown && !passPrev;
+  raw.shotRelease = heldPrev && !raw.shotDown;
+  if (raw.shotDown) { lastContact = [raw.cx, raw.cy]; chargeHold += dt; }
+  else if (raw.shotRelease) { raw.cx = lastContact[0]; raw.cy = lastContact[1]; }
+  heldPrev = raw.shotDown; passPrev = raw.passDown;
   const b = game.ball;
   const tS = performance.now();
   if (mode === 'play' && !frozen) {
@@ -280,7 +314,7 @@ function frame() {
     while (acc >= DT && steps < 24) {
       resetPrev();
       const wi = worldInput(raw);
-      if (!first) { wi.pass = false; wi.shootRelease = false; wi.switch = false; wi.throw = false; wi.punt = false; wi.dive = false; }
+      if (!first) { wi.switch = false; wi.throw = false; wi.punt = false; wi.dive = false; }
       const ins = [];
       ins[Math.max(0, game.human)] = wi;
       handleEvents(game.step(ins));
@@ -290,7 +324,7 @@ function frame() {
     if (steps >= 24) acc = 0;
   } else { resetPrev(); acc = 0; }
   perf.sim.push(performance.now() - tS); if (perf.sim.length > 240) perf.sim.shift();
-  if (!raw.shootHeld && !raw.shootRelease) chargeHold = 0;
+  if (!raw.shotDown && !raw.shotRelease) chargeHold = 0;
   autoQuality(dt);
   const a = mode === 'play' ? Math.min(1, acc / DT) : 1;
   const bx = prev.bx + (b.p.x - prev.bx) * a, by = prev.by + (b.p.y - prev.by) * a, bz = prev.bz + (b.p.z - prev.bz) * a;
@@ -309,8 +343,8 @@ function frame() {
   const touchUI = document.body.classList.contains('touch');
   const km = keeperMode();
   hud.setKeeperMode(km);
-  hud.setCharge(pl.charging ? Math.min(1, pl.charge / P.chargeT) : km === 'hold' && raw.shootHeld ? Math.min(1, chargeHold / 0.7) : 0, touchUI);
-  if (touchUI) hud.setContact(raw.shootHeld ? raw.cx : 0, raw.shootHeld ? raw.cy : 0);
+  hud.setCharge(km === 'hold' ? (raw.shotDown ? { kind: 'shot', p: Math.min(1, chargeHold / 0.7), sym: '🦶', color: '#d9ff3a', label: 'Abschlag' } : null) : chargeView(pl, raw), touchUI);
+  if (touchUI && P.treffpunkt) hud.setContact(raw.shotDown ? raw.cx : 0, raw.shotDown ? raw.cy : 0);
   if (game.match) {
     const R = game.rules;
     const rest = R.half === 1 ? R.halfLen - R.clock : 2 * R.halfLen - R.clock;
@@ -413,6 +447,8 @@ Object.assign(G, {
       avatarMs: avg(perf.av), renderMs: avg(perf.rd), simMs: avg(perf.sim) };
   },
   perfReset() { perf.ft.length = 0; perf.raf.length = 0; gpuMs.length = 0; perf.av.length = 0; perf.rd.length = 0; perf.sim.length = 0; },
+  // Gesten-Folge für Tests: [[t0, t1, 'pass'|'shot'], …] in Spielzeit ab jetzt; stick = [x, z] (Welt) für stickT s
+  press(seq, stick = null, stickT = 0.4) { pressSeq = { t0: game.t, seq, stick, stickT }; },
   // Eingabe für Tests: {sx, sy, sprint, pass, shootHeld, cx, cy, wx, wz, switch} für `sec` Sekunden (Spielzeit)
   input(o, sec = 0.5) { testInput = { sx: 0, sy: 0, sprint: false, pass: false, shootHeld: false, shootRelease: false, cx: 0, cy: 0, mouseAim: false, ...o }; testUntil = game.t + sec; },
   // Ball direkt anstoßen (Tests/Fotos): from [x,y,z], v [vx,vy,vz], w [rad/s]

@@ -26,18 +26,25 @@ with Server() as srv, sync_playwright() as pw:
         st = s.state()
         d = abs(st['ball']['p'][0] - st['player']['x'])
         ok(st['player']['x'] > -1.5 and d < 2.0, f"Führen: Spieler {st['player']['x']:.1f} m, Ball {d:.2f} m voraus")
-        # Pass
-        s.ev("__game.input({pass: true}, 0.05)"); s.wait_sim(0.4)
+        # Pass (Einzeltipp: nach dem Doppeltipp-Fenster von 0,25 s gespielt)
+        s.ev("__game.input({pass: true}, 0.05)"); s.wait_sim(1.0)
         lk = s.state()['lastKick']
         ok(lk and lk['kind'] == 'pass', f"Pass: {lk and round(lk['speed'], 1)} m/s")
-        # Schuss 0,6 s halten, Treffpunkt links
+        # Schuss halten = Vollspann (kaum Drall), Tipp + halten = angeschnitten (Innen-/Außenrist mit Drall)
         s.ev("__game.placePlayer(-5, 1, 0); __game.placeBall(-4.6, 0.11, 1)")
         s.ev("__game.game.players[0].lastKick = null")
-        s.ev("__game.input({wx: 1, wz: 0, shootHeld: true, cx: -0.7}, 0.6)")
+        s.ev("__game.press([[0, 0.6, 'shot']])")
         try: s.pg.wait_for_function("__game.state().lastKick && __game.state().lastKick.kind === 'shot'", timeout=15000)
         except Exception: pass
         lk = s.state()['lastKick']
-        ok(lk and lk['kind'] == 'shot' and lk['sideRps'] < -3, f"Schuss mit Effet: {lk and round(lk['speed'], 1)} m/s, {lk and round(lk['sideRps'], 1)} U/s")
+        ok(lk and lk['kind'] == 'shot' and lk['tech'] == 'vollspann' and abs(lk['sideRps']) < 0.3, f"Schuss halten = Vollspann: {lk and lk['tech']}, {lk and round(lk['speed'], 1)} m/s, {lk and round(lk['sideRps'], 2)} U/s")
+        s.ev("__game.placePlayer(-5, 1, 0); __game.placeBall(-4.6, 0.11, 1)")
+        s.ev("__game.game.players[0].lastKick = null")
+        s.ev("__game.press([[0, 0.07, 'shot'], [0.17, 0.8, 'shot']])")
+        try: s.pg.wait_for_function("__game.state().lastKick && __game.state().lastKick.kind === 'shot'", timeout=15000)
+        except Exception: pass
+        lk = s.state()['lastKick']
+        ok(lk and lk['tech'] in ('innenrist', 'aussenrist') and abs(lk['sideRps']) > 4, f"Tipp + halten = angeschnitten: {lk and lk['tech']}, {lk and round(lk['sideRps'], 1)} U/s")
         # Bande und Dach: Ball bleibt im Käfig
         r = s.ev("__game.kick({from:[-2, 0.11, 0], v:[4, 3, 28], w:[0, 50, 0]}); __game.sim(3)")
         ev = [e['type'] for e in r['events']]

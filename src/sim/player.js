@@ -186,17 +186,24 @@ export class Player {
     }
     const tau = targetW > this.assistW ? P.assistReturn : P.assistRelease;
     this.assistW += (targetW - this.assistW) * (1 - Math.exp(-dt / tau));
-    const moving = want || (targetW > 0 && this.pending) || recv;
+    // Pass/Schuss lädt oder Tipp-Fenster läuft, Stick los: in der Laufrichtung weiter statt abrupt zu bremsen
+    // (sonst rollt der vorgelegte Ball davon, bevor der Kick kommt)
+    const carry = !want && !recv && !(targetW > 0 && this.pending) && (this.charging || this.armed) && this.speed > 1.2 && !held;
+    if (carry) { dirX = this.hx; dirZ = this.hz; }
+    const moving = want || (targetW > 0 && this.pending) || recv || carry;
 
     // --- Bewegung ---
     let vd = 0;
     if (moving) {
       vd = (want ? mag : 0.8) * (this.sprinting ? P.vSprint : P.vRun);
-      if (recv) vd = recvV;
+      // Vorgemerkter Kick ohne Stick: dem Ball mindestens so schnell nachlaufen, wie er rollt (bis Sprint)
+      if (!want && this.pending && !held) vd = Math.max(vd, Math.min(P.vSprint, Math.hypot(ball.v.x, ball.v.z) + 1.5));
       if (this.dribbling) vd *= P.dribbleSlow;
       if (this.charging && bd < 0.75) vd *= 0.8; // zum Schuss hin etwas verlangsamen – nur mit dem Ball am Fuß (sonst läuft er davon)
       if (this.hand.mode === 'hold') vd = Math.min(vd, P.vRun * 0.6); // mit Ball in der Hand nur gehen
       if (inp.speedCap) vd *= inp.speedCap;                              // Bot-Stärke
+      if (carry) vd = this.speed;   // weiterlaufen: Tempo halten (nach allen Faktoren, sonst schrumpft es je Takt)
+      if (recv) vd = recvV;
     }
     if (P.zack) this.moveZack(dt, moving, dirX, dirZ, vd);
     else this.moveOld(dt, moving, dirX, dirZ, vd);
