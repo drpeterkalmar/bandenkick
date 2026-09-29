@@ -1,7 +1,7 @@
 // Ton: alles selbst synthetisiert und einmal per OfflineAudioContext vorgerendert (kein Ruckeln durch Live-Synthese,
 // keine fremden Aufnahmen). Im Spiel werden nur fertige Puffer abgespielt: Schuss, Pass, Ballkontakt, Aufsetzer,
 // Bandenknall (hohles Kunststoffpaneel), Netz, Pfosten (Stahlrohr), Fangen, Körper, Pfiff, Rufe (Formant-Stimmen
-// „Hey!“, „Hier!“, „Ja!“, „Tor!“) und Umgebung (Vögel, entfernter Verkehr) als nahtlose Schleifen.
+// „Hey!“, „Hier!“, „Ja!“, „Tor!“) und Umgebung (entfernter Verkehr; Vögel nur mit ?voegel=1) als nahtlose Schleifen.
 // Handy: AudioContext wird erst mit einer echten Geste freigeschaltet (pointerup/touchend/click/keydown).
 const SR = 44100;
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
@@ -64,23 +64,31 @@ function voice(oc, out, t, { vowel = 'a', f0 = 180, dur = 0.35, peak = 0.5, h = 
 }
 
 const DEFS = {
-  kick: [0.35, (oc, o) => { // Vollspann: dumpfer Schlag + Leder-Knall + Klick
+  // Hermes 29.09. (Peter: „Bratenfett“): Ballklänge bekommen einen „Pock“-Körper bei 300–700 Hz. Handy-Lautsprecher
+  // geben unter ~400 Hz kaum etwas wieder; vorher blieb dort vom dumpfen Schlag nichts übrig außer dem Rauschen/Klicken
+  // über 1 kHz (bei ~110 Ballgeräuschen je Minute = Brutzeln). Die tiefen Schläge bleiben für Kopfhörer/Lautsprecher.
+  kick: [0.35, (oc, o) => { // Vollspann: dumpfer Schlag + Leder-„Pock“ + weicher Knall
     tone(oc, o, 0, { f: 140, f2: 55, peak: 0.9, dec: 0.09, glide: 0.06 });
-    noise(oc, o, 0, 0.05, 3, { type: 'bandpass', f: 1400, q: 1.1, peak: 0.55, dec: 0.035 });
-    noise(oc, o, 0, 0.02, 4, { type: 'highpass', f: 3500, q: 0.7, peak: 0.25, dec: 0.008 });
+    tone(oc, o, 0, { f: 560, f2: 320, peak: 0.34, dec: 0.06, glide: 0.035 });
+    tone(oc, o, 0, { f: 1250, f2: 760, peak: 0.09, dec: 0.03, glide: 0.02 });
+    noise(oc, o, 0, 0.04, 3, { type: 'bandpass', f: 1000, q: 0.9, peak: 0.3, dec: 0.03 }); // bis 29.09.: 1400 Hz, 0,55
+    noise(oc, o, 0, 0.02, 4, { type: 'highpass', f: 3500, q: 0.7, peak: 0.06, dec: 0.006 }); // Klick, bis 29.09.: 0,25
   }],
   pass: [0.25, (oc, o) => {
     tone(oc, o, 0, { f: 170, f2: 80, peak: 0.55, dec: 0.06, glide: 0.04 });
-    noise(oc, o, 0, 0.04, 5, { type: 'bandpass', f: 1200, q: 1.2, peak: 0.3, dec: 0.025 });
+    tone(oc, o, 0, { f: 640, f2: 380, peak: 0.24, dec: 0.045, glide: 0.03 });
+    noise(oc, o, 0, 0.04, 5, { type: 'bandpass', f: 950, q: 1.1, peak: 0.17, dec: 0.025 });
   }],
   touch: [0.15, (oc, o) => {
     tone(oc, o, 0, { f: 210, f2: 110, peak: 0.28, dec: 0.04, glide: 0.03 });
-    noise(oc, o, 0, 0.03, 6, { type: 'bandpass', f: 900, q: 1, peak: 0.12, dec: 0.02 });
+    tone(oc, o, 0, { f: 700, f2: 430, peak: 0.14, dec: 0.035, glide: 0.025 });
+    noise(oc, o, 0, 0.03, 6, { type: 'bandpass', f: 900, q: 1, peak: 0.07, dec: 0.02 });
   }],
   bounce: [0.2, (oc, o) => {
     tone(oc, o, 0, { f: 95, f2: 60, peak: 0.45, dec: 0.07, glide: 0.05 });
+    tone(oc, o, 0, { f: 430, f2: 260, peak: 0.2, dec: 0.05, glide: 0.03 }); // Pock (Handy)
     noise(oc, o, 0, 0.05, 7, { type: 'lowpass', f: 700, q: 0.7, peak: 0.25, dec: 0.04 });
-    noise(oc, o, 0.005, 0.08, 8, { type: 'bandpass', f: 3500, q: 0.6, peak: 0.05, dec: 0.06 }); // Granulat
+    // Granulat-Rieseln (Rauschen bei 3,5 kHz) entfernt (Hermes 29.09.): zischte bei jedem Aufsetzer, 37-mal je Minute
   }],
   board: [0.7, (oc, o) => { // hohles Kunststoffpaneel: Resonanzen + Rahmenklappern
     noise(oc, o, 0, 0.02, 9, { type: 'lowpass', f: 2500, peak: 0.6, dec: 0.015 });
@@ -91,12 +99,14 @@ const DEFS = {
       s.connect(bp).connect(g).connect(o); s.start(0);
     });
     tone(oc, o, 0, { f: 90, f2: 70, peak: 0.5, dec: 0.12 });
-    noise(oc, o, 0.04, 0.2, 14, { type: 'bandpass', f: 2600, q: 3, a: 0.004, peak: 0.07, dec: 0.18 }); // Klappern
+    noise(oc, o, 0.04, 0.2, 14, { type: 'bandpass', f: 2600, q: 3, a: 0.004, peak: 0.03, dec: 0.18 }); // Klappern (bis 29.09.: 0,07)
   }],
-  net: [0.8, (oc, o) => { // Netz: Rauschen mit weichem Einsatz + dumpfes „Wumm“ + Kettenklirren
-    noise(oc, o, 0, 0.6, 15, { type: 'bandpass', f: 2600, q: 0.8, a: 0.03, peak: 0.28, dec: 0.45 });
+  net: [0.4, (oc, o) => { // Netz: weiches, tiefes „Wusch“ + dumpfes „Wumm“
+    // Hermes 29.09. (Peter: „klingt nach spritzendem Bratenfett“): bisher 0,6 s Rauschen bei 2,6 kHz + 6 Klirrer bei
+    // 4,2–5,7 kHz, 11-mal je Minute – am Handy-Lautsprecher reines Zischen. Jetzt tiefer, kürzer, ohne Klirren.
+    noise(oc, o, 0, 0.3, 15, { type: 'bandpass', f: 650, q: 0.9, a: 0.02, peak: 0.22, dec: 0.2 });
     tone(oc, o, 0, { f: 70, f2: 45, a: 0.015, peak: 0.35, dec: 0.2, glide: 0.15 });
-    for (let k = 0; k < 6; k++) noise(oc, o, 0.05 + k * 0.05, 0.03, 16 + k, { type: 'bandpass', f: 4200 + k * 300, q: 8, peak: 0.08, dec: 0.03 });
+    tone(oc, o, 0, { f: 190, f2: 120, a: 0.01, peak: 0.18, dec: 0.12, glide: 0.1 }); // am Handy hörbarer Anteil
   }],
   post: [1.6, (oc, o) => { // Stahlrohr Ø 80 mm: unharmonische Teiltöne, lange Ausklingzeit
     noise(oc, o, 0, 0.02, 22, { type: 'highpass', f: 2000, peak: 0.5, dec: 0.01 });
@@ -104,11 +114,13 @@ const DEFS = {
     tone(oc, o, 0, { f: 110, f2: 80, peak: 0.35, dec: 0.1 });
   }],
   catch: [0.25, (oc, o) => { // Handschuhe fassen den Ball
-    noise(oc, o, 0, 0.06, 30, { type: 'lowpass', f: 1400, q: 0.8, peak: 0.55, dec: 0.05 });
+    noise(oc, o, 0, 0.06, 30, { type: 'lowpass', f: 1400, q: 0.8, peak: 0.4, dec: 0.05 });
     tone(oc, o, 0, { f: 120, f2: 70, peak: 0.4, dec: 0.06 });
+    tone(oc, o, 0, { f: 420, f2: 250, peak: 0.2, dec: 0.05, glide: 0.03 }); // Pock (Handy)
   }],
   body: [0.2, (oc, o) => {
     tone(oc, o, 0, { f: 110, f2: 65, peak: 0.45, dec: 0.07 });
+    tone(oc, o, 0, { f: 360, f2: 220, peak: 0.16, dec: 0.05, glide: 0.03 }); // Rumms (Handy)
     noise(oc, o, 0, 0.04, 31, { type: 'lowpass', f: 900, peak: 0.25, dec: 0.03 });
   }],
   dive: [0.45, (oc, o) => { // Aufprall am Kunstrasen
@@ -118,6 +130,7 @@ const DEFS = {
   whoosh: [0.35, (oc, o) => noise(oc, o, 0, 0.3, 33, { type: 'bandpass', f: 900, q: 1.5, a: 0.08, peak: 0.25, dec: 0.18 })],
   head: [0.22, (oc, o) => { // Kopfball: dumpfer, weicher Stoß
     tone(oc, o, 0, { f: 120, f2: 70, peak: 0.6, dec: 0.07, glide: 0.05 });
+    tone(oc, o, 0, { f: 480, f2: 290, peak: 0.22, dec: 0.05, glide: 0.03 }); // Pock (Handy)
     noise(oc, o, 0, 0.04, 35, { type: 'lowpass', f: 800, peak: 0.3, dec: 0.03 });
   }],
   machine: [0.45, (oc, o) => { // Ballmaschine: Räder-Surren + pneumatischer Stoß
@@ -243,7 +256,10 @@ export class Sound {
 
   startAmbience() {
     if (!this.ctx || this.amb.length) return;
-    for (const [name, gain] of [['birds', 0.5], ['traffic', 0.35]]) {
+    // Vogelzwitschern aus (Hermes 29.09., Peter: „Bratenfett“): ~8 hohe Piepser je Sekunde bei 2,6–7,8 kHz – das
+    // Einzige der Umgebung, das ein Handy-Lautsprecher wiedergibt (Verkehr liegt fast ganz unter 300 Hz). ?voegel=1 = an.
+    const birds = typeof location !== 'undefined' && /[?&]voegel=1/.test(location.search);
+    for (const [name, gain] of [...(birds ? [['birds', 0.5]] : []), ['traffic', 0.35]]) {
       const s = this.ctx.createBufferSource(); s.buffer = this.buf[name]; s.loop = true;
       const g = this.ctx.createGain(); g.gain.value = gain;
       s.connect(g).connect(this.ambBus); s.start(this.ctx.currentTime + 0.05);
@@ -257,9 +273,9 @@ export class Sound {
     const c = this.ctx, now = c.currentTime;
     if (now - (this.lastT[name] || -9) < minGap) return;
     this.lastT[name] = now;
-    // Stimmen begrenzen (12): älteste leiseste zuerst weg
+    // Stimmen begrenzen (12): älteste zuerst weg – kurz ausblenden statt hart abschneiden (hartes stop() knackt)
     this.voices = this.voices.filter((v) => v.end > now);
-    if (this.voices.length >= 12) { const v = this.voices.shift(); try { v.src.stop(); } catch (_) { /* schon aus */ } }
+    if (this.voices.length >= 12) { const v = this.voices.shift(); try { v.g.gain.setTargetAtTime(0, now, 0.008); v.src.stop(now + 0.05); } catch (_) { /* schon aus */ } }
     const s = c.createBufferSource(); s.buffer = this.buf[name]; s.playbackRate.value = rate;
     const g = c.createGain(); g.gain.value = clamp(gain, 0, 1.2);
     let node = s.connect(g);
@@ -267,7 +283,7 @@ export class Sound {
     node.connect(this.fx);
     s.start(now);
     s.onended = () => { s.disconnect(); g.disconnect(); };
-    this.voices.push({ src: s, end: now + s.buffer.duration / rate });
+    this.voices.push({ src: s, g, end: now + s.buffer.duration / rate });
   }
 
   // Ereignisse der Spielwelt → Klänge (Lautstärke nach Tempo, Stereo nach Lage im Käfig)
@@ -287,10 +303,10 @@ export class Sound {
         if (e.kind === 'pass' && e.to >= 0 && e.to !== e.player && Math.random() < 0.5) this.shout(Math.random() < 0.5 ? 'hier' : 'ja', game, e.to, 0.12);
         break;
       case 'touch': this.play('touch', 0.28, pan, 0.9 + Math.random() * 0.2, 0.06); break;
-      case 'ground': if (sp > 2) this.play('bounce', clamp(sp / 14, 0.1, 0.8), pan, 0.9 + Math.random() * 0.2, 0.05); break;
+      case 'ground': if (sp > 3) this.play('bounce', clamp(sp / 14, 0.1, 0.8), pan, 0.9 + Math.random() * 0.2, 0.12); break; // bis 29.09.: ab 2 m/s, minGap 0,05
       case 'board': if (sp > 1.5) this.play('board', clamp(sp / 16, 0.12, 1.1), pan, 0.9 + Math.random() * 0.15, 0.05); break;
       case 'post': this.play('post', clamp(sp / 14, 0.2, 1.1), pan, 0.97 + Math.random() * 0.06, 0.08); break;
-      case 'net': this.play('net', clamp(sp / 18, 0.15, 1), pan, 0.9 + Math.random() * 0.2, 0.15); break;
+      case 'net': if (sp > 5) this.play('net', clamp(sp / 22, 0.12, 0.8), pan, 0.9 + Math.random() * 0.2, 0.3); break; // bis 29.09.: jede Berührung, bis 1,0
       case 'catch': this.play('catch', 0.7, pan); break;
       case 'parry': this.play('body', 0.8, pan); break;
       case 'body': this.play('body', clamp(sp / 12, 0.15, 0.7), pan, 1, 0.08); break;
