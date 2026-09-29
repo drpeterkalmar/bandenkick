@@ -13,13 +13,15 @@ export class GameCamera {
     this.menuT = 0;
     this.override = null;       // Test/Debug: feste Kamera
     this.shake = 0;
+    this.zoom = 0;              // 0…1 Kurz-Zoom (Zeitlupe bei spektakulären Luftbällen)
+    this.baseFov = 44;
   }
 
   setAspect(aspect, force) {
     this.cam.aspect = aspect;
     const m = force || (aspect < 0.95 ? 'hoch' : 'quer');
     this.mode = m;
-    this.cam.fov = m === 'hoch' ? 56 : aspect > 1.9 ? 40 : 46;
+    this.cam.fov = this.baseFov = m === 'hoch' ? 56 : aspect > 1.9 ? 40 : 46;
     this.cam.updateProjectionMatrix();
   }
 
@@ -87,6 +89,8 @@ export class GameCamera {
       c.position.set(this.tx - lead - Math.cos(pitch) * D, Math.sin(pitch) * D, this.tz * 0.85);
       c.lookAt(this.tx - lead, 0, this.tz);
     }
+    const fov = this.baseFov * (1 - 0.16 * this.zoom);
+    if (Math.abs(c.fov - fov) > 0.01) { c.fov = fov; c.updateProjectionMatrix(); }
     if (this.shake > 0) {
       this.shake = Math.max(0, this.shake - dt * 2.5);
       const s = this.shake * 0.05;

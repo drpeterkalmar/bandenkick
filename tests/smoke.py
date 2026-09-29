@@ -17,6 +17,10 @@ with Server() as srv, sync_playwright() as pw:
         ok('Metal' in str(s.gl), f'WebGL auf der GPU ({s.gl})')
         ok(s.boot_s < 15, f'Boot {s.boot_s:.1f} s')
         s.tap('[data-act="play"]')
+        s.frames(3)
+        # erster Start: Hilfekarte (Steuerung/Gesten), einmal bestätigen
+        ok(s.state()['mode'] == 'help', 'Hilfekarte beim ersten Start')
+        s.tap('[data-act="helpok"]')
         s.frames(5)
         st = s.state()
         ok(st['mode'] == 'play' and st['cam'] == ('hoch' if form == 'hoch' else 'quer'), f"Spiel läuft, Kamera {st['cam']}")

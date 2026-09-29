@@ -5,7 +5,9 @@ import { makeParams } from './sim/params.js';
 import { Game, DT } from './sim/step.js';
 import { EMPTY_INPUT } from './sim/player.js';
 import { previewShot } from './sim/shot.js';
-import { techName } from './sim/challenges.js';
+import { planPass } from './sim/pass.js';
+import { techName, CHALLENGES, challengeDef } from './sim/challenges.js';
+import { TrainingProps, AimMarkers } from './render/training.js';
 import { createRenderer, loadEnvironment, makeSky, makeSun } from './render/scene.js';
 import { buildField } from './render/field.js';
 import { makeBall, makeBlob, poseBlob, makePlayer, posePlayer, Granulate } from './render/actors.js';
@@ -49,7 +51,10 @@ const renderer = createRenderer(canvas, quality);
 const scene = new THREE.Scene();
 const seed = qs.get('seed') || String(Date.now() % 100000);
 // Mensch = Mitte der Mannschaft Orange (stößt an); danach automatischer Wechsel zum ballnächsten Mitspieler
-const newGame = () => (solo ? new Game(P, seed) : new Game(P, seed, { match: true, human: 1, botLevel: P.botLevel }));
+// Challenge (Training): eigene Spielwelt aus src/sim/challenges.js
+let challengeId = qs.get('challenge') && challengeDef(qs.get('challenge')) ? qs.get('challenge') : null;
+const newGame = () => (challengeId ? new Game(P, seed + '_' + challengeId + '_' + (Date.now() % 1000), { challenge: challengeId })
+  : solo ? new Game(P, seed) : new Game(P, seed, { match: true, human: 1, botLevel: P.botLevel }));
 let game = newGame();
 const gcam = new GameCamera(innerWidth / innerHeight, game.cage);
 const input = new Input(hud);
@@ -75,7 +80,43 @@ let mode = 'load';
 function setMode(m) {
   mode = m;
   document.body.dataset.mode = m;
-  hud.show(m === 'menu' ? hud.start : m === 'pause' ? hud.menu : m === 'credits' ? hud.credits : null);
+  const card = { menu: hud.start, pause: hud.menu, credits: hud.credits, train: hud.train, hint: hud.hint, result: hud.result, help: hud.help }[m];
+  hud.show(card || null);
+  if (m === 'pause') lastShotLine();
+}
+// Bestwerte der Challenges (localStorage bk_ch_<id> = {best, stars})
+const records = {};
+for (const c of CHALLENGES) { try { records[c.id] = JSON.parse(localStorage.getItem('bk_ch_' + c.id) || '{}'); } catch (_) { records[c.id] = {}; } }
+const fmtScore = (def, v) => (v == null ? '–' : def.unit === 's' ? `${Number(v).toFixed(1).replace('.', ',')} s` : `${v} ${def.unit}`);
+let slowmoOn = !!P.zeitlupe && localStorage.getItem('bk_zeitlupe') !== '0';
+const slowBtn = hud.menu.querySelector('[data-act="slowmo"]');
+const slowLabel = () => { slowBtn.textContent = 'Zeitlupe: ' + (slowmoOn ? 'an' : 'aus'); };
+slowLabel();
+let helpBack = 'menu', helpThen = null;
+// Steuerungskarte beim ersten Start (danach über ☰ / Startbildschirm)
+function withHelp(then) {
+  if (localStorage.getItem('bk_hilfe') === '1' || qs.has('play') || qs.has('nohelp')) { then(); return; }
+  helpThen = then; helpBack = mode; setMode('help');
+}
+function startChallenge(id) {
+  challengeId = id; setSolo(false);
+  document.body.classList.add('challenge');
+  game = newGame(); resetPrev(); challengeDone = false;
+  if (props) props.dispose();
+  props = new TrainingProps(scene);
+  setMode('play');
+}
+function leaveChallenge() {
+  if (!challengeId) return;
+  challengeId = null; document.body.classList.remove('challenge');
+  if (props) { props.dispose(); props = null; }
+}
+function lastShotLine() {
+  const k = me() && me().lastKick;
+  const el = hud.menu.querySelector('.lastshot');
+  if (!k || k.kind === 'pass') { el.textContent = ''; return; }
+  const q = k.q != null ? ` · Lage q ${k.q.toFixed(2).replace('.', ',')} (${k.q > 0.75 ? 'gut' : k.q > 0.45 ? 'mittel' : 'schlecht'})` : '';
+  el.textContent = `Letzter Schuss: ${techName(k.tech)} · ${Math.round(k.speed * 3.6)} km/h${q}${k.timing != null ? ` · Timing ${Math.round(k.timing * 100)} %` : ''}`;
 }
 let creditsBack = 'menu';
 const soundBtn = hud.menu.querySelector('[data-act="sound"]');
@@ -86,18 +127,26 @@ hud.root.addEventListener('click', (e) => {
   if (!b) return;
   const a = b.dataset.act;
   sound.unlock();
-  if (a === 'play') { setSolo(urlSolo); startPlay(true); }
-  if (a === 'training') { setSolo(true); startPlay(true); }
+  if (a === 'play') { leaveChallenge(); setSolo(urlSolo); withHelp(() => startPlay(true)); }
+  if (a === 'training' || a === 'free') { leaveChallenge(); setSolo(true); withHelp(() => startPlay(true)); }
+  if (a === 'trainmenu') { hud.buildTraining(CHALLENGES, records, fmtScore); setMode('train'); }
+  if (a === 'challenge') { pendingCh = b.dataset.id; hud.showHint(challengeDef(pendingCh), records[pendingCh], fmtScore); setMode('hint'); }
+  if (a === 'chgo') { const id = pendingCh; withHelp(() => startChallenge(id)); }
+  if (a === 'chagain') startChallenge(challengeId || pendingCh);
+  if (a === 'help') { helpBack = mode; helpThen = null; setMode('help'); }
+  if (a === 'helpok') { localStorage.setItem('bk_hilfe', '1'); if (helpThen) { const f = helpThen; helpThen = null; f(); } else setMode(helpBack); }
+  if (a === 'slowmo') { slowmoOn = !slowmoOn; localStorage.setItem('bk_zeitlupe', slowmoOn ? '1' : '0'); slowLabel(); }
   if (a === 'resume') setMode('play');
   if (a === 'credits') { creditsBack = mode; setMode('credits'); }
   if (a === 'back') setMode(creditsBack);
-  if (a === 'title') setMode('menu');
-  if (a === 'newgame') startPlay(true);
+  if (a === 'title') { leaveChallenge(); setMode('menu'); }
+  if (a === 'newgame') { if (challengeId) startChallenge(challengeId); else startPlay(true); }
   if (a === 'sound') { sound.toggle(); localStorage.setItem('bk_ton', sound.on ? '1' : '0'); soundLabel(); }
   if (a === 'kickoff') { game.kickoff(); setMode('play'); }
   if (a === 'fetch') { const pl = me(); game.ball.place(pl.x + Math.cos(pl.face) * 0.6, game.ball.r, pl.z + Math.sin(pl.face) * 0.6); game.state = 'play'; setMode('play'); }
 });
-hud.menuBtn.addEventListener('click', () => setMode(mode === 'play' ? 'pause' : 'play'));
+let pendingCh = null, challengeDone = false, props = null, markers = null;
+hud.menuBtn.addEventListener('click', () => setMode(mode === 'play' ? 'pause' : mode === 'pause' ? 'play' : mode));
 addEventListener('keydown', (e) => { if (e.code === 'Escape') setMode(mode === 'play' ? 'pause' : mode === 'pause' ? 'play' : mode); });
 function setSolo(s) {
   if (s === solo) return;
@@ -118,7 +167,7 @@ const me = () => game.players[Math.max(0, game.human)];
 }
 
 // ---------------- Szene aufbauen ----------------
-let field, ballMesh, blob, gran, marker, figs = [], capsule = null;
+let field, ballMesh, blob, gran, marker, figs = [], capsule = null, figSlot = null;
 async function boot() {
   const texLoader = new THREE.TextureLoader();
   const tl = (u) => texLoader.loadAsync(u);
@@ -155,12 +204,14 @@ async function boot() {
   G.avatars = !!A;
   gran = new Granulate();
   scene.add(gran.points);
+  markers = new AimMarkers(scene);
   await sound.init().catch((e) => window.__errors.push('Ton: ' + e.message));
   resize();
   input.resetStick();
   loadMsg.remove();
   setMode(qs.has('play') ? 'play' : 'menu');
-  if (qs.has('play')) startPlay(true);
+  if (challengeId) startChallenge(challengeId);
+  else if (qs.has('play')) startPlay(true);
   G.ready = true;
 }
 
@@ -168,6 +219,8 @@ async function boot() {
 let acc = 0, last = performance.now() / 1000;
 const prev = { bx: 0, by: 0, bz: 0, px: new Float64Array(8), pz: new Float64Array(8) };
 function resetPrev() { const b = game.ball; prev.bx = b.p.x; prev.by = b.p.y; prev.bz = b.p.z; game.players.forEach((p, i) => { prev.px[i] = p.x; prev.pz[i] = p.z; }); }
+const edgeQ = [], btnLvl = { pass: false, shot: false };
+let lastFrameT = performance.now() / 1000;
 let testInput = null, testUntil = 0, frozen = false, heldPrev = false, passPrev = false, lastContact = [0, 0], chargeHold = 0, pressSeq = null;
 const gl = renderer.getContext();
 const gpuExt = qs.has('gpu') ? gl.getExtension('EXT_disjoint_timer_query_webgl2') : null;
@@ -190,7 +243,7 @@ function keeperMode() {
   if (!game.match || game.human < 0) return '';
   const pl = me(), R = game.rules;
   if (game.ball.held === pl.id) return 'hold';
-  if (R.keeper[pl.team] === pl.id && R.inBox(pl.team, pl.x, pl.z)) return 'box';
+  if (R.keeper[pl.team] === pl.id && R.inBox(pl.team, pl.x, pl.z) && R.handsOffTeam !== pl.team) return 'box';
   return '';
 }
 
@@ -242,6 +295,10 @@ function handleEvents(ev) {
       gran.emit(e.x, e.z, game.ball.v.x, game.ball.v.z, Math.min(0.5, e.speed / 20), rnd);
     } else if ((e.type === 'board' || e.type === 'post') && e.speed > 11) {
       gcam.shake = Math.min(1, e.speed / 25);
+    } else if (e.type === 'airstart' && slowmoOn && (e.tech === 'fallrueck' || e.tech === 'seitfall' || e.tech === 'flugkopf') && e.player === game.human) {
+      slow.t = 0; slow.on = true; // Spektakel: kurze Zeitlupe + Zoom (abschaltbar, Steuerung bleibt)
+    } else if (e.type === 'goal' && e.challenge) {
+      // Challenge meldet selbst (Treffer/gehalten)
     } else if (e.type === 'goal') {
       if (R) {
         const mine = e.team === me().team;
@@ -279,6 +336,56 @@ function chargeView(pl, raw) {
   return { kind: 'shot', p, sym, color, label, q: pv.q };
 }
 
+// Zeitlupe bei Fallrück-/Seitfallzieher/Flugkopfball: 0,9 s echte Zeit, Tempo bis 40 %, sanfte Hüllkurve
+const slow = { on: false, t: 0, dur: 0.9 };
+function slowScale(dt) {
+  if (!slow.on) return 1;
+  slow.t += dt;
+  if (slow.t >= slow.dur) { slow.on = false; gcam.zoom = 0; return 1; }
+  const k = Math.sin(Math.PI * slow.t / slow.dur) ** 2;
+  gcam.zoom = k;
+  return 1 - 0.6 * k;
+}
+// Challenge: Status oben, Meldungen, Ende → Ergebnis mit Sternen und Bestwert
+let lastChMsg = '';
+function challengeFrame() {
+  const C = game.challenge;
+  if (!C) return;
+  hud.setStatus(C.status().replace(' · ', '<small>') + '</small>');
+  if (C.msgT > 0 && C.msg && C.msg !== lastChMsg) { hud.flash(C.msg, '', 1.4); }
+  lastChMsg = C.msgT > 0 ? C.msg : '';
+  if (props) props.update(C, 1 / 60, game.t);
+  if (C.done && !challengeDone && mode === 'play') {
+    challengeDone = true;
+    const def = challengeDef(C.id), res = C.result(), rec = records[C.id] || {};
+    const better = res.score != null && (rec.best == null || (def.better === 'lo' ? res.score < rec.best : res.score > rec.best));
+    if (better) rec.best = res.score;
+    rec.stars = Math.max(rec.stars || 0, res.stars);
+    records[C.id] = rec;
+    try { localStorage.setItem('bk_ch_' + C.id, JSON.stringify(rec)); } catch (_) { /* privat */ }
+    hud.showResult(def, res, rec, better, fmtScore);
+    G.lastResult = res;
+    setTimeout(() => setMode('result'), 900);
+  }
+}
+// Anzeigehilfen beim Aufladen: Pass → Empfänger + Treffpunkt im Laufweg, Schuss → Zielpunkt im Tor mit Streuung
+function aimFrame(pl, raw, km) {
+  if (!markers) return;
+  if (mode !== 'play' || km || game.human < 0 || P.treffpunkt || !(pl.charging || pl.armed)) { markers.hide(); return; }
+  const w = worldInput(raw), st = Math.hypot(w.mx, w.mz) > 0.12 ? [w.mx, w.mz] : null;
+  const kind = pl.charging ? pl.chargeKind : pl.armed;
+  const md = pl.charging ? pl.chargeMode : 'std';
+  if (kind === 'pass') {
+    const pp = planPass(game, pl, { mode: md, power: null, stick: st });
+    const recv = pp.to >= 0 ? [game.players[pp.to].x, game.players[pp.to].z] : pp.to < -1 ? pp.meet : null;
+    markers.show({ pass: { recv, meet: pp.meet, bank: pp.bank ? pp.target : null, color: md === 'var' ? 0x7dff6a : 0xffffff } });
+  } else {
+    const p = Math.min(1, pl.charge / P.chargeT);
+    const pv = previewShot(game, pl, md, st, p);
+    markers.show({ shot: { aim: pv.aim, sigma: 0.12 + pv.dist * Math.tan(pv.noiseDeg * Math.PI / 180), color: (MODE_LOOK[pv.tech] || MODE_LOOK.vollspann)[1] } });
+  }
+}
+
 function frame() {
   requestAnimationFrame(frame);
   const t0 = performance.now();
@@ -290,13 +397,14 @@ function frame() {
   let raw = input.sample(now);
   if (testInput && game.t < testUntil) raw = { ...raw, ...testInput };
   else if (testInput) { testInput = null; }
-  // Tests mit alten Feldern: pass = Tipp, shootHeld = halten → Knopf-Pegel
+  // Tests mit alten Feldern: pass = Tipp, shootHeld = halten → Knopf-Pegel (Spielzeit)
+  raw.testPass = !!raw.pass || (testInput && !!testInput.passDown); raw.testShot = !!raw.shootHeld || (testInput && !!testInput.shotDown);
   if (raw.pass) raw.passDown = true;
   if (raw.shootHeld) raw.shotDown = true;
   // Tests: Gesten-Folge (__game.press) in Spielzeit, z. B. Tipp + halten
   if (pressSeq) {
     const tt = game.t - pressSeq.t0;
-    for (const [a, b, btn] of pressSeq.seq) if (tt >= a && tt < b) raw[btn === 'pass' ? 'passDown' : 'shotDown'] = true;
+    for (const [a, b, btn] of pressSeq.seq) if (tt >= a && tt < b) { raw[btn === 'pass' ? 'passDown' : 'shotDown'] = true; raw[btn === 'pass' ? 'testPass' : 'testShot'] = true; }
     if (pressSeq.stick && tt < pressSeq.stickT) { raw.wx = pressSeq.stick[0]; raw.wz = pressSeq.stick[1]; }
     if (tt > Math.max(...pressSeq.seq.map((x) => x[1])) + 0.5) pressSeq = null;
   }
@@ -309,20 +417,36 @@ function frame() {
   const b = game.ball;
   const tS = performance.now();
   if (mode === 'play' && !frozen) {
-    acc += dt;
+    acc += dt * slowScale(dt);
     let first = true, steps = 0;
+    // Knopf-Flanken mit echtem Zeitstempel auf die Takte dieses Bildes verteilen (Tipp-Dauer unabhängig von der
+    // Bildrate); Test-Eingaben (Spielzeit) kommen als Pegel dazu
+    edgeQ.push(...raw.edges); edgeQ.sort((a, b) => a.t - b.t);
+    const nowR = performance.now() / 1000; // Ereignis-Zeitbasis (rAF-Zeit liegt vor den Handlern dieses Bildes)
+    const nSteps = Math.min(24, Math.floor(acc / DT)), testPass = !!raw.testPass, testShot = !!raw.testShot;
     while (acc >= DT && steps < 24) {
       resetPrev();
-      const wi = worldInput(raw);
+      const tStep = lastFrameT + (steps + 1) / Math.max(1, nSteps) * (nowR - lastFrameT);
+      const pulse = { pass: false, shot: false };
+      while (edgeQ.length && edgeQ[0].t <= tStep) {
+        const e = edgeQ[0];
+        if (!e.down && pulse[e.btn]) break; // Druck + Loslassen im selben Takt: mindestens einen Takt gedrückt
+        if (e.down) pulse[e.btn] = true;
+        btnLvl[e.btn] = e.down; edgeQ.shift();
+      }
+      raw.passDown = btnLvl.pass || testPass; raw.shotDown = btnLvl.shot || testShot;
+      const wi = G.scriptFn ? G.scriptFn(game, game.challenge) : worldInput(raw); // Tests: Skript-Spieler (Challenges)
       if (!first) { wi.switch = false; wi.throw = false; wi.punt = false; wi.dive = false; }
       const ins = [];
       ins[Math.max(0, game.human)] = wi;
       handleEvents(game.step(ins));
       first = false;
       acc -= DT; steps++;
+      if (G.freezeFn && G.freezeFn(game)) { frozen = true; G.freezeFn = null; acc = 0; break; } // Tests: im richtigen Takt anhalten
     }
     if (steps >= 24) acc = 0;
-  } else { resetPrev(); acc = 0; }
+  } else { resetPrev(); acc = 0; edgeQ.length = 0; btnLvl.pass = input.lvl.pass; btnLvl.shot = input.lvl.shot; }
+  lastFrameT = performance.now() / 1000;
   perf.sim.push(performance.now() - tS); if (perf.sim.length > 240) perf.sim.shift();
   if (!raw.shotDown && !raw.shotRelease) chargeHold = 0;
   autoQuality(dt);
@@ -345,7 +469,9 @@ function frame() {
   hud.setKeeperMode(km);
   hud.setCharge(km === 'hold' ? (raw.shotDown ? { kind: 'shot', p: Math.min(1, chargeHold / 0.7), sym: '🦶', color: '#d9ff3a', label: 'Abschlag' } : null) : chargeView(pl, raw), touchUI);
   if (touchUI && P.treffpunkt) hud.setContact(raw.shotDown ? raw.cx : 0, raw.shotDown ? raw.cy : 0);
-  if (game.match) {
+  challengeFrame();
+  aimFrame(pl, raw, km);
+  if (game.match && !game.challenge) {
     const R = game.rules;
     const rest = R.half === 1 ? R.halfLen - R.clock : 2 * R.halfLen - R.clock;
     hud.setMatch(game.score, rest, R.half, R.golden, R.phase === 'end');
@@ -373,14 +499,18 @@ const avg = (a) => (a.length ? a.reduce((s, x) => s + x, 0) / a.length : 0);
 function drawPlayers(dt, a) {
   const R = game.match ? game.rules : null, b = game.ball;
   const n = game.players.length;
+  // Figur je Spieler: Mannschaft × Platz (Challenges haben weniger Spieler, Farbe muss passen)
+  const slot = figSlot || (figSlot = []), cnt = [0, 0];
+  slot.length = 0;
+  for (const p of game.players) slot[p.team * 3 + cnt[p.team]++] = p;
   for (let i = 0; i < figs.length; i++) {
-    const f = figs[i], pl = game.players[i];
+    const f = figs[i], pl = slot[i];
     const vis = !!pl;
     if (f.capsule) { f.capsule.group.visible = vis; } else f.root.visible = vis;
     if (!vis) continue;
-    const x = prev.px[i] + (pl.x - prev.px[i]) * a, z = prev.pz[i] + (pl.z - prev.pz[i]) * a;
+    const x = prev.px[pl.id] + (pl.x - prev.px[pl.id]) * a, z = prev.pz[pl.id] + (pl.z - prev.pz[pl.id]) * a;
     if (f.capsule) { posePlayer(f.capsule, pl, x, z); continue; }
-    const keeper = R ? R.keeper[pl.team] === pl.id && R.phase !== 'end' : false;
+    const keeper = R ? R.keeper[pl.team] === pl.id && R.phase !== 'end' && R.handsOffTeam !== pl.team : false;
     let special = null;
     if (R) {
       if (R.phase === 'goal' && pl.speed < 0.8) special = R.scoredTeam === pl.team ? (game.lastTouch === pl.id ? 'cheer' : 'clap') : 'wait';
@@ -389,7 +519,7 @@ function drawPlayers(dt, a) {
     }
     const ownGoalX = R ? R.goalX(pl.team) : -99;
     const ready = keeper && b.held < 0 && Math.hypot(b.p.x - ownGoalX, b.p.z) < 9 && pl.speed < 2.5 && pl.hand.mode === 'none';
-    f.update(dt, pl, { x, z, keeper, holding: b.held === pl.id, ready, special });
+    f.update(dt, pl, { x, z, keeper, holding: b.held === pl.id, ready, special, t: game.t });
   }
   void n;
   const pl = me();
@@ -447,6 +577,13 @@ Object.assign(G, {
       avatarMs: avg(perf.av), renderMs: avg(perf.rd), simMs: avg(perf.sim) };
   },
   perfReset() { perf.ft.length = 0; perf.raf.length = 0; gpuMs.length = 0; perf.av.length = 0; perf.rd.length = 0; perf.sim.length = 0; },
+  // Challenge starten / Skript-Spieler aus tests/node/scripts.mjs einhängen (nur Tests und Fotos)
+  challenge(id) { startChallenge(id); },
+  async autoplay(on = true, opts = {}) {
+    if (!on) { G.scriptFn = null; return; }
+    const m = await import('../tests/node/scripts.mjs');
+    G.scriptFn = m.makeScript(challengeId, opts);
+  },
   // Gesten-Folge für Tests: [[t0, t1, 'pass'|'shot'], …] in Spielzeit ab jetzt; stick = [x, z] (Welt) für stickT s
   press(seq, stick = null, stickT = 0.4) { pressSeq = { t0: game.t, seq, stick, stickT }; },
   // Eingabe für Tests: {sx, sy, sprint, pass, shootHeld, cx, cy, wx, wz, switch} für `sec` Sekunden (Spielzeit)
@@ -463,6 +600,7 @@ Object.assign(G, {
   human(i) { game.setHuman(i); },
   bots(on) { if (game.match) game.bots = on ? (game._bots || game.bots) : ((game._bots = game.bots), null); },
   freeze(f = true) { frozen = f; },
+  freezeWhen(src) { G.freezeFn = new Function('g', 'return (' + src + ')'); },
   cam(pos, look) { gcam.override = pos ? { pos, look } : null; },
   // Simulation synchron vorspulen (ohne Grafik), z. B. für Schuss-Tests; o = Eingabe des Menschen
   sim(sec, o = null) {

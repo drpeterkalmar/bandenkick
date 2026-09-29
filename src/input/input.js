@@ -8,6 +8,9 @@ export class Input {
     this.ui = ui;
     this.touch = { sx: 0, sy: 0, sprint: false, shoot: false, pass: false, cx: 0, cy: 0, stickId: null, shotId: null, passId: null, sprintId: null, ox: 0, oy: 0 };
     this.latch = { pass: false, shot: false };
+    // Knopf-Flanken mit echtem Zeitstempel (s): main.js verteilt sie auf die Spieltakte des Bildes, damit ein
+    // 60-ms-Tipp auch bei langsamen Bildern 60 ms dauert (Gesten-Grenzen tipp/halten)
+    this.edges = []; this.lvl = { pass: false, shot: false };
     this.keys = new Set();
     this.mouse = { x: 0, y: 0, moved: -99, l: false, r: false, lDown: 0 };
     this.switchQueued = false;
@@ -63,14 +66,14 @@ export class Input {
       if (l < 0.22) { cx = 0; cy = 0; } else if (l > 1) { cx /= l; cy /= l; }
       t.cx = cx; t.cy = cy;
     };
-    shot.addEventListener('pointerdown', (e) => { e.preventDefault(); t.shotId = e.pointerId; t.shoot = true; this.latch.shot = true; contact(e); cap(shot, e); shot.classList.add('down'); this.lastTouch = this.now; document.body.classList.add('touch'); });
+    shot.addEventListener('pointerdown', (e) => { e.preventDefault(); t.shotId = e.pointerId; t.shoot = true; this.latch.shot = true; contact(e); cap(shot, e); shot.classList.add('down'); this.lastTouch = this.now; document.body.classList.add('touch'); this.note(e); });
     shot.addEventListener('pointermove', (e) => { if (e.pointerId === t.shotId) contact(e); });
-    const endShot = (e) => { if (e.pointerId !== t.shotId) return; t.shotId = null; t.shoot = false; shot.classList.remove('down'); };
+    const endShot = (e) => { if (e.pointerId !== t.shotId) return; t.shotId = null; t.shoot = false; shot.classList.remove('down'); this.note(e); };
     shot.addEventListener('pointerup', endShot); shot.addEventListener('pointercancel', endShot);
 
     const pass = ui.bPass;
-    pass.addEventListener('pointerdown', (e) => { e.preventDefault(); t.passId = e.pointerId; t.pass = true; this.latch.pass = true; cap(pass, e); pass.classList.add('down'); this.lastTouch = this.now; document.body.classList.add('touch'); });
-    const endPass = (e) => { if (e.pointerId !== t.passId) return; t.passId = null; t.pass = false; pass.classList.remove('down'); };
+    pass.addEventListener('pointerdown', (e) => { e.preventDefault(); t.passId = e.pointerId; t.pass = true; this.latch.pass = true; cap(pass, e); pass.classList.add('down'); this.lastTouch = this.now; document.body.classList.add('touch'); this.note(e); });
+    const endPass = (e) => { if (e.pointerId !== t.passId) return; t.passId = null; t.pass = false; pass.classList.remove('down'); this.note(e); };
     pass.addEventListener('pointerup', endPass); pass.addEventListener('pointercancel', endPass);
     const sw = ui.bSwitch;
     if (sw) sw.addEventListener('pointerdown', (e) => { e.preventDefault(); this.switchQueued = true; sw.classList.add('down'); setTimeout(() => sw.classList.remove('down'), 140); });
@@ -87,9 +90,10 @@ export class Input {
       if (e.code === 'Space' || e.code === 'KeyK') this.latch.shot = true;
       if (e.code === 'KeyC' || e.code === 'Tab') this.switchQueued = true;
       if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.code)) e.preventDefault();
+      this.note(e);
     });
-    addEventListener('keyup', (e) => this.keys.delete(e.code));
-    addEventListener('blur', () => { this.keys.clear(); this.mouse.l = this.mouse.r = false; });
+    addEventListener('keyup', (e) => { this.keys.delete(e.code); this.note(e); });
+    addEventListener('blur', () => { this.keys.clear(); this.mouse.l = this.mouse.r = false; this.note(); });
     // Maus: zielen (Bodenpunkt unter dem Zeiger), links tippen = Pass, rechts halten = Schuss
     const cv = ui.canvas;
     cv.addEventListener('pointermove', (e) => { if (e.pointerType === 'mouse') { this.mouse.x = e.clientX; this.mouse.y = e.clientY; this.mouse.moved = this.now; } });
@@ -97,10 +101,21 @@ export class Input {
       if (e.pointerType !== 'mouse') return;
       if (e.button === 0) { this.mouse.l = true; this.latch.pass = true; }
       if (e.button === 2) { this.mouse.r = true; this.latch.shot = true; }
-      this.mouse.moved = this.now;
+      this.mouse.moved = this.now; this.note(e);
     });
-    addEventListener('pointerup', (e) => { if (e.pointerType !== 'mouse') return; if (e.button === 2) this.mouse.r = false; if (e.button === 0) this.mouse.l = false; });
+    addEventListener('pointerup', (e) => { if (e.pointerType !== 'mouse') return; if (e.button === 2) this.mouse.r = false; if (e.button === 0) this.mouse.l = false; this.note(e); });
     cv.addEventListener('contextmenu', (e) => e.preventDefault());
+  }
+
+  // Pegel aus Touch/Tastatur/Maus (Gamepad wird je Bild abgefragt) → Flanke mit Zeitstempel festhalten
+  levels() {
+    const t = this.touch, k = this.keys;
+    return { pass: t.pass || k.has('KeyJ') || k.has('Enter') || this.mouse.l || !!this.padPass, shot: t.shoot || k.has('Space') || k.has('KeyK') || this.mouse.r || !!this.padShot };
+  }
+  note(e) {
+    const tSec = (e && e.timeStamp > 0 ? e.timeStamp : performance.now()) / 1000;
+    const L = this.levels();
+    for (const b of ['pass', 'shot']) if (L[b] !== this.lvl[b]) { this.lvl[b] = L[b]; this.edges.push({ btn: b, down: L[b], t: tSec }); }
   }
 
   // Liest alles zusammen; now in s
@@ -125,12 +140,14 @@ export class Input {
     let swi = this.switchQueued; this.switchQueued = false;
     // Gamepad
     const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+    this.padPass = false; this.padShot = false;
     for (const p of pads) {
       if (!p || !p.connected) continue;
       const ax = p.axes[0] || 0, ay = p.axes[1] || 0;
       if (Math.hypot(ax, ay) > 0.18) { sx = ax; sy = -ay; }
       const b = (i) => p.buttons[i] && p.buttons[i].pressed;
       if (b(0)) passDown = true;
+      this.padPass ||= b(0); this.padShot ||= b(2) || b(7);
       if (b(3) && !this.padY) swi = true;
       this.padY = b(3);
       if (b(2) || b(7)) shoot = true;
@@ -145,6 +162,8 @@ export class Input {
     if (shoot) this.lastC = [cx, cy];
     else if (release && this.lastC) { [cx, cy] = this.lastC; }
     const mouseAim = now - this.mouse.moved < 2.5 && !document.body.classList.contains('touch');
-    return { sx, sy, sprint, passDown, shotDown: shoot, shootRelease: release, cx, cy, mouseAim, switch: swi };
+    this.note(); // Gamepad-Flanken zur Bildzeit
+    const edges = this.edges; this.edges = [];
+    return { sx, sy, sprint, passDown, shotDown: shoot, shootRelease: release, cx, cy, mouseAim, switch: swi, edges };
   }
 }

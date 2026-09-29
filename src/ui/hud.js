@@ -41,7 +41,7 @@ export function buildHud(root, canvas) {
       Ball fliegt nach Windkanal-Messungen, Kunstrasen nach FIFA-Prüfnorm.</p>
       <ul class="howto"></ul>
     </div>
-    <div class="row"><button class="btn" data-act="play">Spielen</button><button class="btn sec" data-act="training">Training (allein)</button><button class="btn sec" data-act="credits">Credits</button></div>
+    <div class="row"><button class="btn" data-act="play">Spielen</button><button class="btn sec" data-act="trainmenu">Training</button><button class="btn sec" data-act="help">Steuerung</button><button class="btn sec" data-act="credits">Credits</button></div>
     <div class="small" style="margin-top:10px">Version ${BUILD}</div>
   </div>`;
   const menu = h('div', 'overlay');
@@ -49,10 +49,11 @@ export function buildHud(root, canvas) {
     <h2>Pause</h2>
     <div class="row">
       <button class="btn" data-act="resume">Weiter</button>
-      <button class="btn sec" data-act="newgame">Neues Spiel</button>
-      <button class="btn sec" data-act="sound">Ton: an</button>
+      <button class="btn sec" data-act="newgame">Neu starten</button>
+      <button class="btn sec" data-act="help">Steuerung</button>
     </div>
-    <ul class="howto"></ul>
+    <div class="row"><button class="btn sec" data-act="sound">Ton: an</button><button class="btn sec" data-act="slowmo">Zeitlupe: an</button><button class="btn sec" data-act="trainmenu">Training</button></div>
+    <p class="small lastshot"></p>
     <p class="small physics"></p>
     <div class="row"><button class="btn sec" data-act="credits">Credits</button><button class="btn sec" data-act="title">Startbildschirm</button></div>
   </div>`;
@@ -73,30 +74,78 @@ export function buildHud(root, canvas) {
     <p class="small">Ball, Käfig, Figur, Linien, Netze, Physik und Code: eigene Arbeit. Keine Vereins- oder Markenlogos.</p>
     <div class="row"><button class="btn" data-act="back">Zurück</button></div>
   </div>`;
-  root.append(top, banner, charge, hold, touch, dbg, start, menu, credits);
+  // Training: Challenges je Gruppe, Hinweis vor dem Start, Ergebnis mit Sternen, Steuerungskarte
+  const train = h('div', 'overlay');
+  train.innerHTML = `<div class="card wide">
+    <h2>Training</h2>
+    <div class="cols2"><div><h3>Schütze</h3><div class="chlist" data-group="schuetze"></div></div>
+    <div><h3>Torwart</h3><div class="chlist" data-group="torwart"></div></div></div>
+    <div class="row"><button class="btn sec" data-act="free">Freies Training</button><button class="btn sec" data-act="title">Zurück</button></div>
+  </div>`;
+  const hint = h('div', 'overlay');
+  hint.innerHTML = `<div class="card"><h2 class="ht"></h2><p class="hx"></p><p class="small hb"></p>
+    <div class="row"><button class="btn" data-act="chgo">Los</button><button class="btn sec" data-act="trainmenu">Zurück</button></div></div>`;
+  const result = h('div', 'overlay');
+  result.innerHTML = `<div class="card"><h2 class="rt"></h2><div class="stars big"></div><p class="rs"></p><p class="small rb"></p>
+    <div class="row"><button class="btn" data-act="chagain">Nochmal</button><button class="btn sec" data-act="trainmenu">Andere Challenge</button><button class="btn sec" data-act="title">Menü</button></div></div>`;
+  const help = h('div', 'overlay');
+  help.innerHTML = `<div class="card wide"><h2>Steuerung</h2>
+    <table class="gest"><tr><th></th><th>Pass</th><th>Schuss</th></tr>
+    <tr><td><b>tippen</b></td><td>flacher Pass, Stärke automatisch</td><td>kurzer Schuss</td></tr>
+    <tr><td><b>halten</b></td><td>flach, Stärke = Haltedauer →</td><td>Vollspann ⚡ (Flatterball)</td></tr>
+    <tr><td><b>tipp + sofort halten</b></td><td>hoch (Chip) ⌒</td><td>angeschnitten ↪ Innen- / ↩ Außenrist</td></tr>
+    <tr><td><b>Ball in der Luft</b></td><td></td><td>Schuss drücken: Kopfball, Volley, Seitfall-, Fallrückzieher – Timing zählt</td></tr></table>
+    <ul class="howto"></ul>
+    <p class="small">Der Pass geht zum Mitspieler, auf den der Stick zeigt (±35°), in seinen Laufweg – zeigst du auf die Bande, geht er über die Bande.
+    Der Schuss geht immer aufs Tor: Stick seitlich = flache Ecke, schräg nach vorn = hohe Ecke. Schlechte Lage (spitzer Winkel, Rücken zum Tor, Gegner dran) = langsamer und zentraler.</p>
+    <div class="row"><button class="btn" data-act="helpok">Verstanden</button></div></div>`;
+  root.append(top, banner, charge, hold, touch, dbg, start, menu, credits, train, hint, result, help);
 
   const howto = (touchUI) => touchUI
     ? `<li><b>Stick links:</b> laufen · ganz außen oder Knopf = Sprint · <b>⇄</b> Spieler wechseln (sonst automatisch)</li>
-       <li><b>Pass:</b> tippen · <b>Schuss:</b> halten = aufladen, loslassen · Treffpunkt: Finger auf dem Knopf schieben</li>
+       <li><b>Pass/Schuss:</b> halten = flach/Vollspann, <b>tipp + halten</b> = hoch/angeschnitten (Ring zeigt Modus und Stärke)</li>
        <li><b>Als letzte Hand im Torraum:</b> Schuss-Knopf = <b>Fangen</b> (halten), Pass-Knopf = <b>Hechten</b>; mit Ball: <b>Abwurf</b> / <b>Abschlag</b></li>`
     : `<li><b>WASD / Pfeile:</b> laufen, <b>Shift:</b> Sprint, <b>C / Tab:</b> Spieler wechseln</li>
-       <li><b>Maus zielt</b> · <b>Linksklick / J:</b> Pass · <b>Leertaste / Rechtsklick halten:</b> Schuss (Q/E Effet, R Heber)</li>
+       <li><b>J / Enter / Linksklick:</b> Pass · <b>Leertaste / K / Rechtsklick:</b> Schuss – halten = flach/Vollspann, <b>tipp + halten</b> = hoch/angeschnitten; Maus zielt</li>
        <li><b>Letzte Hand im Torraum:</b> Leertaste = Fangen, J = Hechten; mit Ball J = Abwurf, Leertaste = Abschlag</li>
        <li><b>Gamepad:</b> Stick laufen, A Pass/Hechten/Abwurf, X/RT Schuss/Fangen, Y Wechsel, LB/RB Sprint</li>`;
   const setHowto = (touchUI) => root.querySelectorAll('.howto').forEach((u) => { u.innerHTML = howto(touchUI); });
 
-  let bannerT = 0, kickT = 0, lastScore = '', lastKeeper = '', lastCharge = null;
+  let bannerT = 0, kickT = 0, lastScore = '', lastKeeper = '', lastCharge = null, lastStatus = '';
   const clock = (sec) => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, '0')}`;
   return {
     root, score, kick, menuBtn, banner, touch, stickZone, stickBase, stickKnob, bShot, bPass, bSprint, bSwitch, dbg, start, menu, credits, canvas, charge, chargeFill, hold,
+    train, hint, result, help,
     setHowto,
-    show(which) { for (const o of [start, menu, credits]) o.classList.toggle('on', o === which); },
+    show(which) { for (const o of [start, menu, credits, train, hint, result, help]) o.classList.toggle('on', o === which); },
+    // Training-Menü: Liste je Gruppe mit Sternen und Bestwert (records: id → {best, stars})
+    buildTraining(list, records, fmt) {
+      for (const box of train.querySelectorAll('.chlist')) {
+        box.innerHTML = list.filter((c) => c.group === box.dataset.group).map((c) => {
+          const r = records[c.id] || {};
+          const st = '★'.repeat(r.stars || 0) + '☆'.repeat(3 - (r.stars || 0));
+          return `<button class="chbtn" data-act="challenge" data-id="${c.id}"><span class="ci">${c.icon}</span><span class="cn">${c.name}</span><span class="cs">${st}</span><span class="cb">${r.best != null ? 'Best: ' + fmt(c, r.best) : 'neu'}</span></button>`;
+        }).join('');
+      }
+    },
+    showHint(def, rec, fmt) {
+      hint.querySelector('.ht').textContent = `${def.icon} ${def.name}`;
+      hint.querySelector('.hx').textContent = def.hint;
+      hint.querySelector('.hb').textContent = `Sterne ab ${def.stars.map((x) => fmt(def, x)).join(' / ')}${rec && rec.best != null ? ` · dein Bestwert: ${fmt(def, rec.best)}` : ''}`;
+    },
+    showResult(def, res, rec, isBest, fmt) {
+      result.querySelector('.rt').textContent = `${def.icon} ${def.name}`;
+      result.querySelector('.stars').textContent = '★'.repeat(res.stars) + '☆'.repeat(3 - res.stars);
+      result.querySelector('.rs').textContent = res.score == null ? 'Nicht geschafft' : `Ergebnis: ${fmt(def, res.score)}${def.better === 'hi' ? ` von ${def.attempts}` : ''}`;
+      result.querySelector('.rb').textContent = isBest ? 'Neuer Bestwert!' : rec && rec.best != null ? `Bestwert: ${fmt(def, rec.best)} (${'★'.repeat(rec.stars || 0)})` : '';
+    },
+    setStatus(text) { if (text !== lastStatus) { score.innerHTML = text; lastStatus = text; lastScore = ''; } },
     setScore(sc) { score.innerHTML = `Tore ${sc[0] + sc[1]}<small>rechts ${sc[0]} · links ${sc[1]}</small>`; },
     // Spielstand mit Uhr: rest = Restzeit der Halbzeit (s), half 1|2, golden
     setMatch(sc, rest, half, golden, end) {
       const t = end ? 'Abpfiff' : golden ? 'Golden Goal' : `${half}. Halbzeit · ${clock(Math.max(0, rest))}`;
       const html = `<span class="t0">Orange</span> ${sc[0]} : ${sc[1]} <span class="t1">Blau</span><small>${t}</small>`;
-      if (html !== lastScore) { score.innerHTML = html; lastScore = html; }
+      if (html !== lastScore) { score.innerHTML = html; lastScore = html; lastStatus = ''; }
     },
     // Knöpfe als „letzte Hand“ im Torraum umbeschriften: mode '' | 'box' | 'hold'
     setKeeperMode(mode) {
@@ -115,11 +164,14 @@ export function buildHud(root, canvas) {
     flash(text, sub = '', dur = 1.8) { banner.innerHTML = text + (sub ? `<small>${sub}</small>` : ''); banner.classList.add('on'); bannerT = dur; },
     kickInfo(k) {
       const kmh = Math.round(k.speed * 3.6);
-      const parts = [`${k.kind === 'pass' ? 'Pass' : 'Schuss'} ${kmh} km/h`];
+      const names = { vollspann: 'Vollspann', innenrist: 'Innenrist', aussenrist: 'Außenrist', innen: 'Innenseite', aussen: 'Außenrist', ferse: 'Hacke', chip: 'Chip',
+        volley: 'Volley', dropkick: 'Dropkick', seitfall: 'Seitfallzieher', fallrueck: 'Fallrückzieher', kopf: 'Kopfball', flugkopf: 'Flugkopfball' };
+      const parts = [`${names[k.tech] || (k.kind === 'pass' ? 'Pass' : 'Schuss')} ${kmh} km/h`];
       if (k.kind === 'shot') {
         if (Math.abs(k.sideRps) >= 1) parts.push(`Effet ${Math.abs(k.sideRps).toFixed(1).replace('.', ',')} U/s`);
-        else if (k.spinRps < 1) parts.push('Vollspann – flattert');
-        if (k.elevDeg > 14) parts.push(`Heber ${Math.round(k.elevDeg)}°`);
+        else if (k.tech === 'vollspann' && k.spinRps < 1) parts.push('flattert');
+        if (k.q != null) parts.push(`Lage ${k.q > 0.75 ? 'gut' : k.q > 0.45 ? 'mittel' : 'schlecht'}`);
+        if (k.timing != null) parts.push(`Timing ${Math.round(k.timing * 100)} %`);
       }
       kick.textContent = parts.join(' · ');
       kick.classList.add('on'); kickT = 3.5;

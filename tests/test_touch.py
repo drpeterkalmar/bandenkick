@@ -18,10 +18,12 @@ with Server() as srv, sync_playwright() as pw:
     for i, form in enumerate(['hoch', 'quer']):
         if i: s.new_context(form)
         print(form)
-        s.open('?nosw&solo=1&seed=3&q=1')
-        s.tap('[data-act="play"]')
+        s.open('?nosw&solo=1&seed=3&q=1&nohelp&tipp=0.45&doppel=0.6')  # headless: CDP-Touch braucht je Ereignis 50–250 ms, Tipp-Grenzen großzügiger
+        s.tap('[data-act="trainmenu"]'); s.tap('[data-act="free"]')
         s.frames(5)
         cdp = s.ctx.new_cdp_session(s.pg)
+        # Knopf-Flanken mit Ereignis-Zeitstempel mitschreiben (Diagnose bei Rot)
+        s.ev("(() => { const I = __game.inputs, n = I.note.bind(I); window.__edges = []; I.note = (e) => { const b = I.edges.length; n(e); if (I.edges.length > b) __edges.push(I.edges.at(-1)); }; })()")
         W, H = s.ev("[innerWidth, innerHeight]")
         ok(s.ev("document.body.classList.contains('touch')"), 'Touch-Oberfläche aktiv')
         ok(s.small_buttons() == [], f'alle Knöpfe ≥ 48 px und im Bild {s.small_buttons()}')
@@ -58,27 +60,38 @@ with Server() as srv, sync_playwright() as pw:
         except Exception: pass
         lk = s.state()['lastKick']
         ok(lk is not None and lk['kind'] == 'pass', f"Pass ausgelöst ({lk and round(lk['speed'], 1)} m/s)")
-        # 3) Schuss halten 0,7 s mit Finger am rechten Rand des Knopfs → Effet
-        s.ev("__game.placePlayer(-4, 0, 0); __game.placeBall(-3.6, 0.11, 0)")
-        s.frames(3)
-        box = s.pg.locator('#bShot').bounding_box()
-        cx, cy = box['x'] + box['width'] / 2, box['y'] + box['height'] / 2
-        touch(cdp, 'touchStart', [(2, (cx, cy))])
-        touch(cdp, 'touchMove', [(2, (cx + box['width'] * 0.42, cy))])
-        t0 = s.ev("__game.game.t")
-        s.pg.wait_for_function(f"__game.game.t >= {t0 + 0.7}")
-        charging = s.state()['player']['charging']
-        dot = s.ev("getComputedStyle(document.querySelector('#bShot .dot')).left")
-        touch(cdp, 'touchEnd', [])
-        held = s.ev("__game.game.t") - t0
-        s.wait_sim(0.3)
-        s.shot(f'touch_{form}_schuss', 'dev')
-        lk = s.state()['lastKick']
-        ok(charging, 'Schuss lädt auf, solange der Finger liegt')
-        exp = min(1, (held + 0.02) / 1.0)
-        # Ladung ≈ Haltedauer (± ein Bild headless, bis 0,1 s Spielzeit je Bild)
-        ok(lk is not None and lk['kind'] == 'shot' and abs(lk['power'] - min(1, held)) < 0.2, f"Schuss ausgelöst: {lk and round(lk['speed'], 1)} m/s, Ladung {lk and round(lk['power'], 2)} nach {held:.2f} s gehalten")
-        ok(lk is not None and abs(lk['sideRps']) > 4, f"Treffpunkt seitlich → Effet ({lk and round(lk['sideRps'], 1)} U/s), Punkt bei {dot}")
+        # 3) Gesten mit echten Touch-Ereignissen: halten und tipp + sofort halten auf beiden Knöpfen
+        def gesture(sel, pid, hold, second=True):
+            box = s.pg.locator(sel).bounding_box()
+            cx, cy = box['x'] + box['width'] / 2, box['y'] + box['height'] / 2
+            touch(cdp, 'touchStart', [(pid, (cx, cy))])
+            if second:
+                time.sleep(0.06); touch(cdp, 'touchEnd', []); time.sleep(0.08)
+                touch(cdp, 'touchStart', [(pid, (cx, cy))])
+            t0 = s.ev("__game.game.t")
+            s.pg.wait_for_function(f"__game.game.t >= {t0 + hold}")
+            sym = s.ev(f"document.querySelector('{sel} .sym').textContent")
+            cls = s.ev(f"document.querySelector('{sel}').className")
+            touch(cdp, 'touchEnd', [])
+            return sym, cls
+        def last(kind):
+            try: s.pg.wait_for_function(f"__game.state().lastKick && __game.state().lastKick.kind === '{kind}'", timeout=10000)
+            except Exception: pass
+            return s.state()['lastKick']
+        s.ev("__game.placePlayer(-4, 1.5, 0); __game.placeBall(-3.6, 0.11, 1.5); __game.game.players[0].lastKick = null"); s.frames(3)
+        sym, cls = gesture('#bShot', 2, 0.6)
+        lk = last('shot'); s.shot(f'touch_{form}_schuss', 'dev')
+        ok(sym in ('↪', '↩') and 'charging' in cls, f'Schuss tipp + halten: Ring zeigt Modus {sym!r}')
+        if sym not in ('↪', '↩'): print('     Flanken:', [(e['btn'], e['down'], round(e['t'], 3)) for e in s.ev('__edges')[-4:]])
+        ok(lk is not None and lk['tech'] in ('innenrist', 'aussenrist') and abs(lk['sideRps']) > 3, f"Schuss angeschnitten: {lk and lk['tech']}, {lk and round(lk['speed'], 1)} m/s, {lk and round(lk['sideRps'], 1)} U/s")
+        s.ev("__game.placePlayer(-4, 0, 0); __game.placeBall(-3.6, 0.11, 0); __game.game.players[0].lastKick = null"); s.frames(3)
+        sym, cls = gesture('#bShot', 3, 0.6, second=False)
+        lk = last('shot')
+        ok(sym == '⚡' and lk is not None and lk['tech'] == 'vollspann', f"Schuss halten: Ring {sym!r}, {lk and lk['tech']} {lk and round(lk['speed'], 1)} m/s")
+        s.ev("__game.placePlayer(-4, 0, 0); __game.placeBall(-3.6, 0.11, 0); __game.game.players[0].lastKick = null"); s.frames(3)
+        sym, cls = gesture('#bPass', 4, 0.4)
+        lk = last('pass')
+        ok(sym == '⌒' and lk is not None and lk['tech'] == 'chip' and lk['elevDeg'] > 20, f"Pass tipp + halten = hoch: Ring {sym!r}, {lk and lk['tech']} {lk and round(lk['elevDeg'])}°")
         # 4) Kein Scrollen/Zoomen durch Wischen
         sc = s.ev("[scrollX, scrollY, visualViewport ? visualViewport.scale : 1]")
         ok(sc == [0, 0, 1], f'keine Verschiebung/Zoom durch Touch ({sc})')

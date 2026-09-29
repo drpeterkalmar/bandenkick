@@ -83,6 +83,7 @@ class Session:
     def tap(self, sel):
         el = self.pg.locator(sel).first
         el.wait_for(state='visible', timeout=20000)
+        el.scroll_into_view_if_needed()  # Karten mit Rollbereich (quer): Knopf erst ins Bild holen
         box = el.bounding_box()
         try:
             self.pg.touchscreen.tap(box['x'] + box['width'] / 2, box['y'] + box['height'] / 2)

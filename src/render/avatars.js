@@ -252,7 +252,12 @@ export class Avatar {
     const hold = st.holding ? 1 : 0;
     this.holdW = (this.holdW || 0) + (hold - (this.holdW || 0)) * Math.min(1, dt * 8);
     const kt = pl.kickT ?? 9;
-    const proc = plantK > 0.01 || this.lean > 0.01 || this.dive > 0.01 || kt < 0.4 || this.holdW > 0.01 || this.ready > 0.05;
+    // Technik-Pose (Nacht 2b, prozedural bis zu den Mixamo-Clips): Luftball im Anflug, am Boden danach, Kick-Arten
+    const tp = techPose(pl, st.t ?? 0);
+    this.tpW = (this.tpW || 0) + ((tp ? 1 : 0) - (this.tpW || 0)) * Math.min(1, dt * (tp ? 14 : 5));
+    if (tp) this.tp = tp;
+    this.root.position.y = pl.jumpY || 0;
+    const proc = plantK > 0.01 || this.lean > 0.01 || this.dive > 0.01 || kt < 0.4 || this.holdW > 0.01 || this.ready > 0.05 || this.tpW > 0.01;
     this.gloves[0].visible = this.gloves[1].visible = !!st.keeper;
     this.ring.visible = !!st.keeper;
     if (st.keeper) this.ring.material.opacity = 0.55 + 0.25 * Math.sin(performance.now() / 180);
@@ -273,12 +278,26 @@ export class Avatar {
       roll = (side >= 0 ? -1 : 1) * 1.25 * this.dive;
       this.tilt.position.y = 0.95 - 0.55 * this.dive;
     } else this.tilt.position.y = 0.95 - 0.08 * this.lean / 0.45; // im Stemmschritt leicht in die Knie
+    // Technik-Pose überblendet Neigung/Absenken
+    const T = this.tp, tw = this.tpW;
+    if (T && tw > 0.01) {
+      pitch = pitch * (1 - tw) + T.pitch * tw; roll = roll * (1 - tw) + T.roll * tw;
+      this.tilt.position.y = this.tilt.position.y * (1 - tw) + (0.95 + T.drop) * tw;
+    }
     this.tilt.rotation.set(pitch, 0, roll, 'YXZ');
     this.root.updateMatrixWorld(true);
-    // Schuss/Pass: Schussbein schwingt nach vorn
-    if (kt < 0.4) {
+    const leg = pl.kickFoot > 0 ? 'R' : 'L', other = leg === 'R' ? 'L' : 'R';
+    if (T && tw > 0.01 && T.legs) {
+      // Beine/Arme der Technik (Schussbein hoch, Hacke nach hinten, Arme zum Ausgleich)
+      this.rotBoneWorld(`Bip01_${leg}_Thigh`, 'side', T.thigh * tw);
+      if (T.calf) this.rotBoneWorld(`Bip01_${leg}_Calf`, 'side', T.calf * tw);
+      if (T.twist) this.rotBoneWorld(`Bip01_${leg}_Thigh`, 'up', T.twist * (leg === 'R' ? 1 : -1) * tw);
+      if (T.thigh2) this.rotBoneWorld(`Bip01_${other}_Thigh`, 'side', T.thigh2 * tw);
+      if (T.arms) for (const sd of ['L', 'R']) this.rotBoneWorld(`Bip01_${sd}_UpperArm`, 'side', -T.arms * tw);
+      if (T.nod) this.rotBoneWorld('Bip01_Head', 'side', T.nod * tw);
+    } else if (kt < 0.4) {
+      // Schuss/Pass: Schussbein schwingt nach vorn
       const k = Math.sin(Math.min(1, kt / 0.4) * Math.PI);
-      const leg = pl.kickFoot > 0 ? 'R' : 'L';
       this.rotBoneWorld(`Bip01_${leg}_Thigh`, 'side', -0.95 * k);
       this.rotBoneWorld(`Bip01_${leg}_Calf`, 'side', 0.5 * k * (1 - kt / 0.4));
     }
@@ -306,6 +325,48 @@ export class Avatar {
     b.quaternion.premultiply(_q2.setFromAxisAngle(local.normalize(), ang));
     b.updateMatrixWorld(true);
   }
+}
+
+// Pose je Technik (Winkel in rad: pitch + = vorn über, roll + = zur rechten Seite; drop = Absenken des Schwerpunkts;
+// thigh − = Oberschenkel nach vorn/oben, + = nach hinten; calf + = Unterschenkel beugen). null = keine Sonderpose.
+const ease = (x) => (x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x));
+function techPose(pl, t) {
+  const side = pl.kickFoot > 0 ? 1 : -1; // Schussbein rechts → Körper kippt nach links
+  const a = pl.air;
+  if (a && a.go) {
+    const u = ease((t - a.t0) / Math.max(0.05, a.tc - a.t0)); // 0 Absprung … 1 Treffpunkt
+    switch (a.tech) {
+      case 'fallrueck': return { pitch: -2.3 * u, roll: 0, drop: 0.25 * u, legs: true, thigh: -0.6 - 2.2 * u, thigh2: -0.6 * u, calf: 0.3, arms: 0.9 * u };
+      case 'seitfall': return { pitch: -0.2 * u, roll: -side * 1.35 * u, drop: 0.1 * u, legs: true, thigh: -0.5 - 1.3 * u, thigh2: -0.3 * u, arms: 0.7 * u };
+      case 'flugkopf': return { pitch: 1.4 * u, roll: 0, drop: -0.35 * u, legs: true, thigh: 0.35 * u, thigh2: 0.35 * u, arms: -0.4 * u, nod: -0.3 * u };
+      case 'kopf': return { pitch: -0.25 * (1 - u) + 0.35 * u, roll: 0, drop: 0, legs: true, thigh: -0.3 * u, arms: 0.8 * (1 - u) + 0.3, nod: 0.45 * u };
+      default: return { pitch: -0.3 * u, roll: -side * 0.15 * u, drop: -0.05 * u, legs: true, thigh: 0.4 - 1.7 * u, calf: 0.9 * (1 - u), arms: 0.5 * u }; // Volley/Dropkick: ausholen, durchziehen
+    }
+  }
+  const f = pl.fall;
+  if (f) { // am Boden nach dem Luftball, zum Schluss aufstehen
+    const up = ease((f.t - (f.dur - 0.35)) / 0.35), lie = 1 - up;
+    if (f.tech === 'fallrueck') return { pitch: -1.5 * lie, roll: 0, drop: -0.72 * lie, legs: true, thigh: -0.9 * lie, thigh2: -0.5 * lie, arms: 0.5 * lie };
+    if (f.tech === 'seitfall') return { pitch: 0, roll: -side * 1.45 * lie, drop: -0.72 * lie, legs: true, thigh: -0.6 * lie, arms: 0.4 * lie };
+    return { pitch: 1.5 * lie, roll: 0, drop: -0.74 * lie, legs: true, thigh: 0.2 * lie, arms: -0.6 * lie }; // Flugkopfball: bäuchlings
+  }
+  const k = pl.techT ?? 9;
+  if (k < 0.45) {
+    const u = Math.sin(Math.min(1, k / 0.45) * Math.PI);
+    switch (pl.tech) {
+      case 'ferse': return { pitch: 0.1 * u, roll: 0, drop: 0, legs: true, thigh: 0.75 * u, calf: 1.3 * u };
+      case 'chip': return { pitch: -0.12 * u, roll: 0, drop: -0.03 * u, legs: true, thigh: -0.75 * u, calf: 0.25 * u };
+      case 'aussen': case 'aussenrist': return { pitch: -0.05 * u, roll: side * 0.12 * u, drop: 0, legs: true, thigh: -0.9 * u, twist: 0.55 * u, calf: 0.3 * u };
+      case 'innen': case 'innenrist': return { pitch: -0.05 * u, roll: -side * 0.12 * u, drop: 0, legs: true, thigh: -0.9 * u, twist: -0.6 * u, calf: 0.3 * u };
+      case 'vollspann': return { pitch: -0.12 * u, roll: 0, drop: -0.03 * u, legs: true, thigh: -1.15 * u, calf: 0.5 * u * (1 - k / 0.45), arms: 0.35 * u };
+      case 'brust': return { pitch: -0.32 * u, roll: 0, drop: -0.04 * u, legs: true, thigh: 0, arms: 0.6 * u };
+      case 'oberschenkel': return { pitch: -0.08 * u, roll: 0, drop: 0, legs: true, thigh: -1.0 * u, calf: 0.9 * u };
+      case 'kopf': return { pitch: 0.3 * u, roll: 0, drop: 0, legs: true, thigh: 0, nod: 0.4 * u, arms: 0.3 * u };
+      case 'volley': case 'dropkick': return { pitch: -0.3 * u, roll: -side * 0.15 * u, drop: -0.05 * u, legs: true, thigh: -1.3 * u, arms: 0.5 * u };
+      default: return null;
+    }
+  }
+  return null;
 }
 
 function wrap(a) { while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI; return a; }

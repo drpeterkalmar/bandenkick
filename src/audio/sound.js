@@ -116,6 +116,17 @@ const DEFS = {
     noise(oc, o, 0, 0.3, 32, { type: 'bandpass', f: 1800, q: 0.6, a: 0.01, peak: 0.18, dec: 0.25 });
   }],
   whoosh: [0.35, (oc, o) => noise(oc, o, 0, 0.3, 33, { type: 'bandpass', f: 900, q: 1.5, a: 0.08, peak: 0.25, dec: 0.18 })],
+  head: [0.22, (oc, o) => { // Kopfball: dumpfer, weicher Stoß
+    tone(oc, o, 0, { f: 120, f2: 70, peak: 0.6, dec: 0.07, glide: 0.05 });
+    noise(oc, o, 0, 0.04, 35, { type: 'lowpass', f: 800, peak: 0.3, dec: 0.03 });
+  }],
+  machine: [0.45, (oc, o) => { // Ballmaschine: Räder-Surren + pneumatischer Stoß
+    noise(oc, o, 0, 0.35, 36, { type: 'bandpass', f: 420, q: 3, a: 0.05, peak: 0.18, dec: 0.3 });
+    tone(oc, o, 0.02, { f: 160, f2: 60, peak: 0.6, dec: 0.08 });
+    noise(oc, o, 0.02, 0.05, 37, { type: 'bandpass', f: 1800, q: 1, peak: 0.3, dec: 0.03 });
+  }],
+  ding: [0.9, (oc, o) => { [[1318, 0.35, 0.7], [1976, 0.2, 0.5], [2637, 0.1, 0.35]].forEach(([f, p, d]) => tone(oc, o, 0, { f, peak: p, dec: d })); }],
+  buzz: [0.4, (oc, o) => { tone(oc, o, 0, { f: 180, f2: 140, type: 'square', peak: 0.12, dec: 0.25, glide: 0.2 }); }],
   whistle: [0.55, (oc, o) => { // Trillerpfeife ~3 kHz mit Kugel-Triller
     const osc = oc.createOscillator(); osc.frequency.value = 3050;
     const am = oc.createOscillator(); am.frequency.value = 28; const amg = oc.createGain(); amg.gain.value = 0.35;
@@ -266,8 +277,12 @@ export class Sound {
     const pan = e.x != null ? clamp(e.x / hx, -1, 1) * 0.6 : 0;
     const sp = e.speed || 0;
     switch (e.type) {
+      case 'machine': this.play('machine', 0.7, pan); break;
+      case 'challenge': this.play(e.ok ? 'ding' : 'buzz', e.ok ? 0.6 : 0.35); break;
+      case 'airstart': if (e.tech === 'fallrueck' || e.tech === 'seitfall' || e.tech === 'flugkopf') this.play('whoosh', 0.45, pan); break;
       case 'kick':
-        if (e.kind === 'pass') this.play('pass', 0.35 + sp / 30, pan, 0.95 + Math.random() * 0.1);
+        if (e.tech === 'kopf' || e.tech === 'flugkopf') this.play('head', 0.4 + sp / 30, pan, 0.95 + Math.random() * 0.1);
+        else if (e.kind === 'pass') this.play('pass', 0.35 + sp / 30, pan, 0.95 + Math.random() * 0.1);
         else this.play('kick', 0.35 + sp / 30, pan, 0.92 + Math.random() * 0.12);
         if (e.kind === 'pass' && e.to >= 0 && e.to !== e.player && Math.random() < 0.5) this.shout(Math.random() < 0.5 ? 'hier' : 'ja', game, e.to, 0.12);
         break;
