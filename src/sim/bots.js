@@ -12,9 +12,9 @@ import { planAir } from './air.js';
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 export const LEVELS = {
-  1: { react: 0.36, think: 0.36, speed: 0.8, noise: 2.4, shotNoise: 4.4, aimNoise: 1.1, keeperReact: 0.34, airTry: 0.45, shotPow: -0.05, catchSkill: 0.3, fumble: 0.35, err: 0.35, shootMax: 11, keeperMove: 0.8, dive: 0.6, tackle: 1.4, minXg: 0.05 },
-  2: { react: 0.16, think: 0.2, speed: 0.9, noise: 1.3, shotNoise: 3.0, aimNoise: 0.85, keeperReact: 0.26, airTry: 0.5, shotPow: 0, catchSkill: 0.8, fumble: 0.12, err: 0.12, shootMax: 13, keeperMove: 0.95, dive: 0.9, tackle: 1.0, minXg: 0.06 },
-  3: { react: 0.1, think: 0.1, speed: 1.0, noise: 0.7, shotNoise: 2.1, aimNoise: 0.5, keeperReact: 0.19, airTry: 0.65, shotPow: 0.1, catchSkill: 1.0, fumble: 0.03, err: 0.04, shootMax: 15, keeperMove: 1.0, dive: 1.0, tackle: 0.85, minXg: 0.07 },
+  1: { react: 0.36, think: 0.36, speed: 0.8, noise: 2.4, shotNoise: 4.4, aimNoise: 1.1, keeperReact: 0.34, airTry: 0.45, shotPow: -0.05, skill: 1.0, catchSkill: 0.3, fumble: 0.35, err: 0.35, shootMax: 11, keeperMove: 0.8, dive: 0.6, tackle: 1.4, minXg: 0.05 },
+  2: { react: 0.16, think: 0.2, speed: 0.88, noise: 1.3, shotNoise: 3.0, aimNoise: 0.85, keeperReact: 0.26, airTry: 0.5, shotPow: 0, skill: 1.15, catchSkill: 0.8, fumble: 0.12, err: 0.12, shootMax: 13, keeperMove: 0.95, dive: 0.9, tackle: 1.0, minXg: 0.06 },
+  3: { react: 0.1, think: 0.1, speed: 0.95, noise: 0.7, shotNoise: 2.1, aimNoise: 0.5, keeperReact: 0.19, airTry: 0.65, shotPow: 0.1, skill: 1.5, catchSkill: 1.0, fumble: 0.03, err: 0.04, shootMax: 13, keeperMove: 1.0, dive: 1.0, tackle: 0.85, minXg: 0.07 },
 };
 const NP = 41, PDT = 0.05; // Ballvorhersage: 2 s in 0,05-s-Schritten
 
@@ -170,7 +170,7 @@ export class Bots {
     const plan = planAir(g, pl, { tPress: g.t, purpose, minScore: 0.4, minSpeed: 4 });
     if (!plan) return false;
     const need = L.err > 0.3 ? 0.55 : L.err > 0.1 ? 0.8 : 0.95;
-    if (plan.tq < need) return false;
+    if (plan.tq < need || plan.score < 0.85 * plan.maxScore) return false; // auf die beste Technik warten
     // einmal je Luftball-Situation entscheiden (seit der letzten Ballberührung): nicht jeder nimmt direkt
     if (br.airEp === g.lastTouchT) return false;
     br.airEp = g.lastTouchT;
@@ -178,10 +178,14 @@ export class Bots {
     // nur wer am schnellsten an der Körperposition ist (grob: kein Mitspieler deutlich näher)
     const dMe = Math.hypot(plan.bx - pl.x, plan.bz - pl.z);
     if (g.players.some((m) => m.team === pl.team && m.id !== pl.id && Math.hypot(plan.bx - m.x, plan.bz - m.z) < dMe - 0.8)) return false;
-    pl.air = plan; pl.pending = null; pl.airNoise = L.aimNoise * 1.3;
+    pl.air = plan; pl.pending = null; pl.airNoise = L.aimNoise * 1.3; pl.skill = L.skill;
     this.stats.air++;
     return true;
   }
+
+  // Challenges: Tormann-Bot (Elfmeter, Doppelpass) bzw. einzelner Stürmer (1 gegen 1)
+  keeperInput(i) { this.brain[i].role = 'keeper'; return this.input(i); }
+  attackInput(i) { this.brain[i].role = this.owner === i ? 'carrier' : 'chase'; return this.input(i); }
 
   // Außerhalb des Spiels (Torjubel, Halbzeit, Aus): alle laufen auf ihre Anstoß-Plätze in der eigenen Hälfte
   formation(i) {
@@ -387,23 +391,23 @@ export class Bots {
     const opts = [];
     const gx = this.oppGoalX(team);
     const Dg = Math.hypot(gx - b.p.x, b.p.z);
-    const kp = g.players[R.keeper[1 - team]];
-    const empty = !R.inBox(1 - team, kp.x, kp.z) || kp.hand.mode === 'ground';
+    const kp = g.players[R.keeper[1 - team]] || null; // Training: Gegner ohne Spieler möglich
+    const empty = !kp || !R.inBox(1 - team, kp.x, kp.z) || kp.hand.mode === 'ground';
     const lose = this.loseVal(team, b.p.x, b.p.z);
     // Schuss: danach hat meist der Tormann den Ball (Wert ≈ 0)
     if (Dg < L.shootMax && (this.xg(team, b.p.x, b.p.z) >= L.minXg || empty)) {
-      const zc = cage.gw - 0.38;
-      const tz = Math.abs(kp.z - zc) > Math.abs(kp.z + zc) ? zc : -zc;
-      const lane = this.laneFree(team, b.p.x, b.p.z, gx, tz, kp.id);
-      const kpOff = clamp(Math.abs(kp.z - tz) / cage.gw, 0, 1);
+      const zc = cage.gw - 0.38, kz = kp ? kp.z : 0;
+      const tz = Math.abs(kz - zc) > Math.abs(kz + zc) ? zc : -zc;
+      const lane = this.laneFree(team, b.p.x, b.p.z, gx, tz, kp ? kp.id : -1);
+      const kpOff = kp ? clamp(Math.abs(kp.z - tz) / cage.gw, 0, 1) : 1;
       // Unter Druck (Gegner < 1,3 m) wird ein Schuss hastig: doppelte Streuung, seltener gewählt
       const pressure = this.space(pl), rushed = pressure < 1.3;
       // Schussqualität q wie beim Menschen (Lage, Körper, Ball am Fuß, Druck): schlechte Lage = langsamer, zentraler
-      const q = shotQuality(shotFeatures(g, pl, [gx, 0.35, 0], pl.strong), g.P).qEff;
+      const q = Math.pow(shotQuality(shotFeatures(g, pl, [gx, 0.35, 0], pl.strong), g.P).qEff, 1 / L.skill);
       const u = this.xg(team, b.p.x, b.p.z) * (lane > 0.8 ? 1 : 0.2) * (0.7 + 0.5 * kpOff) * (empty ? 2.2 : 1) * (rushed ? 0.6 : 1) * (0.55 + 0.45 * q);
       // Schuss wie beim Menschen (Nacht 2b): Ziel automatisch am Tormann vorbei, Qualität q aus der Lage, Vollspann
       // oder angeschnitten (Innen-/Außenrist); Stärke-Streuung der Bots über noise
-      opts.push({ kind: 'shot', u, act: () => { pl.kickAt({ kind: 'shot', auto: true, mode: rng.next() < 0.4 ? 'var' : 'std', power: Math.min(1, (rushed ? 0.55 : 0.7) + L.shotPow + 0.3 * rng.next()), noise: L.aimNoise * (rushed ? 1.5 : 1) }); this.stats.shots++; } });
+      opts.push({ kind: 'shot', u, act: () => { pl.kickAt({ kind: 'shot', auto: true, mode: rng.next() < 0.4 ? 'var' : 'std', power: Math.min(1, (rushed ? 0.55 : 0.7) + L.shotPow + 0.3 * rng.next()), noise: L.aimNoise * (rushed ? 1.5 : 1), skill: L.skill }); this.stats.shots++; } });
     }
     // Pass und Bandenpass zu Mitspielern
     for (const m of g.players) {

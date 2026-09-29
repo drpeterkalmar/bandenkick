@@ -126,7 +126,9 @@ export function planShot(game, pl, opts = {}) {
   const feat = shotFeatures(game, pl, [corner.x, corner.y, corner.z], foot, opts.from);
   if (opts.featMod) opts.featMod(feat);
   const Q = shotQuality(feat, P);
-  const q = clamp(Q.qEff * (opts.qMul ?? 1), 0.02, 1);
+  // Technik des Schützen (Bots je Stufe, Mensch 1): wirkt wie ?schusshilfe= – gute Technik platziert auch aus
+  // mittelmäßiger Lage noch gut
+  const q = clamp(Math.pow(Q.qEff, 1 / (opts.skill || 1)) * (opts.qMul ?? 1), 0.02, 1);
   const af = aimFactor(q);
   const aim = [gx, 0.6 + (corner.y - 0.6) * af, corner.z * af];
   let speed, side = 0, back = 0, noiseDeg;

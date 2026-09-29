@@ -21,6 +21,7 @@ export class Rules {
     this.lastTouchTeam = -1;
     this.goals = [];                    // [{t, team, scorer}]
     this.winner = -1;
+    this.handsOffTeam = -1;             // Training: diese Mannschaft darf keine Hände nehmen
   }
 
   // ---------- Geometrie ----------
@@ -35,6 +36,7 @@ export class Rules {
   }
   // Darf dieser Spieler gerade die Hände benutzen? Nur die letzte Hand, nur im eigenen Torraum.
   handsOk(pl) {
+    if (this.handsOffTeam === pl.team) return false; // Schützen-Challenges: keine Hände
     return this.keeper[pl.team] === pl.id && this.inBox(pl.team, pl.x, pl.z) && this.phase !== 'end';
   }
 

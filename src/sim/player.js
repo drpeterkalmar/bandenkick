@@ -84,8 +84,8 @@ export class Player {
   //    'innen' | 'vollspann' | 'heber', speed/elev/spinY/spinBack optional, noise = Streuungs-Faktor, to = Empfänger
   //  - geplant wie beim Menschen (Nacht 2b): {kind: 'pass', to, lead: true, mode: 'std'|'var'} = Pass in den
   //    Laufweg (flach/Chip), {kind: 'shot', auto: true, mode, power} = Schuss mit automatischem Ziel und Qualität q
-  kickAt({ kind = 'pass', target = [0, 0], technique = 'innen', speed, elev, spinY = 0, spinBack = 0, noise = 1, to = -1, lead = false, auto = false, mode = 'std', power = 0.8 } = {}) {
-    this.pending = { kind, api: true, target: [...target], technique, speed, elev, spinY, spinBack, noise, to, lead, auto, mode, power, dir: [1, 0], age: 0 };
+  kickAt({ kind = 'pass', target = [0, 0], technique = 'innen', speed, elev, spinY = 0, spinBack = 0, noise = 1, to = -1, lead = false, auto = false, mode = 'std', power = 0.8, skill = 1 } = {}) {
+    this.pending = { kind, api: true, target: [...target], technique, speed, elev, spinY, spinBack, noise, to, lead, auto, mode, power, skill, dir: [1, 0], age: 0 };
   }
 
   place(x, z, face = 0) {
@@ -194,7 +194,7 @@ export class Player {
       vd = (want ? mag : 0.8) * (this.sprinting ? P.vSprint : P.vRun);
       if (recv) vd = recvV;
       if (this.dribbling) vd *= P.dribbleSlow;
-      if (this.charging) vd *= 0.8; // zum Schuss hin etwas verlangsamen
+      if (this.charging && bd < 0.75) vd *= 0.8; // zum Schuss hin etwas verlangsamen – nur mit dem Ball am Fuß (sonst läuft er davon)
       if (this.hand.mode === 'hold') vd = Math.min(vd, P.vRun * 0.6); // mit Ball in der Hand nur gehen
       if (inp.speedCap) vd *= inp.speedCap;                              // Bot-Stärke
     }
@@ -448,7 +448,7 @@ export class Player {
         const kind = e.btn === 'pass' ? 'pass' : 'shot';
         // Pass: Einzeltipp bzw. Doppeltipp (zweiter Druck kurz) = automatische Stärke, sonst Stärke aus der Haltedauer
         const power = kind === 'pass' && (e.type === 'tap' || e.dur < P.tapMax) ? null : clamp(e.dur / P.chargeT, 0, 1);
-        this.pending = { kind, mode: e.mode, power, stick: stick(), dir: aimDir(), cx: clamp(inp.cx || 0, -1, 1), cy: clamp(inp.cy || 0, -1, 1), age: 0, t: game.t };
+        this.pending = { kind, mode: e.mode, power, stick: stick(), dir: aimDir(), cx: clamp(inp.cx || 0, -1, 1), cy: clamp(inp.cy || 0, -1, 1), age: 0, t: this.chargeT0 ?? game.t };
         this.charging = false; this.charge = 0; this.clearT = 0;
       } else if (e.type === 'cancel') {
         if (this.chargeKind === e.btn) this.charging = false;
@@ -461,7 +461,7 @@ export class Player {
   // Pass oder Schuss ausführen
   kick(pd, game, rel) {
     if (pd.api && (pd.lead || pd.auto)) {
-      const plan = pd.kind === 'shot' ? planShot(game, this, { mode: pd.mode, power: pd.power, noiseMul: pd.noise })
+      const plan = pd.kind === 'shot' ? planShot(game, this, { mode: pd.mode, power: pd.power, noiseMul: pd.noise, skill: pd.skill })
         : planPass(game, this, { mode: pd.mode, to: pd.to, noiseMul: pd.noise, power: null });
       return this.applyPlan(plan, game, rel);
     }

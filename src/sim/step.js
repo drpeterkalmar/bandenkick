@@ -10,6 +10,7 @@ import { buildCage, goalSide, outOfCage } from './world.js';
 import { Rules } from './rules.js';
 import { Bots } from './bots.js';
 import { newGestures, stepGestures, gestureView } from '../input/gesture.js';
+import { makeChallenge, challengeDef } from './challenges.js';
 
 export const HZ = 120;
 export const DT = 1 / HZ;
@@ -33,18 +34,29 @@ export class Game {
     this.passPlan = null;           // laufender Pass in den Laufweg {to, from, x, z, t} (Empfänger-Hilfe)
     this.gest = newGestures();      // Gesten des Menschen (halten / tipp + halten), im Spieltakt ausgewertet
     this.gcfg = { doppel: params.doppel, tapMax: params.tapMax };
-    this.match = !!opts.match;
+    const cdef = opts.challenge ? challengeDef(opts.challenge) : null;
+    this.match = !!opts.match || !!cdef;
     if (this.match) {
-      const n = opts.perTeam ?? params.perTeam;
+      const n = cdef ? cdef.per : opts.perTeam ?? params.perTeam;
       const per = Array.isArray(n) ? n : [n, n];   // [Orange, Blau] – Challenges/Tests auch 1 gegen 0 usw.
       this.players = [];
       for (let team = 0; team < 2; team++) for (let i = 0; i < per[team]; i++) this.players.push(new Player(params, this.players.length, team));
       this.human = opts.human ?? 0;  // gesteuerter Spieler (−1: nur Bots)
       this.switchT = 9;
       this.rules = new Rules(this);
-      this.bots = opts.bots === false ? null : new Bots(this, opts.botLevel ?? params.botLevel, opts.botLevels);
-      this.rules.firstKickoff = opts.kickoffTeam ?? 0;
-      this.rules.kickoff(this.rules.firstKickoff);
+      this.bots = opts.bots === false || (cdef && this.players.length < 2) ? null : new Bots(this, (cdef && cdef.botLevel) || (opts.botLevel ?? params.botLevel), opts.botLevels);
+      if (cdef) { // Training/Challenge: eigene Welt, keine Uhr, kein Anstoß, Mensch fest (Orange 0)
+        this.human = 0;
+        this.rules.phase = 'play';
+        this.rules.handsOffTeam = cdef.hands ? -1 : 0;
+        this.rules.updateKeepers(0, true);
+        this.challenge = makeChallenge(this, cdef.id);
+        this.challenge.bots = this.bots;
+        this.challengeGoal = false;
+      } else {
+        this.rules.firstKickoff = opts.kickoffTeam ?? 0;
+        this.rules.kickoff(this.rules.firstKickoff);
+      }
       this.events.length = 0;
     } else {
       this.players = [new Player(params, 0, 0)];
@@ -125,7 +137,31 @@ export class Game {
     return this.events;
   }
 
+  // Training/Challenge: Regeln nur für die Hände, Bots/Ballmaschine steuert die Challenge, Tore meldet sie selbst
+  stepChallenge(inputs) {
+    const b = this.ball, R = this.rules, C = this.challenge, n = this.players.length;
+    R.phase = 'play';
+    R.updateKeepers(DT);
+    if (this.bots) this.bots.update();
+    const ins = this._ins || (this._ins = []);
+    for (let i = 0; i < n; i++) ins[i] = i === this.human ? (this.humanInput(inputs[i]) || EMPTY_INPUT) : C.input(i);
+    const off = this.tick % n;
+    for (let k = 0; k < n; k++) { const i = (k + off) % n; this.players[i].step(DT, ins[i], this); }
+    R.hands(DT, (i) => ins[i]);
+    if (b.held >= 0) R.carry(); else b.step(DT, this.cage);
+    this.separate();
+    this.numerics();
+    const gs = goalSide(this.cage, b.p, b.r);
+    if (gs && !this.challengeGoal) { this.challengeGoal = true; this.events.push({ type: 'goal', side: gs, team: gs > 0 ? 0 : 1, speed: b.v.len(), challenge: true }); C.onGoal(gs); }
+    else if (!gs) this.challengeGoal = false;
+    C.step();
+    this.state = C.done ? 'end' : 'play';
+    this.t += DT; this.tick++;
+    return this.events;
+  }
+
   stepMatch(inputs) {
+    if (this.challenge) return this.stepChallenge(inputs);
     const b = this.ball, R = this.rules, n = this.players.length;
     R.updateKeepers(DT);
     if (this.bots) this.bots.update();

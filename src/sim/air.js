@@ -29,7 +29,7 @@ export function planAir(game, pl, { tPress = game.t, purpose = 'shot', minScore 
   const pred = _pred;
   const gx = purpose === 'clear' ? -attackGoalX(game, pl) : attackGoalX(game, pl);
   const scale = P.luft || 1;
-  let best = null;
+  let best = null, maxScore = 0; // maxScore: bester Technik-Wert ohne Timing (für Bots/Skripte: auf die beste warten)
   let lastBounce = -9;
   for (let k = 1; k < pred.length; k++) {
     const s = pred[k];
@@ -65,10 +65,12 @@ export function planAir(game, pl, { tPress = game.t, purpose = 'shot', minScore 
       if (s.t < TAKEOFF[tech] * 0.6) continue; // zu spät für die Bewegung
       const tq = timingFit(tech, lead);
       const margin = clamp(1 - d / (reach + 0.01), 0, 1);
+      if (sc[tech] > maxScore) maxScore = sc[tech];
       const total = sc[tech] * (0.35 + 0.65 * tq) * (0.75 + 0.25 * margin) * (1 - 0.12 * s.t);
       if (!best || total > best.total) best = { tech, total, score: sc[tech], tq, t: s.t, tc: game.t + s.t, bx, bz, cx: s.x, cy: h, cz: s.z, sx, sz, theta, h, bounced, lead, vin: Math.hypot(s.vx, s.vy, s.vz), purpose };
     }
   }
+  if (best) best.maxScore = maxScore;
   return best && best.total >= minScore ? best : null;
 }
 
@@ -148,7 +150,7 @@ function airKick(pl, game, a, errFrac) {
   }
   // Schuss: gleiche Planung wie am Boden (Ziel im Tor, Lage), Körper/Ball-Merkmale gehören hier zur Technik
   const plan = planShot(game, pl, {
-    tech: a.tech, from: [b.p.x, b.p.y, b.p.z], speed: sp, qMul, noiseBase: T.noise, noiseMul: pl.airNoise ?? 1,
+    tech: a.tech, from: [b.p.x, b.p.y, b.p.z], speed: sp, qMul, noiseBase: T.noise, noiseMul: pl.airNoise ?? 1, skill: pl.skill ?? 1,
     back: a.tech === 'fallrueck' ? -12 : a.tech === 'volley' ? -6 : 0,
     featMod: (f) => { f.bodyAng = 0; f.ballAhead = 0.35; f.ballSide = 0; f.strongFoot = true; f.crossed = false; f.bounceH = 0; f.vy = 0; f.speed = Math.min(f.speed, 3); f.sprint = false; },
   });
