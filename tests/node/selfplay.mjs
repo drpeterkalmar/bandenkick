@@ -7,7 +7,8 @@ export function playGame(seed, { qs = '', levels = null, maxT = null } = {}) {
   const P = makeParams(qs);
   const g = new Game(P, seed, { match: true, human: -1, botLevels: levels });
   const cage = g.cage;
-  const st = { seed, goals: [0, 0], events: {}, stuck: [], faults: 0, holdMax: 0, t: 0, keeperSwitches: 0, touches: 0, kicks: {} };
+  const st = { seed, goals: [0, 0], events: {}, stuck: [], faults: 0, holdMax: 0, t: 0, keeperSwitches: 0, touches: 0, kicks: {}, air: {}, airGoals: {}, tech: {} };
+  let lastAir = null;
   const limit = maxT ?? (g.rules.halfLen * 2 + 120);
   // Hänger-Erkennung
   let ballRef = { x: 0, z: 0, t: 0 }, cornerT = 0;
@@ -18,7 +19,9 @@ export function playGame(seed, { qs = '', levels = null, maxT = null } = {}) {
       st.events[e.type] = (st.events[e.type] || 0) + 1;
       if (e.type === 'goal') st.goals[e.team]++;
       if (e.type === 'keeper') st.keeperSwitches++;
-      if (e.type === 'kick') st.kicks[e.kind] = (st.kicks[e.kind] || 0) + 1;
+      if (e.type === 'kick') { st.kicks[e.kind] = (st.kicks[e.kind] || 0) + 1; if (e.tech) st.tech[e.tech] = (st.tech[e.tech] || 0) + 1; lastAir = null; }
+      if (e.type === 'air') { st.air[e.tech] = (st.air[e.tech] || 0) + 1; lastAir = { tech: e.tech, t: g.t, team: g.players[e.player].team }; }
+      if (e.type === 'goal' && lastAir && lastAir.team === e.team && g.t - lastAir.t < 2.5) st.airGoals[lastAir.tech] = (st.airGoals[lastAir.tech] || 0) + 1;
       if (e.type === 'touch' || e.type === 'kick') { st.touches++; if (e.player != null) track[e.player].touchT = g.t; }
     }
     const b = g.ball, live = g.rules.phase === 'play';

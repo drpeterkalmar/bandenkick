@@ -123,6 +123,36 @@ export const DEFAULTS = {
   backspinMax: 7,         // U/s Heber/Chip
   kickBuffer: 0.9,        // s: Pass/Schuss wird so lange vorgemerkt, bis der Ball erreichbar ist
 
+  // ---------------- Nacht 2b: Gesten, Pass, Schuss, Luftbälle ----------------
+  // Gesten (src/input/gesture.js): halten = Standard, tipp + sofort halten = Variante
+  doppel: 0.25,           // s Fenster für den zweiten Druck nach dem Loslassen des Tipps          [?doppel=]
+  tapMax: 0.2,            // s kürzer gedrückt = Tipp                                                [?tipp=]
+  treffpunkt: 0,          // 1 = Profi: alte Treffpunkt-Steuerung (Fingerlage/Q E R F, freie Richtung) [?treffpunkt=1]
+  // Pass: Ziel im Kegel um die Stick-Richtung, in den Laufweg (Roll-/Chip-Tabelle aus ball.js)
+  passCone: 35,           // ° halber Kegel um die Stick-/Blickrichtung                              [?kegel=]
+  passInnenDeg: 60,       // ° bis hier Innenseite/Vorfuß, darüber Außenrist …                       [?innen=]
+  passHackeDeg: 120,      // ° … ab hier Hacke (wenn der Ball nah am Standbein ist)                  [?hacke=]
+  hackeNear: 0.6,         // m Ball ↔ Körpermitte für einen Hackenpass
+  passMaxSpeed: 22,       // m/s härtester Pass
+  passFree: 7,            // m Pass in den freien Raum (Tipp, kein Mitspieler im Kegel)
+  chipElevMin: 25,        // ° Chip/Lupfer: flach bei weiten …                                       [?chipmin=]
+  chipElevMax: 45,        // ° … steil bei kurzen Pässen                                             [?chipmax=]
+  // Schuss: Ziel automatisch (Ecke nach freiem Winkel am Tormann vorbei), Qualität q aus der Lage
+  schusshilfe: 1,         // Nachsicht der Lage-Bewertung: q_eff = q^(1/Wert); 2 = nachsichtig, 0,5 = streng [?schusshilfe=]
+  shotZ: 1.0,             // m Ecke: seitlich von der Tormitte (Pfosten innen bei 1,46 m)
+  shotLow: 0.35,          // m Ecke flach (Ballmitte) …
+  shotHigh: 1.45,         // m … bzw. hoch (Latte innen bei 1,96 m)
+  curveSpeed: 0.85,       // angeschnitten: Tempo × 0,85 gegenüber Vollspann
+  aussenSpin: 0.75,       // Außenrist: Drall × 0,75 …
+  aussenNoise: 1.35,      // … und Streuung × 1,35
+  // Luftbälle: Kopfball, Volley, Dropkick, Seitfallzieher, Fallrückzieher, Flugkopfball
+  luft: 1,                // Faktor auf alle Höhenfenster                                            [?luft=]
+  airHorizon: 0.9,        // s Vorschau: Ball in dieser Zeit erreichbar → Luftball-Technik
+  jumpMax: 0.6,           // m Sprunghöhe beim Kopfball
+  headH: 1.78,            // m Ballmitte am Kopf im Stand
+  fallT: 0.8,             // s am Boden nach Seit-/Fallrückzieher
+  zeitlupe: 1,            // Zeitlupe + Kurz-Zoom bei spektakulären Luftbällen (0 = aus)            [?zeitlupe=0]
+
   // ---------------- Spiel 3 gegen 3 (Plan: „letzte Hand“, Schnellstart, Spielzeit) ----------------
   perTeam: 3,             // Spieler je Mannschaft
   botLevel: 2,            // Stärke der Bots 1 (leicht) … 3 (stark)                  [?bots=]
@@ -155,6 +185,7 @@ export const ALIASES = {
   schuss: 'shotMax', pass: 'passSpeed', bande: 'boardEn', netz: 'netH', dachhoehe: 'roofH',
   abprall: 'turfEn', rollen: 'turfRoll0', effet: 'spinMax', torbreite: 'goalW', torhoehe: 'goalH',
   stemm: 'aPlant', bremse: 'aBrake', kurve: 'curveDeg', bots: 'botLevel',
+  tipp: 'tapMax', kegel: 'passCone', innen: 'passInnenDeg', hacke: 'passHackeDeg', chipmin: 'chipElevMin', chipmax: 'chipElevMax',
 };
 // ?zack=0: Werte des alten Bewegungsmodells (Nacht 1), sofern nicht ausdrücklich übersteuert
 const ZACK0 = { aLat: 6.0, aBrake: 6.5 };

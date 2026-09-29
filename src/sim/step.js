@@ -9,6 +9,7 @@ import { Player, EMPTY_INPUT } from './player.js';
 import { buildCage, goalSide, outOfCage } from './world.js';
 import { Rules } from './rules.js';
 import { Bots } from './bots.js';
+import { newGestures, stepGestures, gestureView } from '../input/gesture.js';
 
 export const HZ = 120;
 export const DT = 1 / HZ;
@@ -29,11 +30,15 @@ export class Game {
     this.lastGoal = 0;
     this.faults = 0;                // Numerik-Notbremsen (muss 0 bleiben)
     this.lastTouch = -1; this.lastTouchT = -99; this.passTo = -1;
+    this.passPlan = null;           // laufender Pass in den Laufweg {to, from, x, z, t} (Empfänger-Hilfe)
+    this.gest = newGestures();      // Gesten des Menschen (halten / tipp + halten), im Spieltakt ausgewertet
+    this.gcfg = { doppel: params.doppel, tapMax: params.tapMax };
     this.match = !!opts.match;
     if (this.match) {
       const n = opts.perTeam ?? params.perTeam;
+      const per = Array.isArray(n) ? n : [n, n];   // [Orange, Blau] – Challenges/Tests auch 1 gegen 0 usw.
       this.players = [];
-      for (let team = 0; team < 2; team++) for (let i = 0; i < n; i++) this.players.push(new Player(params, this.players.length, team));
+      for (let team = 0; team < 2; team++) for (let i = 0; i < per[team]; i++) this.players.push(new Player(params, this.players.length, team));
       this.human = opts.human ?? 0;  // gesteuerter Spieler (−1: nur Bots)
       this.switchT = 9;
       this.rules = new Rules(this);
@@ -79,9 +84,17 @@ export class Game {
     return this.match ? this.stepMatch(inputs) : this.stepSolo(inputs);
   }
 
+  // Eingabe des Menschen mit Knopf-Pegeln (passDown/shotDown) → Gesten-Ereignisse. Ältere Eingaben mit Flanken
+  // (pass, shootHeld/shootRelease – Tests) bleiben unverändert.
+  humanInput(inp) {
+    if (!inp || (inp.passDown === undefined && inp.shotDown === undefined)) return inp;
+    const gest = stepGestures(this.gest, this.t, { pass: !!inp.passDown, shot: !!inp.shotDown }, this.gcfg);
+    return { ...inp, gest, gview: gestureView(this.gest, this.t) };
+  }
+
   stepSolo(inputs) {
     const b = this.ball;
-    for (let i = 0; i < this.players.length; i++) this.players[i].step(DT, inputs[i] || EMPTY_INPUT, this);
+    for (let i = 0; i < this.players.length; i++) this.players[i].step(DT, (i === 0 ? this.humanInput(inputs[i]) : inputs[i]) || EMPTY_INPUT, this);
     b.step(DT, this.cage);
     this.numerics();
     this.stateT += DT;
@@ -121,7 +134,7 @@ export class Game {
     for (let i = 0; i < n; i++) {
       // Torjubel: erst 1,2 s stehen und jubeln, dann (wie in der Halbzeit) zurück in die eigene Hälfte
       if (!live) ins[i] = this.bots && !(R.phase === 'goal' && R.phaseT < 1.2) ? this.bots.formation(i) : EMPTY_INPUT;
-      else if (inputs[i] && (i === this.human || !this.bots)) ins[i] = inputs[i];   // Mensch (ohne Bots: alle)
+      else if (inputs[i] && (i === this.human || !this.bots)) ins[i] = i === this.human ? this.humanInput(inputs[i]) : inputs[i]; // Mensch (ohne Bots: alle)
       else ins[i] = this.bots ? this.bots.input(i) : EMPTY_INPUT;
     }
     // Reihenfolge rotiert: bei gleichzeitigem Ballkontakt ist nicht immer derselbe zuerst dran

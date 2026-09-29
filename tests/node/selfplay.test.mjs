@@ -8,8 +8,9 @@ const N = +(process.env.SELFPLAY_N || 200);
 const rows = [];
 const check = (name, value, lo, hi, unit, target, note = '') => { const ok = value >= lo && value <= hi; rows.push({ name, value, lo, hi, unit, target, ok, note }); return ok; };
 const t0 = performance.now();
-const agg = { goals: [0, 0], t: 0, stuck: [], faults: 0, holdMax: 0, ended: 0, noGoal: 0, bothScore: 0, team0: 0, team1: 0, ev: {}, kicks: {}, bot: {}, maxGoals: 0, draws: 0 };
+const agg = { goals: [0, 0], t: 0, stuck: [], faults: 0, holdMax: 0, ended: 0, noGoal: 0, bothScore: 0, team0: 0, team1: 0, ev: {}, kicks: {}, bot: {}, maxGoals: 0, draws: 0, air: {}, airGoals: {}, tech: {} };
 const vs = {}; // Stärke-Paarung → Siege
+const goalsBy = {}; // Stärke-Paarung → Tore gesamt
 for (let s = 1; s <= N; s++) {
   const levels = [((s - 1) % 3) + 1, (Math.floor((s - 1) / 3) % 3) + 1];
   const r = playGame(s, { levels });
@@ -27,6 +28,10 @@ for (let s = 1; s <= N; s++) {
   for (const [k, v] of Object.entries(r.events)) agg.ev[k] = (agg.ev[k] || 0) + v;
   for (const [k, v] of Object.entries(r.kicks)) agg.kicks[k] = (agg.kicks[k] || 0) + v;
   for (const [k, v] of Object.entries(r.bot)) agg.bot[k] = (agg.bot[k] || 0) + v;
+  for (const [k, v] of Object.entries(r.air)) agg.air[k] = (agg.air[k] || 0) + v;
+  for (const [k, v] of Object.entries(r.airGoals)) agg.airGoals[k] = (agg.airGoals[k] || 0) + v;
+  for (const [k, v] of Object.entries(r.tech)) agg.tech[k] = (agg.tech[k] || 0) + v;
+  { const key = `${levels[0]}-${levels[1]}`; goalsBy[key] = goalsBy[key] || [0, 0, 0]; goalsBy[key][0] += r.goals[0]; goalsBy[key][1] += r.goals[1]; goalsBy[key][2]++; }
   if (levels[0] !== levels[1]) {
     const hi = levels[0] > levels[1] ? 0 : 1, key = `${Math.max(...levels)} gegen ${Math.min(...levels)}`;
     vs[key] = vs[key] || { stronger: 0, weaker: 0, draw: 0 };
@@ -34,6 +39,7 @@ for (let s = 1; s <= N; s++) {
   }
 }
 const sec = (performance.now() - t0) / 1000;
+if (process.env.DEBUG) console.log('Tore je Paarung (Orange-Blau: Tore Orange/Blau/Spiele)', JSON.stringify(goalsBy));
 const G = agg.goals[0] + agg.goals[1], min = agg.t / 60;
 const kinds = {};
 for (const x of agg.stuck) kinds[x.kind] = (kinds[x.kind] || 0) + 1;
@@ -51,6 +57,10 @@ check('Letzte Hand wechselt im Spiel (Hysterese)', (agg.ev.keeper || 0) / N, 0.2
 check('Tormann-Aktionen je Spiel: Fangen', +pe('catch'), 5, Infinity, '', null, `Abwehren ${pe('parry')}, Hechten ${pe('dive')}, Abwurf ${pe('throw')}, Abschlag ${pe('punt')}, 6-s-Regel ${pe('sixsec')}`);
 check('Schüsse je Spiel', +pk('shot'), 10, Infinity, '', null, `Verwertung ${(100 * G / (agg.kicks.shot || 1)).toFixed(0)} %, Pässe ${pk('pass')}, Befreien ${pk('clear')}, Ballkontakte beim Führen ${pe('touch')}`);
 check('Bandenpässe je Spiel (zum Mitspieler / zu sich selbst)', (agg.bot.banks + agg.bot.selfWall) / N, 1, Infinity, '', null, `${(agg.bot.banks / N).toFixed(1)} / ${(agg.bot.selfWall / N).toFixed(1)}, Bande-Treffer ${pe('board')}`);
+const airAll = Object.values(agg.air).reduce((a, b) => a + b, 0);
+check('Neue Techniken im Selbstspiel: Luftbälle je Spiel', airAll / N, 1, Infinity, '', null, Object.entries(agg.air).map(([k, v]) => `${k} ${(v / N).toFixed(1)} (${agg.airGoals[k] || 0} Tore)`).join(', '));
+check('Neue Techniken im Selbstspiel: Chips/Hacke/Außenrist/angeschnitten je Spiel', ((agg.tech.chip || 0) + (agg.tech.ferse || 0) + (agg.tech.aussen || 0) + (agg.tech.innenrist || 0) + (agg.tech.aussenrist || 0)) / N, 1, Infinity, '', null,
+  ['innen', 'aussen', 'ferse', 'chip', 'vollspann', 'innenrist', 'aussenrist'].map((k) => `${k} ${((agg.tech[k] || 0) / N).toFixed(1)}`).join(', '));
 for (const [k, v] of Object.entries(vs).sort()) check(`Stärke ${k}: Siege der stärkeren Bots`, v.stronger / (v.stronger + v.weaker || 1) * 100, 50, 100, '%', null, `${v.stronger}:${v.weaker}, Remis ${v.draw}`);
 
 process.exit(report(`Selbstspiel (${N} Bot-Spiele)`, rows, 'selfplay') ? 0 : 1);

@@ -2,6 +2,8 @@
 // nach Tor (Tormann des Gegentors hat den Ball) oder Anstoß (?anstoss=1), Spielzeit 2 × dauer min, Golden Goal.
 // Mannschaft 0 verteidigt das linke Tor (x = −L/2) und spielt nach rechts, Mannschaft 1 umgekehrt.
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+// Abwurf-Tempo nach Entfernung (kommt mit ~6 m/s beim Mitspieler an)
+export const throwSpeedFor = (P, D) => clamp(Math.sqrt(49 + 3 * D), 8, P.throwSpeed + 3);
 
 export class Rules {
   constructor(game) {
@@ -41,6 +43,7 @@ export class Rules {
     const g = this.g;
     for (let team = 0; team < 2; team++) {
       const pls = g.players.filter((p) => p.team === team);
+      if (!pls.length) { this.keeper[team] = -1; continue; }
       let best = pls[0];
       for (const p of pls) if (this.lineDist(p) < this.lineDist(best)) best = p;
       const cur = g.players[this.keeper[team]];
@@ -83,8 +86,10 @@ export class Rules {
       const want = inp.hand || pl.hand.mode === 'dive' || inp.autoCatch;
       if (!want) continue;
       const dx = b.p.x - pl.x, dz = b.p.z - pl.z;
-      // Fanghilfe (Mensch ohne Knopf): nur Bälle, die ohnehin auf den Körper kommen (autoReach)
-      let reach = !inp.hand && inp.autoReach ? inp.autoReach : P.catchReach, hi = P.catchHigh, d = Math.hypot(dx, dz);
+      // Fanghilfe (Mensch ohne Knopf): nur Bälle, die ohnehin auf den Körper kommen (autoReach).
+      // Reichweite im Stand nach Höhe (Nacht 2b): Hüfte bis Kopf voll, flache Bälle nur mit Bücken (sonst hechten)
+      const hB = b.p.y, rH = hB < 0.7 ? 0.55 + 0.45 * clamp((hB - 0.12) / 0.58, 0, 1) : hB > 1.9 ? 1 - 0.25 * clamp((hB - 1.9) / 0.45, 0, 1) : 1;
+      let reach = Math.min(!inp.hand && inp.autoReach ? inp.autoReach : P.catchReach, P.catchReach * rH), hi = P.catchHigh, d = Math.hypot(dx, dz);
       if (pl.hand.mode === 'dive') { // im Flug: Strecke Körper → ausgestreckte Hände
         const t = clamp(dx * pl.hand.dx + dz * pl.hand.dz, 0, P.diveReach);
         d = Math.hypot(dx - pl.hand.dx * t, dz - pl.hand.dz * t);
@@ -145,7 +150,7 @@ export class Rules {
 
   // Anspielbarer Mitspieler für den Abwurf: frei (Abstand zum nächsten Gegner), Passweg frei, eher vorn.
   // Gibt null zurück, wenn niemand sinnvoll anspielbar ist (dann Abschlag weit).
-  bestMate(pl, needLane = false) {
+  bestMate(pl, needLane = false, minLane = 1.2, minFree = 1.5) {
     const g = this.g;
     let best = null, bs = -1e9;
     for (const m of g.players) {
@@ -158,12 +163,29 @@ export class Rules {
         const t = clamp(((o.x - pl.x) * ex + (o.z - pl.z) * ez) / L2, 0, 1);
         lane = Math.min(lane, Math.hypot(o.x - pl.x - ex * t, o.z - pl.z - ez * t));
       }
-      if (needLane && (lane < 1.2 || free < 1.5)) continue;
+      if (needLane && (lane < minLane || free < minFree || (minLane > 1.5 && this.interceptable(pl, m)))) continue;
       const fwd = (pl.team === 0 ? m.x : -m.x);
       const s = Math.min(free, 5) * 1.2 + Math.min(lane, 3) * 1.5 + fwd * 0.15 - Math.abs(Math.sqrt(L2) - 8) * 0.2;
       if (s > bs) { bs = s; best = m; }
     }
     return best;
+  }
+
+  // Kann ein Gegner einen Abwurf von pl zu m abfangen? Für Punkte entlang des Wegs: Gegner (Sprint, 0,3 s Reaktion,
+  // 0,45 m Reichweite) deutlich früher dort als der Ball (Abwurf-Tempo wie in release)?
+  interceptable(pl, m) {
+    const g = this.g, P = g.P;
+    const ex = m.x - pl.x, ez = m.z - pl.z, D = Math.hypot(ex, ez) || 1;
+    const v = throwSpeedFor(P, D);
+    for (const o of g.players) {
+      if (o.team === pl.team) continue;
+      for (let s = 1; s < D; s += 0.5) {
+        const px = pl.x + ex / D * s, pz = pl.z + ez / D * s;
+        const to = Math.max(0, Math.hypot(o.x - px, o.z - pz) - 0.45) / P.vSprint + 0.3;
+        if (to < s / v - 0.05) return true;
+      }
+    }
+    return false;
   }
 
   // Ball aus der Hand abgeben: Abwurf (flach, auf den Mitspieler) oder Abschlag (hoch und weit)
@@ -179,8 +201,8 @@ export class Rules {
       b.v.set(dx * sp * Math.cos(el), sp * Math.sin(el), dz * sp * Math.cos(el));
       b.w.set(-dz * 20, 0, dx * 20); // leichter Rückdrall
     } else {
-      // flach geworfen: Tempo nach Entfernung (kommt mit ~4 m/s an)
-      const sp = clamp(Math.sqrt(16 + 2 * 1.3 * D), 6, P.throwSpeed + 3);
+      // flach geworfen (Nacht 2b: zügiger, 8–14 m/s – ein gerollter 6-m/s-Abwurf wurde zu 3/4 abgefangen)
+      const sp = throwSpeedFor(P, D);
       b.p.set(hx, 1.25, hz);
       b.v.set(dx * sp, -1.2, dz * sp);
       b.w.set(dz * sp / b.r * 0.3, 0, -dx * sp / b.r * 0.3);
@@ -203,7 +225,11 @@ export class Rules {
     b.v.set(pl.vx, 0, pl.vz); b.w.set(0, 0, 0); b.contact = false;
   }
 
-  touch(pl) { this.lastTouchTeam = pl.team; this.g.lastTouch = pl.id; this.g.lastTouchT = this.g.t; }
+  touch(pl) {
+    this.lastTouchTeam = pl.team; this.g.lastTouch = pl.id; this.g.lastTouchT = this.g.t;
+    const pp = this.g.passPlan;
+    if (pp && pp.from !== pl.id) this.g.passPlan = null; // Pass angekommen oder abgefangen
+  }
 
   // ---------- Ablauf: Tor, Aus, Uhr, Halbzeit, Ende ----------
   onGoal(side) {
@@ -237,6 +263,7 @@ export class Rules {
     const g = this.g, P = g.P;
     this.updateKeepers(0, true);
     const pl = g.players[this.keeper[team]];
+    if (!pl) return;
     const gx = this.goalX(team), side = team === 0 ? 1 : -1;
     if (!this.inBox(team, pl.x, pl.z, -0.4)) pl.place(gx + side * 1.4, clamp(pl.z, -1.5, 1.5), team === 0 ? 0 : Math.PI);
     pl.hand.mode = 'hold'; pl.holdT = 0; pl.pending = null;

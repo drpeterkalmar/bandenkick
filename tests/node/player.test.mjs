@@ -151,10 +151,12 @@ function dribble(sprint, seconds = 6) {
   for (let i = 0; i < 2 / DT; i++) { g2.step([inp({ mx: 1 })]); if (tBack < 0 && p2.assistW > 0.6) tBack = (i + 1) * DT; }
   check('Hilfe kehrt sanft zurück (bis 60 %)', tBack, 0.3, 1.5, 's', null);
 }
-// 5) Pass und Schuss
+// 5) Pass und Schuss der Profi-Steuerung ?treffpunkt=1 (Treffpunkt-Modell aus Nacht 1, bleibt erhalten).
+//    Das neue Modell (Gesten, Ziel automatisch, Qualität q) prüfen shot.test.mjs, pass.test.mjs und air.test.mjs.
 {
+  const PT = makeParams('?treffpunkt=1');
   const kickTest = (setup) => {
-    const g = new Game(P, 21); const pl = g.players[0];
+    const g = new Game(PT, 21); const pl = g.players[0];
     pl.place(-3, 0, 0); g.ball.place(-3 + P.footAhead, 0.11, 0);
     let kick = null;
     for (let i = 0; i < 2 / DT && !kick; i++) {
@@ -164,16 +166,16 @@ function dribble(sprint, seconds = 6) {
     return { kick, lk: pl.lastKick, ball: g.ball };
   };
   const p = kickTest(() => inp({ pass: true }));
-  check('Pass (Tippen): Ballgeschwindigkeit', p.kick ? p.kick.speed : 0, P.passSpeed * 0.9, P.passSpeed * 1.1, 'm/s', P.passSpeed);
+  check('?treffpunkt=1: Pass (Tippen) Ballgeschwindigkeit', p.kick ? p.kick.speed : 0, P.passSpeed * 0.9, P.passSpeed * 1.1, 'm/s', P.passSpeed);
   const s = kickTest((t) => (t < 1.1 ? inp({ shootHeld: true }) : inp({ shootRelease: true })));
-  check('Schuss voll aufgeladen', s.kick ? s.kick.speed : 0, 29, 30.5, 'm/s', 30, s.lk ? `${(s.lk.speed * 3.6).toFixed(0)} km/h, Drall ${s.lk.spinRps.toFixed(2)} U/s` : '');
-  check('Vollspann (Treffpunkt Mitte): kaum Drall → Flatterball', s.lk ? s.lk.spinRps : 9, 0, 0.3, 'U/s', 0);
+  check('?treffpunkt=1: Schuss voll aufgeladen', s.kick ? s.kick.speed : 0, 29, 30.5, 'm/s', 30, s.lk ? `${(s.lk.speed * 3.6).toFixed(0)} km/h, Drall ${s.lk.spinRps.toFixed(2)} U/s` : '');
+  check('?treffpunkt=1: Vollspann (Treffpunkt Mitte) kaum Drall', s.lk ? s.lk.spinRps : 9, 0, 0.3, 'U/s', 0);
   const h = kickTest((t) => (t < 0.5 ? inp({ shootHeld: true }) : inp({ shootRelease: true })));
-  check('Schuss halb aufgeladen', h.kick ? h.kick.speed : 0, 16, 20, 'm/s', 18);
+  check('?treffpunkt=1: Schuss halb aufgeladen', h.kick ? h.kick.speed : 0, 16, 20, 'm/s', 18);
   const c = kickTest((t) => (t < 1.1 ? inp({ shootHeld: true, cx: 1 }) : inp({ shootRelease: true, cx: 1 })));
-  check('Innenseite (Treffpunkt ganz rechts): Effet', c.lk ? c.lk.sideRps : 0, 9, 10.5, 'U/s', 10, c.lk ? `${c.lk.speed.toFixed(1)} m/s` : '');
+  check('?treffpunkt=1: Innenseite (Treffpunkt ganz rechts) Effet', c.lk ? c.lk.sideRps : 0, 9, 10.5, 'U/s', 10, c.lk ? `${c.lk.speed.toFixed(1)} m/s` : '');
   const ch = kickTest((t) => (t < 0.6 ? inp({ shootHeld: true, cy: -1 }) : inp({ shootRelease: true, cy: -1 })));
-  check('Heber (Treffpunkt unten): Abflugwinkel', ch.lk ? ch.lk.elevDeg : 0, 18, 28, '°', 23);
+  check('?treffpunkt=1: Heber (Treffpunkt unten) Abflugwinkel', ch.lk ? ch.lk.elevDeg : 0, 18, 28, '°', 23);
 }
 // 5b) Aufladen im Lauf: Ball bleibt am Fuß, Schuss kommt beim Loslassen (20 Seeds, Laufen und Sprint)
 {

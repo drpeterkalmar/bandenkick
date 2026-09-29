@@ -5,42 +5,21 @@
 // und spielt über die Schuss-/Pass-API des Spielers (Player.kickAt). Bandenpass: Zielpunkt an der Bande aus
 // der gemessenen Abprall-Kennzahl der echten Ballphysik (Bande + Rollspin + Effet), einmal beim Start gemessen.
 // Stärken ?bots=1…3: Reaktion, Tempo, Streuung, Fangsicherheit, Fehlerquote.
-import { Ball } from './ball.js';
 import { passSpeedFor } from './player.js';
+import { bankRatio } from './kickplan.js';
+import { shotFeatures, shotQuality } from './shot.js';
+import { planAir } from './air.js';
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 export const LEVELS = {
-  1: { react: 0.36, think: 0.36, speed: 0.8, noise: 2.4, shotNoise: 4.4, catchSkill: 0.3, fumble: 0.35, err: 0.35, shootMax: 10, keeperMove: 0.8, dive: 0.6, tackle: 1.4, minXg: 0.05 },
-  2: { react: 0.16, think: 0.2, speed: 0.93, noise: 1.3, shotNoise: 3.0, catchSkill: 0.8, fumble: 0.12, err: 0.12, shootMax: 13, keeperMove: 0.95, dive: 0.9, tackle: 1.0, minXg: 0.06 },
-  3: { react: 0.1, think: 0.1, speed: 1.0, noise: 0.7, shotNoise: 2.1, catchSkill: 1.0, fumble: 0.03, err: 0.04, shootMax: 15, keeperMove: 1.0, dive: 1.0, tackle: 0.85, minXg: 0.07 },
+  1: { react: 0.36, think: 0.36, speed: 0.8, noise: 2.4, shotNoise: 4.4, aimNoise: 1.1, keeperReact: 0.34, airTry: 0.45, shotPow: -0.05, catchSkill: 0.3, fumble: 0.35, err: 0.35, shootMax: 11, keeperMove: 0.8, dive: 0.6, tackle: 1.4, minXg: 0.05 },
+  2: { react: 0.16, think: 0.2, speed: 0.9, noise: 1.3, shotNoise: 3.0, aimNoise: 0.85, keeperReact: 0.26, airTry: 0.5, shotPow: 0, catchSkill: 0.8, fumble: 0.12, err: 0.12, shootMax: 13, keeperMove: 0.95, dive: 0.9, tackle: 1.0, minXg: 0.06 },
+  3: { react: 0.1, think: 0.1, speed: 1.0, noise: 0.7, shotNoise: 2.1, aimNoise: 0.5, keeperReact: 0.19, airTry: 0.65, shotPow: 0.1, catchSkill: 1.0, fumble: 0.03, err: 0.04, shootMax: 15, keeperMove: 1.0, dive: 1.0, tackle: 0.85, minXg: 0.07 },
 };
 const NP = 41, PDT = 0.05; // Ballvorhersage: 2 s in 0,05-s-Schritten
 
-// Abprall an der Längsbande für einen flach gespielten, rollenden Pass, gemessen mit der echten Ballphysik:
-// ρ = tan(Ausfallswinkel)/tan(Einfallswinkel) und Tempo danach. Effet (spinY) dreht den Abprall.
-const bankCache = new Map();
-export function bankRatio(P, cage, spinY = 0) {
-  const key = spinY.toFixed(1);
-  if (bankCache.has(key)) return bankCache.get(key);
-  const b = new Ball(P);
-  const ang = 45 * Math.PI / 180, sp = 10;
-  const z0 = cage.hz - 4;
-  b.place(0, P.ballR, z0);
-  const dx = Math.sin(ang), dz = Math.cos(ang);
-  b.v.set(dx * sp, 0, dz * sp);
-  b.w.set(dz * sp / P.ballR, spinY, -dx * sp / P.ballR);
-  let hit = false, out = null;
-  for (let i = 0; i < 360; i++) {
-    const vz0 = b.v.z;
-    b.step(1 / 120, cage);
-    if (!hit && vz0 > 0 && b.v.z < 0) hit = true;
-    if (hit && b.p.z < cage.hz - 1.5) { out = { vx: b.v.x, vz: b.v.z }; break; }
-  }
-  const tin = Math.tan(ang);
-  const r = out ? { rho: (out.vx / -out.vz) / tin, keep: Math.hypot(out.vx, out.vz) / sp } : { rho: 1, keep: 0.6 };
-  bankCache.set(key, r);
-  return r;
-}
+// Abprall-Kennzahl an der Längsbande: siehe kickplan.js (auch vom Pass-Planer benutzt)
+export { bankRatio };
 
 export class Bots {
   constructor(game, level = 2, levels = null) {
@@ -56,7 +35,7 @@ export class Bots {
     this.ttb = game.players.map(() => ({ t: 9, x: 0, z: 0 }));
     this.owner = -1; this.ownerTeam = -1;
     this.bank = bankRatio(game.P, game.cage, 0);
-    this.stats = { shots: 0, passes: 0, banks: 0, selfWall: 0, clears: 0, dives: 0, throws: 0 };
+    this.stats = { shots: 0, passes: 0, chips: 0, banks: 0, selfWall: 0, clears: 0, dives: 0, throws: 0, air: 0 };
   }
 
   // ---------- einmal je Takt: Vorhersage, Zeit zum Ball, Ballbesitz, Rollen ----------
@@ -119,8 +98,9 @@ export class Bots {
     const field = g.players.filter((p) => p.team === team && p.id !== kp);
     field.sort((a, c) => this.ttb[a.id].t - this.ttb[c.id].t);
     const set = (id, role) => { const br = this.brain[id]; if (br.role !== role) { br.role = role; br.roleT = 0; } };
+    if (kp < 0) return;
     set(kp, 'keeper');
-    const oppBest = Math.min(...g.players.filter((p) => p.team !== team).map((p) => this.ttb[p.id].t));
+    const oppBest = Math.min(9, ...g.players.filter((p) => p.team !== team).map((p) => this.ttb[p.id].t));
     // Hysterese: der bisherige Jäger bleibt es, solange der andere nicht deutlich schneller am Ball ist
     let first = field[0], second = field[1];
     if (second) {
@@ -132,6 +112,8 @@ export class Bots {
       const own = g.players[this.owner];
       if (own.id === kp) { for (const p of field) set(p.id, 'support'); }
       else { set(own.id, 'carrier'); for (const p of field) if (p.id !== own.id) set(p.id, 'support'); }
+    } else if (!first) {
+      // nur der Tormann: keine Feldspieler-Rollen
     } else if (this.ownerTeam === 1 - team) {
       set(first.id, 'press'); if (second) set(second.id, 'cover');
     } else {
@@ -149,6 +131,7 @@ export class Bots {
     inp.catchSkill = L.catchSkill; inp.fumble = br.catchRoll < L.fumble;
     const phase = g.rules.phase;
     if (phase === 'kickoff') return this.kickoffInput(pl, br, inp, L);
+    if (pl.air || pl.fall || this.airCheck(pl, br, L)) { inp.mx = 0; inp.mz = 0; return inp; } // Luftball läuft
     switch (br.role) {
       case 'keeper': this.keeper(pl, br, inp, L); break;
       case 'carrier': this.carrier(pl, br, inp, L); break;
@@ -161,6 +144,43 @@ export class Bots {
     const b = g.ball;
     if (b.held >= 0 && g.players[b.held].team !== pl.team) this.keepOut(pl, inp, 1 - pl.team);
     return inp;
+  }
+
+  // Luftball (Nacht 2b, gleiche Technik-Wahl wie beim Menschen): der Bot in der Nähe drückt zum passenden Zeitpunkt –
+  // im Angriff Schuss (Kopfball/Volley/Seitfall-/Fallrückzieher), in der eigenen Hälfte Befreiung. Starke Bots treffen
+  // das ideale Zeitfenster, schwache drücken auch zu früh/spät.
+  airCheck(pl, br, L) {
+    const g = this.g, b = g.ball, R = g.rules;
+    if (b.held >= 0 || g.rules.phase !== 'play' || pl.hand.mode !== 'none') return false;
+    if (b.p.y < 0.45 && b.v.y < 1.5) return false;
+    if (Math.hypot(b.p.x - pl.x, b.p.z - pl.z) > 6 || g.t < (br.airNext || 0)) return false;
+    if (R.keeper[pl.team] === pl.id && R.inBox(pl.team, pl.x, pl.z)) return false; // Tormann fängt
+    if (g.players.some((m) => m.team === pl.team && m.air)) return false;
+    br.airNext = g.t + 0.05;
+    const gx = this.oppGoalX(pl.team);
+    const Dg = Math.hypot(gx - b.p.x, b.p.z), press = this.space(pl);
+    // nur echte Gelegenheiten: Direktabnahme in Tornähe (nah oder unter Druck), Befreiung unter Druck in der eigenen
+    // Hälfte – sonst den Ball lieber annehmen (Brust/Oberschenkel/Fuß)
+    const lt = g.lastTouch >= 0 ? g.players[g.lastTouch] : null;
+    const fromOwnKeeper = lt && lt.team === pl.team && lt.id === R.keeper[pl.team];   // Abwurf/Abschlag: annehmen
+    const ownGoalD = Math.hypot(R.goalX(pl.team) - b.p.x, b.p.z);
+    const purpose = Dg < 9 && (Dg < 6 || press < 2.5) && !fromOwnKeeper ? 'shot'
+      : ownGoalD < 8 && press < 2.5 && lt && lt.team !== pl.team ? 'clear' : null;
+    if (!purpose) return false;
+    const plan = planAir(g, pl, { tPress: g.t, purpose, minScore: 0.4, minSpeed: 4 });
+    if (!plan) return false;
+    const need = L.err > 0.3 ? 0.55 : L.err > 0.1 ? 0.8 : 0.95;
+    if (plan.tq < need) return false;
+    // einmal je Luftball-Situation entscheiden (seit der letzten Ballberührung): nicht jeder nimmt direkt
+    if (br.airEp === g.lastTouchT) return false;
+    br.airEp = g.lastTouchT;
+    if (g.rng.next() > (purpose === 'shot' ? L.airTry : 0.7)) return false;
+    // nur wer am schnellsten an der Körperposition ist (grob: kein Mitspieler deutlich näher)
+    const dMe = Math.hypot(plan.bx - pl.x, plan.bz - pl.z);
+    if (g.players.some((m) => m.team === pl.team && m.id !== pl.id && Math.hypot(plan.bx - m.x, plan.bz - m.z) < dMe - 0.8)) return false;
+    pl.air = plan; pl.pending = null; pl.airNoise = L.aimNoise * 1.3;
+    this.stats.air++;
+    return true;
   }
 
   // Außerhalb des Spiels (Torjubel, Halbzeit, Aus): alle laufen auf ihre Anstoß-Plätze in der eigenen Hälfte
@@ -243,8 +263,21 @@ export class Bots {
       const pick = this.decide(pl, br, L, true);
       if (pick.kind === 'dribble') this.firstTouch(pl, L);
     }
-    if (pl.pending) { tx = b.p.x; tz = b.p.z; }
+    if (pl.pending) { this.approach(inp, pl); return; }
     this.moveTo(inp, pl, tx, tz, true, 0.6);
+  }
+
+  // Zum Ball mit vorgemerktem Kick: beim Schuss von hinten anlaufen (Körper zum Tor, Ball vor dem Fuß)
+  approach(inp, pl) {
+    const b = this.g.ball;
+    if (pl.pending.kind === 'shot') {
+      const gx = this.oppGoalX(pl.team), dx = gx - b.p.x, dz = -b.p.z, d = Math.hypot(dx, dz) || 1;
+      const px = b.p.x - dx / d * 0.3, pz = b.p.z - dz / d * 0.3;
+      const off = Math.hypot(px - pl.x, pz - pl.z);
+      // erst hinter den Ball, dann auf den Ball (sonst wartet er ewig hinter ihm)
+      if (off > 0.35 && ((pl.x - b.p.x) * dx + (pl.z - b.p.z) * dz) / d > -0.15) { this.moveTo(inp, pl, px, pz, false, 0.3); return; }
+    }
+    this.moveTo(inp, pl, b.p.x, b.p.z, false, 0.4);
   }
 
   carrier(pl, br, inp, L) {
@@ -252,7 +285,7 @@ export class Bots {
     const [fx, fz] = pl.footPoint();
     const atFeet = Math.hypot(b.p.x - fx, b.p.z - fz) < 1.0 && b.p.y < 0.5;
     if (g.t >= br.next && !pl.pending && atFeet) { br.next = g.t + L.think; this.decide(pl, br, L, false); }
-    if (pl.pending) { this.moveTo(inp, pl, b.p.x, b.p.z, false, 0.4); return; }
+    if (pl.pending) { this.approach(inp, pl); return; }
     if (br.wall && g.t < br.wall.until) { // nach Bandenpass zu sich selbst: zum Abprallpunkt sprinten
       this.moveTo(inp, pl, br.wall.x, br.wall.z, true, 0.6); return;
     }
@@ -277,6 +310,13 @@ export class Bots {
     if (Math.abs(pl.z) > cz - 1.5) dz -= Math.sign(pl.z) * 0.6;
     l = Math.hypot(dx, dz) || 1;
     br.dribX = dx / l; br.dribZ = dz / l;
+    // Ball nicht in Dribbelrichtung am Fuß (z. B. hinter dem Spieler in der Ecke): nicht davonlaufen, sondern den Ball
+    // mit einem vorgemerkten Kontakt in Spielrichtung mitnehmen (auch aus der Ecke) – der Vormerk hält die Absicht stabil
+    const bdx = b.p.x - fx, bdz = b.p.z - fz, bdl = Math.hypot(bdx, bdz);
+    if (bdl > 0.45 && (bdx * br.dribX + bdz * br.dribZ) / bdl < 0.5 && b.p.y < 0.5) {
+      this.firstTouch(pl, L);
+      this.moveTo(inp, pl, b.p.x, b.p.z, false, 0.4); return;
+    }
     inp.mx = br.dribX; inp.mz = br.dribZ;
     inp.sprint = this.space(pl) > 3.5;
   }
@@ -301,6 +341,19 @@ export class Bots {
       m = Math.min(m, Bots.segDist(o.x, o.z, ax, az, bx, bz));
     }
     return m;
+  }
+
+  // Gegner, der den Passweg a→b am stärksten zustellt: {d = Abstand vom Ball entlang des Wegs, lane}
+  blocker(team, ax, az, bx, bz) {
+    let best = null;
+    for (const o of this.g.players) {
+      if (o.team === team) continue;
+      const lane = Bots.segDist(o.x, o.z, ax, az, bx, bz);
+      if (lane > 1.0) continue;
+      const d = Math.hypot(o.x - ax, o.z - az);
+      if (!best || lane < best.lane) best = { d, lane };
+    }
+    return best;
   }
 
   // Torchance (grobe xG-Schätzung) von (x, z) aus: Entfernung und sichtbarer Torwinkel
@@ -345,9 +398,12 @@ export class Bots {
       const kpOff = clamp(Math.abs(kp.z - tz) / cage.gw, 0, 1);
       // Unter Druck (Gegner < 1,3 m) wird ein Schuss hastig: doppelte Streuung, seltener gewählt
       const pressure = this.space(pl), rushed = pressure < 1.3;
-      const u = this.xg(team, b.p.x, b.p.z) * (lane > 0.8 ? 1 : 0.2) * (0.7 + 0.5 * kpOff) * (empty ? 2.2 : 1) * (rushed ? 0.6 : 1);
-      const h = rng.next() < 0.5 ? 0.35 : 1.35;
-      opts.push({ kind: 'shot', u, act: () => { pl.kickAt({ kind: 'shot', target: [gx + (team === 0 ? 0.6 : -0.6), tz, h], speed: (rushed ? 17 : 20) + 9 * rng.next(), technique: rng.next() < 0.4 ? 'innen' : 'vollspann', spinY: (tz > 0 ? 1 : -1) * (team === 0 ? 1 : -1) * rng.range(0, 30), noise: L.shotNoise * (rushed ? 2 : 1) }); this.stats.shots++; } });
+      // Schussqualität q wie beim Menschen (Lage, Körper, Ball am Fuß, Druck): schlechte Lage = langsamer, zentraler
+      const q = shotQuality(shotFeatures(g, pl, [gx, 0.35, 0], pl.strong), g.P).qEff;
+      const u = this.xg(team, b.p.x, b.p.z) * (lane > 0.8 ? 1 : 0.2) * (0.7 + 0.5 * kpOff) * (empty ? 2.2 : 1) * (rushed ? 0.6 : 1) * (0.55 + 0.45 * q);
+      // Schuss wie beim Menschen (Nacht 2b): Ziel automatisch am Tormann vorbei, Qualität q aus der Lage, Vollspann
+      // oder angeschnitten (Innen-/Außenrist); Stärke-Streuung der Bots über noise
+      opts.push({ kind: 'shot', u, act: () => { pl.kickAt({ kind: 'shot', auto: true, mode: rng.next() < 0.4 ? 'var' : 'std', power: Math.min(1, (rushed ? 0.55 : 0.7) + L.shotPow + 0.3 * rng.next()), noise: L.aimNoise * (rushed ? 1.5 : 1) }); this.stats.shots++; } });
     }
     // Pass und Bandenpass zu Mitspielern
     for (const m of g.players) {
@@ -362,8 +418,14 @@ export class Bots {
       const succ = clamp((lane - 0.4) / 1.4, 0, 0.97) * clamp(open / 2.2, 0.25, 1) * (1 - D0 / 35);
       const mid = this.loseVal(team, (b.p.x + tx) / 2, (b.p.z + tz) / 2);
       const val = this.keepVal(team, tx, tz) - (isKp ? 0.03 : 0);
-      if (lane > 1.0) opts.push({ kind: 'pass', u: succ * val + (1 - succ) * mid, act: () => { pl.kickAt({ kind: 'pass', target: [tx, tz], noise: L.noise, to: m.id }); this.stats.passes++; } });
+      if (lane > 1.0) opts.push({ kind: 'pass', u: succ * val + (1 - succ) * mid, act: () => { pl.kickAt({ kind: 'pass', lead: true, to: m.id, noise: L.noise / 1.3 }); this.stats.passes++; } });
       else {
+        // Passweg zu: Chip über den Gegner in den Laufweg, wenn der Gegner nicht direkt vor dem Ball steht
+        const blk = this.blocker(team, b.p.x, b.p.z, tx, tz);
+        if (blk && blk.d > 2.2 && D0 > 5 && !isKp) {
+          const cs = clamp(0.75 - D0 / 40, 0.3, 0.7) * clamp(open / 2.2, 0.25, 1);
+          opts.push({ kind: 'chip', u: cs * val + (1 - cs) * mid, act: () => { pl.kickAt({ kind: 'pass', lead: true, mode: 'var', to: m.id, noise: L.noise / 1.3 }); this.stats.chips++; } });
+        }
         const bank = this.bankPlan(pl, tx, tz);
         if (bank) {
           const bs = clamp(bank.score / 1.5, 0.2, 0.85) * clamp(open / 2.2, 0.25, 1);
@@ -440,6 +502,11 @@ export class Bots {
   // Anspielstation: freien Raum vor dem Ball suchen
   support(pl, br, inp, L) {
     const g = this.g, b = g.ball, cage = g.cage, team = pl.team;
+    const pp = g.passPlan;
+    if (pp && pp.to === pl.id && b.held < 0 && g.t < pp.t + 1.2) { // Pass in den Laufweg: Empfänger-Hilfe (wie beim Menschen)
+      inp.mx = 0; inp.mz = 0; inp.speedCap = 1;
+      return;
+    }
     if (g.passTo === pl.id && g.t - g.lastTouchT < 1.5 && b.held < 0) { // Pass kommt: entgegenlaufen
       const tt = this.ttb[pl.id];
       this.moveTo(inp, pl, tt.x, tt.z, true, 0.5);
@@ -495,7 +562,10 @@ export class Bots {
     inp.speedCap = L.speed * L.keeperMove;
     if (b.held === pl.id) { // Ball in der Hand: Abwurf, sobald ein Mitspieler frei anspielbar ist
       if (br.throwAt < 0) br.throwAt = g.t + 0.8 + g.rng.next() * 0.8 + (1 - L.catchSkill) * 0.6;
-      const mate = g.t >= br.throwAt ? R.bestMate(pl, true) : null;
+      // Abwurf nur bei freiem Passweg (gute Tormänner: ≥ 2 m zum Weg, Empfänger ≥ 2,3 m frei) – sonst warten bzw.
+      // spät weit abschlagen; ein abgefangener Abwurf am Torraum ist fast immer ein Gegentor
+      const safe = L.catchSkill > 0.5;
+      const mate = g.t >= br.throwAt ? R.bestMate(pl, true, safe ? 1.6 : 1.2, safe ? 2.0 : 1.5) : null;
       const late = pl.holdT > 3.6 + L.catchSkill;
       if (mate || late) {
         if (mate) { inp.aimX = mate.x + mate.vx * 0.5; inp.aimZ = mate.z + mate.vz * 0.5; }
@@ -525,7 +595,7 @@ export class Bots {
           if (br.shotSeen < 0) br.shotSeen = g.t;
           const seen = g.t - br.shotSeen;
           inp.autoCatch = true; inp.hand = true;
-          if (seen >= L.react) {
+          if (seen >= L.keeperReact) { // Reaktionszeit auf einen Schuss (Mensch ≈ 0,2–0,3 s; Nacht 2b: vorher 0,1–0,36 s)
             const dz = zc - pl.z;
             this.moveTo(inp, pl, pl.x, zc, true, 0.3);
             const reachRun = P.vSprint * L.speed * tc * 0.6;
@@ -557,9 +627,12 @@ export class Bots {
     const bx = b.p.x + b.v.x * 0.25, bz = b.p.z + b.v.z * 0.25;
     const dx = bx - gx, dz = bz, d = Math.hypot(dx, dz) || 1;
     const own = this.ownerTeam === team;
-    const rk = clamp(0.7 + 0.13 * d + (own ? 1.2 : 0), 0.9, own ? 3.4 : 3.0);
+    // Nacht 2b: Schüsse zielen jetzt genau ins freie Eck → vorsichtiger stehen: Ball in Schussweite (Gegner am Ball
+    // oder loser Ball < 9 m) höchstens 1,3 m vor der Linie; nur bei eigenem Ballbesitz weiter heraus. Schnell zurück.
+    const danger = !own && d < 9;
+    const rk = danger ? clamp(0.6 + 0.1 * d, 0.75, 1.5) : clamp(0.7 + 0.12 * d + (own ? 1.0 : 0), 0.9, own ? 3.0 : 2.2);
     const kx = gx + dx / d * rk, kz = clamp(dz / d * rk, -cage.gw - 0.3, cage.gw + 0.3);
-    this.moveTo(inp, pl, kx, kz, false, 0.6);
+    this.moveTo(inp, pl, kx, kz, danger && Math.hypot(kx - pl.x, kz - pl.z) > 1.2, 0.6);
     inp.autoCatch = inOwnBox; inp.hand = inOwnBox;
   }
 }

@@ -4,7 +4,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 const here = dirname(fileURLToPath(import.meta.url));
 let bad = 0;
-for (const f of ['fifa.test.mjs', 'aero.test.mjs', 'cage.test.mjs', 'player.test.mjs', 'rules.test.mjs', 'selfplay.test.mjs']) {
+for (const f of ['fifa.test.mjs', 'aero.test.mjs', 'cage.test.mjs', 'player.test.mjs', 'rules.test.mjs', 'gesture.test.mjs', 'technique.test.mjs', 'pass.test.mjs', 'shot.test.mjs', 'selfplay.test.mjs']) {
   const r = spawnSync(process.execPath, [join(here, f)], { stdio: 'inherit' });
   if (r.status !== 0) { bad++; console.log(`✗ ${f}`); }
 }

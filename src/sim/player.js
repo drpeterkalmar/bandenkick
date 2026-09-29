@@ -1,10 +1,21 @@
-// Platzhalter-Spieler: realistische Laufwerte (Sprint 7,5 m/s, 0→7 m/s in ≈ 2,5 s, Wendekreis v²/aLat),
-// Ballführung mit echten Ballkontakten (kein Klebeball), Pass (Tippen), Schuss (Halten = Aufladen,
-// Spin aus dem Treffpunkt). Hilfen ziehen nur, solange der Spieler nichts Deutliches tut.
+// Spieler: realistische Laufwerte (Sprint 7,5 m/s, 0→7 m/s in ≈ 2,5 s, Wendekreis v²/aLat), Ballführung mit echten
+// Ballkontakten (kein Klebeball). Pass und Schuss über die Gesten-Grammatik (src/input/gesture.js): halten =
+// flach/Vollspann, tipp + halten = hoch/angeschnitten; Ziel, Technik und Stärke planen pass.js/shot.js mit der echten
+// Ballphysik, Luftbälle air.js. ?treffpunkt=1 = alte Profi-Steuerung (freie Richtung, Spin aus dem Treffpunkt).
+// Hilfen ziehen nur, solange der Spieler nichts Deutliches tut.
+import { setKick } from './kickplan.js';
+import { planPass } from './pass.js';
+import { planShot } from './shot.js';
+import { planAir, stepAir, stepFall } from './air.js';
 const DEG = Math.PI / 180;
 const wrap = (a) => { while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI; return a; };
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const smoothstep = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+
+// Gegner näher als d am Spieler?
+const oppNear = (game, pl, d) => game.players.some((o) => o.team !== pl.team && Math.hypot(o.x - pl.x, o.z - pl.z) < d);
+// Tor, auf das der Spieler spielt (wie shot.js attackGoalX, ohne Import-Zyklus)
+const goalX = (game, pl) => (game.match ? (pl.team === 0 ? game.cage.hx : -game.cage.hx) : (Math.cos(pl.face) >= 0 ? game.cage.hx : -game.cage.hx));
 
 export const EMPTY_INPUT = Object.freeze({ mx: 0, mz: 0, sprint: false, pass: false, shootHeld: false, shootRelease: false, cx: 0, cy: 0, aimX: 0, aimZ: 0, aim: false });
 
@@ -30,6 +41,13 @@ export class Player {
     this.plantX = 1; this.plantZ = 0; this.plantT = 99;
     this.bodyOffT = 0;            // kurz keine Körper-Kollision mit dem Ball (nach Mitnahme im Stemmschritt)
     this.hand = { mode: 'none', t: 0, dx: 1, dz: 0 }; // Tormann: none | hold | dive | ground
+    this.strong = id === 2 || id === 4 ? -1 : 1;    // starkes Bein (+1 rechts, −1 links): je Mannschaft ein Linksfuß
+    this.chargeKind = 'shot'; this.chargeMode = 'std'; this.armed = null; // Geste: was lädt, Tipp wartet
+    this.tech = ''; this.techT = 99;                 // zuletzt gespielte Technik (Grafik, Ton)
+    this.air = null;                                 // geplanter Luftball (air.js)
+    this.airPress = false;                           // der laufende Schuss-Druck hat einen Luftball ausgelöst
+    this.jumpY = 0; this.jumpV = 0;                  // Sprung (Kopfball): Höhe der Füße über dem Boden
+    this.fall = null;                                // am Boden nach Seit-/Fallrückzieher/Flugkopfball {tech, t, dur}
     this.holdT = 0;               // Ball in der Hand seit … s
     this.catchCd = -1;            // Spielzeit, ab der wieder gefangen werden darf
   }
@@ -61,18 +79,20 @@ export class Player {
     this.plant = 0;
   }
 
-  // Schuss-/Pass-API für Bots und Regeln (der Folgejob baut sie aus): Ziel statt Stick.
-  // kind: 'pass' | 'shot' | 'clear'; target [x, z] (Weltpunkt, bei 'shot' auch Höhe als target[2]);
-  // technique: 'innen' (Innenseite, Effet spinY) | 'vollspann' | 'heber'; speed optional (sonst nach Entfernung);
-  // noise: Streuungs-Faktor (Bot-Stärke); to: Empfänger-Index (Pass). Ausgeführt beim nächsten Ballkontakt.
-  kickAt({ kind = 'pass', target, technique = 'innen', speed, elev, spinY = 0, spinBack = 0, noise = 1, to = -1 } = {}) {
-    this.pending = { kind, api: true, target: [...target], technique, speed, elev, spinY, spinBack, noise, to, dir: [1, 0], age: 0 };
+  // Schuss-/Pass-API für Bots, Regeln und Challenges: Ziel statt Stick. Ausgeführt beim nächsten Ballkontakt.
+  //  - mit Ziel: kind 'pass' | 'shot' | 'clear', target [x, z] (bei 'shot' Höhe als target[2]), technique
+  //    'innen' | 'vollspann' | 'heber', speed/elev/spinY/spinBack optional, noise = Streuungs-Faktor, to = Empfänger
+  //  - geplant wie beim Menschen (Nacht 2b): {kind: 'pass', to, lead: true, mode: 'std'|'var'} = Pass in den
+  //    Laufweg (flach/Chip), {kind: 'shot', auto: true, mode, power} = Schuss mit automatischem Ziel und Qualität q
+  kickAt({ kind = 'pass', target = [0, 0], technique = 'innen', speed, elev, spinY = 0, spinBack = 0, noise = 1, to = -1, lead = false, auto = false, mode = 'std', power = 0.8 } = {}) {
+    this.pending = { kind, api: true, target: [...target], technique, speed, elev, spinY, spinBack, noise, to, lead, auto, mode, power, dir: [1, 0], age: 0 };
   }
 
   place(x, z, face = 0) {
     this.x = x; this.z = z; this.vx = 0; this.vz = 0; this.speed = 0;
     this.face = face; this.hx = Math.cos(face); this.hz = Math.sin(face);
     this.pending = null; this.charging = false; this.charge = 0; this.assistW = 0;
+    this.air = null; this.airPress = false; this.fall = null; this.jumpY = 0; this.jumpV = 0; this.armed = null;
   }
 
   footPoint() {
@@ -81,8 +101,11 @@ export class Player {
 
   step(dt, inp, game) {
     const P = this.P, ball = game.ball, t = game.t;
-    this.touchCd -= dt; this.kickT += dt; this.touchT += dt; this.clearT += dt; this.plantT += dt;
+    this.touchCd -= dt; this.kickT += dt; this.touchT += dt; this.clearT += dt; this.plantT += dt; this.techT += dt;
+    // Sprung (Kopfball, Absprung beim Fallrückzieher): Füße über dem Boden
+    if (this.jumpY > 0 || this.jumpV > 0) { this.jumpY += this.jumpV * dt; this.jumpV -= P.g * dt; if (this.jumpY <= 0) { this.jumpY = 0; this.jumpV = 0; } }
     if (this.hand.mode === 'dive' || this.hand.mode === 'ground') { this.stepDive(dt, game); return; }
+    if (this.fall) { stepFall(this, dt, game); this.plant = 0; return; } // am Boden nach Seit-/Fallrückzieher
     const held = ball.held >= 0;
     if (this.pending) { this.pending.age += dt; if (this.pending.age > P.kickBuffer) this.pending = null; }
 
@@ -98,13 +121,25 @@ export class Player {
       if (want) return [sx, sz];
       return [Math.cos(this.face), Math.sin(this.face)];
     };
-    if (inp.pass) { this.pending = { kind: 'pass', dir: aimDir(), age: 0 }; this.clearT = 0; }
-    if (inp.shootHeld) { this.charging = true; this.charge = Math.min(this.charge + dt, P.chargeT * 1.25); }
-    if (inp.shootRelease && this.charging) {
-      this.pending = { kind: 'shot', power: clamp(this.charge / P.chargeT, 0, 1), cx: clamp(inp.cx || 0, -1, 1), cy: clamp(inp.cy || 0, -1, 1), dir: aimDir(), age: 0 };
-      this.charging = false; this.charge = 0; this.clearT = 0;
+    const stick = () => (inp.aim && (inp.aimX || inp.aimZ) ? aimDir() : want ? [sx, sz] : null);
+    if (inp.gest) this.gestures(inp, game, aimDir, stick);
+    else { // Flanken (Tests, alte Eingabe): Pass = Einzeltipp, Schuss halten/loslassen = Standard
+      if (inp.pass) { this.pending = { kind: 'pass', mode: inp.mode || 'std', power: null, stick: stick(), dir: aimDir(), age: 0 }; this.clearT = 0; }
+      if (inp.shootHeld) { this.charging = true; this.chargeKind = 'shot'; this.chargeMode = inp.mode || 'std'; this.charge = Math.min(this.charge + dt, P.chargeT * 1.25); }
+      if (inp.shootRelease && this.charging) {
+        this.pending = { kind: 'shot', mode: inp.mode || 'std', power: clamp(this.charge / P.chargeT, 0, 1), cx: clamp(inp.cx || 0, -1, 1), cy: clamp(inp.cy || 0, -1, 1), stick: stick(), dir: aimDir(), age: 0 };
+        this.charging = false; this.charge = 0; this.clearT = 0;
+      }
+      if (!inp.shootHeld && !inp.shootRelease && this.charging) { this.charging = false; this.charge = 0; }
     }
-    if (!inp.shootHeld && !inp.shootRelease && this.charging) { this.charging = false; this.charge = 0; }
+    // Luftball: Schuss gehalten oder vorgemerkt, Ball kommt in der Luft → Kopfball/Volley/… planen (Timing ab dem Druck)
+    if (!this.air && !held && !P.treffpunkt && (ball.p.y > P.reachH || ball.v.y > 1.5)) {
+      if (this.charging && this.chargeKind === 'shot' && !this.airPress) { if (this.tryAir(game, this.chargeT0 ?? game.t)) this.airPress = true; }
+      else if (this.pending && this.pending.kind === 'shot' && !this.pending.api) { if (this.tryAir(game, this.pending.t ?? game.t)) this.pending = null; }
+    }
+    if (this.air) { // Anlauf, Absprung, Treffpunkt – die Hilfe steuert, deutliche Gegen-Eingabe bricht nach 0,3 s ab
+      if (stepAir(this, dt, game, want, sx, sz)) { this.plant = 0; this.gait += this.speed * dt / 1.1; return; }
+    }
 
     // --- Ball-Lage ---
     const bx = ball.p.x - this.x, bz = ball.p.z - this.z;
@@ -134,14 +169,30 @@ export class Player {
       targetW = 1;
       dirX = bx / bd; dirZ = bz / bd;
     }
+    // Empfänger eines Passes ohne Stick: läuft in seinem Laufweg zum geplanten Treffpunkt und kommt pünktlich an
+    // (Phase A); ist der Ball nah oder die Zeit fast um, geht er direkt auf den Ball (Phase B) – kein Stehenbleiben.
+    const pp = game.passPlan;
+    let recv = false, recvV = 0;
+    if (!want && !held && pp && pp.to === this.id && !(this.pending && bd < 3) && game.t < pp.t + 1.2) {
+      const tRem = pp.t - game.t;
+      const bvx = ball.v.x, bvz = ball.v.z, lead = clamp(bd / 9, 0.1, 0.35);
+      const near = bd < 3.2 && (ball.p.y < 1.8 || tRem < 0.4);
+      const tx = near ? ball.p.x + bvx * lead : pp.x, tz = near ? ball.p.z + bvz * lead : pp.z;
+      const dx = tx - this.x, dz = tz - this.z, d = Math.hypot(dx, dz);
+      if (d > 0.12) {
+        recv = true; dirX = dx / d; dirZ = dz / d;
+        recvV = near ? clamp(Math.max(this.speed, d / 0.35), 1.5, P.vSprint) : clamp(d / Math.max(0.12, tRem), 1.5, P.vSprint);
+      }
+    }
     const tau = targetW > this.assistW ? P.assistReturn : P.assistRelease;
     this.assistW += (targetW - this.assistW) * (1 - Math.exp(-dt / tau));
-    const moving = want || (targetW > 0 && this.pending);
+    const moving = want || (targetW > 0 && this.pending) || recv;
 
     // --- Bewegung ---
     let vd = 0;
     if (moving) {
       vd = (want ? mag : 0.8) * (this.sprinting ? P.vSprint : P.vRun);
+      if (recv) vd = recvV;
       if (this.dribbling) vd *= P.dribbleSlow;
       if (this.charging) vd *= 0.8; // zum Schuss hin etwas verlangsamen
       if (this.hand.mode === 'hold') vd = Math.min(vd, P.vRun * 0.6); // mit Ball in der Hand nur gehen
@@ -163,7 +214,9 @@ export class Player {
     // Blickrichtung: Stemmschritt → Körper dreht schon in die neue Richtung; läuft → Laufrichtung;
     // steht → zum Stick bzw. zum Ball
     let fAng = this.face;
-    if (this.plant > 0.4 && moving) fAng = Math.atan2(dirZ, dirX);
+    const aimGoal = !want && this.charging && this.chargeKind === 'shot' && !P.treffpunkt && bd < 2.5;
+    if (aimGoal) fAng = Math.atan2(-ball.p.z, goalX(game, this) - ball.p.x); // Schuss laden ohne Stick: zum Tor drehen
+    else if (this.plant > 0.4 && moving) fAng = Math.atan2(dirZ, dirX);
     else if (s > 0.6) fAng = hAng;
     else if (want) fAng = Math.atan2(sz, sx);
     else if (bd < 3 && bd > 0.2) fAng = Math.atan2(bz, bx);
@@ -181,7 +234,31 @@ export class Player {
     const rel = Math.hypot(rvx, ball.v.y, rvz);
     let touched = false;
     if (held) return;
-    if (inReach && rel < P.ctrlRelMax) {
+    // Ballannahme aus der Luft (Brust, Oberschenkel): Ball kommt vor dem Körper herunter, nicht zu schnell → er fällt
+    // kontrolliert vor die Füße. Harte Schüsse prallen weiter vom Körper ab (bodyCollision).
+    if (!inReach && this.touchCd <= 0 && !this.air && ball.p.y > P.reachH && ball.p.y < 1.55 && ball.v.y < 0.5 && bd < 0.75 && rel < 11 &&
+        (bx * Math.cos(this.face) + bz * Math.sin(this.face)) > -0.15 && !this.pending) {
+      const k = 0.7, part = ball.p.y > 1.05 ? 'brust' : 'oberschenkel';
+      ball.v.set(this.vx * k + Math.cos(this.face) * 0.6, -1.2, this.vz * k + Math.sin(this.face) * 0.6);
+      ball.w.set(0, 0, 0);
+      this.tech = part; this.techT = 0;
+      this.afterTouch(game, 0.25, rel);
+      game.events.push({ type: 'control', part, player: this.id, x: ball.p.x, y: ball.p.y, z: ball.p.z });
+      touched = true;
+    }
+    // Vorgemerkter Kick: noch einen Schritt abwarten, wenn der Ball zu weit vorn liegt und näher kommt (bessere Lage,
+    // höheres q) – höchstens 0,25 s, nie wenn er sich entfernt oder ein Gegner nah ist
+    let settle = false;
+    if (this.pending && !this.pending.api && inReach && !cut) {
+      const fxf = Math.cos(this.face), fzf = Math.sin(this.face);
+      const ahead = bx * fxf + bz * fzf, closing = (ball.v.x - this.vx) * fxf + (ball.v.z - this.vz) * fzf;
+      settle = ahead > 0.6 && closing < -0.8 && this.pending.age < 0.25 && !oppNear(game, this, 1.4);
+    } else if (this.pending && this.pending.api && this.pending.kind === 'shot' && inReach && !cut) {
+      const fxf = Math.cos(this.face), fzf = Math.sin(this.face);
+      const ahead = bx * fxf + bz * fzf, closing = (ball.v.x - this.vx) * fxf + (ball.v.z - this.vz) * fzf;
+      settle = ahead > 0.6 && closing < -0.8 && this.pending.age < 0.25 && !oppNear(game, this, 1.4);
+    }
+    if (!touched && inReach && rel < P.ctrlRelMax && !settle) {
       if (this.pending && this.touchCd <= 0.1) {
         this.kick(this.pending, game, rel);
         this.pending = null;
@@ -337,6 +414,7 @@ export class Player {
   }
 
   afterTouch(game, cd, rel) {
+    if (game.passPlan && (game.passPlan.from !== this.id || game.t > game.passPlan.t - 0.2)) game.passPlan = null; // Pass angekommen/abgefangen
     this.touchCd = cd;
     this.lastTouchT = game.t;
     if (game.match) game.rules.touch(this);
@@ -346,8 +424,52 @@ export class Player {
     game.events.push({ type: 'touch', player: this.id, rel, x: game.ball.p.x, y: game.ball.p.y, z: game.ball.p.z });
   }
 
+  // Luftball versuchen (Schuss gedrückt): Plan aus air.js übernehmen → true
+  tryAir(game, tPress) {
+    const plan = planAir(game, this, { tPress });
+    if (!plan) return false;
+    this.air = plan; this.pending = null; this.charging = false;
+    return true;
+  }
+
+  // Gesten-Ereignisse des Menschen (Game.humanInput → stepGestures): start/pause/tap/release/cancel
+  gestures(inp, game, aimDir, stick) {
+    const P = this.P;
+    for (const e of inp.gest) {
+      if (e.type === 'start') {
+        this.pending = null; this.charging = true; this.chargeKind = e.btn; this.chargeMode = e.mode; this.charge = 0;
+        this.armed = null; this.clearT = 0; this.chargeT0 = game.t;
+        if (e.btn === 'shot' && !P.treffpunkt && this.tryAir) this.airPress = this.tryAir(game, game.t);
+      } else if (e.type === 'pause') {
+        this.charging = false; this.armed = e.btn;
+      } else if (e.type === 'tap' || e.type === 'release') {
+        this.armed = null;
+        if (e.btn === 'shot' && this.airPress) { this.airPress = false; this.charging = false; continue; } // Luftball läuft
+        const kind = e.btn === 'pass' ? 'pass' : 'shot';
+        // Pass: Einzeltipp bzw. Doppeltipp (zweiter Druck kurz) = automatische Stärke, sonst Stärke aus der Haltedauer
+        const power = kind === 'pass' && (e.type === 'tap' || e.dur < P.tapMax) ? null : clamp(e.dur / P.chargeT, 0, 1);
+        this.pending = { kind, mode: e.mode, power, stick: stick(), dir: aimDir(), cx: clamp(inp.cx || 0, -1, 1), cy: clamp(inp.cy || 0, -1, 1), age: 0, t: game.t };
+        this.charging = false; this.charge = 0; this.clearT = 0;
+      } else if (e.type === 'cancel') {
+        if (this.chargeKind === e.btn) this.charging = false;
+        if (e.btn === 'shot') this.airPress = false;
+      }
+    }
+    if (this.charging && inp.gview && !inp.gview.wait) this.charge = inp.gview.dur;
+  }
+
   // Pass oder Schuss ausführen
   kick(pd, game, rel) {
+    if (pd.api && (pd.lead || pd.auto)) {
+      const plan = pd.kind === 'shot' ? planShot(game, this, { mode: pd.mode, power: pd.power, noiseMul: pd.noise })
+        : planPass(game, this, { mode: pd.mode, to: pd.to, noiseMul: pd.noise, power: null });
+      return this.applyPlan(plan, game, rel);
+    }
+    if (!pd.api && !this.P.treffpunkt) {
+      const plan = pd.kind === 'pass' ? planPass(game, this, { mode: pd.mode, power: pd.power, stick: pd.stick })
+        : planShot(game, this, { mode: pd.mode, power: pd.power, stick: pd.stick });
+      return this.applyPlan(plan, game, rel);
+    }
     const P = this.P, ball = game.ball, rng = game.rng;
     let [dx, dz] = pd.dir;
     let speed, elev, spinSide = 0, spinBack = 0, noiseDeg;
@@ -416,7 +538,9 @@ export class Player {
     this.lastTouchT = game.t;
     this.kickT = 0; this.touchT = 0;
     this.kickFoot = -this.kickFoot;
-    this.lastKick = { kind: pd.kind, speed, spinRps: Math.hypot(ball.w.x, ball.w.y, ball.w.z) / (2 * Math.PI), sideRps: spinSide / (2 * Math.PI), elevDeg: elev / DEG, power: pd.power ?? 0, cx: pd.cx ?? 0, cy: pd.cy ?? 0, t: game.t };
+    const techL = pd.kind === 'pass' ? (Math.cos(this.face) * dx + Math.sin(this.face) * dz < Math.cos(100 * DEG) ? 'ferse' : 'innen') : pd.kind === 'clear' ? 'vollspann' : (Math.abs(spinSide) > 3 ? 'innenrist' : spinBack > 10 ? 'chip' : 'vollspann');
+    this.tech = techL; this.techT = 0;
+    this.lastKick = { kind: pd.kind, tech: techL, speed, spinRps: Math.hypot(ball.w.x, ball.w.y, ball.w.z) / (2 * Math.PI), sideRps: spinSide / (2 * Math.PI), elevDeg: elev / DEG, power: pd.power ?? 0, cx: pd.cx ?? 0, cy: pd.cy ?? 0, t: game.t };
     // Empfänger merken (Spielerwechsel zum Empfänger, Bots laufen dem Ball entgegen)
     let to = pd.to ?? -1;
     if (to < 0 && pd.kind === 'pass' && game.match) {
@@ -429,14 +553,53 @@ export class Player {
       }
     }
     if (game.match) { game.passTo = pd.kind === 'pass' ? to : -1; game.rules.touch(this); }
-    game.events.push({ type: 'kick', kind: pd.kind, player: this.id, speed, x: ball.p.x, y: ball.p.y, z: ball.p.z, dx, dz, to });
+    game.passPlan = null;
+    game.events.push({ type: 'kick', kind: pd.kind, tech: techL, player: this.id, speed, x: ball.p.x, y: ball.p.y, z: ball.p.z, dx, dz, to });
+  }
+
+  // Geplanten Pass/Schuss/Luftball ausführen: Streuung (Richtung, Höhe, Tempo) aus dem Seed, Anfangsbedingungen per
+  // setKick – danach fliegt der Ball mit der normalen Physik.
+  applyPlan(plan, game, rel) {
+    const P = this.P, ball = game.ball, rng = game.rng;
+    let [dx, dz] = plan.dir;
+    let noise = plan.noiseDeg;
+    if (rel > P.ctrlRel) noise += (rel - P.ctrlRel) * 0.8;
+    const e = noise * DEG * rng.gauss();
+    const c = Math.cos(e), s = Math.sin(e);
+    [dx, dz] = [dx * c - dz * s, dx * s + dz * c];
+    const flat = plan.kind === 'pass' && !plan.chip;
+    const el = plan.elRad + (flat ? 0 : (plan.chip ? 0.25 : 0.5) * noise * DEG * rng.gauss());
+    const speed = plan.speed * (1 + (plan.kind === 'pass' ? 0.03 : 0.02) * rng.gauss());
+    const back = plan.kind === 'pass' && !plan.chip ? -0.3 * speed / ball.r : plan.back || 0;
+    setKick(ball, dx, dz, speed, el, back, plan.side || 0);
+    if (plan.tech === 'vollspann' || plan.tech === 'volley' || plan.tech === 'dropkick') { // kaum Drall → Flatterball
+      ball.w.x += 0.4 * rng.gauss(); ball.w.y += 0.4 * rng.gauss(); ball.w.z += 0.4 * rng.gauss();
+    }
+    ball.reseedKnuckle(rng);
+    this.touchCd = 0.35;
+    this.bodyOffT = 0.3;
+    this.lastTouchT = game.t;
+    this.kickT = 0; this.touchT = 0;
+    this.tech = plan.tech; this.techT = 0;
+    const bs = -(ball.p.x - this.x) * Math.sin(this.face) + (ball.p.z - this.z) * Math.cos(this.face);
+    this.kickFoot = plan.foot || (plan.tech === 'ferse' ? -(this.strong) : bs >= 0 ? 1 : -1);
+    const sideRps = (plan.side || 0) / (2 * Math.PI);
+    this.lastKick = { kind: plan.kind, tech: plan.tech, mode: plan.mode, speed, q: plan.q ?? null, factors: plan.factors || null, power: plan.power ?? null,
+      spinRps: Math.hypot(ball.w.x, ball.w.y, ball.w.z) / (2 * Math.PI), sideRps, elevDeg: el / DEG, to: plan.to ?? -1, bank: plan.bank || 0, chip: !!plan.chip,
+      aim: plan.aim || null, meet: plan.meet || null, T: plan.T ?? null, t: game.t, timing: plan.timing ?? null, planElDeg: plan.elRad / DEG };
+    let to = plan.kind === 'pass' ? (plan.to ?? -1) : -1;
+    if (to < -1) to = -1; // Challenge-Ziel (virtuell)
+    if (game.match) { game.passTo = to; game.rules.touch(this); }
+    game.passPlan = plan.kind === 'pass' && plan.meet ? { to: plan.to ?? -1, from: this.id, x: plan.meet[0], z: plan.meet[1], t: game.t + (plan.T || 1), chip: !!plan.chip, bank: plan.bank || 0 } : null;
+    game.events.push({ type: 'kick', kind: plan.kind === 'air' ? 'shot' : plan.kind, tech: plan.tech, player: this.id, speed, x: ball.p.x, y: ball.p.y, z: ball.p.z, dx, dz, to, q: plan.q ?? null });
+    return plan;
   }
 
   // Körper als senkrechter Zylinder (Radius 0,22 m, bis 1,85 m Höhe): Ball prallt weich ab (e = 0,35 relativ
   // zum Spieler). Nur waagrecht – ein Ball kann nie auf einem Spieler liegen bleiben (rutscht vom Kopf ab).
   bodyCollision(game) {
     const ball = game.ball, r = ball.r, R = 0.22;
-    if (ball.held >= 0 || ball.p.y > 1.85 + r) return;
+    if (ball.held >= 0 || ball.p.y > (this.fall ? 0.35 : 1.85 + this.jumpY) + r) return;
     // Über der Bande einen langsamen Ball nicht gegen die Netze drücken (sonst klemmt er dort fest)
     if (ball.p.y > game.cage.bH && ball.v.len() < 2) return;
     const nx = ball.p.x - this.x, nz = ball.p.z - this.z;
