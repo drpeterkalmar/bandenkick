@@ -78,7 +78,7 @@ export function buildHud(root, canvas) {
   const train = h('div', 'overlay');
   train.innerHTML = `<div class="card wide">
     <h2>Training</h2>
-    <div class="cols2"><div><h3>Schütze</h3><div class="chlist" data-group="schuetze"></div></div>
+    <div class="cols2 trcols"><div><h3>Schütze</h3><div class="chlist" data-group="schuetze"></div></div>
     <div><h3>Torwart</h3><div class="chlist" data-group="torwart"></div></div></div>
     <div class="row"><button class="btn sec" data-act="free">Freies Training</button><button class="btn sec" data-act="title">Zurück</button></div>
   </div>`;
@@ -98,7 +98,7 @@ export function buildHud(root, canvas) {
     <ul class="howto"></ul>
     <p class="small">Der Pass geht zum Mitspieler, auf den der Stick zeigt (±35°), in seinen Laufweg – zeigst du auf die Bande, geht er über die Bande.
     Der Schuss geht immer aufs Tor: Stick seitlich = flache Ecke, schräg nach vorn = hohe Ecke. Schlechte Lage (spitzer Winkel, Rücken zum Tor, Gegner dran) = langsamer und zentraler.</p>
-    <div class="row"><button class="btn" data-act="helpok">Verstanden</button></div></div>`;
+    <div class="row stick"><button class="btn" data-act="helpok">Verstanden</button></div></div>`;
   root.append(top, banner, charge, hold, touch, dbg, start, menu, credits, train, hint, result, help);
 
   const howto = (touchUI) => touchUI

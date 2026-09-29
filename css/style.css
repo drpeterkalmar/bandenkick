@@ -105,11 +105,19 @@ body.quer #bSwitch { right: calc(env(safe-area-inset-right, 0px) + 36px); bottom
 .btn { min-height: 48px; min-width: 48px; padding: 0 18px; border-radius: 14px; border: 0; background: #ffd84a; color: #1a1a1a; font-weight: 800; font-size: 17px; }
 .btn.sec { background: rgba(255,255,255,.14); color: #fff; font-weight: 700; }
 .small { font-size: 12px; opacity: .75; }
+/* Knopf der Hilfekarte bleibt sichtbar, auch wenn die Karte (quer) rollt */
+.card .row.stick { position: sticky; bottom: -16px; margin: 8px -20px -16px; padding: 10px 20px 12px; background: #0c1e15; border-radius: 0 0 18px 18px; }
 .card a { color: #ffe27a; }
 @media (orientation: landscape) and (max-height: 540px) {
   .card { padding: 12px 16px 10px; width: min(760px, 100%); }
+  .card .row.stick { bottom: -10px; margin: 6px -16px -10px; padding: 8px 16px 10px; }
   .chbtn { min-height: 48px; padding: 4px 10px; font-size: 14px; }
   .chlist { gap: 6px; }
+  /* Training quer: alle 9 Übungen ohne Rollen – Schütze zweispaltig, Torwart einspaltig */
+  .card.wide:has(.trcols) { width: min(920px, 100%); }
+  .trcols { grid-template-columns: 2fr 1fr; }
+  .trcols .chlist[data-group="schuetze"] { display: grid; grid-template-columns: 1fr 1fr; }
+  .trcols h3 { margin: 2px 0 4px; }
   table.gest { font-size: 12px; } table.gest th, table.gest td { padding: 3px 5px; }
   .card h1 { font-size: 24px; }
   .card .sub { margin-bottom: 6px; font-size: 13px; }

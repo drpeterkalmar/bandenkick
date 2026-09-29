@@ -220,6 +220,8 @@ let acc = 0, last = performance.now() / 1000;
 const prev = { bx: 0, by: 0, bz: 0, px: new Float64Array(8), pz: new Float64Array(8) };
 function resetPrev() { const b = game.ball; prev.bx = b.p.x; prev.by = b.p.y; prev.bz = b.p.z; game.players.forEach((p, i) => { prev.px[i] = p.x; prev.pz[i] = p.z; }); }
 const edgeQ = [], btnLvl = { pass: false, shot: false };
+// Gesten-Folge der Tests je Spieltakt auswerten (nicht je Bild: ein Bild kann 0,1 s Spielzeit umfassen)
+const seqDown = (btn) => { if (!pressSeq) return false; const tt = game.t - pressSeq.t0; return pressSeq.seq.some(([a, b, k]) => k === btn && tt >= a && tt < b); };
 let lastFrameT = performance.now() / 1000;
 let testInput = null, testUntil = 0, frozen = false, heldPrev = false, passPrev = false, lastContact = [0, 0], chargeHold = 0, pressSeq = null;
 const gl = renderer.getContext();
@@ -404,7 +406,7 @@ function frame() {
   // Tests: Gesten-Folge (__game.press) in Spielzeit, z. B. Tipp + halten
   if (pressSeq) {
     const tt = game.t - pressSeq.t0;
-    for (const [a, b, btn] of pressSeq.seq) if (tt >= a && tt < b) { raw[btn === 'pass' ? 'passDown' : 'shotDown'] = true; raw[btn === 'pass' ? 'testPass' : 'testShot'] = true; }
+    for (const [a, b, btn] of pressSeq.seq) if (tt >= a && tt < b) raw[btn === 'pass' ? 'passDown' : 'shotDown'] = true;
     if (pressSeq.stick && tt < pressSeq.stickT) { raw.wx = pressSeq.stick[0]; raw.wz = pressSeq.stick[1]; }
     if (tt > Math.max(...pressSeq.seq.map((x) => x[1])) + 0.5) pressSeq = null;
   }
@@ -434,7 +436,7 @@ function frame() {
         if (e.down) pulse[e.btn] = true;
         btnLvl[e.btn] = e.down; edgeQ.shift();
       }
-      raw.passDown = btnLvl.pass || testPass; raw.shotDown = btnLvl.shot || testShot;
+      raw.passDown = btnLvl.pass || testPass || seqDown('pass'); raw.shotDown = btnLvl.shot || testShot || seqDown('shot');
       const wi = G.scriptFn ? G.scriptFn(game, game.challenge) : worldInput(raw); // Tests: Skript-Spieler (Challenges)
       if (!first) { wi.switch = false; wi.throw = false; wi.punt = false; wi.dive = false; }
       const ins = [];
@@ -600,6 +602,7 @@ Object.assign(G, {
   human(i) { game.setHuman(i); },
   bots(on) { if (game.match) game.bots = on ? (game._bots || game.bots) : ((game._bots = game.bots), null); },
   freeze(f = true) { frozen = f; },
+  frozen() { return frozen; },
   freezeWhen(src) { G.freezeFn = new Function('g', 'return (' + src + ')'); },
   cam(pos, look) { gcam.override = pos ? { pos, look } : null; },
   // Simulation synchron vorspulen (ohne Grafik), z. B. für Schuss-Tests; o = Eingabe des Menschen
