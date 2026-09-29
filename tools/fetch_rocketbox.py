@@ -10,9 +10,10 @@ REPO = 'microsoft/Microsoft-Rocketbox'
 RAW = f'https://raw.githubusercontent.com/{REPO}/master/'
 
 # Spieler (Sports) + Erwachsene für Vielfalt. Ordner unter Assets/Avatars/…
+# Sports_Male_01 (Badehose, barfuß) und Sports_Female_01 (Bikini) passen nicht auf den Kunstrasen → Adults.
 AVATARS = {
-    'Sports_Male_01': 'Professions', 'Sports_Male_02': 'Professions', 'Sports_Male_03': 'Professions',
-    'Sports_Male_04': 'Professions', 'Sports_Female_01': 'Professions', 'Sports_Female_02': 'Professions',
+    'Sports_Male_02': 'Professions', 'Sports_Male_03': 'Professions', 'Sports_Male_04': 'Professions',
+    'Sports_Female_02': 'Professions', 'Male_Adult_10': 'Adults', 'Female_Adult_12': 'Adults',
 }
 # Bewegungen (selbes Biped-Skelett „Bip01“), männlich (m_) und weiblich (f_)
 ANIMS = [

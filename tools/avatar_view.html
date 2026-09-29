@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Bandenkick – Avatar-Prüfstand</title>
+<style>html,body{margin:0;height:100%;background:#8aa;overflow:hidden}canvas{display:block}#l{position:fixed;left:6px;top:4px;font:12px monospace;color:#000;white-space:pre}</style>
+<script type="importmap">{ "imports": { "three": "../lib/three/three.module.min.js", "three/addons/": "../lib/three/addons/" } }</script>
+</head>
+<body>
+<div id="l"></div>
+<script type="module">
+// Prüfstand für die Rocketbox-Pipeline: ein Avatar, mehrere Clips nebeneinander (?clips=idle,run&t=0.2),
+// Kamera von vorn-seitlich; misst Fußsohlen/Zehen gegen den Boden und die Blickrichtung je Clip.
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
+
+const qs = new URLSearchParams(location.search);
+const name = qs.get('avatar') || 'Sports_Male_02';
+const sex = qs.get('sex') || (/Female/.test(name) ? 'f' : 'm');
+const clips = (qs.get('clips') || 'idle,walk,run,sprint,cheer').split(',');
+const T = +(qs.get('t') || 0.25);          // Zeitpunkt als Anteil der Cliplänge
+const yawDeg = +(qs.get('yaw') || 35);
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(innerWidth, innerHeight); renderer.setPixelRatio(1);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+document.body.append(renderer.domElement);
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x9fb4b8);
+scene.add(new THREE.HemisphereLight(0xffffff, 0x445544, 1.6));
+const sun = new THREE.DirectionalLight(0xffffff, 1.8); sun.position.set(3, 6, 5); scene.add(sun);
+const grid = new THREE.GridHelper(20, 20, 0x222222, 0x557755); scene.add(grid);
+const cam = new THREE.PerspectiveCamera(30, innerWidth / innerHeight, 0.1, 100);
+const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+const [av, an] = await Promise.all([loader.loadAsync(`../assets/avatars/${name}.glb`), loader.loadAsync(`../assets/anims/${sex}.glb`)]);
+const out = { name, clips: {}, errors: [] };
+const gap = 1.1;
+clips.forEach((c, i) => {
+  const o = SkeletonUtils.clone(av.scene);
+  o.position.x = (i - (clips.length - 1) / 2) * gap;
+  scene.add(o);
+  const mixer = new THREE.AnimationMixer(o);
+  const clip = an.animations.find((a) => a.name === c);
+  if (!clip) { out.errors.push('Clip fehlt: ' + c); return; }
+  const act = mixer.clipAction(clip); act.play();
+  // Fußhöhe über den ganzen Clip: tiefster Punkt von Fuß/Zeh (Knochen) und tiefster Hautpunkt
+  const bones = {}; o.traverse((n) => { if (n.isBone) bones[n.name] = n; });
+  const mesh = []; o.traverse((n) => { if (n.isSkinnedMesh) mesh.push(n); });
+  let minBone = 9, minSkin = 9, maxSkin = -9;
+  const v = new THREE.Vector3(), steps = 12;
+  for (let k = 0; k <= steps; k++) {
+    mixer.setTime(clip.duration * k / steps);
+    o.updateMatrixWorld(true);
+    for (const nm of ['Bip01_L_Toe0', 'Bip01_R_Toe0', 'Bip01_L_Foot', 'Bip01_R_Foot']) if (bones[nm]) minBone = Math.min(minBone, bones[nm].getWorldPosition(v).y);
+    for (const m of mesh) { m.skeleton.update(); const n = m.geometry.attributes.position.count; for (let j = 0; j < n; j += 3) { m.getVertexPosition(j, v); v.applyMatrix4(m.matrixWorld); minSkin = Math.min(minSkin, v.y); maxSkin = Math.max(maxSkin, v.y); } }
+  }
+  mixer.setTime(clip.duration * T);
+  o.updateMatrixWorld(true);
+  // Blickrichtung: Seitenachse der Oberschenkel
+  const l = bones.Bip01_L_Thigh.getWorldPosition(new THREE.Vector3()), r = bones.Bip01_R_Thigh.getWorldPosition(new THREE.Vector3());
+  const right = r.sub(l); right.y = 0; right.normalize();
+  const fwd = new THREE.Vector3(0, 1, 0).cross(right);
+  out.clips[c] = { duration: clip.duration, minFootBone: +minBone.toFixed(3), minSkin: +minSkin.toFixed(3), top: +maxSkin.toFixed(3), fwd: [+fwd.x.toFixed(2), +fwd.z.toFixed(2)] };
+  const lbl = document.createElement('div');
+});
+const W = clips.length * gap + 1;
+const yaw = yawDeg * Math.PI / 180, dist = Math.max(4.5, W * 1.25);
+cam.position.set(Math.sin(yaw) * dist, 1.4, Math.cos(yaw) * dist);
+cam.lookAt(0, 0.9, 0);
+renderer.render(scene, cam);
+document.getElementById('l').textContent = name + '  ' + clips.map((c) => `${c}@${T}`).join('  ') + '\n' + JSON.stringify(out.clips);
+window.__view = out; window.__ready = true;
+</script>
+</body>
+</html>
