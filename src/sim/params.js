@@ -74,18 +74,32 @@ export const DEFAULTS = {
   goalW: 3, goalH: 2, goalD: 1.0, // Tor 3 × 2 m in der Bande, 1 m tief
   torraum: 4,             // m Halbkreis-Radius (erst ab Nacht 2 aktiv)
 
-  // ---------------- Spieler (Platzhalter-Kapsel) ----------------
+  // ---------------- Spieler ----------------
   vSprint: 7.5,           // m/s Höchsttempo Sprint
   vRun: 5.2,              // m/s Laufen ohne Sprint
-  tauAcc: 0.92,           // s: v(t) = vmax·(1 − e^(−t/τ)) → 0→7 m/s in ≈ 2,5 s
-  aBrake: 6.5,            // m/s² Abbremsen
-  aLat: 6.0,              // m/s² Querbeschleunigung → Wendekreis r = v²/aLat (7,5 m/s: 9,4 m)
-  turnCap: 9.0,           // rad/s Drehrate im Stand/Schritt
-  plantAngle: 1.9,        // rad: stärkere Richtungswechsel im Lauf → erst abbremsen
+  // Bewegungsmodell „zack“ (Nacht 2, Peter: „fühlt sich an wie Auto fahren“): kleine Winkel = Kurve,
+  // große Winkel = Stemmschritt (hart bremsen, Körper dreht, Abstoß in die neue Richtung), dann Antritt.
+  // ?zack=0 = altes Modell aus Nacht 1 (Laufrichtung dreht nur mit ω = aLat/v wie ein Lenkrad).
+  zack: 1,
+  aLat: 13,               // m/s² Querbeschleunigung in der Kurve → r = v²/aLat (7,5 m/s: 4,3 m) [?wende=]
+  aPlant: 16,             // m/s² Stemmschritt: Bremsen der falschen Geschwindigkeitsanteile [?stemm=]
+  aBrake: 9,              // m/s² Abbremsen ohne Richtungswechsel (Stick los, langsamer) [?bremse=]
+  curveDeg: 20,           // ° bis hier reine Kurve (Tempo bleibt) …                    [?kurve=]
+  plantDeg: 45,           // ° … ab hier reiner Stemmschritt, dazwischen gemischt
+  ballAgil: 0.9,          // mit Ball: Kurve und Stemmschritt × 0,9 (Ballführung macht etwas träger)
+  // Antritt: dv/dt = (vSprint − v)/τ(v), τ(v) = τ0 + τ1·v/vSprint → erste Schritte spritzig
+  // (0 → 4 m/s in 0,60 s), hinten heraus wie gemessen (0 → 7 m/s in 2,5 s, Höchsttempo 7,5 m/s).
+  tauAcc0: 0.672,         // s [?antritt=]
+  tauAcc1: 0.383,         // s
+  // Altes Modell (nur ?zack=0): v(t) = vmax·(1 − e^(−t/τ)), Lenkrad-Drehung, ab plantAngle bremsen
+  tauAcc: 0.92,           // s → 0→7 m/s in ≈ 2,5 s
+  turnCap: 9.0,           // rad/s Drehrate im Stand/Schritt (beide Modelle)
+  plantAngle: 1.9,        // rad: stärkere Richtungswechsel im Lauf → erst abbremsen (altes Modell)
   bodyR: 0.30,            // m Abstand zur Bande
   // Ballführung ohne Klebeball: echte Ballkontakte, Hilfe wählt Stärke/Richtung.
   footAhead: 0.36,        // m Fußpunkt vor dem Körper
   reach: 0.48,            // m Reichweite um den Fußpunkt
+  cutReach: 0.85,         // m Reichweite ab Körpermitte im Stemmschritt (Ball mitnehmen mit Sohle/Außenseite)
   reachH: 0.40,           // m max. Ballhöhe (Mitte) für Fußkontakt
   ctrlRel: 8.0,           // m/s max. Relativtempo für eine saubere Ballannahme
   ctrlRelMax: 15.0,       // m/s darüber prallt der Ball nur ab
@@ -112,10 +126,14 @@ export const DEFAULTS = {
 
 // Kurzformen für Peter (deutsch) → interne Namen
 export const ALIASES = {
-  dach: 'roof', sprint: 'vSprint', lauf: 'vRun', antritt: 'tauAcc', wende: 'aLat', hilfe: 'assist',
+  dach: 'roof', sprint: 'vSprint', lauf: 'vRun', antritt: 'tauAcc0', wende: 'aLat', hilfe: 'assist',
   schuss: 'shotMax', pass: 'passSpeed', bande: 'boardEn', netz: 'netH', dachhoehe: 'roofH',
   abprall: 'turfEn', rollen: 'turfRoll0', effet: 'spinMax', torbreite: 'goalW', torhoehe: 'goalH',
+  stemm: 'aPlant', bremse: 'aBrake', kurve: 'curveDeg',
 };
+// ?zack=0: Werte des alten Bewegungsmodells (Nacht 1), sofern nicht ausdrücklich übersteuert
+const ZACK0 = { aLat: 6.0, aBrake: 6.5 };
+const ZACK0_ALIAS = { antritt: 'tauAcc' };
 
 // Liest Overrides aus einem Query-String (oder Objekt) und gibt ein vollständiges Parameter-Objekt zurück.
 export function makeParams(overrides = {}) {
@@ -132,17 +150,21 @@ export function makeParams(overrides = {}) {
       src[k] = v;
     }
   }
+  const zack0 = String(src.zack ?? '1') === '0';
+  const set = new Set();
   for (const [k0, v0] of Object.entries(src)) {
     if (k0 === 'feld') {
       const m = String(v0).match(/^(\d+(?:\.\d+)?)\s*[x×*]\s*(\d+(?:\.\d+)?)$/i);
       if (m) { P.fieldL = clamp(+m[1], 10, 60); P.fieldW = clamp(+m[2], 8, 40); }
       continue;
     }
-    const k = ALIASES[k0] || k0;
+    const k = (zack0 && ZACK0_ALIAS[k0]) || ALIASES[k0] || k0;
     if (!(k in DEFAULTS)) continue;
     const v = Number(v0);
-    if (Number.isFinite(v)) P[k] = v;
+    if (Number.isFinite(v)) { P[k] = v; set.add(k); }
   }
+  if (zack0) for (const [k, v] of Object.entries(ZACK0)) if (!set.has(k)) P[k] = v;
+  P.zack = P.zack ? 1 : 0;
   P.roof = P.roof ? 1 : 0;
   P.goalW = clamp(P.goalW, 1, P.fieldW - 2);
   P.goalH = clamp(P.goalH, 0.8, 3);

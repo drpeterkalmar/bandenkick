@@ -3,6 +3,7 @@
 import { makeParams } from '../../src/sim/params.js';
 import { Game, DT } from '../../src/sim/step.js';
 import { report } from './report.mjs';
+import { cut, TARGETS } from './agility.mjs';
 
 const rows = [];
 const check = (name, value, lo, hi, unit, target, note = '') => { const ok = value >= lo && value <= hi; rows.push({ name, value, lo, hi, unit, target, ok, note }); return ok; };
@@ -28,33 +29,75 @@ const inp = (o = {}) => ({ mx: 0, mz: 0, sprint: false, pass: false, shootHeld: 
   let v2 = 0; for (let i = 0; i < 3 / DT; i++) { g2.step([inp({ mx: 1 })]); v2 = Math.max(v2, p2.speed); }
   check('Lauftempo ohne Sprint', v2, 5.0, 5.3, 'm/s', 5.2);
 }
-// 2) Wendekreis tempoabhängig: volle Querlenkung aus konstantem Tempo
+// 2) Kurve tempoabhängig: Stick 15° neben der Laufrichtung (unter der Kurven-Grenze) → r = v²/aLat
 function turnRadius(v, sprint) {
-  const g = new Game(P, 1); const pl = g.players[0];
-  g.ball.place(9, 0.11, 6);
+  const g = new Game(makeParams('?feld=60x40'), 1); const pl = g.players[0];
+  g.ball.place(25, 0.11, 18);
   pl.place(0, 0, 0); pl.speed = v; pl.vx = v;
   const pts = [];
   for (let i = 0; i < 1.2 / DT; i++) {
-    // Stick 90° links von der aktuellen Laufrichtung → maximale Kurve ohne Bremsen
-    const a = Math.atan2(pl.hz, pl.hx) + Math.PI / 2 * 0.99 * (1 - 0) ;
+    const a = Math.atan2(pl.hz, pl.hx) + 15 * Math.PI / 180;
     const m = v / (sprint ? P.vSprint : P.vRun);
     g.step([inp({ mx: Math.cos(a) * m, mz: Math.sin(a) * m, sprint })]);
-    pl.x = Math.max(-9, Math.min(9, pl.x)); pl.z = Math.max(-6, Math.min(6, pl.z));
     pts.push([pl.x, pl.z, pl.speed]);
   }
-  // Radius aus Tempo und Drehrate
   const n = pts.length;
   const [x0, z0] = pts[n - 30], [x1, z1] = pts[n - 15], [x2, z2] = pts[n - 1];
   const a0 = Math.atan2(z1 - z0, x1 - x0), a1 = Math.atan2(z2 - z1, x2 - x1);
   let da = a1 - a0; while (da > Math.PI) da -= 2 * Math.PI; while (da < -Math.PI) da += 2 * Math.PI;
   const s = Math.hypot(x2 - x0, z2 - z0) / 2;
-  return s / Math.abs(da);
+  return { r: s / Math.abs(da), v: pts[n - 1][2] };
 }
 {
   const r75 = turnRadius(7.5, true), r4 = turnRadius(4, false), r2 = turnRadius(2, false);
-  check('Wendekreis-Radius bei 7,5 m/s', r75, 8, 11, 'm', 7.5 * 7.5 / P.aLat);
-  check('Wendekreis-Radius bei 4 m/s', r4, 2.0, 3.3, 'm', 16 / P.aLat);
-  check('Wendekreis-Radius bei 2 m/s', r2, 0.2, 0.9, 'm', 4 / P.aLat);
+  check('Kurve: Radius bei 7,5 m/s (Tempo bleibt)', r75.r, 3.8, 4.9, 'm', 7.5 * 7.5 / P.aLat, `Tempo danach ${r75.v.toFixed(2)} m/s; Nacht 1: 9,4 m`);
+  check('Kurve: Radius bei 4 m/s', r4.r, 1.0, 1.5, 'm', 16 / P.aLat, 'Nacht 1: 2,7 m');
+  check('Kurve: Radius bei 2 m/s', r2.r, 0.2, 0.45, 'm', 4 / P.aLat, 'Nacht 1: 0,65 m');
+}
+// 2b) Richtungswechsel „zack“ (Nachtrag Peter 28.09.): Zieltabelle als Gate, gemessen wie seine Probe
+{
+  const PB = makeParams('?feld=60x40');
+  for (const T of TARGETS) {
+    const r = cut(PB, T.v0, T.sprint, T.ang);
+    check(`${T.lbl} ${String(T.v0).replace('.', ',')} m/s, ${T.ang}°: Richtung erreicht`, r.tHead, 0, T.t, 's', T.t, `80 % Tempo in neuer Richtung nach ${r.tVel.toFixed(2)} s, Tiefpunkt ${r.minV.toFixed(1)} m/s`);
+    check(`${T.lbl} ${String(T.v0).replace('.', ',')} m/s, ${T.ang}°: Überschießen`, r.drift, 0, T.drift, 'm', T.drift);
+  }
+  // Mit Ball etwas träger (Ballführung), aber nie „Auto“: höchstens 25 % über den Zielen, Ball kommt mit
+  for (const T of TARGETS) {
+    const v0 = T.v0 * P.dribbleSlow;
+    let tH = 0, dr = 0, carried = 0; const N = 20;
+    for (let seed = 1; seed <= N; seed++) {
+      const r = cut(PB, v0, T.sprint, T.ang, { withBall: true, seed });
+      tH = Math.max(tH, r.tHead); dr = Math.max(dr, r.drift);
+      if (r.ballAhead > -0.3 && r.ballSide < 1.2 && r.ballClosest < 1.5) carried++;
+    }
+    const nm = `${T.lbl} mit Ball, ${T.ang}°`;
+    check(`${nm}: Richtung erreicht (schlechtester von ${N})`, tH, 0, T.t * 1.25, 's', T.t, 'mit Ball ≤ 125 % des Ziels');
+    check(`${nm}: Überschießen (schlechtester von ${N})`, dr, 0, T.drift * 1.25, 'm', T.drift);
+    check(`${nm}: Ball mitgenommen (Sohle/Außenseite)`, carried, 18, N, `/${N}`, N, 'Ball danach vorn in neuer Richtung, ≤ 1,5 m am Fuß');
+  }
+  // Eingabe ohne Verzögerung: Reaktion (0,3 m/s quer zur alten Richtung) innerhalb von 50 ms
+  {
+    const g = new Game(PB, 1); const pl = g.players[0];
+    g.ball.place(25, 0.11, 18); pl.place(0, 0, 0); pl.speed = 5.2; pl.vx = 5.2;
+    let tR = -1;
+    for (let i = 0; i < 0.3 / DT && tR < 0; i++) { g.step([inp({ mz: 1 })]); if (pl.vz > 0.3) tR = g.t; }
+    check('Reaktion auf den Stick (0,3 m/s in neuer Richtung)', tR, 0, 0.05, 's', DT, 'keine Glättung am Stick');
+  }
+  // Antritt spritziger: 0 → 4 m/s
+  {
+    const g = new Game(P, 1); const pl = g.players[0];
+    g.ball.place(0, 0.11, 6); pl.place(-9, -5, 0);
+    let t4 = -1;
+    for (let i = 0; i < 2 / DT && t4 < 0; i++) { g.step([inp({ mx: 1, sprint: true })]); if (pl.speed >= 4) t4 = g.t; }
+    check('Antritt 0 → 4 m/s (erste Schritte)', t4, 0.5, 0.7, 's', 0.6, 'Nacht 1: 0,70 s');
+  }
+  // A/B: ?zack=0 = altes Modell aus Nacht 1 (Peters Probe: Sprint 90° nach 1,75 s)
+  {
+    const P0 = makeParams('?feld=60x40&zack=0');
+    const r = cut(P0, 7.5, true, 90);
+    check('?zack=0 (altes Modell): Sprint 90° wie Nacht 1', r.tHead, 1.7, 1.8, 's', 1.75, `Überschießen ${r.drift.toFixed(1)} m (Nacht 1: 9,2 m)`);
+  }
 }
 // 3) Ballführung: 6 s geradeaus laufen/sprinten – echte Kontakte, Ball nie „angeklebt“, bleibt nah
 const PBIG = makeParams('?feld=60x40'); // langes Feld: eingeschwungener Zustand messen

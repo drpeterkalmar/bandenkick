@@ -4,6 +4,7 @@
 const DEG = Math.PI / 180;
 const wrap = (a) => { while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI; return a; };
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+const smoothstep = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
 
 export const EMPTY_INPUT = Object.freeze({ mx: 0, mz: 0, sprint: false, pass: false, shootHeld: false, shootRelease: false, cx: 0, cy: 0, aimX: 0, aimZ: 0, aim: false });
 
@@ -25,6 +26,9 @@ export class Player {
     this.lastKick = null;
     this.dribbling = false;
     this.clearT = 99;             // Zeit seit der letzten deutlichen Eingabe
+    this.plant = 0;               // Stemmschritt 0…1 (Grafik: Körper stemmt sich in die neue Richtung)
+    this.plantX = 1; this.plantZ = 0; this.plantT = 99;
+    this.bodyOffT = 0;            // kurz keine Körper-Kollision mit dem Ball (nach Mitnahme im Stemmschritt)
   }
 
   place(x, z, face = 0) {
@@ -39,7 +43,7 @@ export class Player {
 
   step(dt, inp, game) {
     const P = this.P, ball = game.ball, t = game.t;
-    this.touchCd -= dt; this.kickT += dt; this.touchT += dt; this.clearT += dt;
+    this.touchCd -= dt; this.kickT += dt; this.touchT += dt; this.clearT += dt; this.plantT += dt;
     if (this.pending) { this.pending.age += dt; if (this.pending.age > P.kickBuffer) this.pending = null; }
 
     // --- Eingabe: Stick, Aktionen ---
@@ -100,6 +104,124 @@ export class Player {
       if (this.dribbling) vd *= P.dribbleSlow;
       if (this.charging) vd *= 0.8; // zum Schuss hin etwas verlangsamen
     }
+    if (P.zack) this.moveZack(dt, moving, dirX, dirZ, vd);
+    else this.moveOld(dt, moving, dirX, dirZ, vd);
+    const s = Math.hypot(this.vx, this.vz);
+    const hAng = s > 1e-6 ? Math.atan2(this.vz, this.vx) : Math.atan2(this.hz, this.hx);
+    this.x += this.vx * dt; this.z += this.vz * dt;
+    // Bande: Spieler bleibt im Feld
+    const lx = game.cage.hx - P.bodyR, lz = game.cage.hz - P.bodyR;
+    if (this.x > lx) { this.x = lx; if (this.vx > 0) this.vx = 0; }
+    if (this.x < -lx) { this.x = -lx; if (this.vx < 0) this.vx = 0; }
+    if (this.z > lz) { this.z = lz; if (this.vz > 0) this.vz = 0; }
+    if (this.z < -lz) { this.z = -lz; if (this.vz < 0) this.vz = 0; }
+    this.speed = Math.hypot(this.vx, this.vz);
+    if (this.speed > 1e-6) { this.hx = this.vx / this.speed; this.hz = this.vz / this.speed; }
+    // Blickrichtung: Stemmschritt → Körper dreht schon in die neue Richtung; läuft → Laufrichtung;
+    // steht → zum Stick bzw. zum Ball
+    let fAng = this.face;
+    if (this.plant > 0.4 && moving) fAng = Math.atan2(dirZ, dirX);
+    else if (s > 0.6) fAng = hAng;
+    else if (want) fAng = Math.atan2(sz, sx);
+    else if (bd < 3 && bd > 0.2) fAng = Math.atan2(bz, bx);
+    this.face += clamp(wrap(fAng - this.face), -P.turnCap * dt, P.turnCap * dt);
+    this.gait += s * dt / 1.1;
+
+    // --- Ball spielen ---
+    const [fx, fz] = this.footPoint();
+    const dx = ball.p.x - fx, dz = ball.p.z - fz;
+    const fd = Math.hypot(dx, dz);
+    // Im Stemmschritt nimmt der Spieler den Ball mit (Sohle/Außenseite): Reichweite ab Körpermitte
+    const cut = this.plant > 0.3 && want && bd < P.cutReach;
+    const inReach = (fd < P.reach || cut) && ball.p.y < P.reachH;
+    const rvx = ball.v.x - this.vx, rvz = ball.v.z - this.vz;
+    const rel = Math.hypot(rvx, ball.v.y, rvz);
+    let touched = false;
+    if (inReach && rel < P.ctrlRelMax) {
+      if (this.pending && this.touchCd <= 0.1) {
+        this.kick(this.pending, game, rel);
+        this.pending = null;
+        touched = true;
+      } else if (this.touchCd <= 0) {
+        touched = this.dribbleTouch(game, want, sx, sz, vd, fd, rel);
+        // Stemmschritt mit Ball: Sohle/Außenseite führt den Ball am Körper vorbei in die neue Richtung
+        if (touched && cut) this.bodyOffT = 0.35;
+      }
+    }
+    this.bodyOffT -= dt;
+    if (!touched && this.bodyOffT <= 0) this.bodyCollision(game);
+  }
+
+  // Bewegungsmodell „zack“ (Standard): Geschwindigkeit als Vektor. Kleine Winkel zur Wunschrichtung = Kurve
+  // (Richtung dreht mit ω = aLat/v, Tempo bleibt). Große Winkel = Stemmschritt: der Anteil quer und rückwärts
+  // zur Wunschrichtung wird mit aPlant hart abgebremst, gleichzeitig stößt sich der Spieler in die neue
+  // Richtung ab (Antrittskurve ab dem Tempo in neuer Richtung). Zwischen curveDeg und plantDeg gemischt.
+  moveZack(dt, moving, dirX, dirZ, vd) {
+    const P = this.P;
+    let vx = this.vx, vz = this.vz;
+    const s = Math.hypot(vx, vz);
+    const agil = this.dribbling ? P.ballAgil : 1;
+    const aLat = P.aLat * agil, aPlant = P.aPlant * agil;
+    let plant = 0;
+    if (!moving) {
+      const ns = Math.max(0, s - P.aBrake * dt);
+      if (s > 1e-9) { vx *= ns / s; vz *= ns / s; }
+    } else if (s < 0.05) {
+      const ns = Math.min(vd, s + this.accel(s) * dt);
+      vx = dirX * ns; vz = dirZ * ns;
+    } else {
+      const hx = vx / s, hz = vz / s;
+      const phi = Math.atan2(hx * dirZ - hz * dirX, hx * dirX + hz * dirZ); // Winkel Laufrichtung → Wunsch
+      const b = smoothstep(P.curveDeg * DEG, P.plantDeg * DEG, Math.abs(phi));
+      let cx = 0, cz = 0, px = 0, pz = 0;
+      if (b < 1) { // Kurve
+        const w = Math.min(P.turnCap, aLat / s);
+        const dA = clamp(phi, -w * dt, w * dt);
+        const c = Math.cos(dA), sn = Math.sin(dA);
+        const ns = s < vd ? Math.min(vd, s + this.accel(s) * dt) : Math.max(vd, s - P.aBrake * dt);
+        cx = (hx * c - hz * sn) * ns; cz = (hx * sn + hz * c) * ns;
+      }
+      if (b > 0) { // Stemmschritt
+        let vu = vx * dirX + vz * dirZ;
+        let qx = vx - vu * dirX, qz = vz - vu * dirZ;
+        const q = Math.hypot(qx, qz);
+        if (q > 1e-9) { const nq = Math.max(0, q - aPlant * dt); qx *= nq / q; qz *= nq / q; }
+        if (vu < 0) vu = Math.min(0, vu + aPlant * dt);
+        else if (vu < vd) vu = Math.min(vd, vu + this.accel(vu) * dt);
+        else vu = Math.max(vd, vu - P.aBrake * dt);
+        px = vu * dirX + qx; pz = vu * dirZ + qz;
+      }
+      vx = cx * (1 - b) + px * b; vz = cz * (1 - b) + pz * b;
+      plant = s > 1.0 ? b : 0;
+    }
+    this.plant = plant;
+    if (plant > 0.3) { this.plantX = dirX; this.plantZ = dirZ; this.plantT = 0; }
+    this.vx = vx; this.vz = vz;
+    this.speed = Math.hypot(vx, vz);
+    if (this.speed > 1e-6) { this.hx = vx / this.speed; this.hz = vz / this.speed; }
+  }
+
+  // Antrittskurve: dv/dt = (vSprint − v)/τ(v) mit τ(v) = τ0 + τ1·v/vSprint (erste Schritte spritzig)
+  accel(v) {
+    const P = this.P;
+    return Math.max(0, P.vSprint - v) / (P.tauAcc0 + P.tauAcc1 * Math.max(0, v) / P.vSprint);
+  }
+
+  // Weg in T Sekunden ab Tempo v0, Antrittskurve bis vd (Stärke der Ballkontakte)
+  // (v0 < 0: läuft noch rückwärts zur neuen Richtung → erst Stemmschritt-Bremsung)
+  travel(v0, vd, T) {
+    const n = 12, h = T / n, aP = this.P.aPlant * (this.dribbling ? this.P.ballAgil : 1);
+    let v = v0, x = 0;
+    for (let i = 0; i < n; i++) {
+      const v2 = v < 0 ? Math.min(0, v + aP * h) : v < vd ? Math.min(vd, v + this.accel(v) * h) : v;
+      x += (v + v2) / 2 * h; v = v2;
+    }
+    return x;
+  }
+
+  // Altes Modell aus Nacht 1 (?zack=0): Laufrichtung dreht mit ω = aLat/v, ab plantAngle erst bremsen
+  moveOld(dt, moving, dirX, dirZ, vd) {
+    const P = this.P;
     let s = this.speed;
     let hAng = Math.atan2(this.hz, this.hx);
     if (moving) {
@@ -118,41 +240,7 @@ export class Player {
     this.hx = Math.cos(hAng); this.hz = Math.sin(hAng);
     this.speed = s;
     this.vx = this.hx * s; this.vz = this.hz * s;
-    this.x += this.vx * dt; this.z += this.vz * dt;
-    // Bande: Spieler bleibt im Feld
-    const lx = game.cage.hx - P.bodyR, lz = game.cage.hz - P.bodyR;
-    if (this.x > lx) { this.x = lx; if (this.vx > 0) this.vx = 0; }
-    if (this.x < -lx) { this.x = -lx; if (this.vx < 0) this.vx = 0; }
-    if (this.z > lz) { this.z = lz; if (this.vz > 0) this.vz = 0; }
-    if (this.z < -lz) { this.z = -lz; if (this.vz < 0) this.vz = 0; }
-    this.speed = Math.hypot(this.vx, this.vz);
-    if (this.speed > 1e-6) { this.hx = this.vx / this.speed; this.hz = this.vz / this.speed; }
-    // Blickrichtung: läuft → Laufrichtung; steht → zum Stick bzw. zum Ball
-    let fAng = this.face;
-    if (s > 0.6) fAng = hAng;
-    else if (want) fAng = Math.atan2(sz, sx);
-    else if (bd < 3 && bd > 0.2) fAng = Math.atan2(bz, bx);
-    this.face += clamp(wrap(fAng - this.face), -P.turnCap * dt, P.turnCap * dt);
-    this.gait += s * dt / 1.1;
-
-    // --- Ball spielen ---
-    const [fx, fz] = this.footPoint();
-    const dx = ball.p.x - fx, dz = ball.p.z - fz;
-    const fd = Math.hypot(dx, dz);
-    const inReach = fd < P.reach && ball.p.y < P.reachH;
-    const rvx = ball.v.x - this.vx, rvz = ball.v.z - this.vz;
-    const rel = Math.hypot(rvx, ball.v.y, rvz);
-    let touched = false;
-    if (inReach && rel < P.ctrlRelMax) {
-      if (this.pending && this.touchCd <= 0.1) {
-        this.kick(this.pending, game, rel);
-        this.pending = null;
-        touched = true;
-      } else if (this.touchCd <= 0) {
-        touched = this.dribbleTouch(game, want, sx, sz, vd, fd, rel);
-      }
-    }
-    if (!touched) this.bodyCollision(game);
+    this.plant = 0;
   }
 
   // Ballkontakt beim Führen: Richtung = Stick, Stärke passend zum Tempo (Hilfe), kleine Fehler aus dem Seed.
@@ -171,12 +259,20 @@ export class Player {
     // Beim Aufladen: kurze Vorbereitungs-Kontakte, der Ball bleibt am Fuß (sonst ist er beim Loslassen weg)
     const T = this.charging ? 0.32 : P.touchLead + (P.touchLeadSprint - P.touchLead) * sf;
     const L = this.charging ? 0.05 : P.touchExtra + (P.touchExtraSprint - P.touchExtra) * sf;
-    const vt = Math.min(vd, this.speed + 2.5 * T);
-    // Stärke so, dass der Spieler den Ball nach T wieder am Fuß hat (+ Vorlage L): Roll-Vorhersage mit
+    // Weg des Spielers bis zum nächsten Kontakt: ab dem Tempo in Stick-Richtung (nach einem Stemmschritt klein)
+    // mit der Antrittskurve bis zum Wunschtempo (altes Modell: pauschal +2,5 m/s²)
+    // Läuft er noch gegen die neue Richtung (Stemmschritt), kommt die Bremszeit dazu.
+    let Tm = T, run;
+    if (P.zack) {
+      const vAl = this.vx * sx + this.vz * sz;
+      Tm = T + Math.max(0, -vAl) / (P.aPlant * (this.dribbling ? P.ballAgil : 1));
+      run = this.travel(vAl, vd, Tm);
+    } else run = Math.min(vd, this.speed + 2.5 * T) * T;
+    // Stärke so, dass der Spieler den Ball nach Tm wieder am Fuß hat (+ Vorlage L): Roll-Vorhersage mit
     // derselben Verzögerung wie im Ball-Modell (Rasen + Luft).
     const ahead = (ball.p.x - this.x) * sx + (ball.p.z - this.z) * sz;
-    const D = Math.max(0.15, vt * T + (P.footAhead - ahead) + L);
-    let u = vd < 0.5 ? 1.2 : solveRollSpeed(P, D, T);
+    const D = Math.max(0.15, run + (P.footAhead - ahead) + L);
+    let u = vd < 0.5 ? 1.2 : solveRollSpeed(P, D, Tm);
     u = Math.min(u, 14);
     // Nur berühren, wenn nötig: Ball zu nah am Fuß oder läuft falsch
     const ang = bv > 0.2 ? Math.acos(clamp((ball.v.x * sx + ball.v.z * sz) / bv, -1, 1)) : Math.PI;
