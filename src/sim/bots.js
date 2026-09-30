@@ -16,6 +16,35 @@ export const LEVELS = {
   2: { react: 0.16, think: 0.2, speed: 0.88, noise: 1.3, shotNoise: 3.0, aimNoise: 0.85, keeperReact: 0.26, airTry: 0.5, shotPow: 0, skill: 1.15, catchSkill: 0.8, fumble: 0.12, err: 0.12, shootMax: 13, keeperMove: 0.95, dive: 0.9, tackle: 1.0, minXg: 0.06 },
   3: { react: 0.1, think: 0.1, speed: 0.95, noise: 0.7, shotNoise: 2.1, aimNoise: 0.5, keeperReact: 0.19, airTry: 0.65, shotPow: 0.1, skill: 1.5, catchSkill: 1.0, fumble: 0.03, err: 0.04, shootMax: 13, keeperMove: 1.0, dive: 1.0, tackle: 0.85, minXg: 0.07 },
 };
+// Tormann-Stufen (Nacht 2c, Peter: „Cpu goalie ist zu stark“): getrennt von den Feldspielern, Regler ?tormann=1…3
+// (auch Zwischenwerte, z. B. 1.5; 0 = wie die Mannschaft ?bots=). Bis Nacht 2b hingen die Werte an LEVELS
+// (keeperReact 0,34/0,26/0,19 s, catchSkill 0,3/0,8/1,0, fumble 0,35/0,12/0,03, dive 0,6/0,9/1,0,
+// Tempo speed·keeperMove 0,64/0,84/0,95) – gemessen 33 / 14 / 17 % Tore je Schuss (20 Spiele, Schützen Stufe 2).
+//   react      s Reaktionszeit auf einen Schuss
+//   catchSkill, fumble   Fangsicherheit, Anteil der Bälle, die er nur abwehrt (> 9 m/s)
+//   dive       Anteil der vollen Hecht-Weite, in der er sich noch wirft
+//   run, move  Sprinttempo (Anteil) für die Hecht-Entscheidung, Lauftempo (speedCap) – gemessen: ein flinker Tormann
+//              kassiert im Spiel mehr (läuft öfter heraus und steht falsch), der schwache ist deshalb der eilige
+//   diveReach  Anteil der Hand-Reichweite im Hechtsprung (P.diveReach)
+//   catchRel   m/s: härtere Bälle nur abwehren (null = P.catchMaxRel wie bisher)
+//   tip        Anteil am Rand der Reichweite, in dem er den Ball nur mit den Fingerspitzen erwischt (abgefälscht)
+//   posErr     m Stellungsfehler (seitlich, je Ball neu gewürfelt)
+//   reach      Anteil der Hand-Reichweite im Stand (P.catchReach)
+export const KEEPER_LEVELS = {
+  1: { react: 0.44, catchSkill: 0.3, fumble: 0.35, dive: 0.6, run: 0.8, move: 0.86, diveReach: 0.75, catchRel: 15, tip: 0.5, posErr: 0.3, reach: 0.74 },
+  2: { react: 0.38, catchSkill: 0.6, fumble: 0.15, dive: 0.8, run: 0.88, move: 0.78, diveReach: 0.85, catchRel: 17, tip: 0.33, posErr: 0.28, reach: 0.85 },
+  3: { react: 0.24, catchSkill: 0.85, fumble: 0.06, dive: 0.95, run: 0.95, move: 0.8, diveReach: 0.95, catchRel: 22, tip: 0.15, posErr: 0.12, reach: 0.97 },
+};
+// Auto-Torwart des Menschen (Nacht 2c: Fangen und Hechten ohne Knöpfe) = Tormann der alten Stufe 2 (Nacht 2b)
+export const HUMAN_KEEPER = { react: 0.26, catchSkill: 0.8, fumble: 0.12, dive: 0.9, run: 0.88, move: 0.836, diveReach: 1, catchRel: null, tip: 0, posErr: 0, reach: 1 };
+// Tormann-Werte für eine Mannschaft der Stufe `teamLevel` (P.tormann > 0 übersteuert, Zwischenwerte linear)
+export function keeperLevel(P, teamLevel) {
+  const k = clamp(P.tormann > 0 ? P.tormann : teamLevel, 1, 3);
+  const a = KEEPER_LEVELS[Math.floor(k)], c = KEEPER_LEVELS[Math.ceil(k)], f = k - Math.floor(k);
+  const out = {};
+  for (const key in a) out[key] = a[key] == null ? null : a[key] + (c[key] - a[key]) * f;
+  return out;
+}
 const NP = 41, PDT = 0.05; // Ballvorhersage: 2 s in 0,05-s-Schritten
 
 // Abprall-Kennzahl an der Längsbande: siehe kickplan.js (auch vom Pass-Planer benutzt)
@@ -26,6 +55,8 @@ export class Bots {
     this.g = game;
     const lv = (t) => LEVELS[clamp(Math.round(levels ? levels[t] : level), 1, 3)];
     this.L = [lv(0), lv(1)];
+    this.K = [0, 1].map((t) => keeperLevel(game.P, levels ? levels[t] : level));
+    this.humanBrain = { shotSeen: -1, diveUsed: false, catchRoll: 1, throwAt: -1, idleT: 0, posErr: 0 };
     this.px = new Float32Array(NP); this.py = new Float32Array(NP); this.pz = new Float32Array(NP);
     this.brain = game.players.map((p) => ({
       role: 'support', roleT: 0, next: (p.id * 0.037) % 0.2, dribX: 0, dribZ: 0, shotSeen: -1, diveUsed: false,
@@ -128,12 +159,14 @@ export class Bots {
     const g = this.g, pl = g.players[i], br = this.brain[i], inp = this.inp[i], L = this.L[pl.team];
     inp.pass = false; inp.shootHeld = false; inp.shootRelease = false; inp.dive = false; inp.throw = false; inp.punt = false;
     inp.hand = false; inp.autoCatch = false; inp.sprint = false; inp.aim = false; inp.speedCap = L.speed;
-    inp.catchSkill = L.catchSkill; inp.fumble = br.catchRoll < L.fumble;
+    const K = this.K[pl.team];
+    inp.catchSkill = K.catchSkill; inp.fumble = br.catchRoll < K.fumble;
+    inp.diveReach = K.diveReach; inp.catchRel = K.catchRel; inp.tip = K.tip; inp.reachMul = K.reach;
     const phase = g.rules.phase;
     if (phase === 'kickoff') return this.kickoffInput(pl, br, inp, L);
     if (pl.air || pl.fall || this.airCheck(pl, br, L)) { inp.mx = 0; inp.mz = 0; return inp; } // Luftball läuft
     switch (br.role) {
-      case 'keeper': this.keeper(pl, br, inp, L); break;
+      case 'keeper': this.keeper(pl, br, inp, L, K); break;
       case 'carrier': this.carrier(pl, br, inp, L); break;
       case 'chase': this.chase(pl, br, inp, L, false); break;
       case 'press': this.chase(pl, br, inp, L, true); break;
@@ -559,13 +592,17 @@ export class Bots {
     void L;
   }
 
-  // Absicherung / „letzte Hand“: zwischen Ball und Tor, Schüsse abwehren (hechten), Ball aufnehmen, abwerfen
-  keeper(pl, br, inp, L) {
+  // Absicherung / „letzte Hand“: zwischen Ball und Tor, Schüsse abwehren (hechten), Ball aufnehmen, abwerfen.
+  // Nacht 2c: dieselbe Logik steuert den Auto-Torwart des Menschen (humanKeeper, human = true): keine eigenen Pässe
+  // oder Schüsse, Abwurf erst nach P.autoWurf s ohne Eingabe; laufen darf der Mensch selbst (Stick gewinnt).
+  // K = Tormann-Werte (KEEPER_LEVELS bzw. HUMAN_KEEPER), L = Mannschaft (Abwurf-Entscheidung).
+  keeper(pl, br, inp, L, K, human = false) {
     const g = this.g, b = g.ball, R = g.rules, P = g.P, cage = g.cage, team = pl.team;
     const gx = R.goalX(team), side = team === 0 ? 1 : -1;
-    inp.speedCap = L.speed * L.keeperMove;
+    inp.speedCap = K.move;
     if (b.held === pl.id) { // Ball in der Hand: Abwurf, sobald ein Mitspieler frei anspielbar ist
-      if (br.throwAt < 0) br.throwAt = g.t + 0.8 + g.rng.next() * 0.8 + (1 - L.catchSkill) * 0.6;
+      if (human) { if (br.idleT < P.autoWurf) { br.throwAt = -1; return; } if (br.throwAt < 0) br.throwAt = g.t; }
+      else if (br.throwAt < 0) br.throwAt = g.t + 0.8 + g.rng.next() * 0.8 + (1 - L.catchSkill) * 0.6;
       // Abwurf nur bei freiem Passweg (gute Tormänner: ≥ 2 m zum Weg, Empfänger ≥ 2,3 m frei) – sonst warten bzw.
       // spät weit abschlagen; ein abgefangener Abwurf am Torraum ist fast immer ein Gegentor
       const safe = L.catchSkill > 0.5;
@@ -585,9 +622,9 @@ export class Bots {
       return;
     }
     br.throwAt = -1;
-    // Neuer Ball im Spiel: Fang-Sicherheit neu würfeln (Stärke)
-    if (g.lastTouchT !== br.rollT) { br.rollT = g.lastTouchT; br.catchRoll = g.rng.next(); br.diveUsed = false; }
-    inp.fumble = br.catchRoll < L.fumble;
+    // Neuer Ball im Spiel: Fang-Sicherheit und Stellungsfehler neu würfeln (Stärke)
+    if (g.lastTouchT !== br.rollT) { br.rollT = g.lastTouchT; br.catchRoll = g.rng.next(); br.diveUsed = false; br.posErr = K.posErr * clamp(g.rng.gauss(), -2, 2); }
+    inp.fumble = br.catchRoll < K.fumble;
     const inOwnBox = R.inBox(team, b.p.x, b.p.z, 0.3);
     // Schuss aufs Tor? Kreuzt der Ball die Linie des Tormanns im Tor-Bereich?
     const vtow = -side * b.v.x;
@@ -599,11 +636,13 @@ export class Bots {
           if (br.shotSeen < 0) br.shotSeen = g.t;
           const seen = g.t - br.shotSeen;
           inp.autoCatch = true; inp.hand = true;
-          if (seen >= L.keeperReact) { // Reaktionszeit auf einen Schuss (Mensch ≈ 0,2–0,3 s; Nacht 2b: vorher 0,1–0,36 s)
-            const dz = zc - pl.z;
-            this.moveTo(inp, pl, pl.x, zc, true, 0.3);
-            const reachRun = P.vSprint * L.speed * tc * 0.6;
-            if (!br.diveUsed && Math.abs(dz) > 0.55 && Math.abs(dz) > reachRun && Math.abs(dz) < (P.diveReach + P.diveSpeed * P.diveT) * L.dive + 0.3 && tc < 0.5 && R.handsOk(pl)) {
+          if (seen < K.react) { inp.mx = 0; inp.mz = 0; inp.sprint = false; } // noch nicht reagiert: stehen bleiben, nicht weiterlaufen
+          else { // Reaktionszeit auf einen Schuss (Mensch ≈ 0,2–0,3 s)
+            // Stellungsfehler nur bei scharfen Schüssen (einen langsamen Ball sieht er kommen)
+            const zk = zc + (br.posErr || 0) * 0.5 * clamp((b.v.len() - 9) / 9, 0, 1), dz = zk - pl.z;
+            this.moveTo(inp, pl, pl.x, zk, true, 0.3);
+            const reachRun = P.vSprint * K.run * tc * 0.6;
+            if (!br.diveUsed && Math.abs(dz) > 0.55 && Math.abs(dz) > reachRun && Math.abs(dz) < (P.diveReach * K.diveReach + P.diveSpeed * P.diveT) * K.dive + 0.3 && tc < 0.5 && R.handsOk(pl)) {
               inp.dive = true; inp.diveX = side * 0.25; inp.diveZ = Math.sign(dz); br.diveUsed = true; this.stats.dives++;
             }
           }
@@ -618,11 +657,11 @@ export class Bots {
     if ((inOwnBox || R.inBox(team, tt.x, tt.z)) && b.held < 0 && tt.t < oppBest + 0.4 && b.p.y < 2.2) {
       inp.autoCatch = true; inp.hand = true;
       this.moveTo(inp, pl, tt.x, tt.z, true, 0.4);
-      if (!R.inBox(team, pl.x, pl.z, -0.2) && !pl.pending && Math.hypot(b.p.x - pl.x, b.p.z - pl.z) < 1.3) this.decide(pl, br, L, true);
+      if (!human && !R.inBox(team, pl.x, pl.z, -0.2) && !pl.pending && Math.hypot(b.p.x - pl.x, b.p.z - pl.z) < 1.3) this.decide(pl, br, L, true);
       return;
     }
     // Eigener Ballbesitz am Fuß (Tormann dribbelt): schnell abspielen
-    if (this.owner === pl.id) {
+    if (this.owner === pl.id && !human) {
       if (!pl.pending) this.decide(pl, br, L, true);
       this.moveTo(inp, pl, b.p.x, b.p.z, false, 0.4);
       return;
@@ -635,8 +674,34 @@ export class Bots {
     // oder loser Ball < 9 m) höchstens 1,3 m vor der Linie; nur bei eigenem Ballbesitz weiter heraus. Schnell zurück.
     const danger = !own && d < 9;
     const rk = danger ? clamp(0.6 + 0.1 * d, 0.75, 1.5) : clamp(0.7 + 0.12 * d + (own ? 1.0 : 0), 0.9, own ? 3.0 : 2.2);
-    const kx = gx + dx / d * rk, kz = clamp(dz / d * rk, -cage.gw - 0.3, cage.gw + 0.3);
+    const kx = gx + dx / d * rk, kz = clamp(dz / d * rk + (danger ? br.posErr || 0 : 0), -cage.gw - 0.3, cage.gw + 0.3);
     this.moveTo(inp, pl, kx, kz, danger && Math.hypot(kx - pl.x, kz - pl.z) > 1.2, 0.6);
     inp.autoCatch = inOwnBox; inp.hand = inOwnBox;
+  }
+
+  // Auto-Torwart des Menschen (Nacht 2c, ?autotorwart=0 = alte Knöpfe): Ist der gesteuerte Spieler die „letzte Hand“,
+  // übernimmt die Tormann-Logik die Hände (fangen, hechten, bei Ballbesitz nach P.autoWurf s ohne Eingabe abwerfen).
+  // Der Stick gewinnt immer: bewegt der Mensch ihn, läuft er selbst; ist er los, stellt sich der Automat hin.
+  // Mit Ball in der Hand bleiben Abwurf/Abschlag auf den Knöpfen (throw/punt aus main.js). Hat der Mensch einen
+  // Pass/Schuss vorgemerkt, nimmt er einen losen (langsamen) Ball mit dem Fuß statt mit den Händen.
+  humanKeeper(i, hin) {
+    const g = this.g, pl = g.players[i], br = this.humanBrain, b = g.ball;
+    const out = { ...hin, hand: false, dive: false, throw: !!hin.throw, punt: !!hin.punt, autoCatch: false, mx: 0, mz: 0, sprint: false, speedCap: 0 };
+    const stick = Math.hypot(hin.mx || 0, hin.mz || 0) > 0.12;
+    const busy = stick || hin.throw || hin.punt || hin.passDown || hin.shotDown;
+    br.idleT = b.held === pl.id && !busy ? br.idleT + 1 / 120 : 0;
+    const L = this.L[pl.team];
+    this.keeper(pl, br, out, L, HUMAN_KEEPER, true);
+    out.catchSkill = HUMAN_KEEPER.catchSkill; out.fumble = br.catchRoll < HUMAN_KEEPER.fumble;
+    out.diveReach = 1; out.catchRel = null; out.tip = 0; out.reachMul = 1;
+    if (hin.throw || hin.punt) { out.aimX = hin.aimX; out.aimZ = hin.aimZ; out.power = hin.power; }
+    if (stick) {
+      out.mx = hin.mx; out.mz = hin.mz; out.sprint = hin.sprint; out.speedCap = 0;
+      if (out.dive && hin.mx * out.diveX + hin.mz * out.diveZ < 0) out.dive = false; // läuft deutlich weg: kein Hechten
+    }
+    // Kick vorgemerkt: loser, langsamer Ball wird gespielt, nicht gefangen (Schüsse aufs Tor fängt er trotzdem)
+    const shot = br.shotSeen >= 0;
+    if (!shot && b.held < 0 && (pl.pending || pl.charging || pl.armed) && Math.hypot(b.v.x, b.v.z) < 8) { out.hand = false; out.autoCatch = false; }
+    return out;
   }
 }

@@ -3,7 +3,7 @@
 // Schuss, Luftbälle und Tormann-Knöpfe. Tormann-Skript = Tormann-Logik der Bots (Stufe 2) für den Menschen.
 import { EMPTY_INPUT } from '../../src/sim/player.js';
 import { planAir } from '../../src/sim/air.js';
-import { Bots } from '../../src/sim/bots.js';
+import { Bots, HUMAN_KEEPER } from '../../src/sim/bots.js';
 
 const H = (o = {}) => ({ ...EMPTY_INPUT, mx: 0, mz: 0, passDown: false, shotDown: false, ...o });
 const norm = (x, z, m = 1) => { const l = Math.hypot(x, z) || 1; return [x / l * m, z / l * m]; };
@@ -111,7 +111,8 @@ export function makeScript(id, opts = {}) {
     default: { // Tormann-Challenges: Tormann-Logik der Bots steuert den Menschen
       let bots = null;
       return (g, C) => {
-        if (!bots || bots.g !== g) bots = new Bots(g, opts.level || 2);
+        // Tormann-Werte des Auto-Torwarts (= alte Stufe 2, Nacht 2b); die CPU-Tormänner sind seit Nacht 2c schwächer
+        if (!bots || bots.g !== g) { bots = new Bots(g, opts.level || 2); bots.K[0] = HUMAN_KEEPER; }
         bots.update();
         const pl = g.players[0];
         bots.brain[0].role = 'keeper';

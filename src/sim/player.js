@@ -241,9 +241,12 @@ export class Player {
     const rel = Math.hypot(rvx, ball.v.y, rvz);
     let touched = false;
     if (held) return;
+    // Tormann im eigenen Torraum, der fangen will (Bot, Auto-Torwart): Ball in Reichweite der Hände → Hände statt Fuß
+    // (Nacht 2c; vorher lenkte der Fuß flache Schüsse ab, bevor die Hände dran waren)
+    const handsFirst = game.match && (inp.hand || inp.autoCatch) && game.rules.handsFirst(this, inp);
     // Ballannahme aus der Luft (Brust, Oberschenkel): Ball kommt vor dem Körper herunter, nicht zu schnell → er fällt
     // kontrolliert vor die Füße. Harte Schüsse prallen weiter vom Körper ab (bodyCollision).
-    if (!inReach && this.touchCd <= 0 && !this.air && ball.p.y > P.reachH && ball.p.y < 1.55 && ball.v.y < 0.5 && bd < 0.75 && rel < 11 &&
+    if (!handsFirst && !inReach && this.touchCd <= 0 && !this.air && ball.p.y > P.reachH && ball.p.y < 1.55 && ball.v.y < 0.5 && bd < 0.75 && rel < 11 &&
         (bx * Math.cos(this.face) + bz * Math.sin(this.face)) > -0.15 && !this.pending) {
       const k = 0.7, part = ball.p.y > 1.05 ? 'brust' : 'oberschenkel';
       ball.v.set(this.vx * k + Math.cos(this.face) * 0.6, -1.2, this.vz * k + Math.sin(this.face) * 0.6);
@@ -265,7 +268,7 @@ export class Player {
       const ahead = bx * fxf + bz * fzf, closing = (ball.v.x - this.vx) * fxf + (ball.v.z - this.vz) * fzf;
       settle = ahead > 0.6 && closing < -0.8 && this.pending.age < 0.25 && !oppNear(game, this, 1.4);
     }
-    if (!touched && inReach && rel < P.ctrlRelMax && !settle) {
+    if (!touched && !handsFirst && inReach && rel < P.ctrlRelMax && !settle) {
       if (this.pending && this.touchCd <= 0.1) {
         this.kick(this.pending, game, rel);
         this.pending = null;

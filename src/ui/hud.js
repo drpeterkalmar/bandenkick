@@ -104,11 +104,11 @@ export function buildHud(root, canvas) {
   const howto = (touchUI) => touchUI
     ? `<li><b>Stick links:</b> laufen · ganz außen oder Knopf = Sprint · <b>⇄</b> Spieler wechseln (sonst automatisch)</li>
        <li><b>Pass/Schuss:</b> halten = flach/Vollspann, <b>tipp + halten</b> = hoch/angeschnitten (Ring zeigt Modus und Stärke)</li>
-       <li><b>Als letzte Hand im Torraum:</b> Schuss-Knopf = <b>Fangen</b> (halten), Pass-Knopf = <b>Hechten</b>; mit Ball: <b>Abwurf</b> / <b>Abschlag</b></li>`
+       <li><b>Torwart</b> (letzte Hand im Torraum): fängt und hechtet von selbst. Mit Ball: Pass = <b>Abwurf</b>, Schuss = <b>Abschlag</b> – sonst wirft er nach 2 s selbst ab</li>`
     : `<li><b>WASD / Pfeile:</b> laufen, <b>Shift:</b> Sprint, <b>C / Tab:</b> Spieler wechseln</li>
        <li><b>J / Enter / Linksklick:</b> Pass · <b>Leertaste / K / Rechtsklick:</b> Schuss – halten = flach/Vollspann, <b>tipp + halten</b> = hoch/angeschnitten; Maus zielt</li>
-       <li><b>Letzte Hand im Torraum:</b> Leertaste = Fangen, J = Hechten; mit Ball J = Abwurf, Leertaste = Abschlag</li>
-       <li><b>Gamepad:</b> Stick laufen, A Pass/Hechten/Abwurf, X/RT Schuss/Fangen, Y Wechsel, LB/RB Sprint</li>`;
+       <li><b>Torwart</b> (letzte Hand im Torraum): fängt und hechtet von selbst; mit Ball J = Abwurf, Leertaste = Abschlag (sonst nach 2 s von selbst)</li>
+       <li><b>Gamepad:</b> Stick laufen, A Pass/Abwurf, X/RT Schuss/Abschlag, Y Wechsel, LB/RB Sprint</li>`;
   const setHowto = (touchUI) => root.querySelectorAll('.howto').forEach((u) => { u.innerHTML = howto(touchUI); });
 
   let bannerT = 0, kickT = 0, lastScore = '', lastKeeper = '', lastCharge = null, lastStatus = '';

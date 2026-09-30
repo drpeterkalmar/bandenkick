@@ -165,6 +165,11 @@ export const DEFAULTS = {
   keeperT: 0.3,           // s
   holdMax: 6,             // s Ball in der Hand, dann automatisch Abwurf
   fanghilfe: 1,           // Mensch als Tormann fängt Bälle auf den Körper (≤ 55 cm) auch ohne Knopf [?fanghilfe=0]
+  // Nacht 2c (Peter: „Torwart soll alleine fangen und hechten ohne eigene Knöpfe. Cpu goalie ist zu stark.“)
+  autoTorwart: 1,         // Mensch als letzte Hand: Fangen/Hechten automatisch (Stärke = alte Bot-Stufe 2), Knöpfe
+                          // nur mit Ball (Abwurf/Abschlag); 0 = grüne Tormann-Knöpfe wie Nacht 2b       [?autotorwart=0]
+  autoWurf: 2.0,          // s ohne Eingabe mit Ball in der Hand, dann wirft der Auto-Torwart selbst ab     [?autowurf=]
+  tormann: 0,             // Stärke der CPU-Tormänner 1…3 (Zwischenwerte erlaubt), 0 = wie die Mannschaft [?tormann=]
   catchReach: 0.92,       // m Reichweite der Hände waagrecht (Körpermitte → Ball, mit Strecken; Nacht 2b: 1,0 → 0,92)
   catchLow: 0.12,         // m … bis zu dieser Höhe (Ballmitte) aufnehmen …
   catchHigh: 2.35,        // m … bis zu dieser Höhe fangen (mit Strecken)
@@ -185,7 +190,7 @@ export const ALIASES = {
   schuss: 'shotMax', pass: 'passSpeed', bande: 'boardEn', netz: 'netH', dachhoehe: 'roofH',
   abprall: 'turfEn', rollen: 'turfRoll0', effet: 'spinMax', torbreite: 'goalW', torhoehe: 'goalH',
   stemm: 'aPlant', bremse: 'aBrake', kurve: 'curveDeg', bots: 'botLevel',
-  tipp: 'tapMax', kegel: 'passCone', innen: 'passInnenDeg', hacke: 'passHackeDeg', chipmin: 'chipElevMin', chipmax: 'chipElevMax',
+  tipp: 'tapMax', autotorwart: 'autoTorwart', autowurf: 'autoWurf', kegel: 'passCone', innen: 'passInnenDeg', hacke: 'passHackeDeg', chipmin: 'chipElevMin', chipmax: 'chipElevMax',
 };
 // ?zack=0: Werte des alten Bewegungsmodells (Nacht 1), sofern nicht ausdrücklich übersteuert
 const ZACK0 = { aLat: 6.0, aBrake: 6.5 };

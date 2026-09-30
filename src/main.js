@@ -245,7 +245,9 @@ function keeperMode() {
   if (!game.match || game.human < 0) return '';
   const pl = me(), R = game.rules;
   if (game.ball.held === pl.id) return 'hold';
-  if (R.keeper[pl.team] === pl.id && R.inBox(pl.team, pl.x, pl.z) && R.handsOffTeam !== pl.team) return 'box';
+  // Nacht 2c: im Spiel fängt und hechtet der Auto-Torwart selbst (keine grünen Knöpfe); Training-Torwart und
+  // ?autotorwart=0 behalten Fangen/Hechten auf den Knöpfen
+  if (R.keeper[pl.team] === pl.id && R.inBox(pl.team, pl.x, pl.z) && R.handsOffTeam !== pl.team && (!P.autoTorwart || game.challenge)) return 'box';
   return '';
 }
 
@@ -271,9 +273,10 @@ function worldInput(inp) {
     const st = Math.hypot(mx, mz) > 0.3;
     const dirX = o.aim ? o.aimX : mx, dirZ = o.aim ? o.aimZ : mz, dl = Math.hypot(dirX, dirZ) || 1;
     if (km === 'hold') {
+      const manual = !P.autoTorwart || game.challenge; // Nacht 2c: Abschlag auf Druck mit voller Weite, kein Aufladen
       o.throw = inp.passPress;
-      o.punt = inp.shotRelease;
-      o.power = Math.min(1.15, 0.45 + chargeHold);
+      o.punt = manual ? inp.shotRelease : inp.shotPress;
+      o.power = manual ? Math.min(1.15, 0.45 + chargeHold) : 1;
       if (st || o.aim) { o.aimX = pl.x + dirX / dl * 9; o.aimZ = pl.z + dirZ / dl * 9; } else { o.aimX = undefined; o.aimZ = undefined; }
     } else {
       o.dive = inp.passPress; o.diveX = st ? mx : 0; o.diveZ = st ? mz : 0;
@@ -413,6 +416,7 @@ function frame() {
   // Flanken (Tormann-Knöpfe) und Treffpunkt beim Loslassen (Profi) einheitlich für echte und Test-Eingaben
   raw.passPress = raw.passDown && !passPrev;
   raw.shotRelease = heldPrev && !raw.shotDown;
+  raw.shotPress = raw.shotDown && !heldPrev;
   if (raw.shotDown) { lastContact = [raw.cx, raw.cy]; chargeHold += dt; }
   else if (raw.shotRelease) { raw.cx = lastContact[0]; raw.cy = lastContact[1]; }
   heldPrev = raw.shotDown; passPrev = raw.passDown;
@@ -469,7 +473,7 @@ function frame() {
   const touchUI = document.body.classList.contains('touch');
   const km = keeperMode();
   hud.setKeeperMode(km);
-  hud.setCharge(km === 'hold' ? (raw.shotDown ? { kind: 'shot', p: Math.min(1, chargeHold / 0.7), sym: '🦶', color: '#d9ff3a', label: 'Abschlag' } : null) : chargeView(pl, raw), touchUI);
+  hud.setCharge(km === 'hold' ? (raw.shotDown && (!P.autoTorwart || game.challenge) ? { kind: 'shot', p: Math.min(1, chargeHold / 0.7), sym: '🦶', color: '#d9ff3a', label: 'Abschlag' } : null) : chargeView(pl, raw), touchUI);
   if (touchUI && P.treffpunkt) hud.setContact(raw.shotDown ? raw.cx : 0, raw.shotDown ? raw.cy : 0);
   challengeFrame();
   aimFrame(pl, raw, km);

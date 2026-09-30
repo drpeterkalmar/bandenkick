@@ -87,22 +87,32 @@ export class Rules {
       // Fangen: Ball in Reichweite der Hände
       const want = inp.hand || pl.hand.mode === 'dive' || inp.autoCatch;
       if (!want) continue;
-      const dx = b.p.x - pl.x, dz = b.p.z - pl.z;
-      // Fanghilfe (Mensch ohne Knopf): nur Bälle, die ohnehin auf den Körper kommen (autoReach).
-      // Reichweite im Stand nach Höhe (Nacht 2b): Hüfte bis Kopf voll, flache Bälle nur mit Bücken (sonst hechten)
-      const hB = b.p.y, rH = hB < 0.7 ? 0.55 + 0.45 * clamp((hB - 0.12) / 0.58, 0, 1) : hB > 1.9 ? 1 - 0.25 * clamp((hB - 1.9) / 0.45, 0, 1) : 1;
-      let reach = Math.min(!inp.hand && inp.autoReach ? inp.autoReach : P.catchReach, P.catchReach * rH), hi = P.catchHigh, d = Math.hypot(dx, dz);
-      if (pl.hand.mode === 'dive') { // im Flug: Strecke Körper → ausgestreckte Hände
-        const t = clamp(dx * pl.hand.dx + dz * pl.hand.dz, 0, P.diveReach);
-        d = Math.hypot(dx - pl.hand.dx * t, dz - pl.hand.dz * t);
-        reach = 0.42; hi = 1.75;
-      }
       if (pl.hand.mode === 'ground') continue;
+      const { dx, dz, d, reach, hi } = this.handReach(pl, inp);
       if (d > reach || b.p.y > hi || b.p.y < 0) continue;
       if (!this.inBox(team, b.p.x, b.p.z, 0.4)) continue;
       const rel = Math.hypot(b.v.x - pl.vx, b.v.y, b.v.z - pl.vz);
       const skill = inp.catchSkill ?? 1;
-      if (rel > P.catchMaxRel * (0.8 + 0.2 * skill) || (inp.fumble && rel > 9)) {
+      // Nur mit den Fingerspitzen dran (äußerer Anteil inp.tip der Reichweite, Nacht 2c: CPU-Tormänner): ein
+      // scharfer Ball wird nur abgefälscht und fliegt weiter – vielleicht trotzdem ins Tor
+      // Maß ist der Vorbeiflug-Abstand (Ballbahn relativ zu Körper bzw. Händen), nicht der Eintrittspunkt am Rand
+      let dPass = d;
+      if (inp.tip) {
+        const ex = pl.hand.mode === 'dive' ? dx - pl.hand.dx * clamp(dx * pl.hand.dx + dz * pl.hand.dz, 0, P.diveReach * (inp.diveReach ?? 1)) : dx;
+        const ez = pl.hand.mode === 'dive' ? dz - pl.hand.dz * clamp(dx * pl.hand.dx + dz * pl.hand.dz, 0, P.diveReach * (inp.diveReach ?? 1)) : dz;
+        const rx = b.v.x - pl.vx, rz = b.v.z - pl.vz, rl = Math.hypot(rx, rz);
+        dPass = rl > 1 ? Math.abs(ex * rz - ez * rx) / rl : d;
+      }
+      if (inp.tip && dPass > reach * (1 - inp.tip) && rel > 13) {
+        const out = team === 0 ? 1 : -1, k = 0.55 + 0.25 * clamp((dPass / reach - (1 - inp.tip)) / inp.tip, 0, 1);
+        b.v.set(b.v.x * k + out * 1.2, b.v.y * k + 0.8, b.v.z * k);
+        b.w.scale(0.5); b.contact = false;
+        pl.touchCd = 0.4; pl.catchCd = g.t + 0.35;
+        this.touch(pl);
+        g.events.push({ type: 'parry', tip: true, player: pl.id, speed: rel, x: b.p.x, y: b.p.y, z: b.p.z });
+        continue;
+      }
+      if (rel > (inp.catchRel ?? P.catchMaxRel * (0.8 + 0.2 * skill)) || (inp.fumble && rel > 13)) {
         // Abwehren: Ball prallt von den Händen ab (weg vom Tor, gedämpft)
         const out = team === 0 ? 1 : -1;
         const sp = rel * 0.32;
@@ -121,6 +131,38 @@ export class Rules {
       this.touch(pl);
       g.events.push({ type: 'catch', player: pl.id, speed: rel, x: b.p.x, y: b.p.y, z: b.p.z });
     }
+  }
+
+  // Reichweite der Hände (auch für den Vorrang der Hände vor dem Fuß, Player.step): Abstand d Ball ↔ Körper bzw.
+  // ausgestreckte Hände im Hechtsprung, Reichweite reach, höchste Fanghöhe hi
+  handReach(pl, inp) {
+    const P = this.g.P, b = this.g.ball;
+    const dx = b.p.x - pl.x, dz = b.p.z - pl.z;
+    // Fanghilfe (Mensch ohne Knopf): nur Bälle, die ohnehin auf den Körper kommen (autoReach).
+    // Reichweite im Stand nach Höhe (Nacht 2b): Hüfte bis Kopf voll, flache Bälle nur mit Bücken (sonst hechten)
+    const hB = b.p.y, rH = hB < 0.7 ? 0.55 + 0.45 * clamp((hB - 0.12) / 0.58, 0, 1) : hB > 1.9 ? 1 - 0.25 * clamp((hB - 1.9) / 0.45, 0, 1) : 1;
+    let reach = Math.min(!inp.hand && inp.autoReach ? inp.autoReach : P.catchReach, P.catchReach * rH) * (inp.reachMul ?? 1), hi = P.catchHigh, d = Math.hypot(dx, dz);
+    if (pl.hand.mode === 'dive') { // im Flug: Strecke Körper → ausgestreckte Hände (Nacht 2c: je Tormann-Stufe)
+      const t = clamp(dx * pl.hand.dx + dz * pl.hand.dz, 0, P.diveReach * (inp.diveReach ?? 1));
+      d = Math.hypot(dx - pl.hand.dx * t, dz - pl.hand.dz * t);
+      reach = 0.42; hi = 1.75;
+    }
+    return { dx, dz, d, reach, hi };
+  }
+
+  // Nimmt der Tormann den Ball gleich mit den Händen? Er will fangen, darf es, und der Ball ist in Reichweite der
+  // Hände oder fliegt in ≤ 0,3 s hinein → der Fuß bleibt weg (Nacht 2c: vorher lenkte der Fuß flache Schüsse ab)
+  handsFirst(pl, inp) {
+    const g = this.g, b = g.ball;
+    if (!(inp.hand || inp.autoCatch) || b.held >= 0 || g.t < pl.catchCd || pl.hand.mode === 'ground' || !this.handsOk(pl)) return false;
+    if (!this.inBox(pl.team, b.p.x, b.p.z, 0.4)) return false;
+    const H = this.handReach(pl, inp);
+    if (b.p.y > H.hi) return false;
+    if (H.d <= H.reach) return true;
+    const rx = b.v.x - pl.vx, rz = b.v.z - pl.vz, r2 = rx * rx + rz * rz;
+    if (r2 < 2.25 || pl.hand.mode === 'dive') return false;
+    const tc = -(H.dx * rx + H.dz * rz) / r2;
+    return tc > 0 && tc < 0.3 && Math.hypot(H.dx + rx * tc, H.dz + rz * tc) <= H.reach;
   }
 
   holding(dt, pl, inp) {

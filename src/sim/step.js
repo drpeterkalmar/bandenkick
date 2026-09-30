@@ -173,6 +173,11 @@ export class Game {
       else if (inputs[i] && (i === this.human || !this.bots)) ins[i] = i === this.human ? this.humanInput(inputs[i]) : inputs[i]; // Mensch (ohne Bots: alle)
       else ins[i] = this.bots ? this.bots.input(i) : EMPTY_INPUT;
     }
+    // Auto-Torwart (Nacht 2c): ist der Mensch die letzte Hand, übernimmt die Tormann-Logik der Bots die Hände
+    const h = this.human;
+    // (nur im eigenen Torraum oder mit Ball in der Hand – im Feld bleibt der Mensch ganz er selbst)
+    const hp = h >= 0 ? this.players[h] : null;
+    if (live && hp && this.P.autoTorwart && this.bots && R.keeper[hp.team] === h && ins[h] && (b.held === h || R.inBox(hp.team, hp.x, hp.z, 0.5))) ins[h] = this.bots.humanKeeper(h, ins[h]);
     // Reihenfolge rotiert: bei gleichzeitigem Ballkontakt ist nicht immer derselbe zuerst dran
     const off = this.tick % n;
     for (let k = 0; k < n; k++) {
