@@ -81,7 +81,7 @@ with Server() as srv, sync_playwright() as pw:
         moved = abs(st['ball']['p'][0] - b0[0]) + abs(st['ball']['p'][2] - b0[2])
         roles = sorted(set(p['role'] for p in st['players']))
         ok(moved > 0.5 and st['rules']['phase'] in ('play', 'goal') and st['faults'] == 0, f"Bots spielen 6 s: Ball bewegt, Phase {st['rules']['phase']}, Rollen {roles}")
-        # Tor → Jubel → Schnellstart: Tormann des Gegentors hat den Ball
+        # Tor → Jubel → Anstoß in der Mitte für die Mannschaft, die das Tor bekommen hat (Standard seit 30.09.)
         s.ev("__game.newGame(); __game.game.rules.phase = 'play'; __game.bots(false)")
         s.ev("__game.kick({from:[__game.game.cage.hx - 3, 0.3, 0.4], v:[16, 0.5, 0], w:[0,0,0]})")  # 3 m vor dem Tor (Feldgröße egal)
         s.wait_sim(0.6)
@@ -90,7 +90,8 @@ with Server() as srv, sync_playwright() as pw:
         s.ev("__game.bots(true)")
         s.wait_sim(2.6)
         st = s.state()
-        ok(st['ball']['held'] == st['rules']['keeper'][1], f"Schnellstart: Blau-Tormann {st['rules']['keeper'][1]} hält den Ball ({st['ball']['held']})")
+        kt = s.ev("__game.game.rules.kickoffTeam")
+        ok(kt == 1 and st['ball']['held'] == -1 and st['rules']['phase'] in ('kickoff', 'play'), f"Anstoß nach Tor: Blau stößt an (Team {kt}, Ball frei {st['ball']['held']}, Phase {st['rules']['phase']})")
         # Mensch als letzte Hand mit Ball: Knöpfe werden Abwurf/Abschlag, Abwurf per Pass-Taste
         s.ev("__game.newGame(); __game.game.rules.phase = 'play'; __game.game.rules.giveKeeper(0)")
         s.frames(4)

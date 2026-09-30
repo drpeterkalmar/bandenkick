@@ -198,7 +198,7 @@ export const DEFAULTS = {
   botLevel: 2,            // Stärke der Bots 1 (leicht) … 3 (stark)                  [?bots=]
   dauer: 4,               // min je Halbzeit (2 Halbzeiten)                           [?dauer=]
   golden: 0,              // 1 = bei Gleichstand Golden Goal statt Unentschieden      [?golden=]
-  anstoss: 0,             // 1 = klassischer Anstoß nach Tor statt Schnellstart        [?anstoss=]
+  anstoss: 1,             // Anstoß in der Mitte nach Tor (Peter 30.09.; war 0 = Schnellstart, Tormann hat den Ball) [?anstoss=0]
   // „Letzte Hand“: hinterster Spieler (kleinster Abstand zur eigenen Torlinie), Wechsel erst, wenn ein anderer
   // mindestens keeperDist näher an der Linie ist, und das mindestens keeperT lang (kein Flackern).
   keeperDist: 0.5,        // m
@@ -220,7 +220,7 @@ export const DEFAULTS = {
   groundT: 0.75,          // s danach am Boden
   throwSpeed: 11,         // m/s Abwurf (flach geworfen)
   punt: 21,               // m/s Abschlag aus der Hand
-  celebrateT: 2.6,        // s Jubel nach dem Tor, dann Schnellstart
+  celebrateT: 2.6,        // s Jubel nach dem Tor, dann Anstoß (bzw. Schnellstart mit ?anstoss=0)
   switchT: 0.6,           // s Mindestabstand zwischen automatischen Spielerwechseln
 };
 

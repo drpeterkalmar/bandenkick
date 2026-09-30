@@ -307,7 +307,7 @@ function handleEvents(ev) {
     } else if (e.type === 'goal') {
       if (R) {
         const mine = e.team === me().team;
-        hud.flash(mine ? 'TOR!' : 'Gegentor', `${TEAM_NAMES[e.team]} · ${Math.round(e.speed * 3.6)} km/h${e.own ? ' · Eigentor' : ''}`, 2.4);
+        hud.flash(mine ? 'TOR!' : 'Gegentor', `${TEAM_NAMES[e.team]} · ${Math.round(e.speed * 3.6)} km/h${e.own ? ' · Eigentor' : e.saved ? ' · Tormann war noch dran' : ''}`, 2.4);
       } else { hud.flash('TOR!', `${Math.round(e.speed * 3.6)} km/h`, 2.2); hud.setScore(game.score); }
     } else if (e.type === 'out') {
       hud.flash('Aus', R ? 'Abwurf' : 'Ball kommt zurück', 1.2);
@@ -533,7 +533,7 @@ function drawPlayers(dt, a) {
     const keeper = R ? R.keeper[pl.team] === pl.id && R.phase !== 'end' && R.handsOffTeam !== pl.team : false;
     let special = null;
     if (R) {
-      if (R.phase === 'goal' && pl.speed < 0.8) special = R.scoredTeam === pl.team ? (game.lastTouch === pl.id ? 'cheer' : 'clap') : 'wait';
+      if (R.phase === 'goal' && pl.speed < 0.8) special = R.scoredTeam === pl.team ? ((R.goals.length ? R.goals[R.goals.length - 1].scorer : game.lastTouch) === pl.id ? 'cheer' : 'clap') : 'wait';
       else if (R.phase === 'end' && pl.speed < 0.8) special = R.winner < 0 ? 'clap' : R.winner === pl.team ? 'cheer2' : 'wait';
       else if (R.phase === 'halftime' && pl.speed < 0.8) special = 'wait';
     }

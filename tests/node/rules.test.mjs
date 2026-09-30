@@ -133,9 +133,9 @@ const park = (g) => { // alle Spieler weit weg von Ball und Toren
   g2.step(a);
   check('Hechtsprung außerhalb des Torraums nicht möglich', k2.hand.mode === 'none' ? 1 : 0, 1, 1, '', 1);
 }
-// 7) Schnellstart nach Tor: Tormann der Mannschaft, die das Tor bekommen hat, hat den Ball
+// 7) Nach Tor: Standard seit 30.09. (Peter) = Anstoß in der Mitte; ?anstoss=0 = Schnellstart (Tormann des Gegentors hat den Ball)
 {
-  const g = mk(); park(g);
+  const g = mk('?anstoss=0'); park(g);
   g.ball.place(9.5, 0.5, 0); g.ball.contact = false; g.ball.v.set(12, 0, 0);
   const ev = run(g, 0.5);
   const goal = ev.find((e) => e.type === 'goal');
@@ -148,16 +148,29 @@ const park = (g) => { // alle Spieler weit weg von Ball und Toren
   }
   const rs = ev2.find((e) => e.type === 'restart');
   const kp = g.players[g.rules.keeper[1]];
-  check('Schnellstart: Tormann des Gegentors (Mannschaft 1) hat den Ball', rs && rs.mode === 'keeper' && g.ball.held === kp.id ? 1 : 0, 1, 1, '', 1, rs ? `nach ${(rs.t - goal.t).toFixed(2)} s` : '');
-  check('Schnellstart: Tormann steht im eigenen Torraum', g.rules.inBox(1, kp.x, kp.z) ? 1 : 0, 1, 1, '', 1);
+  check('?anstoss=0 Schnellstart: Tormann des Gegentors (Mannschaft 1) hat den Ball', rs && rs.mode === 'keeper' && g.ball.held === kp.id ? 1 : 0, 1, 1, '', 1, rs ? `nach ${(rs.t - goal.t).toFixed(2)} s` : '');
+  check('?anstoss=0 Schnellstart: Tormann steht im eigenen Torraum', g.rules.inBox(1, kp.x, kp.z) ? 1 : 0, 1, 1, '', 1);
   check('Uhr steht während des Torjubels', clockAtRestart - clock0, 0, 0.01, 's', 0, `Jubel ${g.P.celebrateT} s`);
-  // ?anstoss=1: klassischer Anstoß in der Mitte für die Mannschaft, die das Tor bekommen hat
-  const h = mk('?anstoss=1'); park(h);
+  // Standard: Anstoß in der Mitte für die Mannschaft, die das Tor bekommen hat
+  const h = mk(); park(h);
   h.ball.place(-9.5, 0.5, 0); h.ball.contact = false; h.ball.v.set(-12, 0, 0);
   run(h, 0.5 + h.P.celebrateT + 0.2);
-  check('?anstoss=1: Anstoß in der Mitte für Mannschaft 0', h.rules.phase === 'kickoff' && h.rules.kickoffTeam === 0 && Math.hypot(h.ball.p.x, h.ball.p.z) < 0.01 ? 1 : 0, 1, 1, '', 1);
+  check('Anstoß nach Tor (Standard): in der Mitte für Mannschaft 0', h.rules.phase === 'kickoff' && h.rules.kickoffTeam === 0 && Math.hypot(h.ball.p.x, h.ball.p.z) < 0.01 && h.ball.held < 0 ? 1 : 0, 1, 1, '', 1);
   const far = h.players.filter((p) => p.team === 1).every((p) => Math.hypot(p.x, p.z) >= 2);
-  check('?anstoss=1: Gegner ≥ 2 m vom Ball, jeder in seiner Hälfte', far && h.players.every((p) => (p.team === 0 ? p.x <= 0 : p.x >= 0)) ? 1 : 0, 1, 1, '', 1);
+  check('Anstoß nach Tor: Gegner ≥ 2 m vom Ball, jeder in seiner Hälfte', far && h.players.every((p) => (p.team === 0 ? p.x <= 0 : p.x >= 0)) ? 1 : 0, 1, 1, '', 1);
+}
+// 7b) Torschütze/Eigentor (Peter 30.09.: „es steht Eigentor, wenn ich ein reguläres Tor schieße“): Eine Tormann-Parade
+// (Fingerspitzen/Abwehren), nach der der Ball trotzdem reingeht, ist kein Eigentor – das Tor zählt für den Schützen.
+{
+  const goalAfter = (touches) => { const g = mk(); park(g); for (const [id, defl] of touches) g.rules.touch(g.players[id], defl); g.rules.onGoal(1); return g.rules.goals[0]; };
+  const a = goalAfter([[0, false], [3, true]]);          // Orange 0 schießt, Blau-Tormann 3 mit den Fingerspitzen dran → rein
+  check('Parade, Ball trotzdem rein: kein Eigentor, Tor für den Schützen', !a.own && a.scorer === 0 && a.saved ? 1 : 0, 1, 1, '', 1, JSON.stringify(a));
+  const b = goalAfter([[0, false], [4, false]]);         // Blau 4 spielt den Ball selbst ins eigene Tor
+  check('Selbst ins eigene Tor gespielt: Eigentor', b.own && b.scorer === -1 ? 1 : 0, 1, 1, '', 1, JSON.stringify(b));
+  const c = goalAfter([[0, false], [3, true], [4, false]]); // Parade, dann klärt Blau 4 ins eigene Tor
+  check('Parade, dann eigener Mitspieler ins eigene Tor: Eigentor', c.own ? 1 : 0, 1, 1, '', 1, JSON.stringify(c));
+  const d = goalAfter([[1, false]]);                     // Orange 1 trifft direkt
+  check('Direkter Treffer: Tor für den Schützen', !d.own && d.scorer === 1 && !d.saved ? 1 : 0, 1, 1, '', 1, JSON.stringify(d));
 }
 // 8) Spielzeit 2 × dauer, Halbzeit, Ende; Golden Goal bei Gleichstand
 {

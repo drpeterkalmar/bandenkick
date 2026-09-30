@@ -1,5 +1,5 @@
-// Spielregeln 3 gegen 3 (ohne DOM): „letzte Hand“, Torraum, Fangen/Hechten/Abwurf, 6-s-Regel, Schnellstart
-// nach Tor (Tormann des Gegentors hat den Ball) oder Anstoß (?anstoss=1), Spielzeit 2 × dauer min, Golden Goal.
+// Spielregeln 3 gegen 3 (ohne DOM): „letzte Hand“, Torraum, Fangen/Hechten/Abwurf, 6-s-Regel, Anstoß in der Mitte
+// nach Tor (Peter 30.09.; ?anstoss=0 = Schnellstart: Tormann des Gegentors hat den Ball), Spielzeit 2 × dauer min, Golden Goal.
 // Mannschaft 0 verteidigt das linke Tor (x = −L/2) und spielt nach rechts, Mannschaft 1 umgekehrt.
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 // Abwurf-Tempo nach Entfernung (kommt mit ~6 m/s beim Mitspieler an)
@@ -19,7 +19,9 @@ export class Rules {
     this.kickoffTeam = 0;
     this.golden = false;                // Golden-Goal-Verlängerung läuft
     this.lastTouchTeam = -1;
-    this.goals = [];                    // [{t, team, scorer}]
+    this.lastPlay = -1;                 // letzter absichtlicher Ballkontakt (Schuss, Pass, Fangen …), keine Parade
+    this.lastDeflect = -1;              // Spieler, dessen Parade der letzte Kontakt war (sonst -1)
+    this.goals = [];                    // [{t, team, scorer, own, saved}]
     this.winner = -1;
     this.handsOffTeam = -1;             // Training: diese Mannschaft darf keine Hände nehmen
   }
@@ -108,7 +110,7 @@ export class Rules {
         b.v.set(b.v.x * k + out * 1.2, b.v.y * k + 0.8, b.v.z * k);
         b.w.scale(0.5); b.contact = false;
         pl.touchCd = 0.4; pl.catchCd = g.t + 0.35;
-        this.touch(pl);
+        this.touch(pl, true);
         g.events.push({ type: 'parry', tip: true, player: pl.id, speed: rel, x: b.p.x, y: b.p.y, z: b.p.z });
         continue;
       }
@@ -121,7 +123,7 @@ export class Rules {
         b.v.set(out * sp / l, 1.5 + g.rng.next() * 2, (side * sp) / l + b.v.z * 0.2);
         b.w.scale(0.3); b.contact = false;
         pl.touchCd = 0.4;
-        this.touch(pl);
+        this.touch(pl, true);
         g.events.push({ type: 'parry', player: pl.id, speed: rel, x: b.p.x, y: b.p.y, z: b.p.z });
         continue;
       }
@@ -269,8 +271,13 @@ export class Rules {
     b.v.set(pl.vx, 0, pl.vz); b.w.set(0, 0, 0); b.contact = false;
   }
 
-  touch(pl) {
+  // deflect = Tormann-Parade (Fingerspitzen/Abwehren): zählt für „letzte Hand“ und Aus, macht den Tormann aber nicht
+  // zum Torschützen. Geht der Ball trotzdem rein, bekommt der Schütze das Tor (Peter 30.09.: „es steht Eigentor, wenn
+  // ich ein reguläres Tor schieße“ – vorher war jedes 3. Tor im Selbstspiel so ein falsches Eigentor).
+  touch(pl, deflect = false) {
     this.lastTouchTeam = pl.team; this.g.lastTouch = pl.id; this.g.lastTouchT = this.g.t;
+    this.lastDeflect = deflect ? pl.id : -1;
+    if (!deflect) this.lastPlay = pl.id;
     const pp = this.g.passPlan;
     if (pp && pp.from !== pl.id) this.g.passPlan = null; // Pass angekommen oder abgefangen
   }
@@ -281,12 +288,15 @@ export class Rules {
     const team = side > 0 ? 0 : 1;   // Ball im rechten Tor → Mannschaft 0 trifft
     g.score[team]++;
     let scorer = g.lastTouch;
-    const own = scorer >= 0 && g.players[scorer].team !== team; // Eigentor: zuletzt ein Gegner am Ball
+    // Tormann war nur mit Fingerspitzen/Händen dran und der Ball ging trotzdem rein → Tor für den Schützen
+    const saved = scorer >= 0 && this.lastDeflect === scorer && this.lastPlay >= 0 && g.players[this.lastPlay].team === team;
+    if (saved) scorer = this.lastPlay;
+    const own = scorer >= 0 && g.players[scorer].team !== team; // Eigentor: zuletzt ein Gegner selbst am Ball (Schuss/Pass/Klärung)
     if (own) scorer = -1;
-    this.goals.push({ t: this.clock, team, scorer, own });
+    this.goals.push({ t: this.clock, team, scorer, own, saved });
     this.phase = 'goal'; this.phaseT = 0;
     this.scoredTeam = team;
-    g.events.push({ type: 'goal', side, team, scorer, own, speed: g.ball.v.len() });
+    g.events.push({ type: 'goal', side, team, scorer, own, saved, speed: g.ball.v.len() });
     if (this.golden) this.finish();
   }
 
