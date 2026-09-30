@@ -294,7 +294,7 @@ function handleEvents(ev) {
     sound.event(e, game);
     if (e.type === 'kick') {
       const k = game.players[e.player].lastKick;
-      if (k && e.player === game.human) hud.kickInfo(k);
+      if (k && (e.player === game.human || e.human)) hud.kickInfo(k); // e.human: nach dem Pass wechselt die Steuerung sofort
       gran.emit(e.x, e.z, e.dx, e.dz, Math.min(1, e.speed / 26), rnd);
     } else if (e.type === 'ground' && e.speed > 4) {
       gran.emit(e.x, e.z, game.ball.v.x, game.ball.v.z, Math.min(0.5, e.speed / 20), rnd);
@@ -317,6 +317,8 @@ function handleEvents(ev) {
       hud.flash('Golden Goal', 'Das nächste Tor entscheidet', 2.5);
     } else if (e.type === 'end') {
       hud.flash('Abpfiff', e.winner < 0 ? `Unentschieden ${e.score[0]} : ${e.score[1]}` : `${TEAM_NAMES[e.winner]} gewinnt ${e.score[0]} : ${e.score[1]}`, 6);
+    } else if (e.type === 'tackle' && e.phase === 'hit' && e.human) {
+      hud.flash('Grätsche!', e.result === 'ball' ? 'Ball erobert' : 'Ball frei', 0.9);
     } else if (e.type === 'catch' && e.player === game.human) {
       hud.flash('Gefangen', 'Abwurf oder Abschlag', 1.0);
     }
@@ -484,7 +486,7 @@ function frame() {
   hud.tick(dt);
   const touchUI = document.body.classList.contains('touch');
   const km = keeperMode();
-  hud.setKeeperMode(km);
+  hud.setKeeperMode(km, !P.autoTorwart || !!game.challenge);
   hud.setCharge(km === 'hold' ? (raw.shotDown && (!P.autoTorwart || game.challenge) ? { kind: 'shot', p: Math.min(1, chargeHold / 0.7), sym: '🦶', color: '#d9ff3a', label: 'Abschlag' } : null) : chargeView(pl, raw), touchUI);
   if (touchUI && P.treffpunkt) hud.setContact(raw.shotDown ? raw.cx : 0, raw.shotDown ? raw.cy : 0);
   challengeFrame();

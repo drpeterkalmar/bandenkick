@@ -25,7 +25,7 @@ export function dribbleLosses(qs = '', n = 20, seed0 = 500) {
         } else if (e.type === 'kick' || e.type === 'throw' || e.type === 'punt') {
           if (dr >= 0) { if (p.team !== g.players[dr].team) lose(); else if (p.id === dr) r.keeps++; }
           dr = -1;
-        } else if (e.type === 'catch' || e.type === 'parry' || e.type === 'control' || e.type === 'tackle') {
+        } else if (e.type === 'catch' || e.type === 'parry' || e.type === 'control' || (e.type === 'tackle' && e.phase === 'hit')) {
           if (dr >= 0 && p.team !== g.players[dr].team) lose();
           dr = -1;
         }

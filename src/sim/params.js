@@ -183,6 +183,14 @@ export const DEFAULTS = {
   jumpMax: 0.6,           // m Sprunghöhe beim Kopfball
   headH: 1.78,            // m Ballmitte am Kopf im Stand
   fallT: 0.8,             // s am Boden nach Seit-/Fallrückzieher
+  // Grätsche (Nacht 2c, Peter: „wenn nicht am ball hingrätschen für pass und schuss“): nicht am Ball, Pass oder Schuss
+  // gedrückt, Ball bzw. ballführender Gegner ≤ tackleReach m und ein Gegner näher am Ball → Grätsche in Ballrichtung
+  graetsche: 1,           // 0 = aus (dann läuft der Spieler wie bisher hin und merkt den Kick vor)    [?graetsche=0]
+  tackleReach: 2.5,       // m Abstand Körper ↔ Ball, bis zu dem gegrätscht wird
+  slideT: 0.5,            // s Rutschen
+  slideGroundT: 0.6,      // s danach am Boden
+  slideSpeed: 6.0,        // m/s Anfangstempo des Rutschens (mindestens, sonst das Lauftempo)
+  tackleShotD: 11,        // m: Schuss-Knopf schießt aus der Grätsche aufs Tor, wenn das Tor näher ist, sonst klärt er
   zeitlupe: 1,            // Zeitlupe + Kurz-Zoom bei spektakulären Luftbällen (0 = aus)            [?zeitlupe=0]
 
   // ---------------- Spiel 3 gegen 3 (Plan: „letzte Hand“, Schnellstart, Spielzeit) ----------------

@@ -48,6 +48,8 @@ export class Player {
     this.airPress = false;                           // der laufende Schuss-Druck hat einen Luftball ausgelöst
     this.jumpY = 0; this.jumpV = 0;                  // Sprung (Kopfball): Höhe der Füße über dem Boden
     this.fall = null;                                // am Boden nach Seit-/Fallrückzieher/Flugkopfball {tech, t, dur}
+    this.slide = null;                               // Grätsche {t, dx, dz, kind, stick, phase 'slide'|'ground', done}
+    this.stumbleT = 0;                               // stolpert nach einer Grätsche des Gegners (s)
     this.holdT = 0;               // Ball in der Hand seit … s
     this.catchCd = -1;            // Spielzeit, ab der wieder gefangen werden darf
   }
@@ -93,6 +95,7 @@ export class Player {
     this.face = face; this.hx = Math.cos(face); this.hz = Math.sin(face);
     this.pending = null; this.charging = false; this.charge = 0; this.assistW = 0;
     this.air = null; this.airPress = false; this.fall = null; this.jumpY = 0; this.jumpV = 0; this.armed = null;
+    this.slide = null; this.stumbleT = 0;
   }
 
   footPoint() {
@@ -106,6 +109,8 @@ export class Player {
     if (this.jumpY > 0 || this.jumpV > 0) { this.jumpY += this.jumpV * dt; this.jumpV -= P.g * dt; if (this.jumpY <= 0) { this.jumpY = 0; this.jumpV = 0; } }
     if (this.hand.mode === 'dive' || this.hand.mode === 'ground') { this.stepDive(dt, game); return; }
     if (this.fall) { stepFall(this, dt, game); this.plant = 0; return; } // am Boden nach Seit-/Fallrückzieher
+    if (this.slide) { this.stepSlide(dt, game); return; }                   // Grätsche (Nacht 2c)
+    if (this.stumbleT > 0) this.stumbleT -= dt;
     const held = ball.held >= 0;
     if (this.pending) { this.pending.age += dt; if (this.pending.age > (this.pending.tap ? P.tippPuffer : P.kickBuffer)) this.pending = null; }
 
@@ -203,6 +208,7 @@ export class Player {
       if (this.charging && bd < 0.75) vd *= 0.8; // zum Schuss hin etwas verlangsamen – nur mit dem Ball am Fuß (sonst läuft er davon)
       if (this.hand.mode === 'hold') vd = Math.min(vd, P.vRun * 0.6); // mit Ball in der Hand nur gehen
       if (inp.speedCap) vd *= inp.speedCap;                              // Bot-Stärke
+      if (this.stumbleT > 0) vd *= 0.3;                                  // gestolpert (Grätsche des Gegners)
       if (carry) vd = this.speed;   // weiterlaufen: Tempo halten (nach allen Faktoren, sonst schrumpft es je Takt)
       if (recv) vd = recvV;
     }
@@ -242,7 +248,7 @@ export class Player {
     const cut = this.plant > 0.3 && want && bd < P.cutReach;
     // Tipp-Kick (Nacht 2c): ein langer Schritt reicht (+kickLunge), damit der Kick nicht auf die nächste Vorlage wartet
     const lunge = this.pending && this.pending.tap && !this.pending.locked ? P.kickLunge : 0;
-    const inReach = (fd < P.reach + lunge || cut) && ball.p.y < P.reachH;
+    const inReach = (fd < P.reach + lunge || cut) && ball.p.y < P.reachH && this.stumbleT <= 0;
     const rvx = ball.v.x - this.vx, rvz = ball.v.z - this.vz;
     const rel = Math.hypot(rvx, ball.v.y, rvz);
     let touched = false;
@@ -546,6 +552,7 @@ export class Player {
       if (e.type === 'start' && e.mode === 'std') {
         this.armed = null; this.charging = false; this.clearT = 0; this.airPress = false;
         if (kind === 'shot' && this.tryAir(game, game.t)) { this.airPress = true; this.pending = null; continue; }
+        if (this.tackleOk(game)) { this.startTackle(game, kind, stick()); this.pending = null; continue; } // Grätsche
         this.pending = { kind, mode: 'std', power: null, stick: stick(), dir: aimDir(), cx: 0, cy: 0, age: 0, t: game.t, locked: true, tap: true };
       } else if (e.type === 'start') { // zweiter Druck: Zweitfunktion
         if (mine) this.pending.mode = 'var';
@@ -559,6 +566,96 @@ export class Player {
     }
     if (this.pending && this.pending.tap) { const s = stick(); if (s) { this.pending.stick = s; this.pending.dir = aimDir(); } }
     this.armed = this.pending && this.pending.tap && this.pending.locked ? this.pending.kind : null;
+  }
+
+  // ---------------- Grätsche (Nacht 2c) ----------------
+  // Darf der Spieler jetzt grätschen? Nicht am Ball, Ball flach und ≤ tackleReach, ein Gegner näher am Ball bzw. ≤ 1,2 m
+  // dran (freier Ball: hinlaufen wie bisher), nicht als Tormann mit Händen, nicht schon am Boden/in der Luft.
+  tackleOk(game) {
+    const P = this.P, b = game.ball;
+    if (!P.graetsche || !game.match || b.held >= 0 || this.air || this.fall || this.slide || this.hand.mode !== 'none') return false;
+    if (b.p.y > 0.6 || game.rules.handsOk(this)) return false;
+    const [fx, fz] = this.footPoint();
+    if (Math.hypot(b.p.x - fx, b.p.z - fz) < P.reach + 0.1) return false;     // am Ball: normaler Pass/Schuss
+    const d = Math.hypot(b.p.x - this.x, b.p.z - this.z);
+    if (d > P.tackleReach) return false;
+    for (const o of game.players) {
+      if (o.team === this.team) continue;
+      const od = Math.hypot(b.p.x - o.x, b.p.z - o.z);
+      if (od < d || od < 1.2) return true;
+    }
+    return false;
+  }
+  // Grätsche starten: Richtung auf den Ball in ~0,15 s, Tempo mindestens slideSpeed. kind = Knopf ('pass'|'shot').
+  startTackle(game, kind = 'shot', stick = null) {
+    const P = this.P, b = game.ball;
+    let dx = b.p.x + b.v.x * 0.15 - this.x, dz = b.p.z + b.v.z * 0.15 - this.z;
+    const l = Math.hypot(dx, dz) || 1; dx /= l; dz /= l;
+    const v0 = Math.max(P.slideSpeed, this.vx * dx + this.vz * dz);
+    this.slide = { t: 0, dx, dz, v0, kind, stick, phase: 'slide', done: false };
+    this.face = Math.atan2(dz, dx); this.hx = dx; this.hz = dz;
+    this.pending = null; this.charging = false; this.armed = null;
+    this.tech = 'graetsche'; this.techT = 0;
+    game.events.push({ type: 'tackle', phase: 'start', player: this.id, x: this.x, z: this.z });
+  }
+  stepSlide(dt, game) {
+    const P = this.P, sl = this.slide, b = game.ball;
+    sl.t += dt;
+    this.plant = 0;
+    if (sl.phase === 'slide') {
+      const v = sl.v0 * Math.max(0.2, 1 - 0.75 * sl.t / P.slideT);
+      this.vx = sl.dx * v; this.vz = sl.dz * v;
+      if (!sl.done) this.tackleContact(game);
+      if (sl.t >= P.slideT) { sl.phase = 'ground'; sl.t = 0; }
+    } else {
+      const f = Math.exp(-dt * 10); this.vx *= f; this.vz *= f;
+      if (sl.t >= P.slideGroundT) { this.slide = null; this.techT = 99; }
+    }
+    this.x += this.vx * dt; this.z += this.vz * dt;
+    const lx = game.cage.hx - P.bodyR, lz = game.cage.hz - P.bodyR;
+    this.x = clamp(this.x, -lx, lx); this.z = clamp(this.z, -lz, lz);
+    this.speed = Math.hypot(this.vx, this.vz);
+    this.gait += this.speed * dt / 1.1;
+    // flach am Boden: nur tiefe Bälle prallen am Körper ab (wie nach dem Seitfallzieher)
+    if (this.slide && sl.phase === 'ground' && b.held < 0 && b.p.y < 0.4) this.bodyCollision(game);
+  }
+  // Wer zuerst? Ball im Bereich der gestreckten Beine (Körper → 0,95 m voraus, 0,35 m breit) oder ein Gegner (0,45 m)
+  tackleContact(game) {
+    const P = this.P, sl = this.slide, b = game.ball;
+    const seg = (px, pz) => { const rx = px - this.x, rz = pz - this.z, t = clamp(rx * sl.dx + rz * sl.dz, 0, 0.95); return { t, d: Math.hypot(rx - sl.dx * t, rz - sl.dz * t) }; };
+    const bs = b.held < 0 && b.p.y < 0.45 ? seg(b.p.x, b.p.z) : null;
+    let opp = null;
+    for (const o of game.players) {
+      if (o.team === this.team || o.slide) continue;
+      const s = seg(o.x, o.z);
+      if (s.d < 0.45 && (!opp || s.t < opp.s.t)) opp = { o, s };
+    }
+    const ballHit = bs && bs.d < 0.35;
+    if (ballHit && (!opp || bs.t <= opp.s.t + 0.1)) {
+      // Ball erwischt: Pass-Knopf → Pass zum Mitspieler im Stick-Kegel; Schuss-Knopf → in Tornähe aufs Tor, sonst klären
+      sl.done = true;
+      this.face = Math.atan2(sl.dz, sl.dx);
+      const rel = Math.hypot(b.v.x - this.vx, b.v.z - this.vz);
+      const gx = goalX(game, this), Dg = Math.hypot(gx - b.p.x, b.p.z);
+      if (sl.kind === 'pass') this.applyPlan(planPass(game, this, { mode: 'std', power: null, stick: sl.stick || [sl.dx, sl.dz] }), game, Math.min(rel, P.ctrlRel));
+      else if (Dg < P.tackleShotD) this.applyPlan(planShot(game, this, { mode: 'std', power: null, stick: sl.stick }), game, Math.min(rel, P.ctrlRel));
+      else this.kick({ kind: 'clear', api: true, target: [gx * 0.45, b.p.z * 0.4 + (Math.abs(b.p.z) < 1 ? 3 * Math.sign(sl.dz || 1) : 0)], technique: 'vollspann', speed: 16, elev: 18, noise: 1.2, dir: [sl.dx, sl.dz], age: 0 }, game, 0);
+      this.tech = 'graetsche'; this.techT = 0;
+      game.events.push({ type: 'tackle', phase: 'hit', result: 'ball', kind: sl.kind, player: this.id, human: game.human === this.id, x: b.p.x, y: b.p.y, z: b.p.z });
+    } else if (opp) {
+      // Gegner zuerst getroffen (kein Foul, Kinderspiel): Ball springt frei, der Gegner stolpert kurz
+      sl.done = true;
+      const o = opp.o;
+      o.stumbleT = 0.6; o.pending = null; o.charging = false; o.air = null;
+      o.tech = 'stolpern'; o.techT = 0;
+      if (b.held < 0 && Math.hypot(b.p.x - o.x, b.p.z - o.z) < 1.3 && b.p.y < 0.8) {
+        const r = game.rng, a = Math.atan2(sl.dz, sl.dx) + r.range(-0.9, 0.9), sp = r.range(2.5, 5);
+        b.v.set(Math.cos(a) * sp, r.range(0.5, 2), Math.sin(a) * sp); b.w.set(0, 0, 0); b.contact = false;
+        game.lastTouch = -1; game.lastTouchT = game.t; game.passPlan = null;
+        if (game.match) game.rules.lastTouchTeam = -1;
+      }
+      game.events.push({ type: 'tackle', phase: 'hit', result: 'player', player: this.id, human: game.human === this.id, victim: o.id, x: o.x, z: o.z });
+    }
   }
 
   // Pass oder Schuss ausführen
@@ -657,7 +754,7 @@ export class Player {
     }
     if (game.match) { game.passTo = pd.kind === 'pass' ? to : -1; game.rules.touch(this); }
     game.passPlan = null;
-    game.events.push({ type: 'kick', kind: pd.kind, tech: techL, player: this.id, speed, x: ball.p.x, y: ball.p.y, z: ball.p.z, dx, dz, to });
+    game.events.push({ type: 'kick', kind: pd.kind, tech: techL, player: this.id, human: game.human === this.id, speed, x: ball.p.x, y: ball.p.y, z: ball.p.z, dx, dz, to });
   }
 
   // Geplanten Pass/Schuss/Luftball ausführen: Streuung (Richtung, Höhe, Tempo) aus dem Seed, Anfangsbedingungen per
@@ -694,7 +791,7 @@ export class Player {
     if (to < -1) to = -1; // Challenge-Ziel (virtuell)
     if (game.match) { game.passTo = to; game.rules.touch(this); }
     game.passPlan = plan.kind === 'pass' && plan.meet ? { to: plan.to ?? -1, from: this.id, x: plan.meet[0], z: plan.meet[1], t: game.t + (plan.T || 1), chip: !!plan.chip, bank: plan.bank || 0 } : null;
-    game.events.push({ type: 'kick', kind: plan.kind === 'air' ? 'shot' : plan.kind, tech: plan.tech, player: this.id, speed, x: ball.p.x, y: ball.p.y, z: ball.p.z, dx, dz, to, q: plan.q ?? null });
+    game.events.push({ type: 'kick', kind: plan.kind === 'air' ? 'shot' : plan.kind, tech: plan.tech, player: this.id, human: game.human === this.id, speed, x: ball.p.x, y: ball.p.y, z: ball.p.z, dx, dz, to, q: plan.q ?? null });
     return plan;
   }
 

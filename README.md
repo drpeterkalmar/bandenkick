@@ -45,6 +45,11 @@ Als App installierbar (PWA), läuft offline.
 | **doppeltippen** (2. Druck höchstens 0,11 s nach dem Loslassen) | **hoch** – feste Flanke (weit flach 14–24°, kurz steiler Chip bis 45°) (Ring ⌒) | **angeschnitten** – feste Banane, fast so hart wie Vollspann (Ring ↪/↩): Innenrist oder Außenrist, je nach Lage des Balls zum Fuß |
 | **Ball in der Luft** + Schuss tippen | – | automatisch **Volley, Dropkick, Kopfball (auch mit Sprung), Flugkopfball, Seitfallzieher, Fallrückzieher** – je nach Höhe, Winkel und Zeit bis zum Ball. Den besten Moment wählt die Technik-Hilfe; zu spät gedrückt kostet höchstens 15 % Timing-Wert. Nach Seitfall-/Fallrückzieher ~0,8 s am Boden |
 
+| **Gegner hat den Ball** (du nicht am Ball, Ball ≤ 2,5 m) + tippen | **Grätsche** in Ballrichtung, erwischt → Pass zum Mitspieler im Stick-Kegel | **Grätsche**, erwischt → in Tornähe (≤ 11 m) Schuss aufs Tor, sonst weit nach vorn klären |
+
+- **Grätsche (Nacht 2c):** 0,5 s rutschen, danach 0,6 s am Boden. Trifft sie zuerst den Gegner, gibt es kein Foul
+  (Kinderspiel): der Ball springt frei, der Gegner stolpert 0,6 s. Ist der Ball frei (kein Gegner näher dran), läuft
+  der Spieler wie bisher hin und spielt ihn. Bots grätschen gelegentlich (Stufe 2 etwa 6–9-mal je Spiel). `?graetsche=0` = aus.
 - **Kein Aufladen, kein Timing:** Der erste Druck merkt den Kick sofort vor (der Spieler läuft schon zum Ball und legt
   einen Schritt zu); fest steht er nach dem Loslassen + 0,11 s bzw. beim zweiten Druck. Tipp → Ballkontakt im Mittel
   0,19 s (Ball am Fuß oder beim Führen). Halten wirkt wie Tippen. Man darf tippen, bevor der Ball da ist (bis 1,5 s:
@@ -128,6 +133,7 @@ Ball mit (Sohle/Außenseite). `?zack=0` = altes Gefühl aus Nacht 1 zum Vergleic
 | `?seed=4711`, `?debug`, `?play` | fester Zufall, Anzeige Bildrate/Draw-Calls, Startbildschirm überspringen |
 | `?doppel=0.11`, `?tipp=0.2` | Gesten: Fenster für den 2. Druck nach dem Loslassen (s; Kinder mit langsamem Doppeltipp: `0.15`), längster Tipp (s) |
 | `?laden=1` | Profi: Aufladen per Haltedauer, tipp + halten = Variante (Gesten aus Nacht 2b) |
+| `?graetsche=0`, `?tackleReach=2.5`, `?slideT=0.5`, `?slideGroundT=0.6`, `?tackleShotD=11` | Grätsche aus; Reichweite (m), Rutschen/am Boden (s), bis zu dieser Torentfernung schießt der Schuss-Knopf aus der Grätsche |
 | `?timinghilfe=0`, `?kickLunge=0.2`, `?tippPuffer=1.5` | strenges Luftball-Timing; Extra-Reichweite (m) für einen getippten Kick; so lange (s) bleibt ein Tipp vorgemerkt |
 | `?treffpunkt=1` | Profi-Steuerung mit Treffpunkt statt Gesten (altes Modell) |
 | `?kegel=35`, `?innen=60`, `?hacke=120` | Pass: Zielkegel um den Stick (°), bis zu welchem Winkel Innenseite, ab welchem Hacke |
@@ -188,9 +194,11 @@ node tests/node/air.test.mjs        # Ballmaschinen-Serie: jede Luftball-Technik
 node tests/node/challenge.test.mjs  # alle 9 Übungen headless mit Skript-Spieler: Sterne, untätig endet
 node tests/node/magnet.test.mjs     # Ballmagnet vorher/nachher: Kinder-Stick (Ball weg je Minute), Parcours, Selbstspiel-Ballverluste, Regeln
 node tests/node/dribble_probe.mjs 20 "magnet=0"  # Messwerkzeug: Parcours (Skript/Kinderhand), Ballverluste beim Führen im Selbstspiel
+node tests/node/tackle.test.mjs     # Grätsche: Auslöser, Ball zuerst (Pass/Schuss/klären), Gegner zuerst (Ball frei, stolpert), Bots, keine Hänger
 node tests/node/keeper.test.mjs     # Auto-Torwart (hält ohne Knopf, Stick gewinnt, Abwurf nach 2 s), CPU-Tormann je Stufe (24 Spiele), Roller
 node tests/node/keeper_probe.mjs 30 # Tore je Schuss gegen Stufe 1/2/3 (KEEPER_ONLY=1: nur der Tormann wechselt, DETAIL=1: nach Abstand)
 node tests/node/keeper_series.mjs   # Tormann isoliert: feste Eckschuss-Serie je Stufe
+python3 tests/shots4.py final   # Fotos Nacht 2c: Auto-Torwart hechtet, Grätsche, Flanke, großes Feld (hoch/quer)
 python3 tests/shots3.py final   # Fotos Nacht 2b: Aufladering, Training, Torwand, Fallrückzieher, Kopfball, Ergebnis
 python3 tests/perf_vergleich.py [pfad]  # Leistung je Spieltakt/Bild, z. B. gegen einen Worktree eines älteren Stands
 python3 tests/perf.py           # CPU- und GPU-Zeit je Bild, Draw-Calls, Dreiecke je Format und Stufe

@@ -31,7 +31,8 @@ check('… Challenge-Skript (Info)', p1.t, 0, Infinity, 's', null, `ohne ${p0.t.
   const r0 = dribbleLosses('magnet=0', 24), r1 = dribbleLosses('', 24);
   const l0 = r0.losses / r0.minutes, l1 = r1.losses / r1.minutes;
   check('Selbstspiel: Ballverluste beim Führen je Minute (Zweikämpfe bleiben möglich)', l1, 0.5, l0 * 1.05, '/min', null, `ohne Magnet ${l0.toFixed(2)} (Zweikampf ${(r0.duel / r0.minutes).toFixed(2)}, verspringt ${(r0.free / r0.minutes).toFixed(2)}), mit ${l1.toFixed(2)} (${(r1.duel / r1.minutes).toFixed(2)}, ${(r1.free / r1.minutes).toFixed(2)}); Ball am Fuß ${(r0.dribbleT / r0.minutes).toFixed(1)} → ${(r1.dribbleT / r1.minutes).toFixed(1)} s je Minute`);
-  check('Selbstspiel: verspringende Bälle (ohne Zweikampf) seltener', r1.free / r1.minutes, 0, r0.free / r0.minutes * 0.85, '/min', null);
+  // (seit der Grätsche nur noch ~0,1 je Minute – zu selten für ein Gate, deshalb Info)
+  check('Selbstspiel: verspringende Bälle ohne Zweikampf (Info)', r1.free / r1.minutes, 0, Infinity, '/min', null, `ohne Magnet ${(r0.free / r0.minutes).toFixed(2)} je Minute`);
 }
 
 // 4) Regeln der Stärke: Sprint, Richtungswechsel, Gegner nah; alle Spieler

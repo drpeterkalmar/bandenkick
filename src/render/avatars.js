@@ -332,6 +332,12 @@ export class Avatar {
 const ease = (x) => (x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x));
 function techPose(pl, t) {
   const side = pl.kickFoot > 0 ? 1 : -1; // Schussbein rechts → Körper kippt nach links
+  const sl = pl.slide;
+  if (sl) { // Grätsche (Nacht 2c): zurückgelehnt, tief, führendes Bein gestreckt voraus, danach liegen und aufstehen
+    if (sl.phase === 'slide') { const u = ease(sl.t / 0.12); return { pitch: -0.95 * u, roll: -side * 0.2 * u, drop: -0.62 * u, legs: true, thigh: -1.4 * u, calf: 0.05, thigh2: -0.45 * u, arms: 0.7 * u }; }
+    const lie = 1 - ease((sl.t - ((pl.P && pl.P.slideGroundT) || 0.6) + 0.3) / 0.3);
+    return { pitch: -0.95 * lie, roll: -side * 0.2 * lie, drop: -0.62 * lie, legs: true, thigh: -1.2 * lie, thigh2: -0.4 * lie, arms: 0.55 * lie };
+  }
   const a = pl.air;
   if (a && a.go) {
     const u = ease((t - a.t0) / Math.max(0.05, a.tc - a.t0)); // 0 Absprung … 1 Treffpunkt
@@ -363,6 +369,7 @@ function techPose(pl, t) {
       case 'oberschenkel': return { pitch: -0.08 * u, roll: 0, drop: 0, legs: true, thigh: -1.0 * u, calf: 0.9 * u };
       case 'kopf': return { pitch: 0.3 * u, roll: 0, drop: 0, legs: true, thigh: 0, nod: 0.4 * u, arms: 0.3 * u };
       case 'volley': case 'dropkick': return { pitch: -0.3 * u, roll: -side * 0.15 * u, drop: -0.05 * u, legs: true, thigh: -1.3 * u, arms: 0.5 * u };
+      case 'stolpern': return { pitch: 0.5 * u, roll: side * 0.15 * u, drop: -0.12 * u, legs: true, thigh: 0.35 * u, calf: 0.6 * u, arms: 0.9 * u }; // nach Grätsche des Gegners
       default: return null;
     }
   }

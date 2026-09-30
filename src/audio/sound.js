@@ -113,6 +113,13 @@ const DEFS = {
     [[523, 0.35, 1.2], [1291, 0.22, 0.9], [2170, 0.14, 0.6], [3310, 0.08, 0.4], [4480, 0.05, 0.25]].forEach(([f, p, d]) => tone(oc, o, 0, { f, peak: p, dec: d }));
     tone(oc, o, 0, { f: 110, f2: 80, peak: 0.35, dec: 0.1 });
   }],
+  // Nacht 2c: Grätsche – Rutschen über Kunstrasen und Granulat. Im Ton-Stil vom 29.09.: dunkles Rauschen 300–1100 Hz
+  // (am Handy hörbar, kein Zischen über 2 kHz), dazu ein tiefer Schub
+  slide: [0.6, (oc, o) => {
+    noise(oc, o, 0, 0.5, 40, { type: 'lowpass', f: 1000, q: 0.7, a: 0.03, peak: 0.3, dec: 0.42 });
+    noise(oc, o, 0, 0.45, 41, { type: 'bandpass', f: 520, q: 1.2, a: 0.02, peak: 0.26, dec: 0.36 });
+    tone(oc, o, 0, { f: 170, f2: 110, a: 0.01, peak: 0.14, dec: 0.3, glide: 0.3 });
+  }],
   catch: [0.25, (oc, o) => { // Handschuhe fassen den Ball
     noise(oc, o, 0, 0.06, 30, { type: 'lowpass', f: 1400, q: 0.8, peak: 0.4, dec: 0.05 });
     tone(oc, o, 0, { f: 120, f2: 70, peak: 0.4, dec: 0.06 });
@@ -308,6 +315,7 @@ export class Sound {
       case 'post': this.play('post', clamp(sp / 14, 0.2, 1.1), pan, 0.97 + Math.random() * 0.06, 0.08); break;
       case 'net': if (sp > 5) this.play('net', clamp(sp / 22, 0.12, 0.8), pan, 0.9 + Math.random() * 0.2, 0.3); break; // bis 29.09.: jede Berührung, bis 1,0
       case 'catch': this.play('catch', 0.7, pan); break;
+      case 'tackle': if (e.phase === 'start') this.play('slide', 0.6, pan); else if (e.result === 'player') this.play('body', 0.5, pan, 0.9, 0.1); break;
       case 'parry': this.play('body', 0.8, pan); break;
       case 'body': this.play('body', clamp(sp / 12, 0.15, 0.7), pan, 1, 0.08); break;
       case 'dive': setTimeout(() => this.play('dive', 0.55, pan), 330); break;

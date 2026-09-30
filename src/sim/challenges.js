@@ -207,7 +207,7 @@ class Volley extends Challenge {
   onGoal(side) { if (side > 0 && this.fired && this.tech) this.finish(true, `Tor! ${techName(this.tech)}`); }
   status() { return `Volley-Station · Ball ${Math.min(this.attempt, 10)}/10 · Tore ${this.score}`; }
 }
-const TECH_DE = { volley: 'Volley', dropkick: 'Dropkick', seitfall: 'Seitfallzieher', fallrueck: 'Fallrückzieher', kopf: 'Kopfball', flugkopf: 'Flugkopfball', vollspann: 'Vollspann', innenrist: 'Innenrist', aussenrist: 'Außenrist', innen: 'Innenseite', aussen: 'Außenrist', ferse: 'Hacke', chip: 'Chip', brust: 'Brust', oberschenkel: 'Oberschenkel' };
+const TECH_DE = { volley: 'Volley', dropkick: 'Dropkick', seitfall: 'Seitfallzieher', fallrueck: 'Fallrückzieher', kopf: 'Kopfball', flugkopf: 'Flugkopfball', vollspann: 'Vollspann', innenrist: 'Innenrist', aussenrist: 'Außenrist', innen: 'Innenseite', aussen: 'Außenrist', ferse: 'Hacke', chip: 'Chip', brust: 'Brust', oberschenkel: 'Oberschenkel', graetsche: 'Grätsche' };
 export const techName = (t) => TECH_DE[t] || t || '';
 
 // ---------------- Bandenpass: Puppen versperren den Weg, Ball über die Bande in den Kreis ----------------

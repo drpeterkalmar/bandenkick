@@ -93,7 +93,8 @@ export function buildHud(root, canvas) {
     <table class="gest"><tr><th></th><th>Pass</th><th>Schuss</th></tr>
     <tr><td><b>tippen</b></td><td>flach in den Laufweg →</td><td>Vollspann ⚡ (nah platziert, weit hart)</td></tr>
     <tr><td><b>doppeltippen</b></td><td>hoch (Flanke, Chip) ⌒</td><td>angeschnitten ↪ Innen- / ↩ Außenrist</td></tr>
-    <tr><td><b>Ball in der Luft</b></td><td></td><td>Schuss tippen: Kopfball, Volley, Seitfall-, Fallrückzieher – den besten Moment wählt das Spiel</td></tr></table>
+    <tr><td><b>Ball in der Luft</b></td><td></td><td>Schuss tippen: Kopfball, Volley, Seitfall-, Fallrückzieher – den besten Moment wählt das Spiel</td></tr>
+    <tr><td><b>Gegner hat den Ball</b> (bis 2,5 m)</td><td>Grätsche, erobert → Pass</td><td>Grätsche, erobert → Schuss aufs Tor bzw. weg</td></tr></table>
     <p class="small">Kein Aufladen: die Stärke wählt das Spiel. Du darfst schon tippen, bevor der Ball am Fuß ist.</p>
     <ul class="howto"></ul>
     <p class="small">Der Pass geht zum Mitspieler, auf den der Stick zeigt (±35°), in seinen Laufweg – zeigst du auf die Bande, geht er über die Bande.
@@ -148,13 +149,13 @@ export function buildHud(root, canvas) {
       if (html !== lastScore) { score.innerHTML = html; lastScore = html; lastStatus = ''; }
     },
     // Knöpfe als „letzte Hand“ im Torraum umbeschriften: mode '' | 'box' | 'hold'
-    setKeeperMode(mode) {
-      if (mode === lastKeeper) return;
-      lastKeeper = mode;
+    setKeeperMode(mode, manual = true) {
+      if (mode + manual === lastKeeper) return;
+      lastKeeper = mode + manual;
       document.body.classList.toggle('kbox', mode === 'box');
       document.body.classList.toggle('khold', mode === 'hold');
       bShot.querySelector('.kw').textContent = mode === 'hold' ? 'Abschlag' : 'Fangen';
-      bShot.querySelector('.lbl').textContent = mode === 'hold' ? 'Abschlag (halten)' : mode === 'box' ? 'Fangen (halten)' : 'Schuss';
+      bShot.querySelector('.lbl').textContent = mode === 'hold' ? (manual ? 'Abschlag (halten)' : 'Abschlag') : mode === 'box' ? 'Fangen (halten)' : 'Schuss';
       bPass.querySelector('.pl').textContent = mode === 'hold' ? 'Abwurf' : mode === 'box' ? 'Hechten' : 'Pass';
     },
     setHold(frac, secLeft) {

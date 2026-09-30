@@ -12,9 +12,9 @@ import { planAir } from './air.js';
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 export const LEVELS = {
-  1: { react: 0.36, think: 0.36, speed: 0.8, noise: 2.4, shotNoise: 4.4, aimNoise: 1.1, keeperReact: 0.34, airTry: 0.45, shotPow: -0.05, skill: 1.0, catchSkill: 0.3, fumble: 0.35, err: 0.35, shootMax: 11, keeperMove: 0.8, dive: 0.6, tackle: 1.4, minXg: 0.05 },
-  2: { react: 0.16, think: 0.2, speed: 0.88, noise: 1.3, shotNoise: 3.0, aimNoise: 0.85, keeperReact: 0.26, airTry: 0.5, shotPow: 0, skill: 1.15, catchSkill: 0.8, fumble: 0.12, err: 0.12, shootMax: 13, keeperMove: 0.95, dive: 0.9, tackle: 1.0, minXg: 0.06 },
-  3: { react: 0.1, think: 0.1, speed: 0.95, noise: 0.7, shotNoise: 2.1, aimNoise: 0.5, keeperReact: 0.19, airTry: 0.65, shotPow: 0.1, skill: 1.5, catchSkill: 1.0, fumble: 0.03, err: 0.04, shootMax: 13, keeperMove: 1.0, dive: 1.0, tackle: 0.85, minXg: 0.07 },
+  1: { react: 0.36, think: 0.36, speed: 0.8, noise: 2.4, shotNoise: 4.4, aimNoise: 1.1, keeperReact: 0.34, airTry: 0.45, shotPow: -0.05, skill: 1.0, catchSkill: 0.3, fumble: 0.35, err: 0.35, shootMax: 11, keeperMove: 0.8, dive: 0.6, tackle: 1.4, minXg: 0.05, slide: 0.2 },
+  2: { react: 0.16, think: 0.2, speed: 0.88, noise: 1.3, shotNoise: 3.0, aimNoise: 0.85, keeperReact: 0.26, airTry: 0.5, shotPow: 0, skill: 1.15, catchSkill: 0.8, fumble: 0.12, err: 0.12, shootMax: 13, keeperMove: 0.95, dive: 0.9, tackle: 1.0, minXg: 0.06, slide: 0.3 },
+  3: { react: 0.1, think: 0.1, speed: 0.95, noise: 0.7, shotNoise: 2.1, aimNoise: 0.5, keeperReact: 0.19, airTry: 0.65, shotPow: 0.1, skill: 1.5, catchSkill: 1.0, fumble: 0.03, err: 0.04, shootMax: 13, keeperMove: 1.0, dive: 1.0, tackle: 0.85, minXg: 0.07, slide: 0.45 },
 };
 // Tormann-Stufen (Nacht 2c, Peter: „Cpu goalie ist zu stark“): getrennt von den Feldspielern, Regler ?tormann=1…3
 // (auch Zwischenwerte, z. B. 1.5; 0 = wie die Mannschaft ?bots=). Bis Nacht 2b hingen die Werte an LEVELS
@@ -66,7 +66,7 @@ export class Bots {
     this.ttb = game.players.map(() => ({ t: 9, x: 0, z: 0 }));
     this.owner = -1; this.ownerTeam = -1;
     this.bank = bankRatio(game.P, game.cage, 0);
-    this.stats = { shots: 0, passes: 0, chips: 0, banks: 0, selfWall: 0, clears: 0, dives: 0, throws: 0, air: 0 };
+    this.stats = { shots: 0, passes: 0, chips: 0, banks: 0, selfWall: 0, clears: 0, dives: 0, throws: 0, air: 0, tackles: 0 };
   }
 
   // ---------- einmal je Takt: Vorhersage, Zeit zum Ball, Ballbesitz, Rollen ----------
@@ -164,7 +164,7 @@ export class Bots {
     inp.diveReach = K.diveReach; inp.catchRel = K.catchRel; inp.tip = K.tip; inp.reachMul = K.reach;
     const phase = g.rules.phase;
     if (phase === 'kickoff') return this.kickoffInput(pl, br, inp, L);
-    if (pl.air || pl.fall || this.airCheck(pl, br, L)) { inp.mx = 0; inp.mz = 0; return inp; } // Luftball läuft
+    if (pl.air || pl.fall || pl.slide || this.airCheck(pl, br, L)) { inp.mx = 0; inp.mz = 0; return inp; } // Luftball/Grätsche läuft
     switch (br.role) {
       case 'keeper': this.keeper(pl, br, inp, L, K); break;
       case 'carrier': this.carrier(pl, br, inp, L); break;
@@ -286,6 +286,14 @@ export class Bots {
       if (own && own.team !== team) {
         const [fx, fz] = own.footPoint();
         const loose = Math.hypot(b.p.x - fx, b.p.z - fz) > L.tackle;
+        // Grätsche (Nacht 2c): gelegentlich, je nach Stufe (L.slide je Sekunde, solange sie möglich ist); starke Bots
+        // nur, wenn der Ball etwas vom Fuß des Gegners weg ist
+        if (L.slide && pl.tackleOk(g) && Math.hypot(b.p.x - pl.x, b.p.z - pl.z) > 0.9 && (L.slide < 0.4 || Math.hypot(b.p.x - fx, b.p.z - fz) > 0.45) && g.rng.next() < L.slide / 120) {
+          const mate = g.players.some((m) => m.team === team && m.id !== pl.id && m.id !== g.rules.keeper[team]);
+          pl.startTackle(g, this.fwd(team, b.p.x) > 3 || !mate ? 'shot' : 'pass', null);
+          this.stats.tackles = (this.stats.tackles || 0) + 1;
+          return;
+        }
         if (!loose) {
           this.moveTo(inp, pl, b.p.x + dx / l * 1.3, b.p.z + dz / l * 1.3, false, 0.6);
           return;
