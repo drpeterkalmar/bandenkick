@@ -101,8 +101,8 @@ function turnRadius(v, sprint) {
 }
 // 3) Ballführung: 6 s geradeaus laufen/sprinten – echte Kontakte, Ball nie „angeklebt“, bleibt nah
 const PBIG = makeParams('?feld=60x40'); // langes Feld: eingeschwungener Zustand messen
-function dribble(sprint, seconds = 6) {
-  const g = new Game(PBIG, 7); const pl = g.players[0];
+function dribble(sprint, seconds = 6, PP = PBIG) {
+  const g = new Game(PP, 7); const pl = g.players[0];
   const v0 = (sprint ? P.vSprint : P.vRun) * P.dribbleSlow;
   pl.place(-28, 0, 0); pl.speed = v0; pl.vx = v0; // schon in Fahrt
   g.ball.place(-28 + P.footAhead + 0.05, 0.11, 0); g.ball.v.set(v0, 0, 0); g.ball.w.set(0, 0, -v0 / 0.11);
@@ -123,7 +123,12 @@ function dribble(sprint, seconds = 6) {
 {
   const d = dribble(false);
   check('Führen (Laufen): Ballkontakte', d.touches, 5, 60, '×', null, `Abstand Fuß–Ball Mittel ${d.mean.toFixed(2)} m, SD ${d.sd.toFixed(2)} m`);
-  check('Führen (Laufen): Ball entfernt sich zwischen Kontakten (kein Klebeball)', d.maxD, 0.45, 3.0, 'm', null, 'max. Abstand Fuß–Ball');
+  // Nacht 2c: mit Ballmagnet (Standard 0,5) kürzere Vorlagen – der Ball verlässt den Fuß weiter sichtbar, jeder Meter
+  // braucht echte Kontakte (Magnet zieht nur quer und bremst, schiebt nie nach vorn); ohne Magnet die alte Grenze
+  const d0 = dribble(false, 6, makeParams('?feld=60x40&magnet=0'));
+  check('Führen (Laufen): Ball entfernt sich zwischen Kontakten (kein Klebeball)', d.maxD, 0.25, 3.0, 'm', null, `max. Abstand Fuß–Ball; ?magnet=0: ${d0.maxD.toFixed(2)} m`);
+  check('?magnet=0: Ball entfernt sich zwischen Kontakten wie Nacht 2b', d0.maxD, 0.45, 3.0, 'm', null, `${d0.touches} Kontakte`);
+  check('Magnet trägt nicht: Kontakte je 10 m mindestens wie ohne Magnet', d.touches / Math.max(1, d.x + 28) * 10, d0.touches / Math.max(1, d0.x + 28) * 10, 99, '', null, `${d.touches} Kontakte auf ${(d.x + 28).toFixed(0)} m, ohne Magnet ${d0.touches} auf ${(d0.x + 28).toFixed(0)} m`);
   check('Führen (Laufen): Tempo mit Ball', d.speed, 4.0, 5.3, 'm/s', null, `Vorlage ${d.gap.toFixed(2)} m je Kontakt`);
   const s = dribble(true);
   check('Führen (Sprint): längere Vorlagen als im Laufen', s.gap / Math.max(d.gap, 0.01), 1.3, 10, '×', null, `Sprint ${s.gap.toFixed(2)} m vs. ${d.gap.toFixed(2)} m je Kontakt, ${s.touches} Kontakte`);

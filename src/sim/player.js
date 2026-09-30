@@ -1,5 +1,5 @@
 // Spieler: realistische Laufwerte (Sprint 7,5 m/s, 0→7 m/s in ≈ 2,5 s, Wendekreis v²/aLat), Ballführung mit echten
-// Ballkontakten (kein Klebeball). Pass und Schuss über die Gesten-Grammatik (src/input/gesture.js): halten =
+// Ballkontakten (kein Klebeball; Nacht 2c: leichter Ballmagnet, ?magnet=0 = aus). Pass und Schuss über die Gesten-Grammatik (src/input/gesture.js): halten =
 // flach/Vollspann, tipp + halten = hoch/angeschnitten; Ziel, Technik und Stärke planen pass.js/shot.js mit der echten
 // Ballphysik, Luftbälle air.js. ?treffpunkt=1 = alte Profi-Steuerung (freie Richtung, Spin aus dem Treffpunkt).
 // Hilfen ziehen nur, solange der Spieler nichts Deutliches tut.
@@ -231,6 +231,9 @@ export class Player {
     this.face += clamp(wrap(fAng - this.face), -P.turnCap * dt, P.turnCap * dt);
     this.gait += s * dt / 1.1;
 
+    // --- Ballmagnet (Nacht 2c, ?magnet=): weiche Feder zur Soll-Vorlage vor dem Fuß ---
+    if (P.magnet > 0 && !held) this.magnetPull(game, want, sx, sz, dt);
+
     // --- Ball spielen ---
     const [fx, fz] = this.footPoint();
     const dx = ball.p.x - fx, dz = ball.p.z - fz;
@@ -379,6 +382,58 @@ export class Player {
     this.plant = 0;
   }
 
+  // Ballmagnet (Nacht 2c, Peter: „bitte leichter ballmagnet weil sonst kein dribbling“): zwischen den echten Kontakten
+  // zieht eine weiche Feder mit Dämpfung den Ball, den dieser Spieler zuletzt berührt hat, zur Soll-Vorlage vor dem Fuß
+  // in Stick-Richtung (ohne Stick: Blickrichtung) und gleicht das Tempo an. Kein Klebeball: Stärke magnetStrength(),
+  // höchstens magnetAcc m/s², nur für einen flachen, nicht harten Ball in ≤ 1,4 m. Für alle Spieler gleich (auch Bots).
+  magnetStrength(game, want, sx, sz) {
+    const P = this.P, b = game.ball;
+    let m = P.magnet;
+    if (this.sprinting) m *= P.magnetSprint;                                   // Sprint: weite Vorlagen
+    if (want && this.speed > 1) {                                              // scharfer Richtungswechsel
+      const ang = Math.acos(clamp(sx * this.hx + sz * this.hz, -1, 1));
+      m *= 1 - 0.75 * smoothstep(P.magnetTurn0 * DEG, P.magnetTurn1 * DEG, ang);
+    }
+    let dOpp = 9;                                                              // Gegner am Ball
+    for (const o of game.players) if (o.team !== this.team) dOpp = Math.min(dOpp, Math.hypot(o.x - b.p.x, o.z - b.p.z));
+    if (dOpp < 1) m *= P.magnetOpp + (1 - P.magnetOpp) * clamp((dOpp - 0.4) / 0.6, 0, 1);
+    return m;
+  }
+  magnetPull(game, want, sx, sz, dt) {
+    const P = this.P, b = game.ball;
+    if ((game.match && game.lastTouch !== this.id) || game.t - this.lastTouchT > 2.5 || this.kickT < 0.4) return;
+    if (this.air || this.fall || this.hand.mode !== 'none' || b.p.y > 0.25 || Math.abs(b.v.y) > 1.5) return;
+    const [fx, fz] = this.footPoint();
+    if (Math.hypot(b.p.x - fx, b.p.z - fz) > 1.4) return;                     // weg ist weg
+    const ux = this.vx - b.v.x, uz = this.vz - b.v.z;
+    if (Math.hypot(ux, uz) > 5) return;                                        // harter Ball (Pass, Schuss, Abpraller)
+    const m = this.magnetStrength(game, want, sx, sz);
+    if (m <= 0.01) return;
+    const dx = want ? sx : Math.cos(this.face), dz = want ? sz : Math.sin(this.face);
+    // an der Bande nicht in die Bande ziehen (sonst klemmt der Ball dort fest)
+    if ((Math.abs(b.p.x) > game.cage.hx - 0.5 && dx * Math.sign(b.p.x) > 0.3) || (Math.abs(b.p.z) > game.cage.hz - 0.5 && dz * Math.sign(b.p.z) > 0.3)) return;
+    const L = 0.15 + 0.05 * this.speed;                                        // Vorlage: Stand 0,15 m, 5 m/s 0,4 m
+    // Abschirmen: Gegner ≤ 1,2 m am Ball → Soll-Vorlage bis magnetShield m zur abgewandten Seite (Körper dazwischen)
+    let sh = 0;
+    if (P.magnetShield > 0) {
+      let best = null, bd = 1.2;
+      for (const o of game.players) { if (o.team === this.team) continue; const d = Math.hypot(o.x - b.p.x, o.z - b.p.z); if (d < bd) { bd = d; best = o; } }
+      if (best) { const side = (best.x - this.x) * -dz + (best.z - this.z) * dx; sh = -Math.sign(side || 1) * P.magnetShield * (1.2 - bd) / 0.8; }
+    }
+    const ex = fx + dx * L - dz * sh - b.p.x, ez = fz + dz * L + dx * sh - b.p.z;
+    // Kein Tragen: längs zur Stick-Richtung zieht der Magnet nur zurück (Ball zu weit vorn bzw. schneller als der
+    // Spieler) – nach vorn bringt ihn weiter der Fuß (echte Kontakte). Quer führt er ihn auf die Linie des Sticks.
+    const eL = ex * dx + ez * dz, uL = ux * dx + uz * dz;
+    const eLc = Math.min(0, eL + P.magnetSlack), uLc = Math.min(0, uL + 1);
+    const eX = ex - eL * dx, eZ = ez - eL * dz, uX = ux - uL * dx, uZ = uz - uL * dz;
+    let ax = P.magnetK * m * (eX + eLc * dx) + P.magnetC * m * (uX + uLc * dx);
+    let az = P.magnetK * m * (eZ + eLc * dz) + P.magnetC * m * (uZ + uLc * dz);
+    const al = Math.hypot(ax, az), amax = P.magnetAcc * m;
+    if (al > amax) { ax *= amax / al; az *= amax / al; }
+    b.v.x += ax * dt; b.v.z += az * dt;
+    if (b.p.y < b.r + 0.02) { b.w.x = b.v.z / b.r; b.w.z = -b.v.x / b.r; }       // rollt (kein Rutschen)
+  }
+
   // Ballkontakt beim Führen: Richtung = Stick, Stärke passend zum Tempo (Hilfe), kleine Fehler aus dem Seed.
   dribbleTouch(game, want, sx, sz, vd, fd, rel) {
     const P = this.P, ball = game.ball, rng = game.rng;
@@ -392,9 +447,11 @@ export class Player {
       return true;
     }
     const sf = this.sprinting ? 1 : 0;
+    // Nacht 2c: mit Magnet kürzere Vorlagen (Ball bleibt näher am Fuß): Zeit und Vorlage × 1 − magnetLead·m
+    const mm = P.magnet > 0 ? this.magnetStrength(game, want, sx, sz) : 0;
     // Beim Aufladen: kurze Vorbereitungs-Kontakte, der Ball bleibt am Fuß (sonst ist er beim Loslassen weg)
-    const T = this.charging ? 0.32 : P.touchLead + (P.touchLeadSprint - P.touchLead) * sf;
-    const L = this.charging ? 0.05 : P.touchExtra + (P.touchExtraSprint - P.touchExtra) * sf;
+    const T = this.charging ? 0.32 : (P.touchLead + (P.touchLeadSprint - P.touchLead) * sf) * (1 - P.magnetLead * mm);
+    const L = this.charging ? 0.05 : (P.touchExtra + (P.touchExtraSprint - P.touchExtra) * sf) * (1 - P.magnetLead * mm);
     // Weg des Spielers bis zum nächsten Kontakt: ab dem Tempo in Stick-Richtung (nach einem Stemmschritt klein)
     // mit der Antrittskurve bis zum Wunschtempo (altes Modell: pauschal +2,5 m/s²)
     // Läuft er noch gegen die neue Richtung (Stemmschritt), kommt die Bremszeit dazu.
@@ -417,8 +474,10 @@ export class Player {
     const need = fd < 0.26 || fwd < 0.12 || ang > 20 * DEG || bv < 0.35 * u;
     if (!need) return false;
     const fast = rel > P.ctrlRel;
-    const errA = P.touchErrDeg * DEG * (1 + 1.5 * sf) * (fast ? 2.5 + (rel - P.ctrlRel) * 0.3 : 1) * rng.gauss();
-    const errS = 1 + P.touchErrSpeed * (1 + sf) * (fast ? 2 : 1) * rng.gauss();
+    // Nacht 2c: der Magnet macht die Kontakte sauberer (Fehler × 1 − 0,6·Magnetstärke)
+    const mg = 1 - 0.6 * mm;
+    const errA = P.touchErrDeg * DEG * (1 + 1.5 * sf) * (fast ? 2.5 + (rel - P.ctrlRel) * 0.3 : 1) * rng.gauss() * mg;
+    const errS = 1 + P.touchErrSpeed * (1 + sf) * (fast ? 2 : 1) * rng.gauss() * mg;
     const c = Math.cos(errA), s = Math.sin(errA);
     const dx = sx * c - sz * s, dz = sx * s + sz * c;
     u *= errS;

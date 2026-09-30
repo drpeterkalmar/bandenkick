@@ -64,6 +64,14 @@ Als App installierbar (PWA), läuft offline.
 - **Zeitlupe** bei Luftbällen (0,9 s, 40 % Tempo, Kamera zoomt leicht) – im Pause-Menü abschaltbar.
 - Beim ersten Start erklärt eine **Hilfekarte** die Gesten; später über ☰ → Steuerung.
 
+**Ballmagnet (Nacht 2c, Peter: „leichter ballmagnet, sonst kein dribbling“):** zwischen den echten Ballkontakten führt
+eine weiche Feder den Ball, den du zuletzt berührt hast, auf die Linie deines Sticks und bremst ihn, wenn er zu weit
+vorrollt – nach vorn bringt ihn weiter nur der Fuß (kein Klebeball, die Kontakte bleiben sichtbar), die Vorlagen sind
+kürzer und die Kontakte genauer. Schwächer im Sprint (45 %), bei scharfen Richtungswechseln (ab 60°, bei 120° 25 %) und
+wenn ein Gegner näher als 1 m ist (bis 50 %; dann legt er den Ball leicht auf den abgewandten Fuß). An der Bande zieht
+er nie in die Bande. Gilt für alle Spieler (auch Bots). Gemessen mit zappeligem Kinder-Stick: Ball springt 15,5 → 8,9-mal
+je Minute weg, Tempo mit Ball 1,9 → 2,6 m/s; Zweikämpfe im Selbstspiel unverändert möglich. `?magnet=0` = aus.
+
 **Bewegung „zackig“ (Nacht 2):** kleine Richtungswechsel = Kurve (13 m/s² quer, Tempo bleibt), große = **Stemmschritt**
 (falsche Anteile mit 16 m/s² gebremst, Körper dreht sofort, Abstoß in die neue Richtung), spritziger Antritt
 (0 → 4 m/s in 0,6 s). 90° aus dem Lauf in 0,33 s, aus dem Sprint in 0,47 s. Im Stemmschritt nimmt der Spieler den
@@ -91,8 +99,8 @@ Ball mit (Sohle/Außenseite). `?zack=0` = altes Gefühl aus Nacht 1 zum Vergleic
   Seitennetz bis zum Dach (sonst Spalt zwischen 3 und 5 m). Ohne Dach (`?dach=0`) ist das Netz 2 m hoch
   (Oberkante 3 m); fliegt der Ball darüber, gibt es „Aus“ und der Ball kommt zurück.
 - **Spieler:** Sprint 7,5 m/s, Laufen 5,2 m/s, 0 → 4 m/s in 0,60 s, 0 → 7 m/s in 2,5 s; Kurve r = v²/13 m/s²
-  (4,3 m im Sprint), Stemmschritt 16 m/s². Ballführung mit echten Ballkontakten, kein Klebeball; im Sprint längere
-  Vorlagen. Körper als Zylinder (Ball prallt ab, kann aber nie auf einem Spieler liegen bleiben), Spieler schieben
+  (4,3 m im Sprint), Stemmschritt 16 m/s². Ballführung mit echten Ballkontakten und leichtem Ballmagnet, kein Klebeball;
+  im Sprint längere Vorlagen. Körper als Zylinder (Ball prallt ab, kann aber nie auf einem Spieler liegen bleiben), Spieler schieben
   sich gegenseitig weg (Zweikampf).
 
 ## URL-Schalter
@@ -107,7 +115,8 @@ Ball mit (Sohle/Außenseite). `?zack=0` = altes Gefühl aus Nacht 1 zum Vergleic
 | `?zack=0` | altes Bewegungsmodell aus Nacht 1 (A/B-Vergleich) |
 | `?wende=13`, `?stemm=16`, `?bremse=9`, `?kurve=20`, `?antritt=0.672` | Kurven-Querbeschleunigung, Stemmschritt-Bremsung, Abbremsen (m/s²), Winkel bis zur reinen Kurve (°), Antritts-Zeitkonstante (s) |
 | `?sprint=8`, `?lauf=5.5` | Sprint-/Lauftempo (m/s) |
-| `?hilfe=0` … `1` | Stärke der Ballführungs-Hilfe |
+| `?hilfe=0` … `1` | Stärke der Ballführungs-Hilfe (lenkt den Spieler zum Ball) |
+| `?magnet=0` … `1` | Ballmagnet (Standard 0,5; 0 = Ballführung wie Nacht 2b). Feinregler: `?magnetK=112`, `?magnetC=20`, `?magnetAcc=42`, `?magnetLead=0.7`, `?magnetSprint=0.45`, `?magnetOpp=0.5`, `?magnetShield=0.3`, `?magnetTurn0=60`, `?magnetTurn1=120` |
 | `?schuss=32`, `?pass=12`, `?effet=12` | max. Schusstempo, Passtempo, max. Effet (U/s) |
 | `?dach=0`, `?feld=30x15`, `?netz=2` | ohne Dachnetz (Ball kann raus → Abwurf), anderes Feld, Ballfangnetz ohne Dach (m) |
 | `?bande=0.7`, `?abprall=0.62`, `?rollen=0.65` | Stoßzahl Bande, Stoßzahl Rasen, Rollwiderstand Rasen |
@@ -174,6 +183,8 @@ node tests/node/pass.test.mjs       # 500 Pass-Situationen: Ball erreicht den La
 node tests/node/shot.test.mjs       # Schussqualität q monoton, Trefferquote gute Lage, schlechte Lage langsamer/zentraler
 node tests/node/air.test.mjs        # Ballmaschinen-Serie: jede Luftball-Technik gewählt und trifft, Timing zählt
 node tests/node/challenge.test.mjs  # alle 9 Übungen headless mit Skript-Spieler: Sterne, untätig endet
+node tests/node/magnet.test.mjs     # Ballmagnet vorher/nachher: Kinder-Stick (Ball weg je Minute), Parcours, Selbstspiel-Ballverluste, Regeln
+node tests/node/dribble_probe.mjs 20 "magnet=0"  # Messwerkzeug: Parcours (Skript/Kinderhand), Ballverluste beim Führen im Selbstspiel
 node tests/node/keeper.test.mjs     # Auto-Torwart (hält ohne Knopf, Stick gewinnt, Abwurf nach 2 s), CPU-Tormann je Stufe (24 Spiele), Roller
 node tests/node/keeper_probe.mjs 30 # Tore je Schuss gegen Stufe 1/2/3 (KEEPER_ONLY=1: nur der Tormann wechselt, DETAIL=1: nach Abstand)
 node tests/node/keeper_series.mjs   # Tormann isoliert: feste Eckschuss-Serie je Stufe

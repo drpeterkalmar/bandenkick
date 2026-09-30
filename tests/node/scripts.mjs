@@ -63,14 +63,15 @@ export function makeScript(id, opts = {}) {
       const bd = Math.hypot(b.p.x - me.x, b.p.z - me.z);
       if (bd > 1.5) k.fetch = true; else if (bd < 0.9) k.fetch = false;
       if (k.fetch && k.shot == null) { const [sx, sz] = norm(b.p.x + b.v.x * 0.3 - me.x, b.p.z + b.v.z * 0.3 - me.z, 1); return H({ mx: sx, mz: sz }); }
+      // opts.naive (Nacht 2c, „Kinderhand“): Stick voll direkt aufs nächste Tor, ohne Rücksicht auf die Lage des Balls
       const steer = (tx, tz, m) => {
         let a = Math.atan2(tz - me.z, tx - me.x);
         const ab = Math.atan2(b.p.z - me.z, b.p.x - me.x);
         let d = a - ab; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI;
-        if (bd > 0.35) a = ab + Math.max(-0.52, Math.min(0.52, d));
-        return H({ mx: Math.cos(a) * m, mz: Math.sin(a) * m });
+        if (bd > 0.35 && !opts.naive) a = ab + Math.max(-0.52, Math.min(0.52, d));
+        return H({ mx: Math.cos(a) * (opts.naive ? 1 : m), mz: Math.sin(a) * (opts.naive ? 1 : m), sprint: !!opts.sprint });
       };
-      if (gate) return steer(gate.x + 1.0, gate.z, 0.75);
+      if (gate) return steer(gate.x + (opts.naive ? 0.2 : 0.4), gate.z, 0.75); // Nacht 2c: 0,4 statt 1,0 m hinter dem Tor (verpasste sonst 2 Tore)
       // alle Tore durch: aufs Tor, schießen sobald nah genug
       if (k.shot == null && me.x > 3.8 && bd < 1.2) k.shot = g.t;
       const down = k.shot != null && g.t - k.shot < 0.45;

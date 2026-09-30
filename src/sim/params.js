@@ -111,6 +111,18 @@ export const DEFAULTS = {
   touchErrSpeed: 0.05,    // relativer Stärkefehler je Kontakt (Sprint ×2)
   dribbleSlow: 0.94,      // Tempo mit Ball relativ zu ohne
   assist: 0.75,           // Stärke der Ballführungs-Hilfe (0 = aus)
+  // Ballmagnet (Nacht 2c): Feder zur Soll-Vorlage vor dem Fuß zwischen den Kontakten, 0 = aus (wie Nacht 2b)
+  magnet: 0.5,            // Stärke 0…1                                                             [?magnet=]
+  magnetK: 112,           // 1/s² Federkonstante quer zur Stick-Richtung bei Stärke 1 (0,3 m daneben → 17 m/s² bei 0,5)
+  magnetC: 20,            // 1/s Dämpfung (Tempo des Balls quer ans Tempo des Spielers angleichen)
+  magnetAcc: 42,          // m/s² höchste Zugbeschleunigung bei Stärke 1 (0,5 → 21 m/s²)
+  magnetSprint: 0.45,     // Anteil im Sprint (weite Vorlagen bleiben weit)
+  magnetTurn0: 60,        // ° Richtungswechsel Stick ↔ Laufrichtung: ab hier wird der Magnet schwächer …
+  magnetTurn1: 120,       // ° … bis hier auf 25 %
+  magnetSlack: 0.25,      // m so weit darf der Ball über die Soll-Vorlage hinaus rollen, bevor er gebremst wird
+  magnetLead: 0.7,        // Vorlagen beim Führen kürzer: Zeit und Weg × (1 − magnetLead · Stärke)
+  magnetShield: 0.3,      // m: Gegner nah → Ball zur abgewandten Seite (Abschirmen), 0 = aus
+  magnetOpp: 0.5,         // Anteil, wenn ein Gegner ≤ 0,4 m am Ball ist (ab 1 m voll) – Tackles bleiben möglich
   assistRelease: 0.06,    // s Zeitkonstante: deutliche Eingabe → Hilfe weg (≤ 0,3 s bis < 5 %)
   assistReturn: 0.5,      // s Zeitkonstante: sanft zurück
   assistAngle: 35,        // ° Abweichung Stick ↔ Ball, ab der die Eingabe „deutlich“ ist
