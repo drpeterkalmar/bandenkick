@@ -33,18 +33,24 @@ Als App installierbar (PWA), läuft offline.
 ## Steuerung
 | | |
 |---|---|
-| **Handy** | **Stick links** (Finger irgendwo in der linken Hälfte): laufen, ganz nach außen = Sprint. **Pass** und **Schuss** mit Gesten (Tabelle unten), der Ring um den Knopf zeigt Modus und Stärke. **Sprint:** Knopf halten. **⇄** Spieler wechseln (sonst automatisch zum ballnächsten, nach deinem Pass zum Empfänger). |
+| **Handy** | **Stick links** (Finger irgendwo in der linken Hälfte): laufen, ganz nach außen = Sprint. **Pass** und **Schuss** tippen oder doppeltippen (Tabelle unten), der Ring um den Knopf zeigt den Modus. **Sprint:** Knopf halten. **⇄** Spieler wechseln (sonst automatisch zum ballnächsten, nach deinem Pass zum Empfänger). |
 | **Als letzte Hand im eigenen Torraum** | **Auto-Torwart (Nacht 2c):** Fangen und Hechten macht er selbst – so sicher wie ein Bot-Tormann der alten Stufe 2. Laufen darfst du selbst (der Stick gewinnt; lässt du ihn los, stellt er sich hin). Mit Ball: Pass-Knopf = **Abwurf** (auf den Stick bzw. den freiesten Mitspieler), Schuss-Knopf = **Abschlag**; ohne Eingabe wirft er nach 2 s selbst ab. `?autotorwart=0` = alte grüne Knöpfe (Schuss = Fangen, Pass = Hechten). In den drei Torwart-Übungen im Training bleiben die Knöpfe, dort ist Fangen die Aufgabe. |
-| **Tastatur/Maus** | WASD/Pfeile laufen, Shift Sprint, **C/Tab** Wechsel. Maus zielt. **J/Enter/Linksklick = Pass-Knopf**, **Leertaste/K/Rechtsklick = Schuss-Knopf** – gleiche Gesten wie am Handy (Torraum: Hechten/Abwurf bzw. Fangen/Abschlag). Esc Pause. |
+| **Tastatur/Maus** | WASD/Pfeile laufen, Shift Sprint, **C/Tab** Wechsel. Maus zielt. **J/Enter/Linksklick = Pass-Knopf**, **Leertaste/K/Rechtsklick = Schuss-Knopf** – gleiche Gesten wie am Handy (Tormann mit Ball: Abwurf bzw. Abschlag). Esc Pause. |
 | **Gamepad** | Linker Stick laufen, A = Pass-Knopf, X oder RT = Schuss-Knopf (Gesten wie am Handy), **Y Wechsel**, LB/RB Sprint. |
 
-### Gesten (Nacht 2b „Ballgefühl“)
+### Gesten (Nacht 2c „Kinderhände“: Tipp statt Aufladen)
 | Geste | Pass-Knopf | Schuss-Knopf |
 |---|---|---|
-| **tippen** | flacher Pass, Stärke automatisch | kurzer Schuss |
-| **halten** (Standard, sofort ohne Verzögerung) | flacher Pass, Stärke = Haltedauer (Ring →) | **Vollspann** (Ring ⚡), mittig getroffen → Flatterball |
-| **tipp + sofort halten** (2. Druck innerhalb 0,25 s) | **hoch** – Chip 25–45° mit Rückdrall (Ring ⌒) | **angeschnitten** (Ring ↪/↩): Innenrist oder Außenrist, je nach Lage des Balls zum Fuß |
-| **Ball in der Luft** + Schuss | – | automatisch **Volley, Dropkick, Kopfball (auch mit Sprung), Flugkopfball, Seitfallzieher, Fallrückzieher** – je nach Höhe, Winkel und Zeit bis zum Ball. Timing zählt (zu früh/spät = langsamer, zentraler). Nach Seitfall-/Fallrückzieher ~0,8 s am Boden |
+| **tippen** | **flacher Pass** in den Laufweg, Stärke automatisch (Ring →) | **Vollspann** (Ring ⚡), Stärke automatisch: nah platziert, weit hart; mittig getroffen → Flatterball |
+| **doppeltippen** (2. Druck höchstens 0,11 s nach dem Loslassen) | **hoch** – Flanke/Chip mit Rückdrall (Ring ⌒) | **angeschnitten** (Ring ↪/↩): Innenrist oder Außenrist, je nach Lage des Balls zum Fuß |
+| **Ball in der Luft** + Schuss tippen | – | automatisch **Volley, Dropkick, Kopfball (auch mit Sprung), Flugkopfball, Seitfallzieher, Fallrückzieher** – je nach Höhe, Winkel und Zeit bis zum Ball. Den besten Moment wählt die Technik-Hilfe; zu spät gedrückt kostet höchstens 15 % Timing-Wert. Nach Seitfall-/Fallrückzieher ~0,8 s am Boden |
+
+- **Kein Aufladen, kein Timing:** Der erste Druck merkt den Kick sofort vor (der Spieler läuft schon zum Ball und legt
+  einen Schritt zu); fest steht er nach dem Loslassen + 0,11 s bzw. beim zweiten Druck. Tipp → Ballkontakt im Mittel
+  0,19 s (Ball am Fuß oder beim Führen). Halten wirkt wie Tippen. Man darf tippen, bevor der Ball da ist (bis 1,5 s:
+  Direktpass, Volley).
+- **Profi:** `?laden=1` = Gesten aus Nacht 2b (halten = Stärke per Haltedauer, tipp + sofort halten = Variante,
+  Fenster 0,25 s); `?timinghilfe=0` = strenges Luftball-Timing wie Nacht 2b.
 
 - **Pass** geht zum Mitspieler, auf den der Stick zeigt (Kegel ±35°), **in seinen Laufweg** (Vorhalt aus dem echten
   Rollmodell). Technik automatisch: Innenseite (bis 60° zur Blickrichtung), Außenrist, **Hacke** (nach hinten,
@@ -111,7 +117,9 @@ Ball mit (Sohle/Außenseite). `?zack=0` = altes Gefühl aus Nacht 1 zum Vergleic
 | `?ton=0` | ohne Ton (sonst im Pause-Menü umschaltbar) |
 | `?figur=kapsel` | Kapsel-Figuren statt Rocketbox-Menschen (Rückfall) |
 | `?seed=4711`, `?debug`, `?play` | fester Zufall, Anzeige Bildrate/Draw-Calls, Startbildschirm überspringen |
-| `?doppel=0.25`, `?tipp=0.2` | Gesten: Fenster für den 2. Druck (s), längster Tipp (s) |
+| `?doppel=0.11`, `?tipp=0.2` | Gesten: Fenster für den 2. Druck nach dem Loslassen (s; Kinder mit langsamem Doppeltipp: `0.15`), längster Tipp (s) |
+| `?laden=1` | Profi: Aufladen per Haltedauer, tipp + halten = Variante (Gesten aus Nacht 2b) |
+| `?timinghilfe=0`, `?kickLunge=0.2`, `?tippPuffer=1.5` | strenges Luftball-Timing; Extra-Reichweite (m) für einen getippten Kick; so lange (s) bleibt ein Tipp vorgemerkt |
 | `?treffpunkt=1` | Profi-Steuerung mit Treffpunkt statt Gesten (altes Modell) |
 | `?kegel=35`, `?innen=60`, `?hacke=120` | Pass: Zielkegel um den Stick (°), bis zu welchem Winkel Innenseite, ab welchem Hacke |
 | `?chipmin=25`, `?chipmax=45` | Chip-Abflugwinkel weit/kurz (°) |
@@ -158,8 +166,9 @@ node tests/node/selfplay.test.mjs  # 200 Bot-Spiele à 2 × 4 min: keine Hänger
 node tools/calibrate.mjs        # Rasenwerte neu auf die FIFA-Ziele stellen
 python3 tests/smoke.py          # Browser (Pixel 7 hoch/quer, Desktop): 0 Fehler; Training: Führen/Schuss/Bande/Dach;
                                 #   3 gegen 3: Bots spielen, Tor → Schnellstart, Tormann-Knöpfe, Abwurf, Wechsel, Ton
-python3 tests/test_touch.py     # echte Touch-Ereignisse: Stick, Pass, Gesten halten / tipp + halten auf beiden Knöpfen
-node tests/node/gesture.test.mjs    # Gesten-Grammatik (halten, tipp + halten, Grenzen, zwei Knöpfe)
+python3 tests/test_touch.py     # echte Touch-Ereignisse: Stick, Pass, Tipp/Doppeltipp auf beiden Knöpfen, Ring
+node tests/node/gesture.test.mjs    # Lade-Gesten (?laden=1: halten, tipp + halten, Grenzen, zwei Knöpfe)
+node tests/node/tap.test.mjs        # Tipp-Gesten (Standard): Parser, 1000 Zufalls-Gesten, Tipp → Ballkontakt, Tipp/Doppeltipp im Spiel
 node tests/node/technique.test.mjs  # Technik-Tabellen Pass/Schuss/Luftball
 node tests/node/pass.test.mjs       # 500 Pass-Situationen: Ball erreicht den Laufweg (flach/hoch, p50/p95)
 node tests/node/shot.test.mjs       # Schussqualität q monoton, Trefferquote gute Lage, schlechte Lage langsamer/zentraler

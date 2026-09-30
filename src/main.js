@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { makeParams } from './sim/params.js';
 import { Game, DT } from './sim/step.js';
 import { EMPTY_INPUT } from './sim/player.js';
-import { previewShot } from './sim/shot.js';
+import { previewShot, autoShotPower, attackGoalX } from './sim/shot.js';
 import { planPass } from './sim/pass.js';
 import { techName, CHALLENGES, challengeDef } from './sim/challenges.js';
 import { TrainingProps, AimMarkers } from './render/training.js';
@@ -328,8 +328,19 @@ const MODE_LOOK = {
   vollspann: ['⚡', '#ffc83d', 'Vollspann'], innenrist: ['↪', '#4fd6ff', 'Innenrist'], aussenrist: ['↩', '#ff6fd8', 'Außenrist'],
   flach: ['→', '#ffffff', 'flach'], chip: ['⌒', '#7dff6a', 'hoch (Chip)'],
 };
+// Tipp-Grammatik (Nacht 2c): nach dem ersten Druck zeigt der Ring den Modus (Standard; nach dem Doppeltipp die
+// Zweitfunktion) mit voller Stärke (automatisch) – ohne Aufladen
+const tapPower = (pl) => autoShotPower(Math.hypot(attackGoalX(game, pl) - game.ball.p.x, game.ball.p.z));
 function chargeView(pl, raw) {
   if (pl.air) return { kind: 'shot', p: 1, sym: '✦', color: '#ffe27a', label: techName(pl.air.tech), air: true };
+  if (!P.laden && !P.treffpunkt) {
+    const pd = pl.pending && pl.pending.tap ? pl.pending : null;
+    if (!pd) return null;
+    if (pd.kind === 'pass') { const [sym, color, label] = MODE_LOOK[pd.mode === 'var' ? 'chip' : 'flach']; return { kind: 'pass', p: 1, sym, color, label }; }
+    const pv = previewShot(game, pl, pd.mode, pd.stick, tapPower(pl));
+    const [sym, color, label] = MODE_LOOK[pv.tech] || MODE_LOOK.vollspann;
+    return { kind: 'shot', p: 1, sym, color, label, q: pv.q };
+  }
   if (pl.armed) return { kind: pl.armed, p: 0, wait: true };
   if (!pl.charging) return null;
   const p = Math.min(1, pl.charge / P.chargeT);
@@ -376,16 +387,17 @@ function challengeFrame() {
 // Anzeigehilfen beim Aufladen: Pass → Empfänger + Treffpunkt im Laufweg, Schuss → Zielpunkt im Tor mit Streuung
 function aimFrame(pl, raw, km) {
   if (!markers) return;
-  if (mode !== 'play' || km || game.human < 0 || P.treffpunkt || !(pl.charging || pl.armed)) { markers.hide(); return; }
-  const w = worldInput(raw), st = Math.hypot(w.mx, w.mz) > 0.12 ? [w.mx, w.mz] : null;
-  const kind = pl.charging ? pl.chargeKind : pl.armed;
-  const md = pl.charging ? pl.chargeMode : 'std';
+  const tap = !P.laden && pl.pending && pl.pending.tap ? pl.pending : null;
+  if (mode !== 'play' || km || game.human < 0 || P.treffpunkt || !(pl.charging || pl.armed || tap)) { markers.hide(); return; }
+  const w = worldInput(raw), st = Math.hypot(w.mx, w.mz) > 0.12 ? [w.mx, w.mz] : tap ? tap.stick : null;
+  const kind = tap ? tap.kind : pl.charging ? pl.chargeKind : pl.armed;
+  const md = tap ? tap.mode : pl.charging ? pl.chargeMode : 'std';
   if (kind === 'pass') {
     const pp = planPass(game, pl, { mode: md, power: null, stick: st });
     const recv = pp.to >= 0 ? [game.players[pp.to].x, game.players[pp.to].z] : pp.to < -1 ? pp.meet : null;
     markers.show({ pass: { recv, meet: pp.meet, bank: pp.bank ? pp.target : null, color: md === 'var' ? 0x7dff6a : 0xffffff } });
   } else {
-    const p = Math.min(1, pl.charge / P.chargeT);
+    const p = tap ? tapPower(pl) : Math.min(1, pl.charge / P.chargeT);
     const pv = previewShot(game, pl, md, st, p);
     markers.show({ shot: { aim: pv.aim, sigma: 0.12 + pv.dist * Math.tan(pv.noiseDeg * Math.PI / 180), color: (MODE_LOOK[pv.tech] || MODE_LOOK.vollspann)[1] } });
   }

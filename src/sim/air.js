@@ -74,6 +74,19 @@ export function planAir(game, pl, { tPress = game.t, purpose = 'shot', minScore 
   return best && best.total >= minScore ? best : null;
 }
 
+// Timing-Hilfe (Nacht 2c, Mensch per Tipp, Regler ?timinghilfe=0…1): der Druck merkt den Luftball nur vor, die
+// Technik-Hilfe wählt den besten Moment – geplant wird, als drücke der Spieler jetzt; übernommen wird der Plan erst,
+// wenn der Zeitpunkt ideal ist (bestes Technik-Fenster) oder gleich keine Zeit mehr bleibt. Ein zu später Druck kostet
+// dann höchstens 15 % Timing-Wert (help = 1). Gibt den Plan oder null (weiter warten) zurück.
+export function planAirHelp(game, pl, help = 1) {
+  const plan = planAir(game, pl, { tPress: game.t });
+  if (!plan) return null;
+  const ideal = plan.tq >= 0.999 && plan.score >= 0.85 * plan.maxScore;
+  if (!ideal && plan.t > AIR_TECH[plan.tech].lead[0] + 0.1) return null; // der beste Moment kommt noch
+  plan.tq = 1 - (1 - plan.tq) * (1 - 0.85 * clamp(help, 0, 1));
+  return plan;
+}
+
 // Luftball ausführen (vom Spieler je Takt aufgerufen, solange pl.air läuft). Gibt true zurück, solange der Spieler
 // dadurch gesteuert wird (Anlauf mit Hilfe, Absprung, Flug, Treffpunkt).
 export function stepAir(pl, dt, game, want, sx, sz) {

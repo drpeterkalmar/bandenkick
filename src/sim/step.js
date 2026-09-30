@@ -33,7 +33,7 @@ export class Game {
     this.lastTouch = -1; this.lastTouchT = -99; this.passTo = -1;
     this.passPlan = null;           // laufender Pass in den Laufweg {to, from, x, z, t} (Empfänger-Hilfe)
     this.gest = newGestures();      // Gesten des Menschen (halten / tipp + halten), im Spieltakt ausgewertet
-    this.gcfg = { doppel: params.doppel, tapMax: params.tapMax };
+    this.gcfg = { doppel: params.doppel, tapMax: params.tapMax, laden: params.laden ? 1 : 0 };
     const cdef = opts.challenge ? challengeDef(opts.challenge) : null;
     this.match = !!opts.match || !!cdef;
     if (this.match) {

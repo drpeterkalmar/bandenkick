@@ -21,11 +21,13 @@ export function makeScript(id, opts = {}) {
       const me = g.players[0], t = C.targets.find((tt) => tt.lit), hold = 0.65;
       if (k.t0 == null) k.t0 = g.t;
       const dt = g.t - k.t0;
-      const seq = mode === 'var' ? [[0, 0.07], [0.17, 0.17 + hold]] : [[0, hold]];
-      const end = seq[seq.length - 1][1];
+      // Nacht 2c (Tipp-Grammatik): Tipp = Vollspann, Doppeltipp = angeschnitten; ?laden=1: halten bzw. tipp + halten
+      const laden = g.P.laden;
+      const seq = laden ? (mode === 'var' ? [[0, 0.07], [0.17, 0.17 + hold]] : [[0, hold]]) : (mode === 'var' ? [[0, 0.06], [0.14, 0.2]] : [[0, 0.07]]);
+      const end = laden ? seq[seq.length - 1][1] : mode === 'var' ? 0.14 : 0.07 + g.P.doppel; // Moment, in dem der Schuss feststeht
       const down = seq.some(([a, b]) => dt >= a && dt < b);
-      // Stick erst beim Loslassen: seitlich = flache Ecke, schräg nach vorn = hohe Ecke (Tor bei +x, rechts = +z)
-      const rel = dt >= end && dt < end + 0.05;
+      // Stick erst, wenn der Schuss feststeht: seitlich = flache Ecke, schräg nach vorn = hohe Ecke (Tor bei +x, rechts = +z)
+      const rel = dt >= end - (laden ? 0 : 0.03) && dt < end + 0.05;
       const [sx, sz] = t.y > 1 ? norm(1, Math.sign(t.z), 0.2) : norm(0.08, Math.sign(t.z), 0.2);
       void me;
       return H({ shotDown: down, ...(rel ? { mx: sx, mz: sz } : {}) });
@@ -81,11 +83,11 @@ export function makeScript(id, opts = {}) {
       if (C.phase !== 'run' || C.attemptT < 0.4) return H();
       if (k.t0 == null) k.t0 = g.t;
       const dt = g.t - k.t0, side = C.attempt % 2 ? 1 : -1, hold = 0.8;
-      const v = C.attempt % 3 === 0;
-      const seq = v ? [[0, 0.07], [0.17, 0.17 + hold]] : [[0, hold]];
-      const end = seq[seq.length - 1][1];
+      const v = C.attempt % 3 === 0, laden = g.P.laden;
+      const seq = laden ? (v ? [[0, 0.07], [0.17, 0.17 + hold]] : [[0, hold]]) : (v ? [[0, 0.06], [0.14, 0.2]] : [[0, 0.07]]);
+      const end = laden ? seq[seq.length - 1][1] : v ? 0.14 : 0.07 + g.P.doppel;
       const [sx, sz] = norm(0.08, side, 0.2);
-      return H({ shotDown: seq.some(([a, b]) => dt >= a && dt < b), ...(dt >= end && dt < end + 0.05 ? { mx: sx, mz: sz } : {}) });
+      return H({ shotDown: seq.some(([a, b]) => dt >= a && dt < b), ...(dt >= end - (laden ? 0 : 0.03) && dt < end + 0.05 ? { mx: sx, mz: sz } : {}) });
     };
     case 'doppelpass': return (g, C) => {
       perAttempt(st, C); const k = st.k;

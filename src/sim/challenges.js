@@ -14,15 +14,15 @@ const DEG = Math.PI / 180, TAU = 2 * Math.PI;
 // 'lo' = weniger ist besser, z. B. Zeit); hands = Mensch ist „letzte Hand“ im eigenen Torraum (Tormann-Challenges)
 export const CHALLENGES = [
   { id: 'torwand', group: 'schuetze', name: 'Torwand', icon: '🎯', per: [1, 0], attempts: 10, unit: 'Treffer', better: 'hi', stars: [3, 5, 7],
-    hint: '10 Schüsse aus 7 m. Getroffen zählt nur die leuchtende Scheibe: Stick seitlich = flache Ecke, schräg nach vorn = hohe Ecke. Halten = Vollspann, Tipp + halten = angeschnitten.' },
+    hint: '10 Schüsse aus 7 m. Getroffen zählt nur die leuchtende Scheibe: Stick seitlich = flache Ecke, schräg nach vorn = hohe Ecke. Tipp = Vollspann, Doppeltipp = angeschnitten.' },
   { id: 'volley', group: 'schuetze', name: 'Volley-Station', icon: '🦵', per: [1, 0], attempts: 10, unit: 'Tore', better: 'hi', stars: [3, 5, 7],
-    hint: 'Die Ballmaschine flankt. Drück Schuss, wenn der Ball kommt – je nach Höhe wird es Volley, Kopfball, Seitfall- oder Fallrückzieher. Timing zählt!' },
+    hint: 'Die Ballmaschine flankt. Tipp Schuss, wenn der Ball kommt – je nach Höhe wird es Volley, Kopfball, Seitfall- oder Fallrückzieher. Den besten Moment wählt das Spiel.' },
   { id: 'bande', group: 'schuetze', name: 'Bandenpass', icon: '↗️', per: [1, 0], attempts: 6, unit: 'Treffer', better: 'hi', stars: [2, 4, 6],
     hint: 'Puppen versperren den direkten Weg. Spiel den Ball über die Bande in den leuchtenden Kreis: Stick zur Bande (aufs Spiegelbild des Kreises), dann Pass.' },
   { id: 'dribbel', group: 'schuetze', name: 'Dribbel-Parcours', icon: '🔶', per: [1, 0], attempts: 1, unit: 's', better: 'lo', stars: [26, 19, 15],
     hint: 'Slalom durch die 5 Hütchen-Tore, dann ins Tor. Die Zeit läuft ab dem ersten Ballkontakt. Verpasstes Tor: +3 s.' },
   { id: 'elfmeter', group: 'schuetze', name: 'Elfmeter', icon: '⚽', per: [1, 1], attempts: 5, unit: 'Tore', better: 'hi', stars: [2, 3, 4],
-    hint: '5 Elfmeter aus 6 m gegen den Bot-Tormann. Stick wählt die Ecke, angeschnitten dreht der Ball um ihn herum.' },
+    hint: '5 Elfmeter aus 6 m gegen den Bot-Tormann. Stick wählt die Ecke, doppeltippen = angeschnitten: der Ball dreht um ihn herum.' },
   { id: 'doppelpass', group: 'schuetze', name: 'Doppelpass', icon: '🔁', per: [2, 1], attempts: 5, unit: 'Tore', better: 'hi', stars: [2, 3, 4], botLevel: 1,
     hint: 'Spiel deinen Mitspieler an und lauf los: Er spielt dir den Ball direkt in den Lauf. Dann abschließen – 7 s je Versuch.' },
   { id: 'tw_serie', group: 'torwart', name: 'Ballmaschine', icon: '🧤', per: [1, 0], attempts: 12, unit: 'gehalten', better: 'hi', stars: [5, 8, 10], hands: true,

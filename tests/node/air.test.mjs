@@ -41,24 +41,34 @@ rows.techTable = tab;
 const vHead = st.kopf.speed / Math.max(1, st.kopf.kicks), vFoot = (st.volley.speed + st.dropkick.speed) / Math.max(1, st.volley.kicks + st.dropkick.kicks);
 check('Kopfball langsamer als Fuß (Volley/Dropkick)', vHead / vFoot, 0, 0.8, '', null, `${vHead.toFixed(1)} vs. ${vFoot.toFixed(1)} m/s`);
 
-// 2) Timing zählt: gleiche Serie, Schuss-Knopf schon 0,3 s vor dem Abschuss der Maschine (viel zu früh) →
-//    schlechteres Timing, langsamer, seltener Tor
-{
+// 2) Timing: gleiche Serie, Schuss-Knopf schon 0,3 s vor dem Abschuss der Maschine (viel zu früh).
+//    Nacht 2c (Standard, Timing-Hilfe): die Hilfe wählt den besten Moment → kostet höchstens wenig.
+//    Mit ?timinghilfe=0 (strenges Timing wie Nacht 2b): schlechteres Timing, langsamer, seltener Tor.
+function timingRun(PP) {
   const sp = { good: [], early: [] }, goals = { good: 0, early: 0 };
   for (const [key, pressAt] of [['good', null], ['early', -0.3]]) {
     for (let seed = 1; seed <= 6; seed++) {
       let kicked = false;
-      playChallenge(Game, P, 'volley', { seed, script: makeScript('volley', { pressAt }), onEvent: (e) => {
+      playChallenge(Game, PP, 'volley', { seed, script: makeScript('volley', { pressAt }), onEvent: (e) => {
         if (e.type === 'machine') kicked = false;
         if (e.type === 'air' && e.player === 0) { sp[key].push({ v: e.speed, t: e.timing, q: e.q }); kicked = true; }
         if (e.type === 'goal' && kicked) { goals[key]++; kicked = false; }
       } });
     }
   }
-  const avg = (a, f) => a.reduce((s, x) => s + f(x), 0) / Math.max(1, a.length);
-  check('Timing: zu früh gedrückt (0,3 s vor dem Abschuss) → Timing-Wert sinkt', sp.early.length ? avg(sp.early, (x) => x.t) : 9, 0, avg(sp.good, (x) => x.t) - 0.3, '', null, `gut ${avg(sp.good, (x) => x.t).toFixed(2)} (${sp.good.length} Kontakte), zu früh ${avg(sp.early, (x) => x.t).toFixed(2)} (${sp.early.length})`);
-  check('Timing: zu früh → langsamer', sp.early.length ? avg(sp.early, (x) => x.v) : 99, 0, avg(sp.good, (x) => x.v) - 1, 'm/s', null, `gut ${avg(sp.good, (x) => x.v).toFixed(1)}, zu früh ${avg(sp.early, (x) => x.v).toFixed(1)} m/s`);
-  check('Timing: zu früh → Qualität q sinkt (Ziel zur Mitte, mehr Streuung)', sp.early.length ? avg(sp.early, (x) => x.q) : 9, 0, avg(sp.good, (x) => x.q) - 0.25, '', null, `gut ${avg(sp.good, (x) => x.q).toFixed(2)}, zu früh ${avg(sp.early, (x) => x.q).toFixed(2)}; Tore ohne Tormann: gut ${goals.good}, zu früh ${goals.early} von je 60`);
+  return { sp, goals };
+}
+const avg = (a, f) => a.reduce((s, x) => s + f(x), 0) / Math.max(1, a.length);
+{
+  const { sp, goals } = timingRun(P);
+  check('Timing-Hilfe: zu früh gedrückt (0,3 s vor dem Abschuss) → Timing-Wert höchstens 15 % schlechter', sp.early.length ? avg(sp.early, (x) => x.t) : 0, avg(sp.good, (x) => x.t) - 0.15, 1, '', null, `gut ${avg(sp.good, (x) => x.t).toFixed(2)} (${sp.good.length} Kontakte), zu früh ${avg(sp.early, (x) => x.t).toFixed(2)} (${sp.early.length})`);
+  check('Timing-Hilfe: zu früh → kaum langsamer', sp.early.length ? avg(sp.early, (x) => x.v) : 0, avg(sp.good, (x) => x.v) - 1, 99, 'm/s', null, `gut ${avg(sp.good, (x) => x.v).toFixed(1)}, zu früh ${avg(sp.early, (x) => x.v).toFixed(1)} m/s; Tore ohne Tormann: gut ${goals.good}, zu früh ${goals.early} von je 60`);
+}
+{
+  const { sp, goals } = timingRun(makeParams('timinghilfe=0'));
+  check('?timinghilfe=0: zu früh gedrückt → Timing-Wert sinkt', sp.early.length ? avg(sp.early, (x) => x.t) : 9, 0, avg(sp.good, (x) => x.t) - 0.3, '', null, `gut ${avg(sp.good, (x) => x.t).toFixed(2)} (${sp.good.length} Kontakte), zu früh ${avg(sp.early, (x) => x.t).toFixed(2)} (${sp.early.length})`);
+  check('?timinghilfe=0: zu früh → langsamer', sp.early.length ? avg(sp.early, (x) => x.v) : 99, 0, avg(sp.good, (x) => x.v) - 1, 'm/s', null, `gut ${avg(sp.good, (x) => x.v).toFixed(1)}, zu früh ${avg(sp.early, (x) => x.v).toFixed(1)} m/s`);
+  check('?timinghilfe=0: zu früh → Qualität q sinkt (Ziel zur Mitte, mehr Streuung)', sp.early.length ? avg(sp.early, (x) => x.q) : 9, 0, avg(sp.good, (x) => x.q) - 0.25, '', null, `gut ${avg(sp.good, (x) => x.q).toFixed(2)}, zu früh ${avg(sp.early, (x) => x.q).toFixed(2)}; Tore ohne Tormann: gut ${goals.good}, zu früh ${goals.early} von je 60`);
 }
 
 // 3) Nach Fallrück-/Seitfallzieher am Boden (~0,8 s), Kopfball mit Sprung

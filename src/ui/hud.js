@@ -91,10 +91,10 @@ export function buildHud(root, canvas) {
   const help = h('div', 'overlay');
   help.innerHTML = `<div class="card wide"><h2>Steuerung</h2>
     <table class="gest"><tr><th></th><th>Pass</th><th>Schuss</th></tr>
-    <tr><td><b>tippen</b></td><td>flacher Pass, Stärke automatisch</td><td>kurzer Schuss</td></tr>
-    <tr><td><b>halten</b></td><td>flach, Stärke = Haltedauer →</td><td>Vollspann ⚡ (Flatterball)</td></tr>
-    <tr><td><b>tipp + sofort halten</b></td><td>hoch (Chip) ⌒</td><td>angeschnitten ↪ Innen- / ↩ Außenrist</td></tr>
-    <tr><td><b>Ball in der Luft</b></td><td></td><td>Schuss drücken: Kopfball, Volley, Seitfall-, Fallrückzieher – Timing zählt</td></tr></table>
+    <tr><td><b>tippen</b></td><td>flach in den Laufweg →</td><td>Vollspann ⚡ (nah platziert, weit hart)</td></tr>
+    <tr><td><b>doppeltippen</b></td><td>hoch (Flanke, Chip) ⌒</td><td>angeschnitten ↪ Innen- / ↩ Außenrist</td></tr>
+    <tr><td><b>Ball in der Luft</b></td><td></td><td>Schuss tippen: Kopfball, Volley, Seitfall-, Fallrückzieher – den besten Moment wählt das Spiel</td></tr></table>
+    <p class="small">Kein Aufladen: die Stärke wählt das Spiel. Du darfst schon tippen, bevor der Ball am Fuß ist.</p>
     <ul class="howto"></ul>
     <p class="small">Der Pass geht zum Mitspieler, auf den der Stick zeigt (±35°), in seinen Laufweg – zeigst du auf die Bande, geht er über die Bande.
     Der Schuss geht immer aufs Tor: Stick seitlich = flache Ecke, schräg nach vorn = hohe Ecke. Schlechte Lage (spitzer Winkel, Rücken zum Tor, Gegner dran) = langsamer und zentraler.</p>
@@ -103,10 +103,10 @@ export function buildHud(root, canvas) {
 
   const howto = (touchUI) => touchUI
     ? `<li><b>Stick links:</b> laufen · ganz außen oder Knopf = Sprint · <b>⇄</b> Spieler wechseln (sonst automatisch)</li>
-       <li><b>Pass/Schuss:</b> halten = flach/Vollspann, <b>tipp + halten</b> = hoch/angeschnitten (Ring zeigt Modus und Stärke)</li>
+       <li><b>Pass/Schuss:</b> tippen = flach/Vollspann, <b>doppeltippen</b> = hoch/angeschnitten (Ring zeigt den Modus)</li>
        <li><b>Torwart</b> (letzte Hand im Torraum): fängt und hechtet von selbst. Mit Ball: Pass = <b>Abwurf</b>, Schuss = <b>Abschlag</b> – sonst wirft er nach 2 s selbst ab</li>`
     : `<li><b>WASD / Pfeile:</b> laufen, <b>Shift:</b> Sprint, <b>C / Tab:</b> Spieler wechseln</li>
-       <li><b>J / Enter / Linksklick:</b> Pass · <b>Leertaste / K / Rechtsklick:</b> Schuss – halten = flach/Vollspann, <b>tipp + halten</b> = hoch/angeschnitten; Maus zielt</li>
+       <li><b>J / Enter / Linksklick:</b> Pass · <b>Leertaste / K / Rechtsklick:</b> Schuss – tippen = flach/Vollspann, <b>doppeltippen</b> = hoch/angeschnitten; Maus zielt</li>
        <li><b>Torwart</b> (letzte Hand im Torraum): fängt und hechtet von selbst; mit Ball J = Abwurf, Leertaste = Abschlag (sonst nach 2 s von selbst)</li>
        <li><b>Gamepad:</b> Stick laufen, A Pass/Abwurf, X/RT Schuss/Abschlag, Y Wechsel, LB/RB Sprint</li>`;
   const setHowto = (touchUI) => root.querySelectorAll('.howto').forEach((u) => { u.innerHTML = howto(touchUI); });

@@ -28,6 +28,9 @@ export const Q_TABLE = {
   bounce: (h, vy) => Math.max(0.75, 1 - clamp(h / 0.3, 0, 1) * 0.15 - clamp(Math.abs(vy) / 3, 0, 1) * 0.1), // Ball springt
   press: (d) => lin(d, 0.5, 0.72, 2, 1),                                                   // nächster Gegner (m)
 };
+// Auto-Stärke des Tipp-Schusses (Nacht 2c, kein Aufladen): nah platziert, weit hart. D = Ball ↔ Tormitte (m):
+// 4 m → 0,68 (≈ 22 m/s bei q = 1), 8 m → 0,86 (≈ 27 m/s), ab 10 m 0,95 (≈ 29 m/s)
+export const autoShotPower = (D) => clamp(0.5 + 0.045 * D, 0.65, 0.95);
 // Kurven q → Tempo-Faktor, Anteil der Ecke (Rest Richtung Mitte), Streuungs-Faktor
 export const speedFactor = (q) => 0.42 + 0.58 * Math.pow(q, 0.85);
 export const aimFactor = (q) => Math.pow(clamp((q - 0.05) / 0.55, 0, 1), 0.8);
@@ -129,9 +132,10 @@ export function previewShot(game, pl, mode = 'std', stick = null, power = 0.7) {
 // tech/speed/spin/qMul/noiseBase/from (Treffpunkt statt Ballposition).
 export function planShot(game, pl, opts = {}) {
   const P = game.P, b = game.ball;
-  const mode = opts.mode || 'std', power = clamp(opts.power ?? 0.7, 0, 1);
+  const mode = opts.mode || 'std';
   const from = opts.from || [b.p.x, Math.max(b.r, b.p.y), b.p.z];
   const gx = attackGoalX(game, pl);
+  const power = clamp(opts.power ?? autoShotPower(Math.hypot(gx - from[0], from[2])), 0, 1); // ohne Stärke: automatisch
   const corner = chooseCorner(game, pl, opts.stick, from);
   // Kurve zum Tor hin: Ecke rechts vom Schützen → Ball dreht nach links in die Ecke (und umgekehrt)
   const curveLeft = corner.lat > 0.05 ? true : corner.lat < -0.05 ? false : (pl.strong || 1) > 0;

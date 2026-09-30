@@ -6,7 +6,7 @@
 import { setKick } from './kickplan.js';
 import { planPass } from './pass.js';
 import { planShot } from './shot.js';
-import { planAir, stepAir, stepFall } from './air.js';
+import { planAir, planAirHelp, stepAir, stepFall } from './air.js';
 const DEG = Math.PI / 180;
 const wrap = (a) => { while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI; return a; };
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
@@ -107,7 +107,7 @@ export class Player {
     if (this.hand.mode === 'dive' || this.hand.mode === 'ground') { this.stepDive(dt, game); return; }
     if (this.fall) { stepFall(this, dt, game); this.plant = 0; return; } // am Boden nach Seit-/Fallrückzieher
     const held = ball.held >= 0;
-    if (this.pending) { this.pending.age += dt; if (this.pending.age > P.kickBuffer) this.pending = null; }
+    if (this.pending) { this.pending.age += dt; if (this.pending.age > (this.pending.tap ? P.tippPuffer : P.kickBuffer)) this.pending = null; }
 
     // --- Eingabe: Stick, Aktionen ---
     let mx = inp.mx || 0, mz = inp.mz || 0;
@@ -196,8 +196,9 @@ export class Player {
     let vd = 0;
     if (moving) {
       vd = (want ? mag : 0.8) * (this.sprinting ? P.vSprint : P.vRun);
-      // Vorgemerkter Kick ohne Stick: dem Ball mindestens so schnell nachlaufen, wie er rollt (bis Sprint)
-      if (!want && this.pending && !held) vd = Math.max(vd, Math.min(P.vSprint, Math.hypot(ball.v.x, ball.v.z) + 1.5));
+      // Vorgemerkter Kick ohne Stick: dem Ball mindestens so schnell nachlaufen, wie er rollt (bis Sprint).
+      // Nacht 2c: auch mit Stick, wenn er grob zum Ball zeigt (Tipp-Kick: der Spieler legt einen Schritt zu)
+      if (this.pending && !held && (!want || (this.pending.tap && targetW > 0))) vd = Math.max(vd, Math.min(P.vSprint, Math.hypot(ball.v.x, ball.v.z) + 1.5));
       if (this.dribbling) vd *= P.dribbleSlow;
       if (this.charging && bd < 0.75) vd *= 0.8; // zum Schuss hin etwas verlangsamen – nur mit dem Ball am Fuß (sonst läuft er davon)
       if (this.hand.mode === 'hold') vd = Math.min(vd, P.vRun * 0.6); // mit Ball in der Hand nur gehen
@@ -221,7 +222,7 @@ export class Player {
     // Blickrichtung: Stemmschritt → Körper dreht schon in die neue Richtung; läuft → Laufrichtung;
     // steht → zum Stick bzw. zum Ball
     let fAng = this.face;
-    const aimGoal = !want && this.charging && this.chargeKind === 'shot' && !P.treffpunkt && bd < 2.5;
+    const aimGoal = !want && ((this.charging && this.chargeKind === 'shot') || (this.pending && this.pending.tap && this.pending.kind === 'shot')) && !P.treffpunkt && bd < 2.5;
     if (aimGoal) fAng = Math.atan2(-ball.p.z, goalX(game, this) - ball.p.x); // Schuss laden ohne Stick: zum Tor drehen
     else if (this.plant > 0.4 && moving) fAng = Math.atan2(dirZ, dirX);
     else if (s > 0.6) fAng = hAng;
@@ -236,7 +237,9 @@ export class Player {
     const fd = Math.hypot(dx, dz);
     // Im Stemmschritt nimmt der Spieler den Ball mit (Sohle/Außenseite): Reichweite ab Körpermitte
     const cut = this.plant > 0.3 && want && bd < P.cutReach;
-    const inReach = (fd < P.reach || cut) && ball.p.y < P.reachH;
+    // Tipp-Kick (Nacht 2c): ein langer Schritt reicht (+kickLunge), damit der Kick nicht auf die nächste Vorlage wartet
+    const lunge = this.pending && this.pending.tap && !this.pending.locked ? P.kickLunge : 0;
+    const inReach = (fd < P.reach + lunge || cut) && ball.p.y < P.reachH;
     const rvx = ball.v.x - this.vx, rvz = ball.v.z - this.vz;
     const rel = Math.hypot(rvx, ball.v.y, rvz);
     let touched = false;
@@ -269,7 +272,9 @@ export class Player {
       settle = ahead > 0.6 && closing < -0.8 && this.pending.age < 0.25 && !oppNear(game, this, 1.4);
     }
     if (!touched && !handsFirst && inReach && rel < P.ctrlRelMax && !settle) {
-      if (this.pending && this.touchCd <= 0.1) {
+      if (this.pending && this.pending.locked) {
+        // Tipp: Modus steht noch nicht fest (≤ doppel s) – Ball nicht wegspielen, gleich kommt der Kick
+      } else if (this.pending && this.touchCd <= 0.1) {
         this.kick(this.pending, game, rel);
         this.pending = null;
         touched = true;
@@ -436,7 +441,7 @@ export class Player {
 
   // Luftball versuchen (Schuss gedrückt): Plan aus air.js übernehmen → true
   tryAir(game, tPress) {
-    const plan = planAir(game, this, { tPress });
+    const plan = this.P.timinghilfe > 0 && !this.P.laden ? planAirHelp(game, this, this.P.timinghilfe) : planAir(game, this, { tPress });
     if (!plan) return false;
     this.air = plan; this.pending = null; this.charging = false;
     return true;
@@ -445,6 +450,7 @@ export class Player {
   // Gesten-Ereignisse des Menschen (Game.humanInput → stepGestures): start/pause/tap/release/cancel
   gestures(inp, game, aimDir, stick) {
     const P = this.P;
+    if (!P.laden && !P.treffpunkt) { this.taps(inp, game, aimDir, stick); return; }
     for (const e of inp.gest) {
       if (e.type === 'start') {
         this.pending = null; this.charging = true; this.chargeKind = e.btn; this.chargeMode = e.mode; this.charge = 0;
@@ -466,6 +472,32 @@ export class Player {
       }
     }
     if (this.charging && inp.gview && !inp.gview.wait) this.charge = inp.gview.dur;
+  }
+
+  // Tipp-Grammatik (Nacht 2c, Standard): der erste Druck merkt den Kick sofort vor – gesperrt, der Spieler läuft schon
+  // zum Ball –, frei, sobald der Modus feststeht (Einzeltipp: Loslassen + doppel, Doppeltipp: zweiter Druck). Stärke
+  // automatisch: Pass in den Laufweg, Schuss nach Lage und Entfernung (shot.js autoShotPower). Ball in der Luft →
+  // Luftball-Technik (Timing-Hilfe). Der Stick zählt bis zum Kick (letzte deutliche Richtung).
+  taps(inp, game, aimDir, stick) {
+    for (const e of inp.gest) {
+      const kind = e.btn === 'pass' ? 'pass' : 'shot';
+      const mine = this.pending && this.pending.tap && this.pending.kind === kind;
+      if (e.type === 'start' && e.mode === 'std') {
+        this.armed = null; this.charging = false; this.clearT = 0; this.airPress = false;
+        if (kind === 'shot' && this.tryAir(game, game.t)) { this.airPress = true; this.pending = null; continue; }
+        this.pending = { kind, mode: 'std', power: null, stick: stick(), dir: aimDir(), cx: 0, cy: 0, age: 0, t: game.t, locked: true, tap: true };
+      } else if (e.type === 'start') { // zweiter Druck: Zweitfunktion
+        if (mine) this.pending.mode = 'var';
+      } else if (e.type === 'tap' || e.type === 'release') {
+        if (this.airPress) { this.airPress = false; continue; }
+        if (mine) this.pending.locked = false;
+      } else if (e.type === 'cancel') {
+        if (mine && this.pending.locked) this.pending = null;
+        if (kind === 'shot') this.airPress = false;
+      }
+    }
+    if (this.pending && this.pending.tap) { const s = stick(); if (s) { this.pending.stick = s; this.pending.dir = aimDir(); } }
+    this.armed = this.pending && this.pending.tap && this.pending.locked ? this.pending.kind : null;
   }
 
   // Pass oder Schuss ausführen

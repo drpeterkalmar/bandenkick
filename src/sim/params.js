@@ -124,9 +124,16 @@ export const DEFAULTS = {
   kickBuffer: 0.9,        // s: Pass/Schuss wird so lange vorgemerkt, bis der Ball erreichbar ist
 
   // ---------------- Nacht 2b: Gesten, Pass, Schuss, Luftbälle ----------------
-  // Gesten (src/input/gesture.js): halten = Standard, tipp + sofort halten = Variante
-  doppel: 0.25,           // s Fenster für den zweiten Druck nach dem Loslassen des Tipps          [?doppel=]
-  tapMax: 0.2,            // s kürzer gedrückt = Tipp                                                [?tipp=]
+  // Gesten (src/input/gesture.js). Nacht 2c: Tipp = Standard mit Auto-Stärke, Doppeltipp = Zweitfunktion (Pass hoch,
+  // Schuss angeschnitten), kein Aufladen. ?laden=1 = Profi-Grammatik aus Nacht 2b (halten = Stärke, tipp + halten)
+  laden: 0,               // 1 = Aufladen per Haltedauer wie Nacht 2b                              [?laden=1]
+  doppel: 0.11,           // s Fenster für den zweiten Druck nach dem Loslassen des Tipps (Nacht 2b: 0,25 – mit
+                          // ?laden=1 weiter 0,25); Wartezeit eines Einzeltipps = Tippdauer + doppel  [?doppel=]
+  tapMax: 0.2,            // s kürzer gedrückt = Tipp (länger gehalten: Standard steht sofort fest)  [?tipp=]
+  kickLunge: 0.2,         // m zusätzliche Reichweite für einen vorgemerkten Tipp-Kick (langer Schritt zum Ball)
+  tippPuffer: 1.5,        // s ein Tipp-Kick bleibt so lange vorgemerkt (Ball kommt noch: Direktpass, Volley)
+  timinghilfe: 1,         // Luftbälle: Technik-Hilfe wählt den besten Moment, falscher Zeitpunkt kostet höchstens
+                          // 15 % Timing-Wert (0 = strenges Timing wie Nacht 2b)                       [?timinghilfe=0]
   treffpunkt: 0,          // 1 = Profi: alte Treffpunkt-Steuerung (Fingerlage/Q E R F, freie Richtung) [?treffpunkt=1]
   // Pass: Ziel im Kegel um die Stick-Richtung, in den Laufweg (Roll-/Chip-Tabelle aus ball.js)
   passCone: 35,           // ° halber Kegel um die Stick-/Blickrichtung                              [?kegel=]
@@ -194,6 +201,8 @@ export const ALIASES = {
 };
 // ?zack=0: Werte des alten Bewegungsmodells (Nacht 1), sofern nicht ausdrücklich übersteuert
 const ZACK0 = { aLat: 6.0, aBrake: 6.5 };
+// ?laden=1: Fenster für den zweiten Druck wie Nacht 2b, sofern nicht ausdrücklich übersteuert
+const LADEN1 = { doppel: 0.25 };
 const ZACK0_ALIAS = { antritt: 'tauAcc' };
 
 // Liest Overrides aus einem Query-String (oder Objekt) und gibt ein vollständiges Parameter-Objekt zurück.
@@ -225,6 +234,7 @@ export function makeParams(overrides = {}) {
     if (Number.isFinite(v)) { P[k] = v; set.add(k); }
   }
   if (zack0) for (const [k, v] of Object.entries(ZACK0)) if (!set.has(k)) P[k] = v;
+  if (P.laden) for (const [k, v] of Object.entries(LADEN1)) if (!set.has(k)) P[k] = v;
   P.zack = P.zack ? 1 : 0;
   P.roof = P.roof ? 1 : 0;
   P.goalW = clamp(P.goalW, 1, P.fieldW - 2);
