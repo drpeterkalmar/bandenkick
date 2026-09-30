@@ -83,7 +83,7 @@ with Server() as srv, sync_playwright() as pw:
         ok(moved > 0.5 and st['rules']['phase'] in ('play', 'goal') and st['faults'] == 0, f"Bots spielen 6 s: Ball bewegt, Phase {st['rules']['phase']}, Rollen {roles}")
         # Tor → Jubel → Schnellstart: Tormann des Gegentors hat den Ball
         s.ev("__game.newGame(); __game.game.rules.phase = 'play'; __game.bots(false)")
-        s.ev("__game.kick({from:[7, 0.3, 0.4], v:[16, 0.5, 0], w:[0,0,0]})")
+        s.ev("__game.kick({from:[__game.game.cage.hx - 3, 0.3, 0.4], v:[16, 0.5, 0], w:[0,0,0]})")  # 3 m vor dem Tor (Feldgröße egal)
         s.wait_sim(0.6)
         st = s.state()
         ok(st['score'] == [1, 0] and st['rules']['phase'] == 'goal', f"Tor Orange: {st['score']}, Phase {st['rules']['phase']}")

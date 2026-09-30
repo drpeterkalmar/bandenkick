@@ -79,7 +79,7 @@ const park = (g) => { // alle Spieler weit weg von Ball und Toren
     const ev = run(g, 0.3, (gg) => { const a = []; a[0] = inp({ hand: true }); a[1] = inp({ hand: true }); return a; });
     return { caught: ev.some((e) => e.type === 'catch'), held: g.ball.held };
   };
-  const hx = 10;
+  const hx = makeParams('').fieldL / 2; // Nacht 2c: Standardfeld 24 × 15 (vorher fest 10)
   check('Letzte Hand im Torraum fängt', tryCatch(-hx + 2, 0).caught ? 1 : 0, 1, 1, '', 1);
   check('Letzte Hand außerhalb des Torraums: keine Hand möglich', tryCatch(-hx + 5, 0).caught ? 0 : 1, 1, 1, '', 1, 'Ball prallt nur ab / wird mit dem Fuß gespielt');
   check('Nicht-hinterster Spieler im Torraum: keine Hand', tryCatch(-hx + 2, 0, false).caught ? 0 : 1, 1, 1, '', 1);

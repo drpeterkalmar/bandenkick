@@ -102,7 +102,8 @@ export function tapLatency(qs = '', sprint = false, n = 40) {
   const t2 = press(at(), [[0, 0.07, 'shot'], [0.15, 0.2, 'shot']]);
   check('Schuss Tipp = Vollspann (Auto-Stärke)', t1 && t1.k.tech === 'vollspann' ? t1.k.speed : 0, 20, 30, 'm/s', null, t1 ? `${t1.k.tech}, ${f3(t1.dt)} s nach dem Druck, Drall ${t1.k.sideRps.toFixed(1)} U/s` : 'kein Schuss');
   check('Schuss Doppeltipp = angeschnitten', t2 && /rist/.test(t2.k.tech) ? Math.abs(t2.k.sideRps) : 0, 3, 99, 'U/s', null, t2 ? `${t2.k.tech}, ${t2.k.speed.toFixed(1)} m/s, ${f3(t2.dt)} s nach dem ersten Druck` : 'kein Schuss');
-  const near = press(at('', 6, 4), [[0, 0.07, 'shot']]), far = press(at('', -1, 4), [[0, 0.07, 'shot']]);
+  const hx = makeParams('').fieldL / 2;
+  const near = press(at('', hx - 4, 4), [[0, 0.07, 'shot']]), far = press(at('', hx - 11, 4), [[0, 0.07, 'shot']]);
   check('Auto-Stärke: weiter weg härter', far && near ? far.k.speed - near.k.speed : -9, 1, 99, 'm/s', null, `4 m: ${near && near.k.speed.toFixed(1)}, 11 m: ${far && far.k.speed.toFixed(1)} m/s`);
   const hold = press(at(), [[0, 0.9, 'shot']]);
   check('Schuss halten = wie Tipp (kein Aufladen), Kick vor dem Loslassen', hold ? hold.dt : 9, 0, 0.35, 's', null, hold ? `${hold.k.tech} ${hold.k.speed.toFixed(1)} m/s` : '');

@@ -71,8 +71,11 @@ export class GameCamera {
       this.tz = damp(this.tz, Math.max(-1.5, Math.min(1.5, gz * 0.2)), k, dt);
       // Zwei-Strahlen-Einpassung: unterer Bildrand trifft den Boden knapp vor der nahen Bande,
       // oberer Rand knapp hinter der fernen Bande (Netz sichtbar). Höhe fest, Neigung/Abstand gerechnet.
-      const H = 8.6 + (hz - 6.5) * 0.8;
-      const fit = this.fit(H, hz + 0.45 + this.tz, -hz - 2.2 + this.tz);
+      // Nacht 2c (Feld 24 × 15): mit dem breiteren Feld etwas höher und weiter weg → Figuren ≈ 17 % kleiner im Bild,
+      // bei 20 × 13 wie bisher
+      const ex = Math.max(0, hz - 6.5);
+      const H = 8.6 + ex * 1.3;
+      const fit = this.fit(H, hz + 0.45 + ex * 0.2 + this.tz, -hz - 2.2 - ex * 0.9 + this.tz);
       c.position.set(this.tx, H, fit.zc);
       c.lookAt(this.tx, 0, fit.zc - H / Math.tan(fit.beta));
     } else {
@@ -85,7 +88,8 @@ export class GameCamera {
       this.tx = damp(this.tx, gx, k, dt);
       this.tz = damp(this.tz, gz, k * 0.8, dt);
       // Blickpunkt 2,6 m vor dem Geschehen → Ball/Spieler sitzen im oberen Bilddrittel, frei von den Knöpfen unten
-      const D = 17.5, pitch = 56 * Math.PI / 180, lead = 2.6;
+      // Nacht 2c: Abstand wächst mit der Feldbreite (24 × 15: × 1,2 → Figuren ≈ 17 % kleiner; 20 × 13 wie bisher)
+      const D = 17.5 * (1 + 0.2 * Math.max(0, hz - 6.5)), pitch = 56 * Math.PI / 180, lead = 2.6;
       c.position.set(this.tx - lead - Math.cos(pitch) * D, Math.sin(pitch) * D, this.tz * 0.85);
       c.lookAt(this.tx - lead, 0, this.tz);
     }

@@ -73,6 +73,9 @@ class Challenge {
     this.machine = null; this.targets = []; this.cones = []; this.gates = []; this.dummies = []; this.zones = []; this.marks = [];
     this.msg = ''; this.msgT = 0;
     this.hx = game.cage.hx; this.hz = game.cage.hz; this.gw = game.cage.gw; this.gH = game.cage.gH;
+    // Aufbauten sind für das 20 × 13-Feld beschrieben (Nacht 2b); Nacht 2c (Standard 24 × 15): x relativ zum rechten
+    // Tor bzw. z relativ zur Längsbande verschieben – Abstände und Schwierigkeit bleiben gleich
+    this.ox = this.hx - 10; this.oz = this.hz - 6.5;
   }
   get me() { return this.g.players[this.g.human]; }
   // Ergebnis eines Versuchs festhalten, kurze Meldung, nächster Versuch nach `pause` s
@@ -166,12 +169,12 @@ export const VOLLEY_STATIONS = [
   { want: 'fallrueck', me: [6.0, -0.3], face: 'machine', mach: [-2.0, -0.2], hit: [0.25, 1.6], v: 11.5 },
 ];
 class Volley extends Challenge {
-  constructor(g, d) { super(g, d); this.machine = { x: 7.4, z: -6, yaw: 0, pitch: 0, firedT: -9, shots: 0 }; this.stations = VOLLEY_STATIONS; }
+  constructor(g, d) { super(g, d); this.machine = { x: 7.4 + this.ox, z: -6, yaw: 0, pitch: 0, firedT: -9, shots: 0 }; this.stations = VOLLEY_STATIONS; }
   setupAttempt(k) {
     const g = this.g, st = this.stations[(k - 1) % this.stations.length];
     this.st = st;
-    const m = this.machine; m.x = st.mach[0]; m.z = st.mach[1];
-    const [mx, mz] = st.me;
+    const m = this.machine; m.x = st.mach[0] + this.ox; m.z = st.mach[1];
+    const mx = st.me[0] + this.ox, mz = st.me[1];
     const face = st.face === 'machine' ? Math.atan2(m.z - mz, m.x - mx) : Math.atan2(m.z - mz, m.x - mx) * 0.5;
     this.placeMe(mx, mz, face);
     g.ball.place(m.x, MACHINE_H, m.z); g.ball.held = -1; g.ball.v.set(0, 0, 0); g.ball.contact = false;
@@ -185,7 +188,7 @@ class Volley extends Challenge {
       b.place(m.x, MACHINE_H, m.z); b.v.set(0, 0, 0); b.contact = false; // Ball liegt in der Maschine
       if (this.attemptT >= 1.4) {
         // Treffpunkt: vor dem Spielerplatz Richtung Maschine (hit[0] m), in Höhe hit[1], seitlich zur Torseite hit[2] m
-        const [mx, mz] = st.me, dx = m.x - mx, dz = m.z - mz, dl = Math.hypot(dx, dz);
+        const mx = st.me[0] + this.ox, mz = st.me[1], dx = m.x - mx, dz = m.z - mz, dl = Math.hypot(dx, dz);
         let nx = -dz / dl, nz = dx / dl; if (nx < 0) { nx = -nx; nz = -nz; }
         const lat = st.hit[2] || 0;
         const T = [mx + dx / dl * st.hit[0] + nx * lat, st.bounce ? 0.25 : st.hit[1], mz + dz / dl * st.hit[0] + nz * lat];
@@ -222,10 +225,11 @@ class Bande extends Challenge {
     this.st = st;
     // Puppen als harte Rohre im Käfig (Ball prallt ab), vorherige entfernen
     g.cage.bars = g.cage.bars.filter((bb) => bb.tag !== 'dummy');
-    this.dummies = st.dummies.map(([x, z]) => ({ x, z, r: 0.22 }));
+    const Z = (z) => z + Math.sign(z) * this.oz; // Lage zur Längsbande wie auf dem 20 × 13-Feld
+    this.dummies = st.dummies.map(([x, z]) => ({ x, z: Z(z), r: 0.22 }));
     for (const d of this.dummies) g.cage.bars.push({ a: [d.x, 0, d.z], b: [d.x, 1.75, d.z], r: d.r, tag: 'dummy' });
-    this.zones = [{ x: st.zone[0], z: st.zone[1], r: st.r, lit: true }];
-    const [bx, bz] = st.ball, f = Math.atan2(st.zone[1] - bz, st.zone[0] - bx);
+    this.zones = [{ x: st.zone[0], z: Z(st.zone[1]), r: st.r, lit: true }];
+    const bx = st.ball[0], bz = Z(st.ball[1]), f = Math.atan2(this.zones[0].z - bz, st.zone[0] - bx);
     g.ball.place(bx, g.ball.r, bz); g.ball.held = -1;
     this.placeMe(bx - Math.cos(f) * 0.42, bz - Math.sin(f) * 0.42, f);
     this.kicked = false; this.boardHit = false; this.dummyHit = false;
@@ -248,13 +252,13 @@ export const DRIBBEL_GATES = [[-6, 1.6], [-3, -1.6], [0, 1.6], [3, -1.6], [5.6, 
 class Dribbel extends Challenge {
   constructor(g, d) {
     super(g, d);
-    this.gates = DRIBBEL_GATES.map(([x, z]) => ({ x, z, w: 1.7, passed: false, missed: false }));
+    this.gates = DRIBBEL_GATES.map(([x, z]) => ({ x: x + this.ox, z, w: 1.7, passed: false, missed: false }));
     this.cones = []; for (const gt of this.gates) this.cones.push({ x: gt.x, z: gt.z - gt.w / 2 }, { x: gt.x, z: gt.z + gt.w / 2 });
   }
   setupAttempt() {
     const g = this.g;
-    g.ball.place(-8.6, g.ball.r, 0); g.ball.held = -1;
-    this.placeMe(-9.1, 0, 0);
+    g.ball.place(-8.6 + this.ox, g.ball.r, 0); g.ball.held = -1;
+    this.placeMe(-9.1 + this.ox, 0, 0);
     this.gates.forEach((gt) => { gt.passed = false; gt.missed = false; });
     this.t0 = null; this.pen = 0; this.next = 0; this.prevX = this.me.x; this.time = null;
   }
@@ -310,9 +314,9 @@ class Doppelpass extends Challenge {
   setupAttempt(k) {
     const g = this.g;
     const side = k % 2 ? 1 : -1;
-    g.ball.place(-5.6, g.ball.r, -1.6 * side); g.ball.held = -1;
-    this.placeMe(-6.0, -1.6 * side, 0);
-    const wall = g.players[1]; wall.place(-0.5, 2.6 * side, Math.PI + 0.4 * side); wall.resetHands();
+    g.ball.place(-5.6 + this.ox, g.ball.r, -1.6 * side); g.ball.held = -1;
+    this.placeMe(-6.0 + this.ox, -1.6 * side, 0);
+    const wall = g.players[1]; wall.place(-0.5 + this.ox, 2.6 * side, Math.PI + 0.4 * side); wall.resetHands();
     const kp = g.players[2]; kp.place(this.hx - 0.5, 0, Math.PI); kp.resetHands();
     g.rules.updateKeepers(0, true);
     this.wallTouched = false; this.returned = false;
@@ -412,8 +416,8 @@ class OneOnOne extends Challenge {
   setupAttempt(k) {
     const g = this.g, gx = -this.hx;
     const z = [0, 2.5, -2.5, 1.2, -1.2][(k - 1) % 5];
-    const att = g.players[1]; att.place(1.5, z, Math.PI); att.resetHands();
-    g.ball.place(1.1, g.ball.r, z); g.ball.held = -1;
+    const att = g.players[1]; att.place(1.5 - this.ox, z, Math.PI); att.resetHands();
+    g.ball.place(1.1 - this.ox, g.ball.r, z); g.ball.held = -1;
     if (k === 1 || Math.abs(this.me.x - gx) > 3) this.placeMe(gx + 1.1, 0, 0);
     this.me.resetHands();
     g.rules.updateKeepers(0, true);

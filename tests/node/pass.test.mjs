@@ -117,10 +117,11 @@ for (const chip of [false, true]) {
 {
   const g = mk([2, 1], 9);
   const [a, m, o] = g.players;
-  a.place(-4, 4.2, 0); g.ball.place(-3.65, 0.11, 4.2);
-  m.place(4, 4.0, 0); o.place(0, 4.1, Math.PI);
+  const oz = g.cage.hz - 6.5; // Lage relativ zur Längsbande wie auf dem 20 × 13-Feld (Nacht 2c: Standard 24 × 15)
+  a.place(-4, 4.2 + oz, 0); g.ball.place(-3.65, 0.11, 4.2 + oz);
+  m.place(4, 4.0 + oz, 0); o.place(0, 4.1 + oz, Math.PI);
   const mz = 2 * g.cage.hz - m.z;
-  const stick = [m.x + 3.65, mz - 4.2];
+  const stick = [m.x + 3.65, mz - 4.2 - oz];
   const pl = planPass(g, a, { stick });
   check('Bandenpass: Stick aufs Spiegelbild an der Bande → über die Bande', pl.bank ? 1 : 0, 1, 1, '', 1, `Bande ${pl.bank}, Zielpunkt (${pl.target.map((v) => v.toFixed(1)).join(', ')}), ${pl.u.toFixed(1)} m/s`);
   // im Spiel ausführen: Ball kommt beim Mitspieler an

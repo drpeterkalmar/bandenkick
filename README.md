@@ -1,6 +1,6 @@
 # Bandenkick
 
-**Kleinfeldfußball im Käfig** – wie auf einem DFB-Minispielfeld: 20 × 13 m Kunstrasen, 1 m Bande, darüber Netz,
+**Kleinfeldfußball im Käfig** – 24 × 15 m Kunstrasen (Nacht 2c; das DFB-Minispielfeld 20 × 13 m mit `?feld=20x13`), 1 m Bande, darüber Netz,
 oben ein Dachnetz. Der Ball bleibt immer im Spiel. Handy zuerst (hoch und quer), dazu Desktop und Gamepad.
 Als App installierbar (PWA), läuft offline.
 
@@ -95,7 +95,7 @@ Ball mit (Sohle/Außenseite). `?zack=0` = altes Gefühl aus Nacht 1 zum Vergleic
   Grip-Slip-Modell (Cross 2002): Rückdrall bremst, Vorwärtsdrall lässt den Ball nachlaufen.
 - **Bande:** hart (Stoßzahl 0,65, Reibung) – Effet ändert den Abprallwinkel (Bandenpass). **Netze:** weich
   (Feder-Dämpfer, Rückprall ≈ 10 %), Netz beult am Ball aus. **Pfosten/Latte:** Stahlrohr Ø 80 mm.
-- **Käfig:** 20 × 13 m, Tore 3 × 2 m in der Bande, Bande 1 m, Ballfangnetz, Dachnetz auf 5 m. Mit Dach reicht das
+- **Käfig:** 24 × 15 m (Nacht 2c, vorher 20 × 13 = `?feld=20x13`), Tore 3 × 2 m in der Bande, Bande 1 m, Ballfangnetz, Dachnetz auf 5 m. Mit Dach reicht das
   Seitennetz bis zum Dach (sonst Spalt zwischen 3 und 5 m). Ohne Dach (`?dach=0`) ist das Netz 2 m hoch
   (Oberkante 3 m); fliegt der Ball darüber, gibt es „Aus“ und der Ball kommt zurück.
 - **Spieler:** Sprint 7,5 m/s, Laufen 5,2 m/s, 0 → 4 m/s in 0,60 s, 0 → 7 m/s in 2,5 s; Kurve r = v²/13 m/s²
@@ -118,7 +118,7 @@ Ball mit (Sohle/Außenseite). `?zack=0` = altes Gefühl aus Nacht 1 zum Vergleic
 | `?hilfe=0` … `1` | Stärke der Ballführungs-Hilfe (lenkt den Spieler zum Ball) |
 | `?magnet=0` … `1` | Ballmagnet (Standard 0,5; 0 = Ballführung wie Nacht 2b). Feinregler: `?magnetK=112`, `?magnetC=20`, `?magnetAcc=42`, `?magnetLead=0.7`, `?magnetSprint=0.45`, `?magnetOpp=0.5`, `?magnetShield=0.3`, `?magnetTurn0=60`, `?magnetTurn1=120` |
 | `?schuss=32`, `?pass=12`, `?effet=12` | max. Schusstempo, Passtempo, max. Effet (U/s) |
-| `?dach=0`, `?feld=30x15`, `?netz=2` | ohne Dachnetz (Ball kann raus → Abwurf), anderes Feld, Ballfangnetz ohne Dach (m) |
+| `?dach=0`, `?feld=20x13`, `?netz=2` | ohne Dachnetz (Ball kann raus → Abwurf), anderes Feld (Standard 24 × 15; die Kamera zieht mit: Figuren auf 24 × 15 ≈ 17 % kleiner im Bild als auf 20 × 13), Ballfangnetz ohne Dach (m) |
 | `?bande=0.7`, `?abprall=0.62`, `?rollen=0.65` | Stoßzahl Bande, Stoßzahl Rasen, Rollwiderstand Rasen |
 | `?dachhoehe=6`, `?torbreite=3`, `?torhoehe=2` | Käfig-Maße |
 | `?<Parametername>=Wert` | jeder Wert aus `src/sim/params.js`, z. B. `?keeperDist=0.8`, `?holdMax=8` |

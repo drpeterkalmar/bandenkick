@@ -80,9 +80,10 @@ function netCOR(P) {
 }
 // 5) Tor und Pfosten
 {
-  const s = shot(P, { from: [4, 0.11, 0], v: [18, 1.5, 0.3], T: 3 });
+  const x6 = P.fieldL / 2 - 6; // 6 m vor dem rechten Tor (Nacht 2c: Feld 24 × 15, vorher fest x = 4)
+  const s = shot(P, { from: [x6, 0.11, 0], v: [18, 1.5, 0.3], T: 3 });
   check('Tor erkannt (Schuss mittig)', s.ev.some((e) => e.type === 'goal') ? 1 : 0, 1, 1, '', 1);
-  const s2 = shot(P, { from: [4, 0.11, 0], v: [18, 1.2, 18 * (P.goalW / 2) / 6], T: 3 });
+  const s2 = shot(P, { from: [x6, 0.11, 0], v: [18, 1.2, 18 * (P.goalW / 2) / 6], T: 3 });
   const post = s2.ev.find((e) => e.type === 'post');
   check('Pfosten: harter Abprall', post ? 1 : 0, 1, 1, '', 1, post ? `${post.speed.toFixed(1)} m/s` : 'verfehlt');
 }

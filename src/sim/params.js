@@ -66,7 +66,8 @@ export const DEFAULTS = {
   vRest: 0.25,            // m/s: darunter kein Abprall mehr (liegt/rollt an)
 
   // ---------------- Feld: DFB-Minispielfeld (Herstellerangaben) ----------------
-  fieldL: 20, fieldW: 13, // m Kunstrasen
+  // Nacht 2c (Peter: „etwas kleinere Spieler bzw größeres Spielfeld“): 24 × 15 m statt 20 × 13 (?feld=20x13 = alt)
+  fieldL: 24, fieldW: 15, // m Kunstrasen
   boardH: 1.0,            // m Bande
   netH: 2.0,              // m Ballfangnetz über der Bande (ohne Dach); mit Dach reicht das Netz bis zum Dach
   roof: 1,                // Dachnetz an/aus (?dach=0)

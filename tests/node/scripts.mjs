@@ -73,11 +73,11 @@ export function makeScript(id, opts = {}) {
       };
       if (gate) return steer(gate.x + (opts.naive ? 0.2 : 0.4), gate.z, 0.75); // Nacht 2c: 0,4 statt 1,0 m hinter dem Tor (verpasste sonst 2 Tore)
       // alle Tore durch: aufs Tor, schießen sobald nah genug
-      if (k.shot == null && me.x > 3.8 && bd < 1.2) k.shot = g.t;
+      if (k.shot == null && me.x > 3.8 + C.ox && bd < 1.2) k.shot = g.t;
       const down = k.shot != null && g.t - k.shot < 0.45;
       if (k.shot != null && g.t - k.shot > 1.6) k.shot = null; // daneben: nochmal
       if (down) return H({ shotDown: true });
-      return steer(10, 0, 0.8);
+      return steer(g.cage.hx, 0, 0.8);
     };
     case 'elfmeter': return (g, C) => {
       perAttempt(st, C); const k = st.k;
@@ -102,13 +102,13 @@ export function makeScript(id, opts = {}) {
       if (pp && pp.to === 0) return H();
       if (g.lastTouch === 0 && C.wallTouched) {
         // Ball im Lauf angenommen: Richtung Tor dribbeln, ab ~6 m abschließen
-        if (k.shot == null && me.x > 0 && Math.hypot(b.p.x - me.x, b.p.z - me.z) < 1.0) k.shot = g.t;
+        if (k.shot == null && me.x > C.ox && Math.hypot(b.p.x - me.x, b.p.z - me.z) < 1.0) k.shot = g.t;
         if (k.shot != null) { const [sx, sz] = norm(b.p.x - me.x, b.p.z - me.z, 1); return H({ shotDown: g.t - k.shot < 0.8, mx: sx, mz: sz }); }
         const bd = Math.hypot(b.p.x - me.x, b.p.z - me.z);
-        const [sx, sz] = bd > 1.3 ? norm(b.p.x - me.x, b.p.z - me.z, 0.9) : norm(9 - me.x, -me.z * 0.7, 0.9);
+        const [sx, sz] = bd > 1.3 ? norm(b.p.x - me.x, b.p.z - me.z, 0.9) : norm(9 + C.ox - me.x, -me.z * 0.7, 0.9);
         return H({ mx: sx, mz: sz });
       }
-      const [sx, sz] = norm(5.5 - me.x, -me.z * 0.6, 0.85);
+      const [sx, sz] = norm(5.5 + C.ox - me.x, -me.z * 0.6, 0.85);
       return H({ mx: sx, mz: sz });
     };
     default: { // Tormann-Challenges: Tormann-Logik der Bots steuert den Menschen

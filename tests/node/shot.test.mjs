@@ -10,7 +10,9 @@ import { report } from './report.mjs';
 
 const rows = [];
 const check = (name, value, lo, hi, unit, target, note = '') => { const ok = value >= lo && value <= hi; rows.push({ name, value, lo, hi, unit, target, ok, note }); return ok; };
-const P = makeParams({});
+// Lage-Tabellen mit festen Koordinaten des DFB-Minispielfelds (Tor bei x = ±10): Nacht 2c läuft dieser Test auf
+// ?feld=20x13 – die Qualität q hängt nur von der Lage zum Tor ab, nicht von der Feldgröße
+const P = makeParams('feld=20x13');
 const H = (o = {}) => ({ ...EMPTY_INPUT, mx: 0, mz: 0, passDown: false, shotDown: false, ...o });
 // Spiel ohne Bots, Orange (Mannschaft 0) spielt aufs rechte Tor (x = +10); per = [Orange, Blau]
 const mk = (per = [1, 0], seed = 1) => { const g = new Game(P, seed, { match: true, perTeam: per, human: 0, bots: false }); g.rules.phase = 'play'; return g; };
@@ -157,7 +159,7 @@ function play(g, seq, stick = null, T = 3) {
   // Nacht 2c feste Banane: fast so hart wie Vollspann, Drall wächst mit dem Tempo (bis spinMax × bananeSpinMax)
   check('Angeschnitten (feste Banane): Drall bis spinMax × bananeSpinMax', Math.abs(cu.side) / 6.283, 5, P.spinMax * P.bananeSpinMax + 0.01, 'U/s', null, `${cu.tech}, ${cu.speed.toFixed(1)} m/s (${(cu.speed / vs.speed * 100).toFixed(0)} % von Vollspann)`);
   check('Angeschnitten (feste Banane): mindestens 95 % des Vollspann-Tempos', cu.speed / vs.speed, 0.95, 1.0, '', 0.97);
-  const g0 = new Game(makeParams('banane=0'), 8, { match: true, perTeam: [1, 0], human: 0, bots: false }); g0.rules.phase = 'play';
+  const g0 = new Game(makeParams('banane=0&feld=20x13'), 8, { match: true, perTeam: [1, 0], human: 0, bots: false }); g0.rules.phase = 'play';
   const p0 = setup(g0, 3, -3, toGoal(3, -3));
   const vs0 = planShot(g0, p0, { mode: 'std', power: 1 }), cu0 = planShot(g0, p0, { mode: 'var', power: 1 });
   check('?banane=0: angeschnitten langsamer wie Nacht 2b, Drall bis spinMax', cu0.speed / vs0.speed, 0.75, 0.95, '', 0.85, `${(Math.abs(cu0.side) / 6.283).toFixed(1)} U/s`);

@@ -420,7 +420,9 @@ export class Player {
       for (const o of game.players) { if (o.team === this.team) continue; const d = Math.hypot(o.x - b.p.x, o.z - b.p.z); if (d < bd) { bd = d; best = o; } }
       if (best) { const side = (best.x - this.x) * -dz + (best.z - this.z) * dx; sh = -Math.sign(side || 1) * P.magnetShield * (1.2 - bd) / 0.8; }
     }
-    const ex = fx + dx * L - dz * sh - b.p.x, ez = fz + dz * L + dx * sh - b.p.z;
+    // Zielpunkt nie in der Bande (Abschirmen an der Bande entlang würde den Ball sonst dagegen drücken)
+    const tx = clamp(fx + dx * L - dz * sh, -game.cage.hx + 0.4, game.cage.hx - 0.4), tz = clamp(fz + dz * L + dx * sh, -game.cage.hz + 0.4, game.cage.hz - 0.4);
+    const ex = tx - b.p.x, ez = tz - b.p.z;
     // Kein Tragen: längs zur Stick-Richtung zieht der Magnet nur zurück (Ball zu weit vorn bzw. schneller als der
     // Spieler) – nach vorn bringt ihn weiter der Fuß (echte Kontakte). Quer führt er ihn auf die Linie des Sticks.
     const eL = ex * dx + ez * dz, uL = ux * dx + uz * dz;
