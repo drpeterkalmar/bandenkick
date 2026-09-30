@@ -39,7 +39,8 @@ is('Regler ?hacke=150: 140° → Außenrist', passTechnique(140, 0.4, makeParams
   const g = new Game(P, 3, { match: true, perTeam: [2, 0], human: 0, bots: false });
   const [a, m] = g.players; a.place(0, 0, 0); g.ball.place(0.35, 0.11, 0); m.place(9, 0, 0);
   const c = planPass(g, a, { mode: 'var', stick: [1, 0] });
-  check('Chip (hoch): Abflugwinkel 25–45°', c.el, 25, 45, '°', null, `${c.u.toFixed(1)} m/s, Scheitel ${c.apex.toFixed(2)} m`);
+  // Nacht 2c: feste Flanke – auf 9 m flach (14–28°, ?flanke=0: 25–45°)
+  check('Pass hoch 9 m (feste Flanke): Abflugwinkel 14–28°', c.el, 14, 28, '°', null, `${c.u.toFixed(1)} m/s, Scheitel ${c.apex.toFixed(2)} m`);
   check('Chip: Scheitel unter dem Dachnetz (−0,5 m)', c.apex, 0, P.roofH - 0.5, 'm', null);
   const cs = planPass(g, a, { mode: 'var', stick: [1, 0], to: 1 });
   m.place(4.5, 0, 0);

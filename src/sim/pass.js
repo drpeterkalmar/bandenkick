@@ -4,7 +4,7 @@
 // und der echten Rollphysik (Roll-Tabelle aus ball.js, Iteration über die Ankunftszeit). Hoch = Chip mit Rückdrall,
 // Abflug 25–45° je nach Weite, Landepunkt im Laufweg, Scheitel unter dem Dachnetz.
 // Technik nach Lage: vor dem Körper Innenseite/Vorfuß, seitlich Außenrist, hinter dem Körper (Ball am Standbein) Hacke.
-import { passDist, passSpeedAt, passSpeedFor, passTimeTo, chipTime, chipApex, chipSpeedFor, bankRatio, clamp } from './kickplan.js';
+import { passDist, passSpeedAt, passSpeedFor, passTimeTo, chipTime, chipApex, chipSpeedFor, chipBack, bankRatio, clamp } from './kickplan.js';
 import { passTechnique, PASS_PROPS } from './technique.js';
 
 const DEG = Math.PI / 180;
@@ -21,6 +21,7 @@ function laneFree(game, team, ax, az, bx, bz, skip = -1) {
   return m;
 }
 
+// Hoch = Nacht 2c feste Flanke (?flanke=): bei 8 m 24°, ab 15 m 14°, 2,5 U/s Rückdrall; kurz bleibt der Chip steil.
 // Laufweg des Empfängers: läuft mit seinem Tempo weiter (höchstens ~2,2 s), bleibt 0,7 m vor der Bande
 export function runPath(cage, r0, rv, T) {
   const tt = Math.min(T, 2.2);
@@ -65,7 +66,16 @@ export function leadFlat(P, cage, b0, r0, rv, { speedMul = 1, maxSpeed = P.passM
 
 // Chip (hoher Pass mit Rückdrall): Abflug steil bei kurzen, flach bei weiten Pässen; Landepunkt = Laufweg zur
 // Landezeit (Iteration über die Chip-Tabelle); Scheitel ≥ 0,5 m unter dem Dachnetz. Gibt {T, u, el, meet, D, apex}.
-export function chipElev(P, D) { return clamp(P.chipElevMax - (P.chipElevMax - P.chipElevMin) * (D - 5) / 12, P.chipElevMin, P.chipElevMax); }
+export function chipElev(P, D) {
+  const old = clamp(P.chipElevMax - (P.chipElevMax - P.chipElevMin) * (D - 5) / 12, P.chipElevMin, P.chipElevMax);
+  const f = clamp(P.flanke ?? 0, 0, 1);
+  if (!f) return old;
+  // Nacht 2c: feste Flanke – bis 5 m steiler Chip (über den Tormann), bei flankeD m flankeElev, ab 15 m flankeMin
+  const nw = D <= 5 ? P.chipElevMax
+    : D <= P.flankeD ? P.chipElevMax + (P.flankeElev - P.chipElevMax) * (D - 5) / (P.flankeD - 5)
+      : Math.max(P.flankeMin, P.flankeElev + (P.flankeMin - P.flankeElev) * (D - P.flankeD) / Math.max(0.1, 15 - P.flankeD));
+  return old + (nw - old) * f;
+}
 export function leadChip(P, cage, b0, r0, rv, { speedMul = 1 } = {}) {
   let T = 1.0, res = null;
   const top = P.roof ? P.roofH - 0.5 : 99;
@@ -74,7 +84,7 @@ export function leadChip(P, cage, b0, r0, rv, { speedMul = 1 } = {}) {
     let D = Math.max(1.5, Math.hypot(R[0] - b0[0], R[1] - b0[1]));
     let el = chipElev(P, D), u = chipSpeedFor(P, el, D);
     while (u != null && chipApex(P, el, u) > top && el > 18) { el -= 4; u = chipSpeedFor(P, el, D); }
-    if (u == null) { el = P.chipElevMin; u = chipSpeedFor(P, el, D) ?? 24; }
+    if (u == null) { el = Math.min(P.chipElevMin, chipElev(P, 99)); u = chipSpeedFor(P, el, D) ?? 24; }
     const T2 = chipTime(P, el, u);
     res = { T: T2, u, el, meet: R, D, apex: chipApex(P, el, u) };
     if (Math.abs(T2 - T) < 0.01) break;
@@ -168,7 +178,7 @@ export function planPass(game, pl, opts = {}) {
     }
     if (!plan && chip) {
       const c = leadChip(P, cage, from, r0, rv, { speedMul: power == null ? 1 : 0.9 + 0.3 * power });
-      plan = { to: cand.id, bank: 0, target: c.meet, meet: c.meet, T: c.T, u: c.u, el: c.el, back: 5 * 2 * Math.PI, chip: true, apex: c.apex, virtual: !!cand.virtual };
+      plan = { to: cand.id, bank: 0, target: c.meet, meet: c.meet, T: c.T, u: c.u, el: c.el, back: chipBack(P), chip: true, apex: c.apex, virtual: !!cand.virtual };
     }
     if (!plan) {
       const f = leadFlat(P, cage, from, r0, rv, { speedMul: power == null ? 1 : 0.8 + 0.7 * power });
@@ -180,7 +190,7 @@ export function planPass(game, pl, opts = {}) {
     const tx = from[0] + ad[0] * D, tz = from[1] + ad[1] * D;
     if (chip) {
       const el = chipElev(P, D), u = chipSpeedFor(P, el, D) ?? 18;
-      plan = { to: -1, bank: 0, target: [tx, tz], meet: [tx, tz], T: chipTime(P, el, u), u, el, back: 5 * 2 * Math.PI, chip: true };
+      plan = { to: -1, bank: 0, target: [tx, tz], meet: [tx, tz], T: chipTime(P, el, u), u, el, back: chipBack(P), chip: true };
     } else {
       let lo = 1, hi = 24; // kommt mit ~1,8 m/s an
       for (let i = 0; i < 18; i++) { const m = (lo + hi) / 2; const t = passTimeTo(P, m, D); if (!Number.isFinite(t) || passSpeedAt(P, m, t) < 1.8) lo = m; else hi = m; }

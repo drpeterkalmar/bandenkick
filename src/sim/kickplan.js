@@ -84,9 +84,11 @@ export function passTimeTo(P, u, D) {
 }
 
 // ---------------- Chip-Tabelle (hoher Pass, Rückdrall) ----------------
-const CE0 = 20, CDE = 5, CNE = 7;             // Abflugwinkel 20 … 50°
-const CU0 = 3, CDU = 0.5, CNU = 43;           // Tempo 3 … 24 m/s
-export const CHIP_BACK = 5 * 2 * Math.PI;     // 5 U/s Rückdrall (Chip/Lupfer)
+const CE0 = 10, CDE = 5, CNE = 9;             // Abflugwinkel 10 … 50° (Nacht 2c: Flanken ab 15°)
+const CU0 = 3, CDU = 0.5, CNU = 51;           // Tempo 3 … 28 m/s
+export const CHIP_BACK = 5 * 2 * Math.PI;     // 5 U/s Rückdrall (Chip/Lupfer, Nacht 2b)
+// Rückdrall des hohen Passes (rad/s): Nacht 2c mit ?flanke= gemischt zwischen 5 U/s und flankeBack
+export const chipBack = (P) => (5 + ((P.flankeBack ?? 5) - 5) * clamp(P.flanke ?? 0, 0, 1)) * 2 * Math.PI;
 export function chipTable(P) {
   const c = planP(P);
   if (c.chip) return c.chip;
@@ -95,13 +97,15 @@ export function chipTable(P) {
   for (let e = 0; e < CNE; e++) for (let i = 0; i < CNU; i++) {
     const u = CU0 + i * CDU, el = (CE0 + e * CDE) * DEG;
     b.place(0, b.r, 0);
-    setKick(b, 1, 0, u, el, CHIP_BACK, 0);
+    setKick(b, 1, 0, u, el, chipBack(P), 0);
     let t = 0, h = 0, up = true;
     for (let k = 0; k < 900; k++) {
       b.step(1 / 240, EMPTY_CAGE); t += 1 / 240;
       h = Math.max(h, b.p.y);
       if (b.v.y < 0) up = false;
-      if (!up && b.p.y <= b.r + 1e-4) break;
+      // Landung = erster Bodenkontakt: Bodenhöhe erreicht oder schon abgeprallt (Nacht 2c: flache Flanken springen ab,
+      // bevor sie genau Bodenhöhe haben – vorher zählte dann erst der zweite Aufsetzer)
+      if (!up && (b.p.y <= b.r + 1e-4 || (b.v.y > 0 && b.p.y < 0.3))) break;
     }
     R[e * CNU + i] = b.p.x; T[e * CNU + i] = t; H[e * CNU + i] = h;
   }

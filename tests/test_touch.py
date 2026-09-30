@@ -18,7 +18,7 @@ with Server() as srv, sync_playwright() as pw:
     for i, form in enumerate(['hoch', 'quer']):
         if i: s.new_context(form)
         print(form)
-        s.open('?nosw&solo=1&seed=3&q=1&nohelp&tipp=0.45&doppel=0.6')  # headless: CDP-Touch braucht je Ereignis 50–250 ms, Tipp-Grenzen großzügiger (am Handy 0,2 / 0,11 s)
+        s.open('?nosw&solo=1&seed=3&q=1&nohelp&tipp=0.6&doppel=0.7')  # headless: CDP-Touch braucht je Ereignis 50–250 ms, Tipp-Grenzen großzügiger (am Handy 0,2 / 0,11 s)
         s.tap('[data-act="trainmenu"]'); s.tap('[data-act="free"]')
         s.frames(5)
         cdp = s.ctx.new_cdp_session(s.pg)

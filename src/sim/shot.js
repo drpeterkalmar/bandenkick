@@ -162,8 +162,11 @@ export function planShot(game, pl, opts = {}) {
     noiseDeg = (0.5 + 1.1 * power * power) * noiseFactor(q);
   } else {
     const aussen = tech === 'aussenrist';
-    speed = (P.shotMin + (P.shotMax * P.curveSpeed - P.shotMin) * power) * speedFactor(q);
-    side = curveSign(curveLeft) * P.spinMax * 2 * Math.PI * Math.min(1, speed / 25) * (aussen ? P.aussenSpin : 1) * (0.7 + 0.3 * q);
+    // Nacht 2c: feste Banane (?banane=): Tempo × bananeSpeed statt curveSpeed, Drall wächst über 25 m/s weiter
+    const bn = clamp(P.banane ?? 0, 0, 1), cs = P.curveSpeed + (P.bananeSpeed - P.curveSpeed) * bn;
+    speed = (P.shotMin + (P.shotMax * cs - P.shotMin) * power) * speedFactor(q);
+    const spinK = Math.min(1, speed / 25) + (Math.min(P.bananeSpinMax, speed / 25) - Math.min(1, speed / 25)) * bn;
+    side = curveSign(curveLeft) * P.spinMax * 2 * Math.PI * spinK * (aussen ? P.aussenSpin : 1) * (0.7 + 0.3 * q);
     noiseDeg = (0.7 + 1.1 * power * power) * noiseFactor(q) * (aussen ? P.aussenNoise : 1);
   }
   noiseDeg *= opts.noiseMul ?? 1;

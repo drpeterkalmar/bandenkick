@@ -154,14 +154,26 @@ export const DEFAULTS = {
   hackeNear: 0.6,         // m Ball ↔ Körpermitte für einen Hackenpass
   passMaxSpeed: 22,       // m/s härtester Pass
   passFree: 7,            // m Pass in den freien Raum (Tipp, kein Mitspieler im Kegel)
-  chipElevMin: 25,        // ° Chip/Lupfer: flach bei weiten …                                       [?chipmin=]
-  chipElevMax: 45,        // ° … steil bei kurzen Pässen                                             [?chipmax=]
+  chipElevMin: 25,        // ° Chip/Lupfer: flach bei weiten …   (Nacht 2b, gilt mit ?flanke=0)      [?chipmin=]
+  chipElevMax: 45,        // ° … steil bei kurzen Pässen (auch Nacht 2c: kurzer Chip über den Tormann) [?chipmax=]
+  // Nacht 2c (Peter: „festere … flanken“): Pass hoch über Distanz flacher und schneller, weniger Rückdrall.
+  // ?flanke=0 … 1 mischt alt (25–45°, 5 U/s) und neu; bis 5 m bleibt der Chip steil (chipElevMax)
+  flanke: 1,              // 1 = feste Flanke, 0 = hoher Chip wie Nacht 2b                            [?flanke=]
+  flankeElev: 24,         // ° Abflug bei flankeD …
+  flankeD: 8,             // m …
+  flankeMin: 14,          // ° … ab 15 m
+  flankeBack: 2.5,        // U/s Rückdrall der Flanke (Nacht 2b: 5)
   // Schuss: Ziel automatisch (Ecke nach freiem Winkel am Tormann vorbei), Qualität q aus der Lage
   schusshilfe: 1,         // Nachsicht der Lage-Bewertung: q_eff = q^(1/Wert); 2 = nachsichtig, 0,5 = streng [?schusshilfe=]
   shotZ: 1.0,             // m Ecke: seitlich von der Tormitte (Pfosten innen bei 1,46 m)
   shotLow: 0.35,          // m Ecke flach (Ballmitte) …
   shotHigh: 1.45,         // m … bzw. hoch (Latte innen bei 1,96 m)
-  curveSpeed: 0.85,       // angeschnitten: Tempo × 0,85 gegenüber Vollspann
+  curveSpeed: 0.85,       // angeschnitten: Tempo × 0,85 gegenüber Vollspann (Nacht 2b, gilt mit ?banane=0)
+  // Nacht 2c (Peter: „festere bananenschüsse“): angeschnitten fast so hart wie Vollspann, Drall wächst mit dem Tempo
+  banane: 1,              // 1 = feste Banane, 0 = wie Nacht 2b (Zwischenwerte mischen)            [?banane=]
+  bananeSpeed: 1.0,       // angeschnitten: Grundtempo wie Vollspann (die Lage-Qualität q kostet etwas mehr)
+  bananeSpin: 25,         // m/s: bis zu diesem Tempo wächst der Drall mit (Nacht 2b: bis 25 m/s, dann fest) …
+  bananeSpinMax: 1.2,     // … höchstens × 1,2
   aussenSpin: 0.75,       // Außenrist: Drall × 0,75 …
   aussenNoise: 1.35,      // … und Streuung × 1,35
   // Luftbälle: Kopfball, Volley, Dropkick, Seitfallzieher, Fallrückzieher, Flugkopfball

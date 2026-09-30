@@ -42,7 +42,7 @@ Als App installierbar (PWA), läuft offline.
 | Geste | Pass-Knopf | Schuss-Knopf |
 |---|---|---|
 | **tippen** | **flacher Pass** in den Laufweg, Stärke automatisch (Ring →) | **Vollspann** (Ring ⚡), Stärke automatisch: nah platziert, weit hart; mittig getroffen → Flatterball |
-| **doppeltippen** (2. Druck höchstens 0,11 s nach dem Loslassen) | **hoch** – Flanke/Chip mit Rückdrall (Ring ⌒) | **angeschnitten** (Ring ↪/↩): Innenrist oder Außenrist, je nach Lage des Balls zum Fuß |
+| **doppeltippen** (2. Druck höchstens 0,11 s nach dem Loslassen) | **hoch** – feste Flanke (weit flach 14–24°, kurz steiler Chip bis 45°) (Ring ⌒) | **angeschnitten** – feste Banane, fast so hart wie Vollspann (Ring ↪/↩): Innenrist oder Außenrist, je nach Lage des Balls zum Fuß |
 | **Ball in der Luft** + Schuss tippen | – | automatisch **Volley, Dropkick, Kopfball (auch mit Sprung), Flugkopfball, Seitfallzieher, Fallrückzieher** – je nach Höhe, Winkel und Zeit bis zum Ball. Den besten Moment wählt die Technik-Hilfe; zu spät gedrückt kostet höchstens 15 % Timing-Wert. Nach Seitfall-/Fallrückzieher ~0,8 s am Boden |
 
 - **Kein Aufladen, kein Timing:** Der erste Druck merkt den Kick sofort vor (der Spieler läuft schon zum Ball und legt
@@ -131,7 +131,9 @@ Ball mit (Sohle/Außenseite). `?zack=0` = altes Gefühl aus Nacht 1 zum Vergleic
 | `?timinghilfe=0`, `?kickLunge=0.2`, `?tippPuffer=1.5` | strenges Luftball-Timing; Extra-Reichweite (m) für einen getippten Kick; so lange (s) bleibt ein Tipp vorgemerkt |
 | `?treffpunkt=1` | Profi-Steuerung mit Treffpunkt statt Gesten (altes Modell) |
 | `?kegel=35`, `?innen=60`, `?hacke=120` | Pass: Zielkegel um den Stick (°), bis zu welchem Winkel Innenseite, ab welchem Hacke |
-| `?chipmin=25`, `?chipmax=45` | Chip-Abflugwinkel weit/kurz (°) |
+| `?chipmin=25`, `?chipmax=45` | Chip-Abflugwinkel weit/kurz (°) – `chipmin` gilt mit `?flanke=0`, `chipmax` = kurzer Chip |
+| `?flanke=0` … `1` | Pass hoch: 1 = feste Flanke (Nacht 2c: bei 8 m 24°, ab 15 m 14°, 2,5 U/s Rückdrall, ≈ 30 % kürzere Flugzeit; bis 5 m steiler Chip), 0 = hoher Chip 25–45° wie Nacht 2b. Feinregler `?flankeElev=24`, `?flankeD=8`, `?flankeMin=14`, `?flankeBack=2.5` |
+| `?banane=0` … `1` | Angeschnittener Schuss: 1 = feste Banane (Nacht 2c: Grundtempo wie Vollspann, ≥ 95 % im Spiel, Drall wächst mit dem Tempo bis 12 U/s), 0 = 85 % Tempo wie Nacht 2b |
 | `?schusshilfe=1` | Schuss-Hilfe: > 1 = gute Lage zählt mehr (z. B. 1.5 leichter), < 1 = strenger |
 | `?luft=0` | keine automatischen Luftball-Techniken (Volley, Kopfball …) |
 | `?zeitlupe=0` | keine Zeitlupe bei Luftbällen |
@@ -180,6 +182,7 @@ node tests/node/gesture.test.mjs    # Lade-Gesten (?laden=1: halten, tipp + halt
 node tests/node/tap.test.mjs        # Tipp-Gesten (Standard): Parser, 1000 Zufalls-Gesten, Tipp → Ballkontakt, Tipp/Doppeltipp im Spiel
 node tests/node/technique.test.mjs  # Technik-Tabellen Pass/Schuss/Luftball
 node tests/node/pass.test.mjs       # 500 Pass-Situationen: Ball erreicht den Laufweg (flach/hoch, p50/p95)
+node tests/node/curve.test.mjs      # Banane/Flanke vorher/nachher: Tempo, Flugzeit, Scheitel, Kurve (Tabelle), kurzer Chip steil
 node tests/node/shot.test.mjs       # Schussqualität q monoton, Trefferquote gute Lage, schlechte Lage langsamer/zentraler
 node tests/node/air.test.mjs        # Ballmaschinen-Serie: jede Luftball-Technik gewählt und trifft, Timing zählt
 node tests/node/challenge.test.mjs  # alle 9 Übungen headless mit Skript-Spieler: Sterne, untätig endet

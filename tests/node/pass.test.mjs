@@ -71,7 +71,8 @@ for (const chip of [false, true]) {
     if (r.got && !r.stop) got++;
     if (r.stop) stop++;
     if (r.to === 1) toR++;
-    if (chip ? r.el >= 24 && r.el <= 46 : r.el < 3) elOk++;
+    // Nacht 2c: feste Flanke – weit 14°, kurz bis 45° (?flanke=0: 25–45°)
+    if (chip ? r.el >= Math.min(P.chipElevMin, P.flanke ? P.flankeMin : 99) - 1 && r.el <= P.chipElevMax + 1 : r.el < 3) elOk++;
     errs.push(r.err); tech[r.tech] = (tech[r.tech] || 0) + 1;
   }
   errs.sort((a, b) => a - b);
@@ -79,7 +80,7 @@ for (const chip of [false, true]) {
   check(`Pass ${nm}: Empfänger erreicht den Ball ohne Stehenbleiben`, got / N * 100, chip ? 75 : 90, 100, '%', chip ? 75 : 90,
     `${N} Lagen; ${stop}× unter 1 m/s; Fehlerabstand p50 ${pct(errs, 0.5).toFixed(2)} m, p95 ${pct(errs, 0.95).toFixed(2)} m; Techniken ${JSON.stringify(tech)}`);
   check(`Pass ${nm}: richtiger Empfänger gewählt (Stick ±9°)`, toR / N * 100, 99, 100, '%', 100);
-  check(`Pass ${nm}: Abflugwinkel ${chip ? '25–45°' : 'flach (1,5°)'}`, elOk / N * 100, 99, 100, '%', 100);
+  check(`Pass ${nm}: Abflugwinkel ${chip ? `${P.flanke ? P.flankeMin : P.chipElevMin}–${P.chipElevMax}° (Flanke weit flach, Chip kurz steil)` : 'flach (1,5°)'}`, elOk / N * 100, 99, 100, '%', 100);
   rows[rows.length - 3].p50 = pct(errs, 0.5); rows[rows.length - 3].p95 = pct(errs, 0.95);
 }
 
@@ -140,7 +141,7 @@ for (const chip of [false, true]) {
   const [a, m] = g.players; a.place(0, 0, 0); g.ball.place(0.35, 0.11, 0); m.place(8, 0, 0);
   let tk = -1;
   for (let i = 0; i < 1 / DT && tk < 0; i++) { const t = i * DT; if (g.step([H({ passDown: t < 0.06 }), EMPTY_INPUT]).some((e) => e.type === 'kick')) tk = g.t; }
-  check('Einzeltipp mit Ball am Fuß: Pass nach dem Fenster', tk, 0.06 + P.doppel, 0.06 + P.doppel + 3 * DT, 's', 0.06 + P.doppel, 'Tipp 0,06 s + Fenster 0,25 s');
+  check('Einzeltipp mit Ball am Fuß: Pass nach dem Fenster', tk, 0.06 + P.doppel, 0.06 + P.doppel + 3 * DT, 's', 0.06 + P.doppel, `Tipp 0,06 s + Fenster ${P.doppel} s`);
 }
 
 const ok = report('Pass in den Laufweg (flach/hoch), Kegel, Bande', rows, 'pass');
