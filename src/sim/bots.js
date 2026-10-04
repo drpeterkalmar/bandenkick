@@ -32,8 +32,8 @@ export const LEVELS = {
 //   reach      Anteil der Hand-Reichweite im Stand (P.catchReach)
 export const KEEPER_LEVELS = {
   1: { react: 0.2, catchSkill: 0.3, fumble: 0.35, dive: 0.6, run: 0.8, move: 0.86, diveReach: 0.75, catchRel: 15, tip: 0.5, posErr: 0.3, reach: 0.74 },
-  2: { react: 0.1, catchSkill: 0.6, fumble: 0.15, dive: 0.8, run: 0.88, move: 0.78, diveReach: 0.85, catchRel: 17, tip: 0.33, posErr: 0.28, reach: 0.85 },
-  3: { react: 0.07, catchSkill: 0.85, fumble: 0.06, dive: 0.95, run: 0.95, move: 0.8, diveReach: 0.95, catchRel: 22, tip: 0.15, posErr: 0.12, reach: 0.97 },
+  2: { react: 0.08, catchSkill: 0.6, fumble: 0.15, dive: 0.8, run: 0.88, move: 0.78, diveReach: 0.85, catchRel: 17, tip: 0.33, posErr: 0.28, reach: 0.85 },
+  3: { react: 0.06, catchSkill: 0.85, fumble: 0.06, dive: 0.95, run: 0.95, move: 0.8, diveReach: 0.95, catchRel: 22, tip: 0.15, posErr: 0.12, reach: 0.97 },
 };
 // Auto-Torwart des Menschen (Nacht 2c: Fangen und Hechten ohne Knöpfe) = Tormann der alten Stufe 2 (Nacht 2b)
 export const HUMAN_KEEPER = { react: 0.1, catchSkill: 0.8, fumble: 0.12, dive: 0.9, run: 0.88, move: 0.836, diveReach: 1, catchRel: null, tip: 0, posErr: 0, reach: 1 };
@@ -328,6 +328,17 @@ export class Bots {
   carrier(pl, br, inp, L) {
     const g = this.g, b = g.ball;
     const [fx, fz] = pl.footPoint();
+    // Nacht 2d: Ball an der Bande im Gedränge festgefahren (langsam, ≤ 0,8 m von der Bande, Gegner ≤ 1,2 m) – mit dem
+    // stärkeren Magnet hielt der Ballführer ihn dort bis zu 8 s fest → nach 1,5 s mit einem Lupfer zur Mitte lösen
+    // (Ball springt dabei zwischen Fuß und Bande hin und her → gemessen wird, ob er in 0,6 m um einen Punkt bleibt)
+    const nearBoard = Math.abs(b.p.x) > g.cage.hx - 0.8 || Math.abs(b.p.z) > g.cage.hz - 0.8;
+    const st = br.stall;
+    if (!nearBoard || this.space(pl) > 1.2 || pl.pending || !st || Math.hypot(b.p.x - st.x, b.p.z - st.z) > 0.6) br.stall = { x: b.p.x, z: b.p.z, t: g.t };
+    else if (g.t - st.t > 1.5) {
+      br.stall = null;
+      pl.kickAt({ kind: 'clear', target: [b.p.x * 0.45, b.p.z * 0.3], technique: 'vollspann', speed: 11, elev: 28, noise: 1.5 });
+      this.stats.clears++;
+    }
     const atFeet = Math.hypot(b.p.x - fx, b.p.z - fz) < 1.0 && b.p.y < 0.5;
     if (g.t >= br.next && !pl.pending && atFeet) { br.next = g.t + L.think; this.decide(pl, br, L, false); }
     if (pl.pending) { this.approach(inp, pl); return; }

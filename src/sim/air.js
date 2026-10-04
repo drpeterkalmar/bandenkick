@@ -51,8 +51,9 @@ export function planAir(game, pl, { tPress = game.t, purpose = 'shot', minScore 
     for (const tech of AIR_KEYS) {
       if (sc[tech] < 0.12) continue;
       const T = AIR_TECH[tech];
-      // Körperposition: auf der Seite, von der der Ball kommt, Abstand je Technik
-      const bx = s.x + sx * T.dist, bz = s.z + sz * T.dist;
+      // Körperposition und Blick je Technik (airFrame), Abstand zum Treffpunkt je Technik
+      const fr = airFrame(tech, sx, sz, gdx / gl, gdz / gl, T.dist);
+      const bx = s.x + fr.ox, bz = s.z + fr.oz;
       const d = Math.hypot(bx - pl.x, bz - pl.z);
       const va = ((bx - pl.x) * pl.vx + (bz - pl.z) * pl.vz) / (d || 1);
       const reach = pl.travel(va, P.vSprint, s.t) + T.extra + 0.25;
@@ -67,11 +68,32 @@ export function planAir(game, pl, { tPress = game.t, purpose = 'shot', minScore 
       const margin = clamp(1 - d / (reach + 0.01), 0, 1);
       if (sc[tech] > maxScore) maxScore = sc[tech];
       const total = sc[tech] * (0.35 + 0.65 * tq) * (0.75 + 0.25 * margin) * (1 - 0.12 * s.t);
-      if (!best || total > best.total) best = { tech, total, score: sc[tech], tq, t: s.t, tc: game.t + s.t, bx, bz, cx: s.x, cy: h, cz: s.z, sx, sz, theta, h, bounced, lead, vin: Math.hypot(s.vx, s.vy, s.vz), purpose };
+      if (!best || total > best.total) best = { tech, total, score: sc[tech], tq, t: s.t, tc: game.t + s.t, bx, bz, cx: s.x, cy: h, cz: s.z, sx, sz, fx: fr.fx, fz: fr.fz, foot: fr.foot, theta, h, bounced, lead, vin: Math.hypot(s.vx, s.vy, s.vz), purpose, goalX: attackGoalX(game, pl) };
     }
   }
   if (best) best.maxScore = maxScore;
   return best && best.total >= minScore ? best : null;
+}
+
+// Ausrichtung je Technik (Nacht 2d, Peter: „Fallrückzieher in die richtige Richtung“). Bis Nacht 2c schaute jeder Spieler
+// in Flugrichtung des Balls – mit dem Rücken zum Ball –, der Körper stand dabei auf der Seite, von der der Ball kommt.
+// s = Richtung, aus der der Ball kommt; g = Richtung Ziel (Tormitte); d = Abstand Körper ↔ Treffpunkt (AIR_TECH.dist).
+// → Blick f, Körper = Treffpunkt + (ox, oz), Schussbein foot (+1 rechts, −1 links; 0 = egal)
+//  - Fallrückzieher: Blick zum Ball, Rücken zum Tor, Treffpunkt über/hinter dem Kopf (Körper auf der Ballseite);
+//    er fällt rückwärts, also mit dem Kopf zum Tor
+//  - Seitfallzieher: Blick zum Ball, Tor seitlich; Treffpunkt neben dem Körper zur Torseite, Schussbein auf der Torseite
+//  - Volley, Dropkick, Kopfball, Flugkopfball: Blick zwischen Ball und Tor (zum Ball hin), Treffpunkt vor dem Körper bzw.
+//    vor dem Kopf (Flugkopfball: Körper 0,95 m dahinter, er hechtet hinein)
+export function airFrame(tech, sx, sz, gx, gz, d) {
+  const norm = (x, z, fx, fz) => { const l = Math.hypot(x, z); return l > 0.2 ? [x / l, z / l] : [fx, fz]; };
+  let f, ox, oz, foot = 0;
+  if (tech === 'fallrueck') { f = [sx, sz]; ox = sx * d; oz = sz * d; }
+  else if (tech === 'seitfall') {
+    f = [sx, sz]; ox = -gx * d; oz = -gz * d;
+    foot = -gx * Math.sin(Math.atan2(sz, sx)) + gz * Math.cos(Math.atan2(sz, sx)) > 0 ? -1 : 1; // Tor links → linkes Bein
+  } else f = norm(sx + gx, sz + gz, sx, sz); // Flugkopfball: hechtet so zum Ball hin, dass er ihn Richtung Tor nickt
+  if (!ox && !oz) { ox = -f[0] * d; oz = -f[1] * d; }
+  return { fx: f[0], fz: f[1], ox, oz, foot };
 }
 
 // Timing-Hilfe (Nacht 2c, Mensch per Tipp, Regler ?timinghilfe=0…1): der Druck merkt den Luftball nur vor, die
@@ -105,6 +127,7 @@ export function stepAir(pl, dt, game, want, sx, sz) {
       if (a.tech === 'kopf') { const jh = Math.max(0, a.h - P.headH); pl.jumpV = jh > 0.02 ? Math.sqrt(2 * P.g * jh) : 0; }
       else if (a.tech === 'seitfall' || a.tech === 'fallrueck') pl.jumpV = 2.6;
       else if (a.tech === 'flugkopf') pl.jumpV = 1.8;
+      if (a.foot) pl.kickFoot = a.foot; // Seitfallzieher: Schussbein auf der Torseite (Pose kippt zur anderen Seite)
       game.events.push({ type: 'airstart', tech: a.tech, player: pl.id, x: pl.x, z: pl.z });
     }
   }
@@ -121,8 +144,8 @@ export function stepAir(pl, dt, game, want, sx, sz) {
   const lx = game.cage.hx - P.bodyR, lz = game.cage.hz - P.bodyR;
   pl.x = clamp(pl.x, -lx, lx); pl.z = clamp(pl.z, -lz, lz);
   pl.speed = Math.hypot(pl.vx, pl.vz);
-  // Blick: zum Ball (von dort kommt er); Fallrückzieher mit dem Rücken zum Tor, Seitfall seitlich
-  const fAng = Math.atan2(-a.sz, -a.sx);
+  // Blick je Technik (airFrame): Fallrückzieher zum Ball mit dem Rücken zum Tor, Seitfall seitlich, sonst zwischen Ball und Tor
+  const fAng = Math.atan2(a.fz, a.fx);
   let df = fAng - pl.face; while (df > Math.PI) df -= 2 * Math.PI; while (df < -Math.PI) df += 2 * Math.PI;
   pl.face += clamp(df, -P.turnCap * dt, P.turnCap * dt);
   // Treffpunkt

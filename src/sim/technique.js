@@ -60,11 +60,21 @@ export const AIR_TECH = {
   volley: { h: [0.35, 0.5, 0.85, 1.05], ang: [[0, 1], [100, 1], [150, 0.15], [180, 0.1]], prior: 1.0, dist: 0.5, extra: 0.25, lead: [0.16, 0.5] },
   dropkick: { h: [0.12, 0.16, 0.42, 0.56], ang: [[0, 1], [100, 1], [150, 0.15], [180, 0.1]], prior: 1.05, dist: 0.45, extra: 0.2, lead: [0.14, 0.45], bounce: true },
   seitfall: { h: [0.8, 1.0, 1.35, 1.55], ang: [[0, 0.15], [40, 0.35], [60, 1], [130, 1], [160, 0.3], [180, 0.3]], prior: 0.92, dist: 0.55, extra: 0.35, lead: [0.22, 0.6] },
-  fallrueck: { h: [1.05, 1.2, 1.75, 1.95], ang: [[0, 0.1], [110, 0.1], [140, 1], [180, 1]], prior: 0.9, dist: 0.25, extra: 0.15, lead: [0.28, 0.65] },
+  // Nacht 2d: dist 0,5 statt 0,25 – der Treffpunkt liegt über dem Kopf am Fuß, nicht an der Hüfte
+  fallrueck: { h: [1.05, 1.2, 1.75, 1.95], ang: [[0, 0.1], [110, 0.1], [140, 1], [180, 1]], prior: 0.9, dist: 0.5, extra: 0.15, lead: [0.28, 0.65] },
   kopf: { h: [1.45, 1.6, 2.35, 2.55], ang: [[0, 1], [110, 1], [150, 0.2], [180, 0.15]], prior: 1.0, dist: 0.22, extra: 0.15, lead: [0.18, 0.6] },
   flugkopf: { h: [0.5, 0.6, 0.9, 1.0], ang: [[0, 0.7], [30, 1], [125, 1], [150, 0.1], [180, 0.1]], prior: 0.72, dist: 0.95, extra: 1.0, lead: [0.24, 0.6] },
 };
 export const AIR_KEYS = Object.keys(AIR_TECH);
+// Körperhaltung am Treffpunkt (Grafik: render/avatars.js techPose; Tests prüfen damit die Fallrichtung). pitch in rad:
+// + = vorn über, − = rückwärts (Fallrückzieher: Kopf nach hinten, also zum Tor), roll: seitlich (× Seite des Schussbeins)
+export const AIR_POSE = {
+  // Nacht 2d: flach in der Luft (Kopf leicht unten, zum Tor), Hüfte hipBelow m unter dem Ball, das Schussbein schwingt über
+  // den Kopf zum Ball (Nacht 2c: pitch −2,3 fast kopfüber, Ball an der Hüfte)
+  fallrueck: { pitch: -1.75, roll: 0, hipBelow: 0.5 },
+  seitfall: { pitch: -0.2, roll: 1.35, drop: 0.1 },
+  flugkopf: { pitch: 1.4, roll: 0, drop: -0.35 },
+};
 
 function interp(tab, x) {
   if (x <= tab[0][0]) return tab[0][1];

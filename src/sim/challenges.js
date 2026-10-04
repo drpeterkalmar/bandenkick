@@ -164,7 +164,7 @@ export const VOLLEY_STATIONS = [
   { want: 'volley', me: [4.6, -0.8], face: 'ball', mach: [7.4, 6.0], hit: [0.55, 0.7], v: 12 },
   { want: 'kopf', me: [5.6, -0.5], face: 'ball', mach: [7.8, 6.0], hit: [0.22, 2.2], v: 12.5 },
   { want: 'dropkick', me: [4.2, 0.4], face: 'ball', mach: [8.6, 4.6], hit: [1.1, 0.2], v: 10.5, bounce: true },
-  { want: 'flugkopf', me: [4.6, 0.2], face: 'ball', mach: [7.6, -6.0], hit: [0.2, 0.75, 1.75], v: 13 },
+  { want: 'flugkopf', me: [4.6, 0.2], face: 'ball', mach: [7.6, -6.0], hit: [0.2, 0.75, 2.2], v: 13 },
   { want: 'seitfall', me: [5.2, -0.6], face: 'ball', mach: [7.6, -6.0], hit: [0.55, 1.25], v: 11.5 },
   { want: 'fallrueck', me: [6.0, -0.3], face: 'machine', mach: [-2.0, -0.2], hit: [0.25, 1.6], v: 11.5 },
 ];

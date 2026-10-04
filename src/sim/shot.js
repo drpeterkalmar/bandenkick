@@ -8,10 +8,12 @@ import { aimAt, spinOf, clamp } from './kickplan.js';
 import { shotTechnique, curveSign } from './technique.js';
 
 // Tor, auf das der Spieler schießt: im Spiel/Challenge nach Mannschaft (0 → rechts), im freien Training das Tor in
-// Blickrichtung
+// Blickrichtung – beim Luftball das Tor aus dem Plan (beim Drücken; Nacht 2d: der Fallrückzieher schaut jetzt richtig
+// vom Tor weg, vorher traf das freie Training das Tor nur wegen der verkehrten Blickrichtung)
 export function attackGoalX(game, pl) {
   const hx = game.cage.hx;
   if (game.match) return pl.team === 0 ? hx : -hx;
+  if (pl.air && pl.air.goalX != null) return pl.air.goalX;
   return Math.cos(pl.face) >= 0 ? hx : -hx;
 }
 

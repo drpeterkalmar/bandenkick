@@ -8,6 +8,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
+import { AIR_POSE } from '../sim/technique.js';
 
 export const TEAM_COLORS = [0xff6a13, 0x1f6fff];   // Leibchen: Orange / Blau (auch farbfehlsichtig gut trennbar)
 export const TEAM_NAMES = ['Orange', 'Blau'];
@@ -345,9 +346,12 @@ function techPose(pl, t) {
   if (a && a.go) {
     const u = ease((t - a.t0) / Math.max(0.05, a.tc - a.t0)); // 0 Absprung … 1 Treffpunkt
     switch (a.tech) {
-      case 'fallrueck': return { pitch: -2.3 * u, roll: 0, drop: 0.25 * u, legs: true, thigh: -0.6 - 2.2 * u, thigh2: -0.6 * u, calf: 0.3, arms: 0.9 * u };
-      case 'seitfall': return { pitch: -0.2 * u, roll: -side * 1.35 * u, drop: 0.1 * u, legs: true, thigh: -0.5 - 1.3 * u, thigh2: -0.3 * u, arms: 0.7 * u };
-      case 'flugkopf': return { pitch: 1.4 * u, roll: 0, drop: -0.35 * u, legs: true, thigh: 0.35 * u, thigh2: 0.35 * u, arms: -0.4 * u, nod: -0.3 * u };
+      case 'fallrueck': { // Hüfte so tief, dass der Fuß des über den Kopf schwingenden Beins den Ball trifft
+        const A = AIR_POSE.fallrueck, drop = (a.cy ?? 1.4) - A.hipBelow - 0.95 - (pl.jumpY || 0);
+        return { pitch: A.pitch * u, roll: 0, drop: drop * u, legs: true, thigh: -2.12 * u, thigh2: -0.6 * u, calf: 0.1, arms: 0.9 * u };
+      }
+      case 'seitfall': { const A = AIR_POSE.seitfall; return { pitch: A.pitch * u, roll: -side * A.roll * u, drop: A.drop * u, legs: true, thigh: -0.5 - 1.3 * u, thigh2: -0.3 * u, arms: 0.7 * u }; }
+      case 'flugkopf': { const A = AIR_POSE.flugkopf; return { pitch: A.pitch * u, roll: 0, drop: A.drop * u, legs: true, thigh: 0.35 * u, thigh2: 0.35 * u, arms: -0.4 * u, nod: -0.3 * u }; }
       case 'kopf': return { pitch: -0.25 * (1 - u) + 0.35 * u, roll: 0, drop: 0, legs: true, thigh: -0.3 * u, arms: 0.8 * (1 - u) + 0.3, nod: 0.45 * u };
       default: return { pitch: -0.3 * u, roll: -side * 0.15 * u, drop: -0.05 * u, legs: true, thigh: 0.4 - 1.7 * u, calf: 0.9 * (1 - u), arms: 0.5 * u }; // Volley/Dropkick: ausholen, durchziehen
     }

@@ -6,6 +6,7 @@ import { makeParams } from '../../src/sim/params.js';
 import { Game, DT } from '../../src/sim/step.js';
 import { EMPTY_INPUT } from '../../src/sim/player.js';
 import { planAir } from '../../src/sim/air.js';
+import { AIR_POSE } from '../../src/sim/technique.js';
 import { playChallenge, makeScript } from './scripts.mjs';
 import { report } from './report.mjs';
 
@@ -106,6 +107,70 @@ const avg = (a, f) => a.reduce((s, x) => s + f(x), 0) / Math.max(1, a.length);
     if (t0 != null && !me.air) cancel = g.t - t0;
   }
   check('Deutliche Gegen-Eingabe bricht den Luftball ab', cancel ?? 9, 0, 0.36, 's', 0.3, 'Stick weg vom Anlaufpunkt');
+}
+
+// 5) Nacht 2d (Peter: „Fallrückzieher in die richtige Richtung“): Blick und Fallrichtung je Technik beim Kontakt.
+//    g = Richtung Treffpunkt → Tormitte, s = Richtung, aus der der Ball kommt, f = Blick
+{
+  const by = {};
+  for (let seed = 1; seed <= 8; seed++) {
+    let cur = null;
+    playChallenge(Game, P, 'volley', { seed, onEvent: (e, g, C) => {
+      const me = g.players[0];
+      if (e.type === 'airstart' && e.player === 0 && me.air) cur = { tech: e.tech, sx: me.air.sx, sz: me.air.sz };
+      if (e.type === 'air' && e.player === 0 && cur) {
+        const gx = g.cage.hx - e.x, gz = -e.z, gl = Math.hypot(gx, gz), fx = Math.cos(me.face), fz = Math.sin(me.face);
+        const b = g.ball, bl = Math.hypot(b.v.x, b.v.z) || 1;
+        const r = by[e.tech] || (by[e.tech] = { n: 0, fg: 0, fs: 0, behind: 0, toGoal: 0, hmin: 9, onTarget: 0 });
+        r.n++; r.fg += (fx * gx + fz * gz) / gl; r.fs += fx * cur.sx + fz * cur.sz;
+        r.behind += (e.x - me.x) * fx + (e.z - me.z) * fz; r.hmin = Math.min(r.hmin, e.y);
+        r.toGoal += (b.v.x * gx + b.v.z * gz) / (bl * gl);
+        const tl = (g.cage.hx - e.x) / (b.v.x || 1e-6), zl = e.z + b.v.z * tl; if (b.v.x > 0 && Math.abs(zl) < g.cage.gw + 0.3) r.onTarget++;
+        cur = null;
+      }
+    } });
+  }
+  const m = (t, k) => (by[t] ? by[t][k] / by[t].n : NaN);
+  const fr = by.fallrueck || { n: 0 };
+  check('Fallrückzieher: Blick beim Kontakt ↔ Richtung Tor (Rücken zum Tor)', m('fallrueck', 'fg'), -1, -0.5, 'cos', -1, `${fr.n} Kontakte; Nacht 2c schaute er zum Tor (Blick in Flugrichtung des Balls)`);
+  // Kopf fällt mit dem Körper: rückwärts (pitch < 0) heißt gegen den Blick, also zum Tor
+  const headDir = Math.sign(AIR_POSE.fallrueck.pitch) * m('fallrueck', 'fg');
+  check('Fallrückzieher: Kopf fällt zum Tor (Pose rückwärts, Blick vom Tor weg)', headDir, 0.5, 1, 'cos', 1, `pitch ${AIR_POSE.fallrueck.pitch} rad`);
+  check('Fallrückzieher: Ball beim Kontakt über/hinter dem Kopf (hinter der Körpermitte, hoch)', m('fallrueck', 'behind'), -1, 0.05, 'm', null, `vor (+)/hinter (−) dem Körper entlang des Blicks; niedrigster Treffpunkt ${fr.hmin?.toFixed(2)} m`);
+  check('Fallrückzieher: Ball fliegt aufs Tor', fr.n ? fr.onTarget / fr.n * 100 : 0, 80, 100, '%', null, `Richtung Ball ↔ Tor cos ${m('fallrueck', 'toGoal').toFixed(2)}`);
+  check('Seitfallzieher: seitlich (Blick quer zum Tor)', Math.abs(m('seitfall', 'fg')), 0, 0.5, '|cos|', 0, `${by.seitfall?.n} Kontakte, Blick ↔ Ball cos ${m('seitfall', 'fs').toFixed(2)}`);
+  check('Flugkopfball: Blick zum Ball hin', m('flugkopf', 'fs'), 0.3, 1, 'cos', null, `Blick ↔ Tor cos ${m('flugkopf', 'fg').toFixed(2)}`);
+  for (const t of ['volley', 'dropkick', 'kopf']) {
+    check(`${NAMES[t]}: Blick zwischen Ball und Tor`, Math.min(m(t, 'fs'), m(t, 'fg')), 0, 1, 'cos', null, `Blick ↔ Ball ${m(t, 'fs').toFixed(2)}, ↔ Tor ${m(t, 'fg').toFixed(2)}, Treffpunkt ${m(t, 'behind').toFixed(2)} m vor dem Körper`);
+  }
+  // Challenge Fallrückzieher über 40 Durchgänge (Nacht 2c, gleiche Messung: 65 von 80 = 81 %; Plan, Tempo und q sind
+  // unverändert – die Abweichung je Lauf ist Zufall der Streuung, ±4,5 %)
+  let fk = 0, fg = 0;
+  for (let seed = 1; seed <= 40; seed++) {
+    let cur = null;
+    playChallenge(Game, P, 'volley', { seed, onEvent: (e) => {
+      if (e.type === 'machine') cur = null;
+      if (e.type === 'air' && e.player === 0) { cur = e.tech; if (cur === 'fallrueck') fk++; }
+      if (e.type === 'goal' && cur === 'fallrueck') { fg++; cur = null; }
+    } });
+  }
+  check('Volley-Station, Fallrückzieher-Bälle (40 Durchgänge): Tore', fg / Math.max(1, fk) * 100, 72, 100, '%', 81, `${fg} von ${fk} (Nacht 2c 65 von 80)`);
+}
+// 6) Falle aus dem Brief: im freien Training (kein Spiel) nimmt der Schuss das Tor aus dem Plan beim Drücken, nicht aus
+//    dem Blick – der Fallrückzieher schaut jetzt vom Tor weg und trifft trotzdem das Tor, auf das er beim Drücken lief
+{
+  const g = new Game(makeParams('solo=1'), 4);
+  const me = g.players[0], hx = g.cage.hx;
+  me.place(hx - 6, 0, 0); // läuft aufs rechte Tor zu (Blick +x)
+  g.ball.place(hx - 13, 0.11, 0.1); g.ball.contact = false; g.ball.held = -1;
+  // Ball von hinten über ihn hinweg: Scheitel kurz hinter ihm, fällt auf Brust-/Kopfhöhe vor ihm herunter
+  g.ball.v.set(9.5, 5.2, 0); g.ball.w.set(0, 0, 0);
+  let plan = null, kick = null;
+  for (let i = 0; i < 2 / DT && !kick; i++) {
+    if (!plan && !me.air) { const p = planAir(g, me, { tPress: g.t }); if (p && p.tech === 'fallrueck' && p.tq >= 0.999) { plan = p; me.air = p; } }
+    for (const e of g.step([{ ...EMPTY_INPUT, passDown: false, shotDown: false }])) if (e.type === 'air' && e.player === 0) kick = { vx: g.ball.v.x, face: me.face };
+  }
+  check('Freies Training: Fallrückzieher trifft das Tor aus dem Plan (+x), obwohl er von ihm weg schaut', kick ? Math.sign(kick.vx) : 0, 1, 1, '', 1, plan ? `Plan-Tor x = ${plan.goalX}, Blick beim Kontakt cos ${Math.cos(kick ? kick.face : 0).toFixed(2)}` : 'kein Fallrückzieher geplant');
 }
 
 const ok = report('Luftbälle: Ballmaschinen-Serie, Timing, Technik-Folgen', rows, 'air');
