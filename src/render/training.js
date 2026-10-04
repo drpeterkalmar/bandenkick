@@ -124,7 +124,8 @@ export class TrainingProps {
 export class AimMarkers {
   constructor(scene) {
     const lineMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85, depthWrite: false });
-    this.recv = new THREE.Mesh(new THREE.RingGeometry(0.46, 0.56, 40).rotateX(-Math.PI / 2), lineMat);
+    // Nacht 2e: Ring am Empfänger dicker (0,42–0,64 m statt 0,46–0,56 m), damit klar ist, wohin der Pass geht
+    this.recv = new THREE.Mesh(new THREE.RingGeometry(0.42, 0.64, 48).rotateX(-Math.PI / 2), lineMat);
     this.recv.position.y = 0.015; this.recv.renderOrder = 3;
     this.meet = new THREE.Mesh(new THREE.CircleGeometry(0.16, 24).rotateX(-Math.PI / 2), lineMat.clone());
     this.meet.position.y = 0.016; this.meet.renderOrder = 3;
@@ -137,12 +138,17 @@ export class AimMarkers {
     for (const m of this.all) { m.visible = false; scene.add(m); }
   }
   hide() { for (const m of this.all) m.visible = false; }
-  // pass: {recv: [x,z]|null, meet: [x,z], bank: [x,z]|null, color}; shot: {aim: [x,y,z], sigma (m), color}
+  // pass: {recv: [x,z]|null, meet: [x,z], bank: [x,z]|null, color, dim (schwache Vorschau beim Führen), pulse (Pass unterwegs)};
+  // shot: {aim: [x,y,z], sigma (m), color}
   show({ pass = null, shot = null } = {}) {
     this.hide();
     if (pass) {
       const c = new THREE.Color(pass.color || 0xffffff);
-      if (pass.recv) { this.recv.visible = true; this.recv.position.set(pass.recv[0], 0.015, pass.recv[1]); this.recv.material.color.copy(c); }
+      if (pass.recv) {
+        this.recv.visible = true; this.recv.position.set(pass.recv[0], 0.015, pass.recv[1]); this.recv.material.color.copy(c);
+        this.recv.material.opacity = pass.dim ? 0.5 : 0.92;
+        this.recv.scale.setScalar(pass.pulse ? 1 + 0.12 * Math.sin(performance.now() / 90) : 1);
+      }
       if (pass.meet) { this.meet.visible = true; this.meet.position.set(pass.meet[0], 0.016, pass.meet[1]); this.meet.material.color.copy(c); }
       if (pass.bank) { this.bank.visible = true; this.bank.position.set(pass.bank[0], 0.5, pass.bank[1]); this.bank.material.color.copy(c); }
     }

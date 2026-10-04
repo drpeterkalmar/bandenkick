@@ -30,7 +30,8 @@ for (const qs of ['', 'rueckpass=1']) {
     const side = planPass(g, a, { stick: [-1, 0.05] });
     const D1 = Math.hypot(side.target[0] - gx, side.target[1]);
     const segMin = (() => { let mn = 99; for (let k = 0; k <= 20; k++) { const x = g.ball.p.x + (side.target[0] - g.ball.p.x) * k / 20, z = g.ball.p.z + (side.target[1] - g.ball.p.z) * k / 20; mn = Math.min(mn, Math.hypot(x - gx, z)); } return mn; })();
-    check('Stick aufs eigene Tor, niemand im erweiterten Kegel: seitlich in den freien Raum', side.to === -1 && segMin >= g.P.torraum + 1 - 0.05 ? 1 : 0, 1, 1, '', 1, `Empfänger ${side.to}, Ziel (${side.target.map((v) => v.toFixed(1)).join(', ')}), Weg ≥ ${segMin.toFixed(1)} m vom Tor, Ziel ${D1.toFixed(1)} m`);
+    // (mit ?passfix=1 darf es auch ein Bandenpass zu einem Mitspieler sein – Hauptsache, der Weg führt nicht durch den Torraum)
+    check('Stick aufs eigene Tor, niemand im erweiterten Kegel: seitlich (freier Raum oder über die Bande), nie durch den Torraum', side.to !== kp.id && (side.to === -1 || side.bank) && segMin >= g.P.torraum + 1 - 0.05 ? 1 : 0, 1, 1, '', 1, `Empfänger ${side.to}${side.bank ? ' über die Bande' : ''}, Ziel (${side.target.map((v) => v.toFixed(1)).join(', ')}), Weg ≥ ${segMin.toFixed(1)} m vom Tor, Ziel ${D1.toFixed(1)} m`);
   } else check('?rueckpass=1: Stick aufs eigene Tor → Pass zum Tormann (alt)', toKp.to === kp.id ? 1 : 0, 1, 1, '', 1);
 }
 

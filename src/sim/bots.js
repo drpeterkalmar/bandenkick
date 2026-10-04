@@ -75,8 +75,9 @@ export class Bots {
     this.predict();
     for (const p of g.players) this.ttb[p.id] = this.timeToBall(p, this.L[p.team]);
     let owner = -1;
+    this.flight = P.passfix ? this.passInFlight() : -1;
     if (b.held >= 0) owner = b.held;
-    else if (g.lastTouch >= 0 && g.t - g.lastTouchT < 2.5) {
+    else if (g.lastTouch >= 0 && g.t - g.lastTouchT < 2.5 && this.flight < 0) { // (Nacht 2e: Pass unterwegs → niemand führt)
       const p = g.players[g.lastTouch];
       const d = Math.hypot(b.p.x - p.x, b.p.z - p.z), rel = Math.hypot(b.v.x - p.vx, b.v.z - p.vz);
       if (d < 2.4 && rel < 4.5 && b.p.y < 0.7) owner = p.id;
@@ -84,6 +85,18 @@ export class Bots {
     this.owner = owner; this.ownerTeam = owner >= 0 ? g.players[owner].team : -1;
     for (let team = 0; team < 2; team++) this.roles(team);
     void P;
+  }
+
+  // Nacht 2e: Ist gerade ein Pass zu einem Mitspieler unterwegs? → Empfänger-Id, sonst -1. Gemessen spielte nach einem weichen
+  // Pass (z. B. beim Anstoß) in 22 % der Bot-Pässe der Passgeber selbst den Ball als Nächster: er galt weiter als Ballführer.
+  passInFlight() {
+    const g = this.g, b = g.ball, lt = g.lastTouch, pp = g.passPlan;
+    if (b.held >= 0 || lt < 0) return -1;
+    // Pass in den Laufweg (Plan, auch vom Menschen – nach dem Wechsel zum Empfänger ist passTo schon zurückgesetzt)
+    if (pp && pp.to >= 0 && lt === pp.from && g.t < pp.t + 1.0 && g.players[pp.to] && g.players[pp.to].team === g.players[lt].team) return pp.to;
+    const to = g.passTo; // sonst Pass mit festem Ziel (Anstoß, Bande, Bots)
+    if (to < 0 || lt === to || !g.players[to] || g.players[to].team !== g.players[lt].team || g.t - g.lastTouchT > 2.0) return -1;
+    return to;
   }
 
   predict() {
@@ -131,6 +144,19 @@ export class Bots {
     const set = (id, role) => { const br = this.brain[id]; if (br.role !== role) { br.role = role; br.roleT = 0; } };
     if (kp < 0) return;
     set(kp, 'keeper');
+    // Nacht 2e: eigener Pass unterwegs zu einem Mitspieler → der Empfänger nimmt ihn an (support = Empfänger-Hilfe), alle
+    // anderen (auch der Passgeber) suchen Raum statt dem Ball nachzujagen (gemessen: 14 % der Pässe holte sich der Passgeber
+    // selbst zurück, 10 % ein anderer Mitspieler)
+    const fl = this.flight ?? -1;
+    if (g.P.passfix && fl >= 0 && g.players[fl].team === team && fl !== kp) {
+      // Empfänger nimmt an (support = Empfänger-Hilfe). Wer hinter dem Empfänger steht (Pass nach vorn), sichert ab (cover) –
+      // geht der Pass verloren, steht nicht die ganze Mannschaft vorn (mit „alle suchen Raum“ kassierten starke Mannschaften
+      // nach abgefangenen Pässen mehr Tore); wer vor ihm steht (Pass nach hinten, z. B. Anstoß), bietet sich vorn an
+      const rf = this.fwd(team, g.players[fl].x);
+      for (const p of field) set(p.id, p.id === fl ? 'support' : this.fwd(team, p.x) < rf ? 'cover' : 'support');
+      for (const p of g.players) if (p.team === team) this.brain[p.id].roleT += 1 / 120;
+      return;
+    }
     const oppBest = Math.min(9, ...g.players.filter((p) => p.team !== team).map((p) => this.ttb[p.id].t));
     // Hysterese: der bisherige Jäger bleibt es, solange der andere nicht deutlich schneller am Ball ist
     let first = field[0], second = field[1];

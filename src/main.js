@@ -400,12 +400,30 @@ function challengeFrame() {
 function aimFrame(pl, raw, km) {
   if (!markers) return;
   const tap = !P.laden && pl.pending && pl.pending.tap ? pl.pending : null;
-  if (mode !== 'play' || km || game.human < 0 || P.treffpunkt || !(pl.charging || pl.armed || tap)) { markers.hide(); return; }
+  if (mode !== 'play' || km || game.human < 0 || P.treffpunkt) { markers.hide(); return; }
+  if (!(pl.charging || pl.armed || tap)) {
+    // Nacht 2e (passfix): Pass unterwegs → Ring am Empfänger (pulsierend), bis er den Ball hat; eigener Ball am Fuß → schwacher
+    // Ring an dem Mitspieler, der den Pass jetzt bekäme (wohin der Pass geht, sieht man vor dem Tippen)
+    const b = game.ball, pp = game.passPlan;
+    if (P.passfix && game.match && !rp.dir) {
+      if (pp && pp.to >= 0 && game.players[pp.to] && b.held < 0 && game.t < pp.t + 0.6) {
+        const r = game.players[pp.to];
+        markers.show({ pass: { recv: [r.x, r.z], meet: pp.chip || pp.bank ? null : [pp.x, pp.z], color: pp.chip ? 0x7dff6a : 0xffffff, pulse: true } });
+        return;
+      }
+      if (game.lastTouch === pl.id && b.held < 0 && b.p.y < 0.5 && Math.hypot(b.p.x - pl.x, b.p.z - pl.z) < 1.2) {
+        const w = worldInput(raw), st = Math.hypot(w.mx, w.mz) > 0.12 ? [w.mx, w.mz] : null;
+        const pv = planPass(game, pl, { mode: 'std', power: null, stick: st });
+        if (pv.to >= 0) { const r = game.players[pv.to]; markers.show({ pass: { recv: [r.x, r.z], dim: true, color: 0xffffff } }); return; }
+      }
+    }
+    markers.hide(); return;
+  }
   const w = worldInput(raw), st = Math.hypot(w.mx, w.mz) > 0.12 ? [w.mx, w.mz] : tap ? tap.stick : null;
   const kind = tap ? tap.kind : pl.charging ? pl.chargeKind : pl.armed;
   const md = tap ? tap.mode : pl.charging ? pl.chargeMode : 'std';
   if (kind === 'pass') {
-    const pp = planPass(game, pl, { mode: md, power: null, stick: st });
+    const pp = planPass(game, pl, { mode: md, power: null, stick: st, prefer: tap && tap.lock ? tap.lock : null });
     const recv = pp.to >= 0 ? [game.players[pp.to].x, game.players[pp.to].z] : pp.to < -1 ? pp.meet : null;
     markers.show({ pass: { recv, meet: pp.meet, bank: pp.bank ? pp.target : null, color: md === 'var' ? 0x7dff6a : 0xffffff } });
   } else {

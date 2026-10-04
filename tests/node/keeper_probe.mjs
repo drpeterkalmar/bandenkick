@@ -63,7 +63,7 @@ export const fmtProbe = (r) => `Stufe ${r.K}: ${r.goalsAll}/${r.shots} Tore je S
 if (import.meta.url === `file://${process.argv[1]}`) {
   const n = +(process.argv[2] || 20), qs = process.argv[3] || '', lv = (process.argv[4] || '1,2,3').split(',').map(Number);
   for (const K of lv) {
-    const r = probe(K, n, qs, !!process.env.KEEPER_ONLY);
+    const r = probe(K, n, qs, !!process.env.KEEPER_ONLY, +(process.env.PROBE_SEED || 100));
     if (process.env.PROBE_JSON) { delete r.detail; console.log(JSON.stringify(r)); continue; }
     console.log(fmtProbe(r));
     if (process.env.DETAIL) { // aufs Tor: Ausgang nach seitlichem Abstand Ball ↔ Tormann beim Schuss

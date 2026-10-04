@@ -51,7 +51,9 @@ export function leadFlat(P, cage, b0, r0, rv, { speedMul = 1, maxSpeed = P.passM
     const vA = passSpeedAt(P, u, T);
     const dx = (R[0] - b0[0]) / (D || 1), dz = (R[1] - b0[1]) / (D || 1);
     const rel = Math.hypot(vA * dx - rv[0], vA * dz - rv[1]);
-    const vIdeal = 4.3 + 0.12 * D;
+    // Nacht 2e (passfix): zügiger – kommt mit passArr + 0,15 m/s je Meter an (8 m: 6,7 m/s statt 5,3); gemessen wurden 4 von 5
+    // abgefangenen Pässen am Weg abgefangen, meist vom Gegner, der den Passgeber presst
+    const vIdeal = P.passfix ? P.passArr + 0.15 * D : 4.3 + 0.12 * D;
     const cost = ((vA - vIdeal) / 1.2) ** 2 + (T > 2.4 ? (T - 2.4) * 2 : 0) + (rel > 8 ? (rel - 8) ** 2 : 0) + (vA < 1.2 ? 4 : 0);
     if (!best || cost < best.cost) best = { cost, T, u, meet: R, vArr: vA, D };
   }
@@ -144,7 +146,7 @@ export function passCandidates(game, pl, aim, from, cone = game.P.passCone) {
       const dx = m.x - from[0], dz = tz - from[1], D = Math.hypot(dx, dz);
       if (D < 1.2) continue;
       const ang = Math.acos(clamp((dx * aim[0] + dz * aim[1]) / D, -1, 1)) / DEG;
-      if (ang > cone) continue;
+      if (ang > cone && !(bank && P.passfix && cone > P.passCone)) continue; // (passfix: Bande zum gemeinten auch außerhalb)
       const D0 = Math.hypot(m.x - from[0], m.z - from[1]);
       let lane;
       if (bank) {
@@ -163,6 +165,40 @@ export function passCandidates(game, pl, aim, from, cone = game.P.passCone) {
   return list;
 }
 
+// Nacht 2e (?passfix=1): Empfänger wie gemeint. Gemessen gingen 11–20 % der Pässe im Lauf zu einem anderen Mitspieler als
+// dem, auf den der Stick zeigte – weil bei zugestelltem Weg ein anderer im Kegel (auch über die Bande) mehr Punkte bekam.
+// Jetzt: der Mitspieler, auf den der Stick am genauesten zeigt (±passCone), gewinnt; nur wenn zwei fast gleich genau
+// getroffen sind (< 10°), entscheiden Weg und Abstand. Ist sein direkter Weg zu (< 0,6 m), geht der Pass über die Bande zu
+// IHM, falls dort frei. Über die Bande zu jemand anderem nur, wenn kein Mitspieler direkt im Kegel liegt (Stick zeigt klar
+// zur Bande). prefer = {to, bank}: beim Tipp gemerkter Empfänger (Hysterese), bleibt gesetzt, solange er im erweiterten
+// Kegel (±60°) liegt.
+function pickReceiver(game, pl, ad, from, prefer = null, stickAim = true) {
+  const list = passCandidates(game, pl, ad, from, 60);
+  const cone = game.P.passCone;
+  const direct = list.filter((c) => !c.bank).sort((a, b) => a.ang - b.ang);
+  const banks = list.filter((c) => c.bank && c.ang <= cone && c.lane >= 0.8).sort((a, b) => a.ang - b.ang);
+  let pick = null;
+  if (prefer && prefer.to != null && prefer.to !== -1) {
+    pick = list.find((c) => c.id === prefer.to && c.bank === (prefer.bank || 0)) || direct.find((c) => c.id === prefer.to) || null;
+  }
+  if (!pick && direct.length && direct[0].ang <= cone) {
+    pick = direct[0];
+    const second = direct[1];
+    if (second && second.ang <= cone && second.ang - pick.ang < 10 && second.score > pick.score) pick = second;
+    // Stick zeigt klar auf ein Spiegelbild an der Bande (≤ 12° daneben und ≥ 12° genauer als auf den direkten Mitspieler)
+    // (nur mit Stick – ohne Stick zählt der Blick, und der zeigt nie absichtlich auf die Bande)
+    if (stickAim && banks.length && banks[0].ang <= 12 && banks[0].ang + 12 < pick.ang) pick = banks[0];
+  }
+  if (pick) {
+    if (!pick.bank && pick.lane < 0.6) { // direkter Weg zu: über die Bande zum selben Mitspieler, wenn dort frei
+      const bk = list.filter((c) => c.bank && c.id === pick.id && c.lane >= 1.0).sort((a, b) => a.ang - b.ang)[0];
+      if (bk) return bk;
+    }
+    return pick;
+  }
+  return banks[0] || null;
+}
+
 // Kompletter Pass-Plan. opts: mode 'std' (flach) | 'var' (hoch), power (null = Auto-Stärke), stick [x,z]|null,
 // to (fester Empfänger, Bots), aim (Richtung überschreiben), noiseMul
 export function planPass(game, pl, opts = {}) {
@@ -179,7 +215,7 @@ export function planPass(game, pl, opts = {}) {
     const m = game.players[opts.to];
     cand = { id: m.id, x: m.x, z: m.z, vx: m.vx, vz: m.vz, bank: 0 };
   } else {
-    cand = passCandidates(game, pl, ad, from)[0] || null;
+    cand = P.passfix ? pickReceiver(game, pl, ad, from, opts.prefer, !!(opts.aim || opts.stick)) : passCandidates(game, pl, ad, from)[0] || null;
     // Nacht 2e: zeigt der Stick (ohne Mitspieler im Kegel) aufs eigene Tor, geht der Pass zum nächstbesten Mitspieler im
     // erweiterten Kegel (±70°) oder seitlich in den freien Raum – nie aufs eigene Tor zu
     if (!cand && ownGoalRisk(game, pl, from, ad, power == null ? P.passFree : 18)) {
@@ -229,7 +265,9 @@ export function planPass(game, pl, opts = {}) {
   let tech = chip ? 'chip' : passTechnique(ang, bd, P);
   const props = PASS_PROPS[tech];
   if (plan.u > props.maxSpeed) plan.u = props.maxSpeed; // Hacke: höchstens ~8 m
-  let noise = 1.1 * props.noise * (pl.sprinting ? 1.6 : 1) * (opts.noiseMul ?? 1);
+  // Nacht 2e (passfix): Streuung der Tipp-Pässe kleiner (Grundwert passNoise statt 1,1°, Sprint × 1,3 statt × 1,6) – gemessen
+  // lag die Abweichung Vorschau ↔ Abflug bei p90 2–6°, bei 10 m bis 1 m neben dem Laufweg
+  let noise = (P.passfix ? P.passNoise : 1.1) * props.noise * (pl.sprinting ? (P.passfix ? 1.3 : 1.6) : 1) * (opts.noiseMul ?? 1);
   if (chip && ang > P.passHackeDeg) noise *= 2.5; // Chip über die Schulter: selten und ungenau
   plan.dir = [kx / kl, kz / kl];
   Object.assign(plan, { kind: 'pass', mode: chip ? 'var' : 'std', tech, ang, noiseDeg: noise, power, elRad: plan.el * DEG, speed: plan.u });

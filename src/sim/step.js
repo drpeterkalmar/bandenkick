@@ -173,7 +173,7 @@ export class Game {
     for (let i = 0; i < n; i++) {
       // Torjubel: erst 1,2 s stehen und jubeln, dann (wie in der Halbzeit) zurück in die eigene Hälfte
       if (!live) ins[i] = this.bots && !(R.phase === 'goal' && R.phaseT < 1.2) ? this.bots.formation(i) : EMPTY_INPUT;
-      else if (inputs[i] && (i === this.human || !this.bots)) ins[i] = i === this.human ? this.humanInput(inputs[i]) : inputs[i]; // Mensch (ohne Bots: alle)
+      else if (inputs[i] && (i === this.human || !this.bots)) ins[i] = i === this.human ? this.humanInput(this.latchInput(inputs[i])) : inputs[i]; // Mensch (ohne Bots: alle)
       else ins[i] = this.bots ? this.bots.input(i) : EMPTY_INPUT;
     }
     // Auto-Torwart (Nacht 2c): ist der Mensch die letzte Hand, übernimmt die Tormann-Logik der Bots die Hände
@@ -201,6 +201,20 @@ export class Game {
     this.state = R.phase === 'goal' ? 'goal' : R.phase === 'out' ? 'out' : 'play';
     this.t += DT; this.tick++;
     return this.events;
+  }
+
+  // Nacht 2e: Nach dem eigenen Pass steuert der Mensch den Empfänger. Hält er den Stick weiter in Pass-Richtung (Kinder-
+  // Daumen), liefe der Empfänger vom Ball weg (gemessen: nur 9–18 % der Pässe kamen an). Solange der Ball unterwegs ist und
+  // der Stick grob in der alten Richtung bleibt (≤ 50°), zählt er nur zum Zielen (Direktpass), gelaufen wird mit der
+  // Empfänger-Hilfe. Loslassen, deutlich andere Richtung, Ballkontakt oder 3 s beenden die Sperre.
+  latchInput(inp) {
+    const L = this.recvLatch;
+    if (!L || !inp) return inp;
+    const pp = this.passPlan;
+    if (L.id !== this.human || this.lastTouch === L.id || this.ball.held >= 0 || !pp || pp.to !== L.id || this.t > L.t + 3) { this.recvLatch = null; return inp; }
+    const mx = inp.mx || 0, mz = inp.mz || 0, mag = Math.hypot(mx, mz);
+    if (mag < 0.12 || !L.dir || (mx * L.dir[0] + mz * L.dir[1]) / mag < Math.cos(50 * Math.PI / 180)) { this.recvLatch = null; return inp; }
+    return { ...inp, mx: 0, mz: 0, sprint: false, recvAim: [mx / mag, mz / mag] };
   }
 
   numerics() {
@@ -259,9 +273,15 @@ export class Game {
       return;
     }
     if (this.passTo >= 0 && this.lastTouch === me.id && this.players[this.passTo].team === me.team && this.passTo !== me.id) {
+      // Nacht 2e: der gehaltene Daumen (Stick in Pass-Richtung) steuert den Empfänger nicht vom Ball weg (recvLatch)
+      const mag = inp ? Math.hypot(inp.mx || 0, inp.mz || 0) : 0;
+      this.recvLatch = P.passfix ? { id: this.passTo, t: this.t, dir: mag > 0.12 ? [inp.mx / mag, inp.mz / mag] : null } : null;
       this.setHuman(this.passTo); this.passTo = -1; return;
     }
     if (this.switchT < P.switchT) return;
+    // Nacht 2e: Pass/Schuss vorgemerkt (Tipp), Ball noch erreichbar → nicht wegwechseln (sonst verfällt der Pass: beim
+    // Drehen im Lauf rollt der Ball kurz weg und ein Mitspieler war „näher“ – 10–25 % der Pässe im Lauf kamen nie)
+    if (P.passfix && me.pending && me.pending.tap && b.held < 0 && Math.hypot(b.p.x - me.x, b.p.z - me.z) < 5 && (this.lastTouch === me.id || this.lastTouch < 0)) return;
     const mine = this.lastTouch === me.id && Math.hypot(b.p.x - me.x, b.p.z - me.z) < 2.2;
     if (mine) return;
     let best = me, bt = ttb(me) - 0.18;

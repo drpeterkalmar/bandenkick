@@ -163,6 +163,12 @@ export const DEFAULTS = {
   hackeNear: 0.6,         // m Ball ↔ Körpermitte für einen Hackenpass
   passMaxSpeed: 22,       // m/s härtester Pass
   passFree: 7,            // m Pass in den freien Raum (Tipp, kein Mitspieler im Kegel)
+  // Nacht 2e (Peter: „repariere das Passsystem, die Pässe gehen irgendwo hin“), gemessen mit tests/node/pass_probe.mjs:
+  // Empfänger steuert der gehaltene Daumen nicht vom Ball weg, Empfänger läuft dem Pass entgegen, Bots jagen den eigenen
+  // Pass nicht, kein Spielerwechsel/keine Grätsche statt des vorgemerkten Passes, Empfänger bleibt ab dem Tipp gesetzt.
+  passfix: 1,             // 0 = Passsystem wie Nacht 2d (A/B)                                      [?passfix=0]
+  passNoise: 0.8,         // ° Grund-Streuung eines Passes (× Technik, Sprint × 1,3; Nacht 2d: 1,1 und × 1,6)
+  passArr: 5.5,           // m/s Ankunftstempo eines Tipp-Passes (+ 0,15 m/s je Meter; Nacht 2d: 4,3 + 0,12/m)
   chipElevMin: 25,        // ° Chip/Lupfer: flach bei weiten …   (Nacht 2b, gilt mit ?flanke=0)      [?chipmin=]
   chipElevMax: 45,        // ° … steil bei kurzen Pässen (auch Nacht 2c: kurzer Chip über den Tormann) [?chipmax=]
   // Nacht 2c (Peter: „festere … flanken“): Pass hoch über Distanz flacher und schneller, weniger Rückdrall.

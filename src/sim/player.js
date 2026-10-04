@@ -3,7 +3,7 @@
 // flach/Vollspann, tipp + halten = hoch/angeschnitten; Ziel, Technik und Stärke planen pass.js/shot.js mit der echten
 // Ballphysik, Luftbälle air.js. ?treffpunkt=1 = alte Profi-Steuerung (freie Richtung, Spin aus dem Treffpunkt).
 // Hilfen ziehen nur, solange der Spieler nichts Deutliches tut.
-import { setKick } from './kickplan.js';
+import { setKick, passDist } from './kickplan.js';
 import { planPass } from './pass.js';
 import { planShot } from './shot.js';
 import { planAir, planAirHelp, stepAir, stepFall } from './air.js';
@@ -84,6 +84,21 @@ export class Player {
     this.plant = 0;
   }
 
+  // Nacht 2e: Abfangpunkt auf der Rollbahn des Balls (Roll-Tabelle aus kickplan.js) → [x, z, t] oder null
+  interceptPoint(game) {
+    const P = this.P, b = game.ball, s = Math.hypot(b.v.x, b.v.z);
+    if (s < 1) return null;
+    const ux = b.v.x / s, uz = b.v.z / s, v = Math.max(P.vRun, this.speed);
+    const lx = game.cage.hx - 0.4, lz = game.cage.hz - 0.4;
+    for (let t = 0.1; t <= 3; t += 0.05) {
+      const d0 = passDist(P, s, t), x = b.p.x + ux * d0, z = b.p.z + uz * d0;
+      if (Math.abs(x) > lx || Math.abs(z) > lz) return null;             // Bande vorher: wie bisher zum Treffpunkt
+      const need = Math.max(0, Math.hypot(x - this.x, z - this.z) - P.reach) / v + 0.15;
+      if (need <= t) return [x, z, t];
+    }
+    return null;
+  }
+
   // Schuss-/Pass-API für Bots, Regeln und Challenges: Ziel statt Stick. Ausgeführt beim nächsten Ballkontakt.
   //  - mit Ziel: kind 'pass' | 'shot' | 'clear', target [x, z] (bei 'shot' Höhe als target[2]), technique
   //    'innen' | 'vollspann' | 'heber', speed/elev/spinY/spinBack optional, noise = Streuungs-Faktor, to = Empfänger
@@ -127,9 +142,10 @@ export class Player {
     const aimDir = () => {
       if (inp.aim && (inp.aimX || inp.aimZ)) { const l = Math.hypot(inp.aimX, inp.aimZ); return [inp.aimX / l, inp.aimZ / l]; }
       if (want) return [sx, sz];
+      if (inp.recvAim) return inp.recvAim; // Nacht 2e: Empfänger-Sperre – der Stick zielt nur (Direktpass)
       return [Math.cos(this.face), Math.sin(this.face)];
     };
-    const stick = () => (inp.aim && (inp.aimX || inp.aimZ) ? aimDir() : want ? [sx, sz] : null);
+    const stick = () => (inp.aim && (inp.aimX || inp.aimZ) ? aimDir() : want ? [sx, sz] : inp.recvAim || null);
     if (inp.gest) this.gestures(inp, game, aimDir, stick);
     else { // Flanken (Tests, alte Eingabe): Pass = Einzeltipp, Schuss halten/loslassen = Standard
       if (inp.pass) { this.pending = { kind: 'pass', mode: inp.mode || 'std', power: null, stick: stick(), dir: aimDir(), age: 0 }; this.clearT = 0; }
@@ -177,6 +193,13 @@ export class Player {
       targetW = 1;
       dirX = bx / bd; dirZ = bz / bd;
     }
+    // Nacht 2e: Tipp-Kick vorgemerkt, eigener Ball in ≤ 3 m → der Stick zielt nur, gelaufen wird zum Ball. Vorher lief der
+    // Spieler beim Pass nach hinten (Stick gegen die Laufrichtung) in Stick-Richtung los und ließ den Ball liegen –
+    // gemessen kam beim Führen jeder 4.–8. Pass gar nicht zustande.
+    if (P.passfix && !held && want && this.pending && this.pending.tap && bd < 3 && bd > 0.05 && ball.p.y < 0.6 && (game.lastTouch === this.id || game.lastTouch < 0)) {
+      const lead = 0.25, ix = ball.p.x + ball.v.x * lead - this.x, iz = ball.p.z + ball.v.z * lead - this.z, il = Math.hypot(ix, iz) || 1;
+      targetW = 1; dirX = ix / il; dirZ = iz / il;
+    }
     // Empfänger eines Passes ohne Stick: läuft in seinem Laufweg zum geplanten Treffpunkt und kommt pünktlich an
     // (Phase A); ist der Ball nah oder die Zeit fast um, geht er direkt auf den Ball (Phase B) – kein Stehenbleiben.
     const pp = game.passPlan;
@@ -185,11 +208,17 @@ export class Player {
       const tRem = pp.t - game.t;
       const bvx = ball.v.x, bvz = ball.v.z, lead = clamp(bd / 9, 0.1, 0.35);
       const near = bd < 3.2 && (ball.p.y < 1.8 || tRem < 0.4);
-      const tx = near ? ball.p.x + bvx * lead : pp.x, tz = near ? ball.p.z + bvz * lead : pp.z;
+      let tx = near ? ball.p.x + bvx * lead : pp.x, tz = near ? ball.p.z + bvz * lead : pp.z, tGo = tRem;
+      // Nacht 2e: flacher Pass – dem Ball entgegen: frühester Punkt der Rollbahn, den der Empfänger rechtzeitig erreicht
+      // (Lauftempo, 0,15 s Reserve). Kürzer unterwegs = seltener abgefangen, der Ball verhungert nicht im Laufweg.
+      if (P.passfix && !near && !pp.chip && !pp.bank && ball.p.y < 0.4) {
+        const ip = this.interceptPoint(game);
+        if (ip) { tx = ip[0]; tz = ip[1]; tGo = ip[2]; }
+      }
       const dx = tx - this.x, dz = tz - this.z, d = Math.hypot(dx, dz);
       if (d > 0.12) {
         recv = true; dirX = dx / d; dirZ = dz / d;
-        recvV = near ? clamp(Math.max(this.speed, d / 0.35), 1.5, P.vSprint) : clamp(d / Math.max(0.12, tRem), 1.5, P.vSprint);
+        recvV = near ? clamp(Math.max(this.speed, d / 0.35), 1.5, P.vSprint) : clamp(d / Math.max(0.12, tGo), 1.5, P.vSprint);
       }
     }
     const tau = targetW > this.assistW ? P.assistReturn : P.assistRelease;
@@ -232,7 +261,11 @@ export class Player {
     // steht → zum Stick bzw. zum Ball
     let fAng = this.face;
     const aimGoal = !want && ((this.charging && this.chargeKind === 'shot') || (this.pending && this.pending.tap && this.pending.kind === 'shot')) && !P.treffpunkt && bd < 2.5;
+    // Nacht 2e: Tipp-Pass vorgemerkt, Ball nah → Körper zum Ziel aufdrehen (Innenseite statt Hacke/Außenrist im Lauf: die
+    // waren langsam und ungenau und wurden am Weg abgefangen)
+    const aimPass = P.passfix && !aimGoal && this.pending && this.pending.tap && this.pending.kind === 'pass' && bd < 1.6 && ball.p.y < 0.6;
     if (aimGoal) fAng = Math.atan2(-ball.p.z, goalX(game, this) - ball.p.x); // Schuss laden ohne Stick: zum Tor drehen
+    else if (aimPass) { const d = this.pending.stick || this.pending.dir; fAng = Math.atan2(d[1], d[0]); }
     else if (this.plant > 0.4 && moving) fAng = Math.atan2(dirZ, dirX);
     else if (s > 0.6) fAng = hAng;
     else if (want) fAng = Math.atan2(sz, sx);
@@ -574,6 +607,13 @@ export class Player {
       }
     }
     if (this.pending && this.pending.tap) { const s = stick(); if (s) { this.pending.stick = s; this.pending.dir = aimDir(); } }
+    // Nacht 2e: Empfänger-Hysterese – der beim Tipp gewählte (und angezeigte) Empfänger bleibt bis zum Kontakt, solange der
+    // Stick nicht deutlich (> 25°) anders zeigt
+    const pd = this.pending;
+    if (this.P.passfix && pd && pd.tap && pd.kind === 'pass' && game.match) {
+      const s = pd.stick || [Math.cos(this.face), Math.sin(this.face)];
+      if (!pd.lock || s[0] * pd.lock.s[0] + s[1] * pd.lock.s[1] < Math.cos(25 * DEG)) { const lp = planPass(game, this, { mode: pd.mode, power: null, stick: pd.stick }); pd.lock = { s: [s[0], s[1]], to: lp.to, bank: lp.bank || 0 }; }
+    }
     this.armed = this.pending && this.pending.tap && this.pending.locked ? this.pending.kind : null;
   }
 
@@ -586,6 +626,8 @@ export class Player {
     if (b.p.y > 0.6 || game.rules.handsOk(this)) return false;
     const [fx, fz] = this.footPoint();
     if (Math.hypot(b.p.x - fx, b.p.z - fz) < P.reach + 0.1) return false;     // am Ball: normaler Pass/Schuss
+    // Nacht 2e: eigener Ball (zuletzt selbst berührt, z. B. beim Führen etwas vorgelegt) → Pass/Schuss, keine Grätsche
+    if (P.passfix && game.lastTouch === this.id && game.t - this.lastTouchT < 1.5) return false;
     const d = Math.hypot(b.p.x - this.x, b.p.z - this.z);
     if (d > P.tackleReach) return false;
     for (const o of game.players) {
@@ -675,7 +717,7 @@ export class Player {
       return this.applyPlan(plan, game, rel);
     }
     if (!pd.api && !this.P.treffpunkt) {
-      const plan = pd.kind === 'pass' ? planPass(game, this, { mode: pd.mode, power: pd.power, stick: pd.stick })
+      const plan = pd.kind === 'pass' ? planPass(game, this, { mode: pd.mode, power: pd.power, stick: pd.stick, prefer: pd.lock || null })
         : planShot(game, this, { mode: pd.mode, power: pd.power, stick: pd.stick });
       return this.applyPlan(plan, game, rel);
     }

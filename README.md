@@ -70,6 +70,20 @@ Als App installierbar (PWA), läuft offline.
 - **Profi:** `?laden=1` = Gesten aus Nacht 2b (halten = Stärke per Haltedauer, tipp + sofort halten = Variante,
   Fenster 0,25 s); `?timinghilfe=0` = strenges Luftball-Timing wie Nacht 2b.
 
+- **Passsystem repariert (Nacht 2e, Peter 03.10.: „die Pässe gehen irgendwo hin“)** – gemessen mit einer Probe (echte Gesten,
+  Bots, 2000 Pässe; `tests/node/pass_probe.mjs`), Ursachen nach Größe: (1) nach dem Pass steuert der Daumen den Empfänger –
+  wer den Stick weiter in Pass-Richtung hielt, schickte den Empfänger vom Ball weg (nur 14 % kamen an); jetzt zählt der Stick
+  bis zur Annahme nur zum Zielen, gelaufen wird mit der Empfänger-Hilfe (loslassen oder deutlich andere Richtung = sofort
+  wieder selbst). (2) Der Passgeber-Bot jagte seinem eigenen Pass nach (14 %, im Bot-Spiel 22 %); jetzt nimmt der Empfänger
+  an, wer hinter ihm steht, sichert ab. (3) Beim Tipp mit Stick nach hinten lief der Spieler in Stick-Richtung los und ließ
+  den Ball liegen, oder die Steuerung sprang weg – jeder 4.–8. Pass im Lauf kam nie; jetzt läuft er mit vorgemerktem Tipp
+  zum Ball, dreht sich zum Ziel auf (Innenseite statt Hacke) und behält die Steuerung; als Ballführer grätscht der Tipp nie.
+  (4) Bei zugestelltem Weg nahm die Wahl einen anderen Mitspieler (auch über die Bande); jetzt gewinnt, auf wen der Stick am
+  genauesten zeigt, bei zugestelltem Weg geht es über die Bande zu IHM, und der beim Tipp gewählte Empfänger bleibt bis zum
+  Kontakt. (5) Der Empfänger läuft flachen Pässen entgegen, Pässe kommen etwas zügiger an (8 m: 6,7 statt 5,3 m/s), Streuung
+  kleiner (0,8° statt 1,1°, Sprint × 1,3 statt × 1,6). Ring am Empfänger dicker, bleibt sichtbar, bis er den Ball hat, und
+  schon beim Führen zeigt ein schwacher Ring, wer den Pass bekäme. Ergebnis bei freiem Passweg: stehend 59 → 92 %, laufend
+  26 → 88 %, Sprint 29 → 83 %; alle Pässe 37 → 74 %; Bot-Pässe 33 → 60 %. `?passfix=0` = Nacht 2d.
 - **Pass** geht zum Mitspieler, auf den der Stick zeigt (Kegel ±35°), **in seinen Laufweg** (Vorhalt aus dem echten
   Rollmodell). Technik automatisch: Innenseite (bis 60° zur Blickrichtung), Außenrist, **Hacke** (nach hinten,
   Mitspieler nah). Zeigt der Stick auf die Bande, geht der Pass über die Bande. Ohne Stick: bester freier Mitspieler.
@@ -179,6 +193,7 @@ Ball mit (Sohle/Außenseite). `?zack=0` = altes Gefühl aus Nacht 1 zum Vergleic
 | `?graetsche=0`, `?tackleReach=2.5`, `?slideT=0.5`, `?slideGroundT=0.6`, `?tackleShotD=11` | Grätsche aus; Reichweite (m), Rutschen/am Boden (s), bis zu dieser Torentfernung schießt der Schuss-Knopf aus der Grätsche |
 | `?timinghilfe=0`, `?kickLunge=0.2`, `?tippPuffer=1.5` | strenges Luftball-Timing; Extra-Reichweite (m) für einen getippten Kick; so lange (s) bleibt ein Tipp vorgemerkt |
 | `?treffpunkt=1` | Profi-Steuerung mit Treffpunkt statt Gesten (altes Modell) |
+| `?passfix=0`, `?passArr=5.5`, `?passNoise=0.8` | Passsystem wie Nacht 2d (A/B); Ankunftstempo eines Tipp-Passes (m/s, + 0,15 je Meter); Grund-Streuung (°) |
 | `?kegel=35`, `?innen=60`, `?hacke=120` | Pass: Zielkegel um den Stick (°), bis zu welchem Winkel Innenseite, ab welchem Hacke |
 | `?chipmin=25`, `?chipmax=45` | Chip-Abflugwinkel weit/kurz (°) – `chipmin` gilt mit `?flanke=0`, `chipmax` = kurzer Chip |
 | `?flanke=0` … `1` | Pass hoch: 1 = feste Flanke (Nacht 2c: bei 8 m 24°, ab 15 m 14°, 2,5 U/s Rückdrall, ≈ 30 % kürzere Flugzeit; bis 5 m steiler Chip), 0 = hoher Chip 25–45° wie Nacht 2b. Feinregler `?flankeElev=24`, `?flankeD=8`, `?flankeMin=14`, `?flankeBack=2.5` |
@@ -229,6 +244,7 @@ node tests/node/selfplay.test.mjs  # 200 Bot-Spiele à 2 × 4 min: keine Hänger
 node tools/calibrate.mjs        # Rasenwerte neu auf die FIFA-Ziele stellen
 python3 tests/smoke.py          # Browser (Pixel 7 hoch/quer, Desktop): 0 Fehler; Training: Führen/Schuss/Bande/Dach;
                                 #   3 gegen 3: Bots spielen, Tor → Anstoß, Tormann-Knöpfe, Abwurf, Wechsel, Ton aus (0 AudioContext)
+python3 tests/pass_touch.py      # Nacht 2e: Pass mit echten Touch-Ereignissen (hoch/quer, Daumen bleibt drauf), Ziel-Ring, 3 min Spiel, 0 Fehler
 python3 tests/test_touch.py     # echte Touch-Ereignisse: Stick, Pass, Tipp/Doppeltipp auf beiden Knöpfen, Ring
 node tests/node/gesture.test.mjs    # Lade-Gesten (?laden=1: halten, tipp + halten, Grenzen, zwei Knöpfe)
 node tests/node/tap.test.mjs        # Tipp-Gesten (Standard): Parser, 1000 Zufalls-Gesten, Tipp → Ballkontakt, Tipp/Doppeltipp im Spiel
@@ -241,6 +257,9 @@ node tests/node/challenge.test.mjs  # alle 9 Übungen headless mit Skript-Spiele
 node tests/node/magnet.test.mjs     # Ballmagnet vorher/nachher: Kinder-Stick (Ball weg je Minute), Parcours, Selbstspiel-Ballverluste, Regeln
 node tests/node/dribble_probe.mjs 20 "magnet=0"  # Messwerkzeug: Parcours (Skript/Kinderhand), Ballverluste beim Führen im Selbstspiel
 node tests/node/tackle.test.mjs     # Grätsche: Auslöser, Ball zuerst (Pass/Schuss/klären), Gegner zuerst (Ball frei, stolpert), Bots, keine Hänger
+node tests/node/passsystem.test.mjs # Passsystem (Nacht 2e): Pass-Probe 2000 Pässe vorher/nachher (stehend/laufend/Sprint), Empfänger = gemeint, Bot-Pässe
+node tests/node/pass_probe.mjs 200 "passfix=0"  # Messwerkzeug: Pässe mit Gesten wie am Handy, Tabelle je Variante
+node tests/node/botpass_probe.mjs 6 # Messwerkzeug: Bot-Pässe im Bot-Spiel (kommt an, abgefangen, Passgeber selbst)
 node tests/node/rueckpass.test.mjs  # kein Rückpass: Pass-Auswahl (Stick aufs eigene Tor), keine Hände nach Mitspieler-Pass, Hinweis, 6 Bot-Spiele
 node tests/node/halten.test.mjs     # Tormann mit Ball (Nacht 2e): Haltezeit Median/max, keine Zwangsabwürfe, abgefangene Abwürfe vorher/nachher
 node tests/node/keeper_hold_probe.mjs 8 "halten=0"  # Messwerkzeug: Haltezeit, Abwürfe, abgefangen, Rückpässe
