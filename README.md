@@ -75,6 +75,9 @@ Als App installierbar (PWA), läuft offline.
   Einblendung „WIEDERHOLUNG“ mit Schütze, Technik und km/h, Kinobalken und Vignette. **Tippen** (oder eine Taste)
   überspringt. Im Pause-Menü „Wiederholung: an/aus“, `?replay=0` = aus; im Training keine Wiederholung. Aufgezeichnet
   wird nur der Darstellungs-Zustand (Ringpuffer 8 s), die Simulation steht währenddessen still und bleibt unverändert.
+- **Kein Ton (Nacht 2e, Peter 03.10.: „Lösch mal alle Sounds, es brutzelt noch immer ab Spielstart“):** das Spiel ist
+  komplett stumm – kein AudioContext, keine Umgebungsschleife, keine Effekte, auch nicht in Menü, Training und
+  Wiederholung. Der Ton-Knopf im Pause-Menü ist weg. Wiedereinbau nur auf Wunsch.
 - Beim ersten Start erklärt eine **Hilfekarte** die Gesten; später über ☰ → Steuerung.
 
 **Ballmagnet (Nacht 2c, Peter: „leichter ballmagnet, sonst kein dribbling“; Nacht 2d: „viel mehr Ballmagnet“ → Stärke 1,2
@@ -154,7 +157,6 @@ Ball mit (Sohle/Außenseite). `?zack=0` = altes Gefühl aus Nacht 1 zum Vergleic
 | `?dachhoehe=6`, `?torbreite=3`, `?torhoehe=2` | Käfig-Maße |
 | `?<Parametername>=Wert` | jeder Wert aus `src/sim/params.js`, z. B. `?keeperDist=0.8`, `?holdMax=8` |
 | `?q=0/1/2` | Grafikstufe fest: 0 niedrig, 1 mittel (Handy: Blob-Schatten unter den Menschen), 2 hoch (Echtzeit-Schatten). Ohne `?q=` Automatik: bei < ~42 fps erst Auflösung, dann Menschen-Schatten, dann alle Schatten runter |
-| `?ton=0` | ohne Ton (sonst im Pause-Menü umschaltbar) |
 | `?figur=kapsel` | Kapsel-Figuren statt Rocketbox-Menschen (Rückfall) |
 | `?seed=4711`, `?debug`, `?play` | fester Zufall, Anzeige Bildrate/Draw-Calls, Startbildschirm überspringen |
 | `?doppel=0.11`, `?tipp=0.2` | Gesten: Fenster für den 2. Druck nach dem Loslassen (s; Kinder mit langsamem Doppeltipp: `0.15`), längster Tipp (s) |
@@ -189,7 +191,7 @@ Ball mit (Sohle/Außenseite). `?zack=0` = altes Gefühl aus Nacht 1 zum Vergleic
 - `src/sim/replay.js` (Nacht 2d): Ringpuffer des Darstellungs-Zustands, Ablauf und Kameras der Tor-Wiederholung (ohne
   DOM, in Node getestet); `src/render/replayfx.js`: Leuchtspur und Druckwelle (je 1 Draw-Call), Kinobalken/Blitz per CSS.
 - `src/render/` – Szene, Käfig, Ball/Granulat, `avatars.js` (Rocketbox-Menschen, Lauf-Blend, Leibchen, Posen), Kamera
-  je Format. `src/audio/sound.js` – alle Geräusche selbst synthetisiert, per OfflineAudioContext vorgerendert.
+  je Format. `src/audio/sound.js` – **stumm** seit Nacht 2e (Stub mit alter Schnittstelle, kein AudioContext).
   `src/input/` – Touch, Tastatur/Maus, Gamepad.
 - **Menschen-Pipeline:** `tools/fetch_rocketbox.py` (nur benötigte Dateien, Rohdaten in `assets_src/`, gitignored) →
   `tools/rb_to_glb.py` (Blender 5.2 headless: Avatar-Export und Retargeting der Clips per Weltrotation auf das
@@ -211,7 +213,7 @@ node tests/node/rules.test.mjs  # letzte Hand, Hysterese, Torraum, Hände, 6 s, 
 node tests/node/selfplay.test.mjs  # 200 Bot-Spiele à 2 × 4 min: keine Hänger, Tore, beide treffen, Stärken (≈ 2 min)
 node tools/calibrate.mjs        # Rasenwerte neu auf die FIFA-Ziele stellen
 python3 tests/smoke.py          # Browser (Pixel 7 hoch/quer, Desktop): 0 Fehler; Training: Führen/Schuss/Bande/Dach;
-                                #   3 gegen 3: Bots spielen, Tor → Schnellstart, Tormann-Knöpfe, Abwurf, Wechsel, Ton
+                                #   3 gegen 3: Bots spielen, Tor → Anstoß, Tormann-Knöpfe, Abwurf, Wechsel, Ton aus (0 AudioContext)
 python3 tests/test_touch.py     # echte Touch-Ereignisse: Stick, Pass, Tipp/Doppeltipp auf beiden Knöpfen, Ring
 node tests/node/gesture.test.mjs    # Lade-Gesten (?laden=1: halten, tipp + halten, Grenzen, zwei Knöpfe)
 node tests/node/tap.test.mjs        # Tipp-Gesten (Standard): Parser, 1000 Zufalls-Gesten, Tipp → Ballkontakt, Tipp/Doppeltipp im Spiel
@@ -229,6 +231,7 @@ node tests/node/keeper_probe.mjs 30 # Tore je Schuss gegen Stufe 1/2/3 (KEEPER_O
 node tests/node/keeper_series.mjs   # Tormann isoliert: feste Eckschuss-Serie je Stufe (mit Hechtsprüngen; SPEED=21-33 = harte Schüsse)
 node tests/node/wucht.test.mjs      # Wucht vorher/nachher (Tempo, Flugzeit, Kurve, leeres Tor), Ziel-Löser, Abwehr > Fang-Grenze, Selbstspiel: Tunneln, Hechtsprünge
 node tests/node/wucht_probe.mjs selfplay "wucht=1" 8   # Messwerkzeug: Schüsse, Tore, Hechtsprünge, schnellster Schuss, Ball draußen
+node tests/node/stumm.test.mjs      # Ton aus: kein Audio-Erzeuger im ausgelieferten Code, Stub ohne Wirkung
 node tests/node/replay.test.mjs     # Tor-Wiederholung: Ringpuffer, Kontakt-Takt, Ablauf ≤ 7 s, Überspringen, Spielzustand unverändert
 python3 tests/shots5.py final       # Fotos Nacht 2d: sechs Luftball-Techniken im Kontakt (Spiel- und Seitenkamera), Hechtsprung, Wiederholung (FORMS=hoch)
 python3 tests/shots4.py final   # Fotos Nacht 2c: Auto-Torwart hechtet, Grätsche, Flanke, großes Feld (hoch/quer)
@@ -250,10 +253,9 @@ Browser-Tests laufen headless über die GPU (ANGLE/Metal), nie zwei Browser glei
 - **Rasen-Texturen:** Grass004 und Grass005, ambientCG, CC0 (Kunstrasen umgefärbt, Faser-Normalmap selbst erzeugt).
 - **Menschen und Bewegungen:** Microsoft Rocketbox Avatar Library (MIT, © 2020 Microsoft) – Sports_Male_02/03/04,
   Sports_Female_02, Male_Adult_10, Female_Adult_12 und 16 Bewegungen je Geschlecht.
-- **Geräusche:** selbst synthetisiert (Web Audio), keine fremden Aufnahmen.
 - **Bibliothek:** three.js (MIT), meshoptimizer-Decoder (MIT).
 - **Physik-Quellen:** Hong & Asai 2014; Asai et al. 2007; Goff & Carré 2009/2010; Cross 2002; FIFA Quality Programme
   for Football Turf (Handbook of Test Methods 2015, Test Manual 2024).
 
-Details: [`LICENSES.md`](LICENSES.md). Code, Käfig, Ball, Leibchen, Posen, Physik, Bots, Ton: eigene Arbeit (MIT).
+Details: [`LICENSES.md`](LICENSES.md). Code, Käfig, Ball, Leibchen, Posen, Physik, Bots: eigene Arbeit (MIT).
 Keine Vereins- oder Markenlogos, keine echten Spielernamen.

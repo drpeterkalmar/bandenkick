@@ -60,7 +60,7 @@ const newGame = () => (challengeId ? new Game(P, seed + '_' + challengeId + '_' 
 let game = newGame();
 const gcam = new GameCamera(innerWidth / innerHeight, game.cage);
 const input = new Input(hud);
-const sound = new Sound(qs.get('ton') !== '0' && localStorage.getItem('bk_ton') !== '0');
+const sound = new Sound(); // Nacht 2e: stumm (Stub), kein AudioContext
 
 const G = window.__game = {
   ready: false, frames: 0, build: BUILD, P, quality, errors: window.__errors,
@@ -128,14 +128,10 @@ function lastShotLine() {
   el.textContent = `Letzter Schuss: ${techName(k.tech)} · ${Math.round(k.speed * 3.6)} km/h${q}${k.timing != null ? ` · Timing ${Math.round(k.timing * 100)} %` : ''}`;
 }
 let creditsBack = 'menu';
-const soundBtn = hud.menu.querySelector('[data-act="sound"]');
-const soundLabel = () => { soundBtn.textContent = 'Ton: ' + (sound.on ? 'an' : 'aus'); };
-soundLabel();
 hud.root.addEventListener('click', (e) => {
   const b = e.target.closest('[data-act]');
   if (!b) return;
   const a = b.dataset.act;
-  sound.unlock();
   if (a === 'play') { leaveChallenge(); setSolo(urlSolo); withHelp(() => startPlay(true)); }
   if (a === 'training' || a === 'free') { leaveChallenge(); setSolo(true); withHelp(() => startPlay(true)); }
   if (a === 'trainmenu') { hud.buildTraining(CHALLENGES, records, fmtScore); setMode('train'); }
@@ -151,7 +147,6 @@ hud.root.addEventListener('click', (e) => {
   if (a === 'back') setMode(creditsBack);
   if (a === 'title') { leaveChallenge(); setMode('menu'); }
   if (a === 'newgame') { if (challengeId) startChallenge(challengeId); else startPlay(true); }
-  if (a === 'sound') { sound.toggle(); localStorage.setItem('bk_ton', sound.on ? '1' : '0'); soundLabel(); }
   if (a === 'kickoff') { game.kickoff(); setMode('play'); }
   if (a === 'fetch') { const pl = me(); game.ball.place(pl.x + Math.cos(pl.face) * 0.6, game.ball.r, pl.z + Math.sin(pl.face) * 0.6); game.state = 'play'; setMode('play'); }
 });
@@ -218,7 +213,6 @@ async function boot() {
   scene.add(gran.points);
   markers = new AimMarkers(scene);
   rp.fx = new ReplayFx(scene);
-  await sound.init().catch((e) => window.__errors.push('Ton: ' + e.message));
   resize();
   input.resetStick();
   loadMsg.remove();
@@ -304,7 +298,6 @@ function worldInput(inp) {
 function handleEvents(ev) {
   const R = game.match ? game.rules : null;
   for (const e of ev) {
-    sound.event(e, game);
     if (e.type === 'kick') {
       const k = game.players[e.player].lastKick;
       if (k && (e.player === game.human || e.human)) hud.kickInfo(k); // e.human: nach dem Pass wechselt die Steuerung sofort
@@ -519,7 +512,6 @@ function frame() {
     const holder = b.held >= 0 ? game.players[b.held] : null;
     hud.setHold(holder && holder.team === pl.team && holder.id === game.human ? holder.holdT / P.holdMax : -1, holder ? P.holdMax - holder.holdT : 0);
   }
-  sound.tick(dt, game, mode === 'play');
   let q = null;
   if (gpuExt) { gpuPoll(); q = gl.createQuery(); gl.beginQuery(gpuExt.TIME_ELAPSED_EXT, q); }
   const tR = performance.now();

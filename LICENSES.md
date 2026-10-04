@@ -2,8 +2,7 @@
 
 Alle fremden Dateien im Repo, mit Quelle, Autor und Lizenz. Code, Käfig-Geometrie, Ball-Textur, Kapsel-Figur,
 Linien, Netz-Texturen, Faser-Normalmap, Icons, Physik, Trainingsleibchen (aus dem Avatar-Mesh erzeugt),
-Tormann-Handschuhe, prozedurale Posen und **alle Geräusche** (selbst synthetisiert, siehe `src/audio/sound.js`)
-sind eigene Arbeit (MIT, siehe unten). Nicht im Repo: Rocketbox-Rohdateien (FBX/TGA) liegen nur lokal in
+Tormann-Handschuhe und prozedurale Posen sind eigene Arbeit (MIT, siehe unten; das Spiel hat seit Nacht 2e keinen Ton mehr). Nicht im Repo: Rocketbox-Rohdateien (FBX/TGA) liegen nur lokal in
 `assets_src/` (gitignored), geladen mit `tools/fetch_rocketbox.py`.
 
 | Datei(en) | Quelle | Autor | Lizenz | URL |

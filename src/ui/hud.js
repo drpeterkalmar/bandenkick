@@ -52,7 +52,7 @@ export function buildHud(root, canvas) {
       <button class="btn sec" data-act="newgame">Neu starten</button>
       <button class="btn sec" data-act="help">Steuerung</button>
     </div>
-    <div class="row"><button class="btn sec" data-act="sound">Ton: an</button><button class="btn sec" data-act="slowmo">Zeitlupe: an</button><button class="btn sec" data-act="replay">Wiederholung: an</button></div>
+    <div class="row"><button class="btn sec" data-act="slowmo">Zeitlupe: an</button><button class="btn sec" data-act="replay">Wiederholung: an</button></div>
     <div class="row"><button class="btn sec" data-act="trainmenu">Training</button></div>
     <p class="small lastshot"></p>
     <p class="small physics"></p>
@@ -68,7 +68,6 @@ export function buildHud(root, canvas) {
       <li><b>Menschen und Bewegungen:</b> <a href="https://github.com/microsoft/Microsoft-Rocketbox" target="_blank" rel="noopener">Microsoft Rocketbox</a>
         (Sports_Male_02/03/04, Sports_Female_02, Male_Adult_10, Female_Adult_12 und 16 Bewegungen), MIT-Lizenz, © 2020 Microsoft.
         Umgerechnet mit Blender; Leibchen, Handschuhe und Posen für Tormann/Schuss eigene Arbeit.</li>
-      <li><b>Geräusche:</b> alle selbst synthetisiert (Web Audio, vorgerendert), keine fremden Aufnahmen.</li>
       <li><b>Physik-Quellen:</b> Hong &amp; Asai 2014 (Sci. Rep. 4:5068), Asai et al. 2007 (Sports Eng. 10), Goff &amp; Carré 2009/2010,
         FIFA Quality Programme for Football Turf – Handbook of Test Methods 2015, Test Manual 2024.</li>
     </ul>

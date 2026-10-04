@@ -141,7 +141,13 @@ with Server() as srv, sync_playwright() as pw:
         h2 = s.state()['human']
         ok(h1 != h0 and h2 != h1 and all(s.state()['players'][h]['team'] == 0 for h in (h0, h1, h2)), f"Spielerwechsel per Taste: {h0} → {h1} → {h2} (nur Orange)")
         s.ev("__game.bots(true)")
-        ok(s.ev("__game.sound.rendered") is True, 'Ton vorgerendert (19 Klänge + Umgebung)')
+        # Nacht 2e: kein Ton – im Menü, Spiel, Tor-Wiederholung, Training (Übung) und nach Taps kein Audio-Objekt
+        s.tap('.iconbtn'); s.frames(2)
+        ok(s.ev("document.querySelector('[data-act=\"sound\"]')") is None, 'Pause-Menü ohne Ton-Knopf')
+        s.tap('.overlay.on [data-act="trainmenu"]'); s.tap('.overlay.on [data-act="challenge"][data-id="torwand"]'); s.tap('.overlay.on [data-act="chgo"]')
+        s.frames(10); s.ev("__game.press([[0, 0.07, 'shot']])"); s.wait_sim(1.5)
+        ac = s.ev("window.__audioCalls")
+        ok(ac == [] and s.ev("__game.sound.ctx") is None and s.ev("document.querySelectorAll('audio').length") == 0, f'Ton aus: 0 Audio-Objekte in Menü, Spiel, Wiederholung, Training ({ac})')
         ok(s.small_buttons() == [], f'Knöpfe ≥ 48 px im Spiel: {s.small_buttons()}')
         ok(s.overlaps(['#bShot', '#bPass', '#bSprint', '#bSwitch', '.score', '.iconbtn']) == [], 'Knöpfe überlappen nicht')
         errs = s.errors + ['JSERR ' + e for e in s.ev('window.__errors')]

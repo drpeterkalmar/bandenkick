@@ -17,6 +17,16 @@ ARGS = SWIFT_ARGS if os.environ.get('WEBGL') == 'swiftshader' else GPU_ARGS
 GL_RENDERER = """() => { const gl = document.createElement('canvas').getContext('webgl2'); if (!gl) return 'kein WebGL2';
   const e = gl.getExtension('WEBGL_debug_renderer_info'); return e ? gl.getParameter(e.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER); }"""
 
+AUDIO_HOOK = """(() => { window.__audioCalls = [];
+  const wrap = (name) => { const C = window[name]; if (!C) return;
+    window[name] = new Proxy(C, { construct(t, a) { window.__audioCalls.push(name); return Reflect.construct(t, a); } }); };
+  ['AudioContext', 'webkitAudioContext', 'OfflineAudioContext'].forEach(wrap);
+  const A = window.Audio; if (A) window.Audio = new Proxy(A, { construct(t, a) { window.__audioCalls.push('Audio'); return Reflect.construct(t, a); } });
+  const ce = Document.prototype.createElement;
+  Document.prototype.createElement = function (tag, ...r) { if (String(tag).toLowerCase() === 'audio') window.__audioCalls.push('audio-element'); return ce.call(this, tag, ...r); };
+  try { if (navigator.audioSession) Object.defineProperty(navigator.audioSession, 'type', { set() { window.__audioCalls.push('audioSession'); }, get() { return 'auto'; } }); } catch (_) {}
+})();"""
+
 class Quiet(SimpleHTTPRequestHandler):
     def log_message(self, *a): pass
     def end_headers(self):
@@ -50,6 +60,8 @@ class Session:
         if self.ctx: self.ctx.close()
         self.device = device
         self.ctx = self.b.new_context(**DEVICES[device])
+        # Nacht 2e: Ton-Wächter – zählt jeden Versuch, Audio zu erzeugen (muss im ganzen Spiel 0 bleiben)
+        self.ctx.add_init_script(AUDIO_HOOK)
         self.pg = self.ctx.new_page()
         self.errors = []; self.console = []; self.warnings = []
         self.pg.on("pageerror", lambda e: self.errors.append("PAGEERROR " + str(e)))
