@@ -21,6 +21,15 @@ function laneFree(game, team, ax, az, bx, bz, skip = -1) {
   return m;
 }
 
+// Nacht 2e: Würde ein Pass in Richtung ad (Weite D) aufs eigene Tor zu durch den eigenen Torraum (+1 m) laufen? Nur im Spiel.
+function ownGoalRisk(game, pl, from, ad, D) {
+  const R = game.match ? game.rules : null;
+  if (!R || game.challenge || game.P.rueckpass) return false;
+  const gx = R.goalX(pl.team), ex = gx - from[0], ez = -from[1];
+  if (ad[0] * ex + ad[1] * ez <= 0) return false; // weg vom eigenen Tor
+  return segDist(gx, 0, from[0], from[1], from[0] + ad[0] * D, from[1] + ad[1] * D) < game.P.torraum + 1;
+}
+
 // Hoch = Nacht 2c feste Flanke (?flanke=): bei 8 m 24°, ab 15 m 14°, 2,5 U/s Rückdrall; kurz bleibt der Chip steil.
 // Laufweg des Empfängers: läuft mit seinem Tempo weiter (höchstens ~2,2 s), bleibt 0,7 m vor der Bande
 export function runPath(cage, r0, rv, T) {
@@ -123,10 +132,11 @@ export function leadBank(P, cage, b0, r0, rv, s) {
 
 // Mögliche Empfänger: Mitspieler direkt und über beide Längsbanden, dazu Challenge-Ziele. Bewertet nach Winkel zur
 // Zielrichtung (Kegel ±passCone), Abstand und freiem Passweg. aim = [x, z] (Einheitsvektor).
-export function passCandidates(game, pl, aim, from) {
-  const P = game.P, cage = game.cage, cone = P.passCone;
+export function passCandidates(game, pl, aim, from, cone = game.P.passCone) {
+  const P = game.P, cage = game.cage, R = game.match ? game.rules : null;
   const list = [];
-  const mates = game.players.filter((m) => m.team === pl.team && m.id !== pl.id).map((m) => ({ id: m.id, x: m.x, z: m.z, vx: m.vx, vz: m.vz }));
+  // Nacht 2e: kein Rückpass – die eigene letzte Hand im Torraum ist kein Empfänger (?rueckpass=1 = alt)
+  const mates = game.players.filter((m) => m.team === pl.team && m.id !== pl.id && !(R && R.isBackPassTarget(m))).map((m) => ({ id: m.id, x: m.x, z: m.z, vx: m.vx, vz: m.vz }));
   if (game.challenge && game.challenge.passTargets) for (const t of game.challenge.passTargets()) mates.push(t);
   for (const m of mates) {
     for (const bank of [0, 1, -1]) {
@@ -168,7 +178,21 @@ export function planPass(game, pl, opts = {}) {
   if (opts.to != null && opts.to >= 0) {
     const m = game.players[opts.to];
     cand = { id: m.id, x: m.x, z: m.z, vx: m.vx, vz: m.vz, bank: 0 };
-  } else cand = passCandidates(game, pl, ad, from)[0] || null;
+  } else {
+    cand = passCandidates(game, pl, ad, from)[0] || null;
+    // Nacht 2e: zeigt der Stick (ohne Mitspieler im Kegel) aufs eigene Tor, geht der Pass zum nächstbesten Mitspieler im
+    // erweiterten Kegel (±70°) oder seitlich in den freien Raum – nie aufs eigene Tor zu
+    if (!cand && ownGoalRisk(game, pl, from, ad, power == null ? P.passFree : 18)) {
+      cand = passCandidates(game, pl, ad, from, 70)[0] || null;
+      if (!cand) {
+        const a0 = Math.atan2(ad[1], ad[0]);
+        for (let k = 1; k <= 18; k++) {
+          const opt = [1, -1].map((sg) => [Math.cos(a0 + sg * k * 10 * DEG), Math.sin(a0 + sg * k * 10 * DEG)]).filter((d) => !ownGoalRisk(game, pl, from, d, power == null ? P.passFree : 18));
+          if (opt.length) { opt.sort((a, b) => Math.abs(b[1]) - Math.abs(a[1])); ad[0] = opt[0][0]; ad[1] = opt[0][1]; break; }
+        }
+      }
+    }
+  }
   let plan;
   if (cand) {
     const r0 = [cand.x, cand.z], rv = [cand.vx || 0, cand.vz || 0];

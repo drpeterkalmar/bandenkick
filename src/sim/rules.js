@@ -24,6 +24,9 @@ export class Rules {
     this.goals = [];                    // [{t, team, scorer, own, saved}]
     this.winner = -1;
     this.handsOffTeam = -1;             // Training: diese Mannschaft darf keine Hände nehmen
+    this.backPass = -1;                 // Nacht 2e: Mannschaft, deren Spieler den Ball zuletzt absichtlich Richtung eigenes Tor gespielt hat
+    this.backPassFrom = -1;             // … und wer (der Tormann selbst zählt nicht)
+    this.bpTold = false;                // Hinweis „Rückpass – keine Hände“ für diesen Ball schon gemeldet
   }
 
   // ---------- Geometrie ----------
@@ -39,7 +42,27 @@ export class Rules {
   // Darf dieser Spieler gerade die Hände benutzen? Nur die letzte Hand, nur im eigenen Torraum.
   handsOk(pl) {
     if (this.handsOffTeam === pl.team) return false; // Schützen-Challenges: keine Hände
+    if (this.backPassBlock(pl)) return false;        // Nacht 2e: Rückpass vom eigenen Mitspieler – mit dem Fuß spielen
     return this.keeper[pl.team] === pl.id && this.inBox(pl.team, pl.x, pl.z) && this.phase !== 'end';
+  }
+
+  // ---------- Rückpass (Nacht 2e, Peter: „erlaube keinen Rückpass“) ----------
+  // Ein Spieler kickt den Ball absichtlich (Pass, Schuss, Befreiung, Volley – kein Kopfball): zählt als Rückpass, wenn er
+  // zum eigenen Tormann geht, Richtung eigenes Tor rollt oder nah am eigenen Torraum gespielt wird. Danach darf die letzte
+  // Hand dieser Mannschaft keine Hände nehmen, bis ein anderer Spieler den Ball berührt (auch ein Abpraller am Gegner).
+  markKick(pl, dx, dz, to = -1) {
+    const g = this.g, P = g.P;
+    if (P.rueckpass || g.challenge || this.keeper[pl.team] === pl.id) return;
+    const gx = this.goalX(pl.team), side = pl.team === 0 ? 1 : -1, b = g.ball;
+    const near = Math.hypot(b.p.x - gx, b.p.z) < P.torraum + 3;
+    if (to === this.keeper[pl.team] || dx * side < -0.2 || near) { this.backPass = pl.team; this.backPassFrom = pl.id; this.bpTold = false; }
+  }
+  backPassBlock(pl) { return this.backPass === pl.team && this.backPassFrom !== pl.id && !this.g.P.rueckpass; }
+  clearBackPass() { this.backPass = -1; this.backPassFrom = -1; this.bpTold = false; }
+  // Ist m als Pass-Empfänger tabu? Eigene letzte Hand im (oder knapp vor dem) Torraum – im Spiel, nicht im Training
+  isBackPassTarget(m) {
+    const g = this.g;
+    return !g.P.rueckpass && !g.challenge && this.keeper[m.team] === m.id && this.inBox(m.team, m.x, m.z, 1.0);
   }
 
   // ---------- „Letzte Hand“ mit Hysterese ----------
@@ -85,6 +108,11 @@ export class Rules {
         g.events.push({ type: 'dive', player: pl.id });
       }
       if (b.held === pl.id) { this.holding(dt, pl, inp); continue; }
+      // Rückpass: Ball kommt in Reichweite der Hände, Hände tabu → einmal Hinweis (kein Freistoß, nur Info)
+      if (!this.bpTold && b.held < 0 && this.backPassBlock(pl) && this.keeper[team] === pl.id && this.inBox(team, pl.x, pl.z) && this.inBox(team, b.p.x, b.p.z, 0.4) && this.phase === 'play') {
+        const H = this.handReach(pl, inp);
+        if (H.d < P.catchReach + 0.3 && b.p.y < H.hi) { this.bpTold = true; g.events.push({ type: 'rueckpass', team, player: pl.id, from: this.backPassFrom }); }
+      }
       if (b.held >= 0 || !ok || g.t < pl.catchCd) continue;
       // Fangen: Ball in Reichweite der Hände
       const want = inp.hand || pl.hand.mode === 'dive' || inp.autoCatch;
@@ -303,6 +331,7 @@ export class Rules {
   // zum Torschützen. Geht der Ball trotzdem rein, bekommt der Schütze das Tor (Peter 30.09.: „es steht Eigentor, wenn
   // ich ein reguläres Tor schieße“ – vorher war jedes 3. Tor im Selbstspiel so ein falsches Eigentor).
   touch(pl, deflect = false) {
+    if (this.backPass >= 0 && this.keeper[this.backPass] !== pl.id) this.clearBackPass(); // (ein Kick setzt ihn danach neu)
     this.lastTouchTeam = pl.team; this.g.lastTouch = pl.id; this.g.lastTouchT = this.g.t;
     this.lastDeflect = deflect ? pl.id : -1;
     if (!deflect) this.lastPlay = pl.id;
@@ -323,7 +352,7 @@ export class Rules {
     if (own) scorer = -1;
     this.goals.push({ t: this.clock, team, scorer, own, saved });
     this.phase = 'goal'; this.phaseT = 0;
-    this.scoredTeam = team;
+    this.scoredTeam = team; this.clearBackPass();
     g.events.push({ type: 'goal', side, team, scorer, own, saved, speed: g.ball.v.len() });
     if (this.golden) this.finish();
   }
@@ -348,7 +377,7 @@ export class Rules {
     if (!pl) return;
     const gx = this.goalX(team), side = team === 0 ? 1 : -1;
     if (!this.inBox(team, pl.x, pl.z, -0.4)) pl.place(gx + side * 1.4, clamp(pl.z, -1.5, 1.5), team === 0 ? 0 : Math.PI);
-    pl.hand.mode = 'hold'; pl.holdT = 0; pl.pending = null;
+    pl.hand.mode = 'hold'; pl.holdT = 0; pl.pending = null; this.clearBackPass();
     pl.face = team === 0 ? 0 : Math.PI;
     g.ball.held = pl.id; g.ball.v.set(0, 0, 0); g.ball.w.set(0, 0, 0);
     this.carry();
@@ -361,7 +390,7 @@ export class Rules {
   kickoff(team) {
     const g = this.g;
     g.setupKickoff(team);
-    this.kickoffTeam = team;
+    this.kickoffTeam = team; this.clearBackPass();
     this.phase = 'kickoff'; this.phaseT = 0;
     this.updateKeepers(0, true);
     g.events.push({ type: 'restart', mode: 'kickoff', team });

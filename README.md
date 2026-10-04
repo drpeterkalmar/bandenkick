@@ -14,6 +14,14 @@ Als App installierbar (PWA), läuft offline.
   Hände nehmen, und nur im **eigenen Torraum** (Halbkreis 4 m): Fangen, Hechten, Abwurf, Abschlag. Außerhalb geht
   keine Handaktion – es gibt keine Handspiel-Pfiffe. Ball in der Hand höchstens **3 s** (Leiste im HUD; bis Nacht 2d
   6 s), solange greift niemand an.
+- **Kein Rückpass (Nacht 2e, Peter 03.10.: „erlaube keinen Rückpass“):** zum eigenen Tormann (letzte Hand im Torraum)
+  wird nicht gepasst – weder vom Menschen (der Stick-Kegel überspringt ihn; zeigt der Stick aufs eigene Tor, geht der Pass
+  zum nächsten Mitspieler im erweiterten Kegel ±70° oder seitlich in den freien Raum, nie aufs eigene Tor zu) noch von den
+  Bots. Spielt ein Mitspieler dem Tormann den Ball trotzdem absichtlich zu (Pass, Schuss, Befreiung Richtung eigenes Tor oder
+  nah am Torraum; Kopfball zählt nicht), darf er ihn nicht in die Hand nehmen und spielt ihn wie ein Feldspieler – kein
+  Freistoß, nur einmal je Spiel der Hinweis „Rückpass – keine Hände“. Berührt danach ein anderer Spieler den Ball (auch ein
+  Abpraller am Gegner), gelten die Hände wieder. 6 Bot-Spiele: Rückpässe 141 → 0, Hand nach Rückpass 101 → 0.
+  `?rueckpass=1` = alt.
 - **Tormann gibt den Ball schnell weiter (Nacht 2e, Peter 03.10.: „nicht so lange in die Hand nehmen“):** der Bot-Tormann
   wirft nach 0,3–0,7 s auf einen sicher freien Mitspieler ab, ab 0,9 s auch auf einen weniger freien (nie in einen Weg, den
   ein Gegner abfangen kann), spätestens nach 2 s schlägt er weit in die freiere Hälfte ab. Gemessen in 6 Bot-Spielen:
@@ -148,6 +156,7 @@ Ball mit (Sohle/Außenseite). `?zack=0` = altes Gefühl aus Nacht 1 zum Vergleic
 | `?dauer=4`, `?golden=1`, `?anstoss=0` | Minuten je Halbzeit, Golden Goal bei Gleichstand, Schnellstart statt Anstoß nach Tor |
 | `?torraum=4`, `?fanghilfe=0` | Radius des Torraums (m), Fanghilfe für den menschlichen Tormann aus (nur mit `?autotorwart=0`) |
 | `?autotorwart=0`, `?autowurf=1` | Auto-Torwart aus (grüne Knöpfe wie Nacht 2b); Sekunden ohne Eingabe bis zum automatischen Abwurf (Nacht 2e: 1, vorher 2) |
+| `?rueckpass=1` | Rückpass wie bis Nacht 2d erlaubt (Tormann als Pass-Empfänger, fängt den Ball vom Mitspieler) |
 | `?halten=1.2`, `?holdMax=3` | Tormann mit Ball (Nacht 2e): Sekunden bis zum Abwurf des Bot-Tormanns (spätestens + 0,8 s Abschlag), `0` = Nacht 2d (wartet bis ~4,4 s, Zeitregel 6 s, Auto-Torwart 2 s); Zeitregel (s) |
 | `?tormann=1` … `3` | Stärke der CPU-Tormänner getrennt von den Feldspielern (Zwischenwerte wie `1.5` erlaubt; ohne Regler wie `?bots=`). Standard 2 lässt ≈ 30 % der Schüsse rein (Nacht 2b: 14 %) |
 | `?zack=0` | altes Bewegungsmodell aus Nacht 1 (A/B-Vergleich) |
@@ -232,6 +241,7 @@ node tests/node/challenge.test.mjs  # alle 9 Übungen headless mit Skript-Spiele
 node tests/node/magnet.test.mjs     # Ballmagnet vorher/nachher: Kinder-Stick (Ball weg je Minute), Parcours, Selbstspiel-Ballverluste, Regeln
 node tests/node/dribble_probe.mjs 20 "magnet=0"  # Messwerkzeug: Parcours (Skript/Kinderhand), Ballverluste beim Führen im Selbstspiel
 node tests/node/tackle.test.mjs     # Grätsche: Auslöser, Ball zuerst (Pass/Schuss/klären), Gegner zuerst (Ball frei, stolpert), Bots, keine Hänger
+node tests/node/rueckpass.test.mjs  # kein Rückpass: Pass-Auswahl (Stick aufs eigene Tor), keine Hände nach Mitspieler-Pass, Hinweis, 6 Bot-Spiele
 node tests/node/halten.test.mjs     # Tormann mit Ball (Nacht 2e): Haltezeit Median/max, keine Zwangsabwürfe, abgefangene Abwürfe vorher/nachher
 node tests/node/keeper_hold_probe.mjs 8 "halten=0"  # Messwerkzeug: Haltezeit, Abwürfe, abgefangen, Rückpässe
 node tests/node/keeper.test.mjs     # Auto-Torwart (hält ohne Knopf, Stick gewinnt, Abwurf nach 1 s), CPU-Tormann je Stufe (24 Spiele), Roller

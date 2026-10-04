@@ -761,7 +761,7 @@ export class Player {
         if (c > best) { best = c; to = m.id; }
       }
     }
-    if (game.match) { game.passTo = pd.kind === 'pass' ? to : -1; game.rules.touch(this); }
+    if (game.match) { game.passTo = pd.kind === 'pass' ? to : -1; game.rules.touch(this); if (pd.to !== this.id) game.rules.markKick(this, dx, dz, to); }
     game.passPlan = null;
     game.events.push({ type: 'kick', kind: pd.kind, tech: techL, player: this.id, human: game.human === this.id, speed, x: ball.p.x, y: ball.p.y, z: ball.p.z, dx, dz, to });
   }
@@ -795,10 +795,11 @@ export class Player {
     const sideRps = (plan.side || 0) / (2 * Math.PI);
     this.lastKick = { kind: plan.kind, tech: plan.tech, mode: plan.mode, speed, q: plan.q ?? null, factors: plan.factors || null, power: plan.power ?? null,
       spinRps: Math.hypot(ball.w.x, ball.w.y, ball.w.z) / (2 * Math.PI), sideRps, elevDeg: el / DEG, to: plan.to ?? -1, bank: plan.bank || 0, chip: !!plan.chip,
-      aim: plan.aim || null, meet: plan.meet || null, T: plan.T ?? null, t: game.t, timing: plan.timing ?? null, planElDeg: plan.elRad / DEG };
+      aim: plan.aim || null, meet: plan.meet || null, T: plan.T ?? null, t: game.t, timing: plan.timing ?? null, planElDeg: plan.elRad / DEG,
+      planDir: plan.dir ? [plan.dir[0], plan.dir[1]] : null };
     let to = plan.kind === 'pass' ? (plan.to ?? -1) : -1;
     if (to < -1) to = -1; // Challenge-Ziel (virtuell)
-    if (game.match) { game.passTo = to; game.rules.touch(this); }
+    if (game.match) { game.passTo = to; game.rules.touch(this); if (plan.tech !== 'kopf' && plan.tech !== 'flugkopf' && plan.to !== this.id) game.rules.markKick(this, dx, dz, to); }
     game.passPlan = plan.kind === 'pass' && plan.meet ? { to: plan.to ?? -1, from: this.id, x: plan.meet[0], z: plan.meet[1], t: game.t + (plan.T || 1), chip: !!plan.chip, bank: plan.bank || 0 } : null;
     game.events.push({ type: 'kick', kind: plan.kind === 'air' ? 'shot' : plan.kind, tech: plan.tech, player: this.id, human: game.human === this.id, speed, x: ball.p.x, y: ball.p.y, z: ball.p.z, dx, dz, to, q: plan.q ?? null });
     return plan;
@@ -819,6 +820,7 @@ export class Player {
     const rvx = ball.v.x - this.vx, rvz = ball.v.z - this.vz;
     const vn = rvx * ux + rvz * uz;
     if (vn < 0) {
+      if (game.match && vn < -1 && game.rules.backPass >= 0 && game.rules.backPass !== this.team) game.rules.clearBackPass();
       const j = (1 + 0.35) * vn;
       ball.v.x -= j * ux; ball.v.z -= j * uz;
       ball.w.scale(0.6);

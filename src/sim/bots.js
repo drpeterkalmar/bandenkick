@@ -464,6 +464,7 @@ export class Bots {
     // Pass und Bandenpass zu Mitspielern
     for (const m of g.players) {
       if (m.team !== team || m.id === pl.id) continue;
+      if (R.isBackPassTarget(m)) continue; // Nacht 2e: kein Rückpass zum eigenen Tormann im Torraum
       const isKp = m.id === R.keeper[team];
       const D0 = Math.hypot(m.x - b.p.x, m.z - b.p.z);
       if (D0 < 2.5 || D0 > 15) continue;
@@ -684,7 +685,8 @@ export class Bots {
     if ((inOwnBox || R.inBox(team, tt.x, tt.z)) && b.held < 0 && tt.t < oppBest + 0.4 && b.p.y < 2.2) {
       inp.autoCatch = true; inp.hand = true;
       this.moveTo(inp, pl, tt.x, tt.z, true, 0.4);
-      if (!human && !R.inBox(team, pl.x, pl.z, -0.2) && !pl.pending && Math.hypot(b.p.x - pl.x, b.p.z - pl.z) < 1.3) this.decide(pl, br, L, true);
+      // (Nacht 2e: Rückpass – keine Hände, dann spielt er ihn auch im Torraum mit dem Fuß weiter)
+      if (!human && (!R.inBox(team, pl.x, pl.z, -0.2) || R.backPassBlock(pl)) && !pl.pending && Math.hypot(b.p.x - pl.x, b.p.z - pl.z) < 1.3) this.decide(pl, br, L, true);
       return;
     }
     // Eigener Ballbesitz am Fuß (Tormann dribbelt): schnell abspielen
@@ -717,7 +719,7 @@ export class Bots {
     this.moveTo(inp, pl, gx + side * 1.6, clamp(pl.z, -1.5, 1.5), false, 1);
     if (pl.hand.mode !== 'hold') { br.throwAt = -1; return; }            // liegt noch (Hechtsprung): erst aufstehen
     if (human && br.idleT < P.autoWurf) { br.throwAt = -1; return; }
-    if (br.throwAt < 0) br.throwAt = human ? g.t : g.t + 0.3 + g.rng.next() * 0.4;
+    if (br.throwAt < 0) br.throwAt = human ? g.t : g.t + (pl.holdT > 0.5 ? 0.1 + g.rng.next() * 0.2 : 0.3 + g.rng.next() * 0.4); // nach dem Hechtsprung: gleich nach dem Aufstehen
     if (g.t < br.throwAt) return;
     const late = pl.holdT >= 0.75 * P.halten, last = pl.holdT >= P.halten + 0.8 || (human && br.idleT >= P.autoWurf + 1);
     const safe = L.catchSkill > 0.5;

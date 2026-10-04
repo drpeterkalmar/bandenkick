@@ -222,6 +222,10 @@ export const DEFAULTS = {
   // auch auf einen weniger freien Mitspieler, spätestens nach halten + 0,8 s weiter Abschlag in die freiere Hälfte (kein
   // abgefangener Abwurf vor dem eigenen Tor). 0 = alt (Nacht 2d: 0,8–2,2 s, ohne freien Weg bis ≈ 4–4,6 s warten)
   halten: 1.2,            //                                                                         [?halten=]
+  // Nacht 2e (Peter: „erlaube keinen Rückpass“): der eigene Tormann (letzte Hand im Torraum) ist kein Pass-Empfänger, und
+  // spielt ein Mitspieler ihm den Ball absichtlich zu (Pass/Schuss mit dem Fuß, nicht abgefälscht), darf er ihn nicht mit den
+  // Händen nehmen – er spielt ihn wie ein Feldspieler (kein Freistoß, nur ein Hinweis). 1 = alt (Rückpass erlaubt)
+  rueckpass: 0,           //                                                                         [?rueckpass=1]
   fanghilfe: 1,           // Mensch als Tormann fängt Bälle auf den Körper (≤ 55 cm) auch ohne Knopf [?fanghilfe=0]
   // Nacht 2c (Peter: „Torwart soll alleine fangen und hechten ohne eigene Knöpfe. Cpu goalie ist zu stark.“)
   autoTorwart: 1,         // Mensch als letzte Hand: Fangen/Hechten automatisch (Stärke = alte Bot-Stufe 2), Knöpfe

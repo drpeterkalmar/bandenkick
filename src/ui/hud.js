@@ -98,6 +98,7 @@ export function buildHud(root, canvas) {
     <p class="small">Kein Aufladen: die Stärke wählt das Spiel. Du darfst schon tippen, bevor der Ball am Fuß ist.</p>
     <ul class="howto"></ul>
     <p class="small">Der Pass geht zum Mitspieler, auf den der Stick zeigt (±35°), in seinen Laufweg – zeigst du auf die Bande, geht er über die Bande.
+    Kein Rückpass: zum eigenen Torwart wird nicht gepasst, und einen Ball vom Mitspieler darf er nicht in die Hand nehmen.
     Der Schuss geht immer aufs Tor: Stick seitlich = flache Ecke, schräg nach vorn = hohe Ecke. Schlechte Lage (spitzer Winkel, Rücken zum Tor, Gegner dran) = langsamer und zentraler.</p>
     <div class="row stick"><button class="btn" data-act="helpok">Verstanden</button></div></div>`;
   // Tor-Wiederholung (Nacht 2d): Kinobalken, Vignette, Blitz, Einblendungen – reines CSS (kein Nachbearbeitungs-Pass)

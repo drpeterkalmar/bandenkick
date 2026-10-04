@@ -326,6 +326,9 @@ function handleEvents(ev) {
       hud.flash('Abpfiff', e.winner < 0 ? `Unentschieden ${e.score[0]} : ${e.score[1]}` : `${TEAM_NAMES[e.winner]} gewinnt ${e.score[0]} : ${e.score[1]}`, 6);
     } else if (e.type === 'tackle' && e.phase === 'hit' && e.human) {
       hud.flash('Grätsche!', e.result === 'ball' ? 'Ball erobert' : 'Ball frei', 0.9);
+    } else if (e.type === 'rueckpass' && R && e.team === me().team && !game.bpToast) {
+      game.bpToast = true; // Nacht 2e: einmal je Spiel, kein Freistoß
+      hud.flash('Rückpass – keine Hände', 'Torwart spielt mit dem Fuß', 1.8);
     } else if (e.type === 'catch' && e.player === game.human) {
       hud.flash('Gefangen', 'Abwurf oder Abschlag', 1.0);
     }

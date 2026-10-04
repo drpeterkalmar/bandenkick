@@ -2,7 +2,8 @@
 // erlaube keinen Rückpass“). Bot-Spiele (alle Bots, Stufe 2): Haltezeit je Ballbesitz des Tormanns (Median/90 %/max),
 // Abwurf/Abschlag/Zwangsabwurf, abgefangene Abwürfe (Gegner berührt zuerst), Gegentor ≤ 6 s nach einem abgefangenen
 // Abwurf, dazu Rückpässe: Pässe der Feldspieler zum eigenen Tormann (letzte Hand im Torraum) und Bälle, die der Tormann
-// nach einem Pass/Schuss des eigenen Mitspielers mit den Händen nimmt.
+// nach einem Rückpass des eigenen Mitspielers (Kick Richtung eigenes Tor, zum Tormann oder nah am Torraum, ohne Kopfball,
+// ohne Berührung/Abpraller am Gegner dazwischen) mit den Händen nimmt.
 // Aufruf: node tests/node/keeper_hold_probe.mjs [Spiele] ["qs"]   z. B. node tests/node/keeper_hold_probe.mjs 8 "halten=0&rueckpass=1"
 import { makeParams } from '../../src/sim/params.js';
 import { Game } from '../../src/sim/step.js';
@@ -26,9 +27,15 @@ export function holdProbe(qs = '', games = 6, seed0 = 1) {
             const kp = keeperBefore[pl.team];
             if (e.to === kp && e.to !== pl.id && R.inBox(pl.team, g.players[kp].x, g.players[kp].z, 1)) backPass++;
           }
-          lastKick = { player: e.player, team: pl.team, t: g.t };
+          // Rückpass im Sinn der Regel: Kick (kein Kopfball, nicht zu sich selbst vorgelegt) Richtung eigenes Tor, zum Tormann
+          // oder nah am eigenen Torraum; ein Feldspieler, nicht der Tormann selbst
+          const side = pl.team === 0 ? 1 : -1, gx = R.goalX(pl.team);
+          const back = e.to !== e.player && e.tech !== 'kopf' && e.tech !== 'flugkopf' && keeperBefore[pl.team] !== pl.id &&
+            (e.to === keeperBefore[pl.team] || e.dx * side < -0.2 || Math.hypot(e.x - gx, e.z) < g.P.torraum + 3);
+          lastKick = back ? { player: e.player, team: pl.team, t: g.t } : null;
         }
         if (e.type === 'touch') lastKick = null; // ein Ballkontakt dazwischen (Annahme, Abpraller) – kein Rückpass mehr
+        if (e.type === 'body' && lastKick && g.players[e.player].team !== lastKick.team) lastKick = null; // am Gegner abgeprallt
         if (e.type === 'catch') {
           catches++;
           const pl = g.players[e.player];
@@ -65,5 +72,5 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const f = (v, d = 2) => (Number.isFinite(v) ? v.toFixed(d) : '–');
   console.log(`Tormann mit Ball ${qs || '(Standard)'} – ${n} Bot-Spiele: ${r.n} Ballbesitze, Haltezeit Median ${f(r.med)} s, 90 % ${f(r.p90)} s, max ${f(r.max)} s, Mittel ${f(r.mean)} s`);
   console.log(`  Abwurf ${r.kinds.throw}, Abschlag ${r.kinds.punt}, Zwangsabwurf ${r.kinds.sixsec}; abgefangen ${r.inter} (${f(r.interPct, 1)} %), daraus Gegentor ≤ 6 s ${r.interGoal}`);
-  console.log(`  Rückpässe zum Tormann ${r.backPass} von ${r.passes} Pässen, Hand nach Mitspieler-Pass/-Schuss ${r.backCatch} von ${r.catches} Fängen; Tore ${r.goals}, Fehler ${r.faults} (${((Date.now() - t0) / 1000).toFixed(0)} s)`);
+  console.log(`  Rückpässe zum Tormann ${r.backPass} von ${r.passes} Pässen, Hand nach Rückpass ${r.backCatch} von ${r.catches} Fängen; Tore ${r.goals}, Fehler ${r.faults} (${((Date.now() - t0) / 1000).toFixed(0)} s)`);
 }
