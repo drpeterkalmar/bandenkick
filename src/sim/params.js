@@ -113,16 +113,19 @@ export const DEFAULTS = {
   dribbleSlow: 0.94,      // Tempo mit Ball relativ zu ohne
   assist: 0.75,           // Stärke der Ballführungs-Hilfe (0 = aus)
   // Ballmagnet (Nacht 2c): Feder zur Soll-Vorlage vor dem Fuß zwischen den Kontakten, 0 = aus (wie Nacht 2b)
-  magnet: 0.5,            // Stärke 0…1                                                             [?magnet=]
+  // Nacht 2d (Peter: „viel mehr Ballmagnet“): 1,2 statt 0,5 (über 1: stärkere Feder, Vorlage/Genauigkeit bei 1 ausgereizt),
+  // im Sprint 70 % statt 45 %. ?magnet=0.5&magnetSprint=0.45 = Nacht 2c
+  magnet: 1.2,            // Stärke 0…2                                                             [?magnet=]
   magnetK: 112,           // 1/s² Federkonstante quer zur Stick-Richtung bei Stärke 1 (0,3 m daneben → 17 m/s² bei 0,5)
   magnetC: 20,            // 1/s Dämpfung (Tempo des Balls quer ans Tempo des Spielers angleichen)
   magnetAcc: 42,          // m/s² höchste Zugbeschleunigung bei Stärke 1 (0,5 → 21 m/s²)
-  magnetSprint: 0.45,     // Anteil im Sprint (weite Vorlagen bleiben weit)
+  magnetSprint: 0.7,      // Anteil im Sprint (Nacht 2c: 0,45)
   magnetTurn0: 60,        // ° Richtungswechsel Stick ↔ Laufrichtung: ab hier wird der Magnet schwächer …
   magnetTurn1: 120,       // ° … bis hier auf 25 %
   magnetSlack: 0.25,      // m so weit darf der Ball über die Soll-Vorlage hinaus rollen, bevor er gebremst wird
   magnetLead: 0.7,        // Vorlagen beim Führen kürzer: Zeit und Weg × (1 − magnetLead · Stärke)
   magnetShield: 0.3,      // m: Gegner nah → Ball zur abgewandten Seite (Abschirmen), 0 = aus
+  magnetSlide: 0,         // Nacht 2d: Anteil, solange ein Gegner in ≤ 3 m am Ball grätscht (0 = Magnet aus, Grätsche erobert)
   magnetOpp: 0.5,         // Anteil, wenn ein Gegner ≤ 0,4 m am Ball ist (ab 1 m voll) – Tackles bleiben möglich
   assistRelease: 0.06,    // s Zeitkonstante: deutliche Eingabe → Hilfe weg (≤ 0,3 s bis < 5 %)
   assistReturn: 0.5,      // s Zeitkonstante: sanft zurück
@@ -130,7 +133,12 @@ export const DEFAULTS = {
   // Pass und Schuss
   passSpeed: 10.5,        // m/s flacher Pass (Tippen)
   shotMin: 6,             // m/s
-  shotMax: 30,            // m/s ≈ 108 km/h (Profi-Maximum)
+  shotMax: 30,            // m/s ≈ 108 km/h (Profi-Maximum) – Grundtempo; Vollspann/angeschnitten zusätzlich × wucht [?schuss=]
+  // Nacht 2d (Peter: „jeweils 1,5x härterer Vollspannschuss und Effetschuss“): Endtempo von Vollspann und angeschnittenen
+  // Schüssen (Innen-/Außenrist) × wucht – für Mensch und Bots. Pässe, Chips, Flanken, Luftbälle bleiben. Bei 1,5 bis
+  // 45 m/s ≈ 162 km/h. ?wucht=1 = Nacht 2c
+  wucht: 1.5,             //                                                                         [?wucht=]
+  wuchtDrall: 1,          // Drall der Banane × wucht^wuchtDrall (1 = gleiche Kurve trotz kürzerer Flugzeit, 0 = wie Nacht 2c)
   chargeT: 1.0,           // s bis voll aufgeladen
   spinMax: 10,            // U/s Innenseite (Kurve)
   backspinMax: 7,         // U/s Heber/Chip
@@ -190,6 +198,8 @@ export const DEFAULTS = {
   slideT: 0.5,            // s Rutschen
   slideGroundT: 0.6,      // s danach am Boden
   slideSpeed: 6.0,        // m/s Anfangstempo des Rutschens (mindestens, sonst das Lauftempo)
+  tackleBall: 0.4,        // m: so viel weiter weg als der Gegner (entlang der Beine) zählt der Ball noch als „zuerst“ (Nacht 2c:
+                          // 0,1 – mit dem stärkeren Magnet liegt der Ball enger am Fuß des Gegners, Grätschen sollen weiter erobern)
   tackleShotD: 11,        // m: Schuss-Knopf schießt aus der Grätsche aufs Tor, wenn das Tor näher ist, sonst klärt er
   zeitlupe: 1,            // Zeitlupe + Kurz-Zoom bei spektakulären Luftbällen (0 = aus)            [?zeitlupe=0]
 
@@ -217,7 +227,15 @@ export const DEFAULTS = {
   diveSpeed: 5.2,         // m/s seitlich beim Hechten
   diveT: 0.38,            // s Flugphase des Hechtsprungs
   diveReach: 1.25,        // m Reichweite im Hechtsprung
-  groundT: 0.75,          // s danach am Boden
+  groundT: 0.5,           // s danach am Boden (Landung und Aufstehen; Nacht 2c: 0,75 – bei viel mehr Hechtsprüngen lag er
+                          // sonst bei jedem Nachschuss noch am Boden)
+  // Nacht 2d (Peter: „Torwart soll viel mehr hechten“): Hecht-Entscheidung der Tormänner (CPU und Auto-Torwart)
+  hechten: 1,             // 0 = wie Nacht 2c (nur wenn Laufen nicht reicht, ≤ 0,5 s vor dem Ball)    [?hechten=0]
+  hechtAb: 0.7,           // m: Ball so weit neben dem Körper aufs Tor → hechten, auch wenn Laufen reichen würde [?hechtAb=]
+  hechtKnapp: 0.5,        // m: Ball so knapp neben dem Pfosten → hechtet trotzdem (Spektakel)
+  hechtVorlauf: 0.7,      // s: frühester Absprung vor dem Ball (Nacht 2c: 0,5)                       [?hechtVorlauf=]
+  diveArmT: 0.2,          // s bis die Arme im Hechtsprung ganz gestreckt sind (Nacht 2c: sofort, 0)
+  hechtTMax: 0.7,         // s längste Flugphase (früher Absprung: fliegt, bis der Ball da ist)
   throwSpeed: 11,         // m/s Abwurf (flach geworfen)
   punt: 21,               // m/s Abschlag aus der Hand
   celebrateT: 2.6,        // s Jubel nach dem Tor, dann Anstoß (bzw. Schnellstart mit ?anstoss=0)

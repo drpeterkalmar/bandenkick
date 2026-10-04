@@ -153,20 +153,25 @@ export function planShot(game, pl, opts = {}) {
   const af = aimFactor(q);
   const aim = [gx, 0.6 + (corner.y - 0.6) * af, corner.z * af];
   let speed, side = 0, back = 0, noiseDeg;
+  const W = Math.max(0.3, P.wucht ?? 1);
   if (opts.speed != null) {
     speed = opts.speed * speedFactor(q);
     side = opts.side || 0; back = opts.back || 0;
     noiseDeg = (opts.noiseBase ?? 2) * noiseFactor(q);
   } else if (tech === 'vollspann') {
-    speed = (P.shotMin + (P.shotMax - P.shotMin) * power) * speedFactor(q);
+    // Nacht 2d (Peter: „1,5x härterer Vollspannschuss und Effetschuss“): Endtempo × wucht (?wucht=1 = Nacht 2c)
+    speed = (P.shotMin + (P.shotMax - P.shotMin) * power) * speedFactor(q) * W;
     noiseDeg = (0.5 + 1.1 * power * power) * noiseFactor(q);
   } else {
     const aussen = tech === 'aussenrist';
     // Nacht 2c: feste Banane (?banane=): Tempo × bananeSpeed statt curveSpeed, Drall wächst über 25 m/s weiter
     const bn = clamp(P.banane ?? 0, 0, 1), cs = P.curveSpeed + (P.bananeSpeed - P.curveSpeed) * bn;
-    speed = (P.shotMin + (P.shotMax * cs - P.shotMin) * power) * speedFactor(q);
-    const spinK = Math.min(1, speed / 25) + (Math.min(P.bananeSpinMax, speed / 25) - Math.min(1, speed / 25)) * bn;
-    side = curveSign(curveLeft) * P.spinMax * 2 * Math.PI * spinK * (aussen ? P.aussenSpin : 1) * (0.7 + 0.3 * q);
+    const v0 = (P.shotMin + (P.shotMax * cs - P.shotMin) * power) * speedFactor(q);
+    speed = v0 * W;
+    const spinK = Math.min(1, v0 / 25) + (Math.min(P.bananeSpinMax, v0 / 25) - Math.min(1, v0 / 25)) * bn;
+    // Nacht 2d: Drall wächst mit der Wucht mit (ω ∝ v hält die Spin-Zahl Sp = rω/v und damit die Kurve; ohne würde die
+    // kürzere Flugzeit die Banane auf ~60 % schrumpfen lassen), Feinregler ?wuchtDrall= (0 = Drall wie Nacht 2c)
+    side = curveSign(curveLeft) * P.spinMax * 2 * Math.PI * spinK * (aussen ? P.aussenSpin : 1) * (0.7 + 0.3 * q) * Math.pow(W, P.wuchtDrall);
     noiseDeg = (0.7 + 1.1 * power * power) * noiseFactor(q) * (aussen ? P.aussenNoise : 1);
   }
   noiseDeg *= opts.noiseMul ?? 1;

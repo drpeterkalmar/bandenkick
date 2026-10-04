@@ -108,8 +108,10 @@ export function airTechnique(h, theta, bounced = false, scale = 1) {
 // Eigenschaften je Luft-Technik: Grundtempo (m/s), Anteil des ankommenden Tempos, Obergrenze, Streuung (°),
 // Zeit am Boden danach (s), Sprung (Kopfball), Fallen (Seit-/Fallrückzieher), Hechten (Flugkopfball)
 export const AIR_PROPS = {
-  volley: { v0: 23, vin: 0.1, vmax: 28, noise: 2.8, ground: 0, name: 'Volley' },
-  dropkick: { v0: 22, vin: 0.1, vmax: 27, noise: 3.2, ground: 0, name: 'Dropkick' },
+  // Nacht 2d: Volley und Dropkick sind Vollspann-Schüsse aus der Luft → Tempo × P.wucht (wucht: true); neben dem 1,5-mal
+  // härteren Vollspann am Boden (31–40 m/s) wirkten sie mit 23–28 m/s lahm. Seit-/Fallrückzieher und Kopfbälle bleiben.
+  volley: { v0: 23, vin: 0.1, vmax: 28, noise: 2.8, ground: 0, name: 'Volley', wucht: true },
+  dropkick: { v0: 22, vin: 0.1, vmax: 27, noise: 3.2, ground: 0, name: 'Dropkick', wucht: true },
   seitfall: { v0: 20, vin: 0.1, vmax: 25, noise: 4.0, ground: 0.8, name: 'Seitfallzieher' },
   fallrueck: { v0: 18, vin: 0.1, vmax: 23, noise: 4.8, ground: 0.8, name: 'Fallrückzieher' },
   kopf: { v0: 10, vin: 0.4, vmax: 17, noise: 2.8, ground: 0, name: 'Kopfball' },

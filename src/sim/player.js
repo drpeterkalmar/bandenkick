@@ -56,9 +56,11 @@ export class Player {
 
   resetHands() { this.hand.mode = 'none'; this.hand.t = 0; this.holdT = 0; }
 
-  // Hechtsprung in Richtung (dx, dz): kurze Flugphase, dann am Boden (siehe stepDive)
-  startDive(dx, dz) {
+  // Hechtsprung in Richtung (dx, dz): Flugphase T s mit Anfangstempo sp (Nacht 2d: je Hechtsprung vom Tormann gewählt,
+  // ohne Angabe P.diveT/P.diveSpeed wie bisher), dann am Boden (siehe stepDive)
+  startDive(dx, dz, T, sp) {
     this.hand.mode = 'dive'; this.hand.t = 0; this.hand.dx = dx; this.hand.dz = dz;
+    this.hand.T = T || this.P.diveT; this.hand.sp = sp || this.P.diveSpeed;
     this.pending = null; this.charging = false;
   }
 
@@ -66,10 +68,11 @@ export class Player {
     const P = this.P, h = this.hand;
     h.t += dt;
     if (h.mode === 'dive') {
-      const k = Math.max(0, 1 - h.t / P.diveT);
-      const sp = P.diveSpeed * (0.35 + 0.65 * k);
+      const T = h.T || P.diveT;
+      const k = Math.max(0, 1 - h.t / T);
+      const sp = (h.sp || P.diveSpeed) * (0.35 + 0.65 * k);
       this.vx = h.dx * sp; this.vz = h.dz * sp;
-      if (h.t >= P.diveT) { h.mode = 'ground'; h.t = 0; }
+      if (h.t >= T) { h.mode = 'ground'; h.t = 0; }
     } else {
       const f = Math.exp(-dt * 10); this.vx *= f; this.vz *= f;
       if (h.t >= P.groundT) { h.mode = game.ball.held === this.id ? 'hold' : 'none'; h.t = 0; }
@@ -403,6 +406,9 @@ export class Player {
     let dOpp = 9;                                                              // Gegner am Ball
     for (const o of game.players) if (o.team !== this.team) dOpp = Math.min(dOpp, Math.hypot(o.x - b.p.x, o.z - b.p.z));
     if (dOpp < 1) m *= P.magnetOpp + (1 - P.magnetOpp) * clamp((dOpp - 0.4) / 0.6, 0, 1);
+    // Nacht 2d: Grätscht ein Gegner (rutscht, ≤ 3 m am Ball), hält der Magnet den Ball nicht fest – die Grätsche soll ihn
+    // weiter erobern können (mit Magnet 1,5 sonst −20 % Grätschen mit Ballgewinn)
+    if (P.magnetSlide < 1) for (const o of game.players) if (o.team !== this.team && o.slide && o.slide.phase === 'slide' && Math.hypot(o.x - b.p.x, o.z - b.p.z) < 3) { m *= P.magnetSlide; break; }
     return m;
   }
   magnetPull(game, want, sx, sz, dt) {
@@ -457,9 +463,12 @@ export class Player {
     const sf = this.sprinting ? 1 : 0;
     // Nacht 2c: mit Magnet kürzere Vorlagen (Ball bleibt näher am Fuß): Zeit und Vorlage × 1 − magnetLead·m
     const mm = P.magnet > 0 ? this.magnetStrength(game, want, sx, sz) : 0;
+    // Nacht 2d: Stärke über 1 (Standard 1,2) macht die Feder stärker, Vorlage und Kontakt-Genauigkeit sind bei 1 ausgereizt
+    // (sonst würden Vorlagezeit und -weg negativ: bei ?magnet=1.5 sprang der Ball 22-mal je Minute weg)
+    const ml = Math.min(1, mm);
     // Beim Aufladen: kurze Vorbereitungs-Kontakte, der Ball bleibt am Fuß (sonst ist er beim Loslassen weg)
-    const T = this.charging ? 0.32 : (P.touchLead + (P.touchLeadSprint - P.touchLead) * sf) * (1 - P.magnetLead * mm);
-    const L = this.charging ? 0.05 : (P.touchExtra + (P.touchExtraSprint - P.touchExtra) * sf) * (1 - P.magnetLead * mm);
+    const T = this.charging ? 0.32 : (P.touchLead + (P.touchLeadSprint - P.touchLead) * sf) * (1 - P.magnetLead * ml);
+    const L = this.charging ? 0.05 : (P.touchExtra + (P.touchExtraSprint - P.touchExtra) * sf) * (1 - P.magnetLead * ml);
     // Weg des Spielers bis zum nächsten Kontakt: ab dem Tempo in Stick-Richtung (nach einem Stemmschritt klein)
     // mit der Antrittskurve bis zum Wunschtempo (altes Modell: pauschal +2,5 m/s²)
     // Läuft er noch gegen die neue Richtung (Stemmschritt), kommt die Bremszeit dazu.
@@ -483,7 +492,7 @@ export class Player {
     if (!need) return false;
     const fast = rel > P.ctrlRel;
     // Nacht 2c: der Magnet macht die Kontakte sauberer (Fehler × 1 − 0,6·Magnetstärke)
-    const mg = 1 - 0.6 * mm;
+    const mg = 1 - 0.6 * ml;
     const errA = P.touchErrDeg * DEG * (1 + 1.5 * sf) * (fast ? 2.5 + (rel - P.ctrlRel) * 0.3 : 1) * rng.gauss() * mg;
     const errS = 1 + P.touchErrSpeed * (1 + sf) * (fast ? 2 : 1) * rng.gauss() * mg;
     const c = Math.cos(errA), s = Math.sin(errA);
@@ -631,7 +640,7 @@ export class Player {
       if (s.d < 0.45 && (!opp || s.t < opp.s.t)) opp = { o, s };
     }
     const ballHit = bs && bs.d < 0.35;
-    if (ballHit && (!opp || bs.t <= opp.s.t + 0.1)) {
+    if (ballHit && (!opp || bs.t <= opp.s.t + P.tackleBall)) {
       // Ball erwischt: Pass-Knopf → Pass zum Mitspieler im Stick-Kegel; Schuss-Knopf → in Tornähe aufs Tor, sonst klären
       sl.done = true;
       this.face = Math.atan2(sl.dz, sl.dx);
@@ -710,7 +719,7 @@ export class Player {
       let cx = pd.cx, cy = pd.cy;
       const cl = Math.hypot(cx, cy);
       if (cl > 1) { cx /= cl; cy /= cl; }
-      speed = (P.shotMin + (P.shotMax - P.shotMin) * f) * (1 - 0.18 * (cx * cx + cy * cy));
+      speed = (P.shotMin + (P.shotMax - P.shotMin) * f) * (1 - 0.18 * (cx * cx + cy * cy)) * P.wucht; // Nacht 2d: Wucht auch hier
       elev = (5 + 18 * Math.max(0, -cy) - 3 * Math.max(0, cy) - (f < 0.3 ? 2 : 0) + rng.gauss()) * DEG;
       // Innenseite (Treffpunkt seitlich): Drall um die Hochachse, bis spinMax U/s
       spinSide = cx * P.spinMax * 2 * Math.PI * Math.min(1, speed / 25);

@@ -21,7 +21,7 @@ export const CHALLENGES = [
     hint: 'Puppen versperren den direkten Weg. Spiel den Ball über die Bande in den leuchtenden Kreis: Stick zur Bande (aufs Spiegelbild des Kreises), dann Pass.' },
   { id: 'dribbel', group: 'schuetze', name: 'Dribbel-Parcours', icon: '🔶', per: [1, 0], attempts: 1, unit: 's', better: 'lo', stars: [26, 19, 15],
     hint: 'Slalom durch die 5 Hütchen-Tore, dann ins Tor. Die Zeit läuft ab dem ersten Ballkontakt. Verpasstes Tor: +3 s.' },
-  { id: 'elfmeter', group: 'schuetze', name: 'Elfmeter', icon: '⚽', per: [1, 1], attempts: 5, unit: 'Tore', better: 'hi', stars: [2, 3, 4],
+  { id: 'elfmeter', group: 'schuetze', name: 'Elfmeter', icon: '⚽', per: [1, 1], attempts: 5, unit: 'Tore', better: 'hi', stars: [2, 3, 4], keeperLevel: 1,
     hint: '5 Elfmeter aus 6 m gegen den Bot-Tormann. Stick wählt die Ecke, doppeltippen = angeschnitten: der Ball dreht um ihn herum.' },
   { id: 'doppelpass', group: 'schuetze', name: 'Doppelpass', icon: '🔁', per: [2, 1], attempts: 5, unit: 'Tore', better: 'hi', stars: [2, 3, 4], botLevel: 1,
     hint: 'Spiel deinen Mitspieler an und lauf los: Er spielt dir den Ball direkt in den Lauf. Dann abschließen – 7 s je Versuch.' },
@@ -29,7 +29,7 @@ export const CHALLENGES = [
     hint: 'Du bist Tormann. Schuss-Knopf halten = fangen, Pass-Knopf = hechten (Stick = Richtung). Flach, hoch, Flatterball, Aufsetzer, Bande, Kurve – es wird schwerer.' },
   { id: 'tw_reaktion', group: 'torwart', name: 'Reaktion', icon: '⚡', per: [1, 0], attempts: 10, unit: 'gehalten', better: 'hi', stars: [3, 5, 7], hands: true,
     hint: 'Schnellfeuer aus 6 m in zufällige Ecken. Reagieren, hechten, fangen.' },
-  { id: 'tw_1gegen1', group: 'torwart', name: '1 gegen 1', icon: '🥅', per: [1, 1], attempts: 5, unit: 'gehalten', better: 'hi', stars: [2, 3, 4], hands: true,
+  { id: 'tw_1gegen1', group: 'torwart', name: '1 gegen 1', icon: '🥅', per: [1, 1], attempts: 5, unit: 'gehalten', better: 'hi', stars: [2, 3, 4], hands: true, botLevel: 1,
     hint: 'Ein Bot-Stürmer läuft allein auf dich zu. Raus aus dem Tor, Winkel verkürzen, rechtzeitig hechten.' },
 ];
 export const challengeDef = (id) => CHALLENGES.find((c) => c.id === id);

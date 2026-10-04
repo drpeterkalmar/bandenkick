@@ -24,7 +24,7 @@ export function probe(K, n, qs = '', keeperOnly = false, seed0 = 100) {
       e.n++; if (res === 'goal') e.goals++;
       open = null;
     };
-    while (g.rules.phase !== 'end' && g.t < g.rules.halfLen * 2 + 120) {
+    while (g.rules.phase !== 'end' && g.t < g.rules.halfLen * 2 + 300) {
       for (const e of g.step([])) {
         if (e.type === 'kick' && e.player != null) {
           const pl = g.players[e.player];

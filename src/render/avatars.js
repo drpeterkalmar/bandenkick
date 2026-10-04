@@ -275,8 +275,11 @@ export class Avatar {
     if (this.dive > 0.01) {
       const dx = pl.hand.dx, dz = pl.hand.dz;
       const side = -dx * Math.sin(pl.face) + dz * Math.cos(pl.face); // + = links der Blickrichtung
-      roll = (side >= 0 ? -1 : 1) * 1.25 * this.dive;
-      this.tilt.position.y = 0.95 - 0.55 * this.dive;
+      // Nacht 2d: ausgestreckt – im Flug hebt der Körper im Bogen ab und liegt waagrecht (Rolle bis ~88°), danach flach
+      // am Boden; Flugdauer je Hechtsprung (hand.T)
+      const h = pl.hand, fl = h.mode === 'dive' ? Math.sin(Math.PI * Math.min(1, h.t / (h.T || 0.38))) : 0;
+      roll = (side >= 0 ? -1 : 1) * (1.25 + 0.28 * fl) * this.dive;
+      this.tilt.position.y = 0.95 - 0.55 * this.dive + 0.32 * fl;
     } else this.tilt.position.y = 0.95 - 0.08 * this.lean / 0.45; // im Stemmschritt leicht in die Knie
     // Technik-Pose überblendet Neigung/Absenken
     const T = this.tp, tw = this.tpW;

@@ -157,7 +157,8 @@ function play(g, seq, stick = null, T = 3) {
   const vs = planShot(g, pl, { mode: 'std', power: 1 }), cu = planShot(g, pl, { mode: 'var', power: 1 });
   check('Vollspann: kaum Drall (Flatterball) und höchstes Tempo', Math.abs(vs.side) / 6.283, 0, 0.3, 'U/s', 0, `${vs.speed.toFixed(1)} m/s`);
   // Nacht 2c feste Banane: fast so hart wie Vollspann, Drall wächst mit dem Tempo (bis spinMax × bananeSpinMax)
-  check('Angeschnitten (feste Banane): Drall bis spinMax × bananeSpinMax', Math.abs(cu.side) / 6.283, 5, P.spinMax * P.bananeSpinMax + 0.01, 'U/s', null, `${cu.tech}, ${cu.speed.toFixed(1)} m/s (${(cu.speed / vs.speed * 100).toFixed(0)} % von Vollspann)`);
+  // Nacht 2d: Drall wächst mit der Wucht mit (× wucht^wuchtDrall, gleiche Kurve trotz kürzerer Flugzeit)
+  check('Angeschnitten (feste Banane): Drall bis spinMax × bananeSpinMax × wucht', Math.abs(cu.side) / 6.283, 5, P.spinMax * P.bananeSpinMax * Math.pow(P.wucht, P.wuchtDrall) + 0.01, 'U/s', null, `${cu.tech}, ${cu.speed.toFixed(1)} m/s (${(cu.speed / vs.speed * 100).toFixed(0)} % von Vollspann)`);
   check('Angeschnitten (feste Banane): mindestens 95 % des Vollspann-Tempos', cu.speed / vs.speed, 0.95, 1.0, '', 0.97);
   const g0 = new Game(makeParams('banane=0&feld=20x13'), 8, { match: true, perTeam: [1, 0], human: 0, bots: false }); g0.rules.phase = 'play';
   const p0 = setup(g0, 3, -3, toGoal(3, -3));

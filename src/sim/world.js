@@ -31,6 +31,32 @@ export function buildCage(P) {
     rects.push(rect('goalnet', [s * (hx + gD / 2), gH, 0], neg(Y), X, Z, gD / 2, gw, 'goalroof'));
   }
   if (P.roof) rects.push(rect('net', [0, top, 0], neg(Y), X, Z, hx, hz, 'roof'));
+  // Nacht 2d (Wucht bis 45 m/s): Mit Dach hängen Dach- und Außennetze an den Kanten zusammen. Beult ein harter Ball das
+  // Dach in einer Ecke aus, darf er dort nicht über die Kante des Seitennetzes entwischen (bei 30–52 m/s gemessen:
+  // 23 von 1500 Zufallsschüssen draußen) → die Kollision der Außennetze reicht um die größte Eindellung über die Kante
+  // hinaus (nur Kollision, die Grafik bleibt)
+  // Ebenso das Tornetz: ein harter Schuss in die Ecke beult die Rückwand bis zur Sicherheitsgrenze aus – dort darf er
+  // nicht seitlich oder oben an der Kante vorbei (Selbstspiel mit Wucht 1,5: 4 von 16 Spielen Ball hinter dem Tor).
+  // Seiten- und Dachnetz des Tors reichen deshalb nach hinten, die Rückwand nach außen über ihre Kanten (nie ins Feld).
+  {
+    const e = P.netMaxDepth + 0.3;
+    for (const R of rects) {
+      if (R.kind !== 'goalnet') continue;
+      const back = R.o[0] > 0 ? [0, e] : [e, 0];                                    // u = x: nur weg vom Feld
+      if (R.tag === 'goalback') R.ext = [e, e, 0, e];
+      else if (R.tag === 'goalside') R.ext = [...back, 0, e];
+      else R.ext = [...back, e, e];                                                  // Tordach
+    }
+  }
+  if (P.roof) {
+    const e = P.netMaxDepth + 0.3;
+    for (const R of rects) {
+      if (R.kind !== 'net') continue;
+      if (R.tag === 'roof') R.ext = [e, e, e, e];                                   // [u−, u+, v−, v+]
+      else if (R.tag === 'sidenet' || R.o[1] > gH) R.ext = [e, e, 0, e];            // Seiten-/Stirnnetz bis zum Dach
+      else R.ext = R.o[2] > 0 ? [0, e, 0, 0] : [e, 0, 0, 0];                        // Netz neben dem Tor: nur nach außen
+    }
+  }
 
   // Rohre: Pfosten und Latte (Segment a→b, Radius)
   const bars = [];

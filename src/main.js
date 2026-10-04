@@ -163,7 +163,7 @@ const me = () => game.players[Math.max(0, game.human)];
   hud.menu.querySelector('.physics').innerHTML =
     `Feld ${f(P.fieldL, 0)} × ${f(P.fieldW, 0)} m · Bande ${f(P.boardH, 1)} m · ${P.roof ? `Dachnetz ${f(P.roofH, 1)} m` : `ohne Dach, Netz bis ${f(P.netTop, 1)} m`} · Torraum ${f(P.torraum, 1)} m<br>` +
     `Kunstrasen nach FIFA Quality Pro: Abprall 0,72 m · schräg 52 % · Rollen 6,0 m<br>` +
-    `Sprint ${f(P.vSprint, 1)} m/s · Wende: Kurve ${f(P.aLat, 0)} m/s², Stemmschritt ${f(P.aPlant, 0)} m/s²${P.zack ? '' : ' (altes Modell)'} · Schuss bis ${Math.round(P.shotMax * 3.6)} km/h · Bots Stufe ${P.botLevel} · ${f(P.dauer, 0)} min je Halbzeit · Version ${BUILD}`;
+    `Sprint ${f(P.vSprint, 1)} m/s · Wende: Kurve ${f(P.aLat, 0)} m/s², Stemmschritt ${f(P.aPlant, 0)} m/s²${P.zack ? '' : ' (altes Modell)'} · Schuss bis ${Math.round(P.shotMax * P.wucht * 3.6)} km/h (Wucht ${f(P.wucht, 1)}) · Bots Stufe ${P.botLevel} · ${f(P.dauer, 0)} min je Halbzeit · Version ${BUILD}`;
 }
 
 // ---------------- Szene aufbauen ----------------

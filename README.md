@@ -14,8 +14,8 @@ Als App installierbar (PWA), läuft offline.
   Hände nehmen, und nur im **eigenen Torraum** (Halbkreis 4 m): Fangen, Hechten, Abwurf, Abschlag. Außerhalb geht
   keine Handaktion – es gibt keine Handspiel-Pfiffe. Ball in der Hand höchstens **6 s** (Leiste im HUD), solange
   greift niemand an.
-- **Nach einem Tor:** kurzer Jubel, alle laufen in ihre Hälfte, dann **Schnellstart** – der Tormann der Mannschaft,
-  die das Tor bekommen hat, hat den Ball in der Hand (`?anstoss=1` = klassischer Anstoß in der Mitte).
+- **Nach einem Tor:** kurzer Jubel, alle laufen in ihre Hälfte, dann **Anstoß in der Mitte** (seit 30.09.;
+  `?anstoss=0` = Schnellstart: der Tormann der Mannschaft, die das Tor bekommen hat, hat den Ball in der Hand).
 - **Spielzeit** 2 × 4 min (`?dauer=`), Anzeige Spielstand und Restzeit, Pfiffe zu Halbzeit und Ende,
   **Golden Goal** bei Gleichstand mit `?golden=1`.
 - **Menschen:** sechs Rocketbox-Avatare (Microsoft, MIT) mit echten Lauf-, Sprint-, Jubel- und Klatsch-Bewegungen;
@@ -69,13 +69,28 @@ Als App installierbar (PWA), läuft offline.
 - **Zeitlupe** bei Luftbällen (0,9 s, 40 % Tempo, Kamera zoomt leicht) – im Pause-Menü abschaltbar.
 - Beim ersten Start erklärt eine **Hilfekarte** die Gesten; später über ☰ → Steuerung.
 
-**Ballmagnet (Nacht 2c, Peter: „leichter ballmagnet, sonst kein dribbling“):** zwischen den echten Ballkontakten führt
+**Ballmagnet (Nacht 2c, Peter: „leichter ballmagnet, sonst kein dribbling“; Nacht 2d: „viel mehr Ballmagnet“ → Stärke 1,2
+statt 0,5, im Sprint 70 % statt 45 %):** zwischen den echten Ballkontakten führt
 eine weiche Feder den Ball, den du zuletzt berührt hast, auf die Linie deines Sticks und bremst ihn, wenn er zu weit
 vorrollt – nach vorn bringt ihn weiter nur der Fuß (kein Klebeball, die Kontakte bleiben sichtbar), die Vorlagen sind
 kürzer und die Kontakte genauer. Schwächer im Sprint (45 %), bei scharfen Richtungswechseln (ab 60°, bei 120° 25 %) und
 wenn ein Gegner näher als 1 m ist (bis 50 %; dann legt er den Ball leicht auf den abgewandten Fuß). An der Bande zieht
-er nie in die Bande. Gilt für alle Spieler (auch Bots). Gemessen mit zappeligem Kinder-Stick: Ball springt 15,5 → 8,9-mal
-je Minute weg, Tempo mit Ball 1,9 → 2,6 m/s; Zweikämpfe im Selbstspiel unverändert möglich. `?magnet=0` = aus.
+er nie in die Bande. Gilt für alle Spieler (auch Bots). Grätscht ein Gegner, hält der Magnet den Ball nicht fest.
+Gemessen mit zappeligem Kinder-Stick: Ball springt ohne Magnet 18,2-mal je Minute weg, Nacht 2c 8,6, jetzt 4,9 (davon die
+Hälfte nach einer Kehrtwende, dort lässt er absichtlich los); Zweikämpfe und Grätschen im Selbstspiel unverändert möglich.
+`?magnet=0.5&magnetSprint=0.45` = Nacht 2c, `?magnet=0` = aus.
+
+**Wucht (Nacht 2d, Peter: „jeweils 1,5x härterer Vollspannschuss und Effetschuss“):** Vollspann, angeschnittene Schüsse
+(Innen-/Außenrist) sowie Volley und Dropkick fliegen 1,5-mal so schnell (bis 45 m/s ≈ 162 km/h), für Mensch und Bots. Die
+Banane bekommt entsprechend mehr Drall und biegt so weit wie vorher. Pässe, Chips, Flanken, Kopfbälle, Seit- und
+Fallrückzieher bleiben. `?wucht=1` = Nacht 2c.
+
+**Torwart hechtet (Nacht 2d, Peter: „Torwart soll viel mehr hechten“):** CPU-Tormänner und der Auto-Torwart werfen sich,
+sobald der Ball mindestens 0,7 m neben ihnen aufs Tor kommt, auch wenn Laufen reichen würde, und bei Bällen knapp neben den
+Pfosten. Absprung bis 0,7 s vor dem Ball, ausgestreckt im Bogen, nach 0,5 s wieder auf den Beinen. Im Selbstspiel etwa 20
+Hechtsprünge je Spiel (Nacht 2c: 2). Damit die Tor-Quoten bleiben (Stufe 2 ≈ 30 % Tore je Schuss), reagieren die
+Tormänner schneller, die Arme fahren im Sprung aber erst aus (zu späte Hechter kommen nicht mehr ran). `?hechten=0` = alte
+Hecht-Regel.
 
 **Bewegung „zackig“ (Nacht 2):** kleine Richtungswechsel = Kurve (13 m/s² quer, Tempo bleibt), große = **Stemmschritt**
 (falsche Anteile mit 16 m/s² gebremst, Körper dreht sofort, Abstoß in die neue Richtung), spritziger Antritt
@@ -99,12 +114,13 @@ Ball mit (Sohle/Außenseite). `?zack=0` = altes Gefühl aus Nacht 1 zum Vergleic
   R 500 mm und Stäben Ø 40 mm (6,0 m; 4,0–8,0), dazu „Reduced Ball Roll“ (Methode 17). Aufprall nach dem
   Grip-Slip-Modell (Cross 2002): Rückdrall bremst, Vorwärtsdrall lässt den Ball nachlaufen.
 - **Bande:** hart (Stoßzahl 0,65, Reibung) – Effet ändert den Abprallwinkel (Bandenpass). **Netze:** weich
-  (Feder-Dämpfer, Rückprall ≈ 10 %), Netz beult am Ball aus. **Pfosten/Latte:** Stahlrohr Ø 80 mm.
+  (Feder-Dämpfer, Rückprall ≈ 10 %), Netz beult am Ball aus (höchstens 0,9 m, an den Kanten greifen Dach-, Außen- und
+  Tornetz ineinander: auch 52 m/s bleiben drin). **Pfosten/Latte:** Stahlrohr Ø 80 mm.
 - **Käfig:** 24 × 15 m (Nacht 2c, vorher 20 × 13 = `?feld=20x13`), Tore 3 × 2 m in der Bande, Bande 1 m, Ballfangnetz, Dachnetz auf 5 m. Mit Dach reicht das
   Seitennetz bis zum Dach (sonst Spalt zwischen 3 und 5 m). Ohne Dach (`?dach=0`) ist das Netz 2 m hoch
   (Oberkante 3 m); fliegt der Ball darüber, gibt es „Aus“ und der Ball kommt zurück.
 - **Spieler:** Sprint 7,5 m/s, Laufen 5,2 m/s, 0 → 4 m/s in 0,60 s, 0 → 7 m/s in 2,5 s; Kurve r = v²/13 m/s²
-  (4,3 m im Sprint), Stemmschritt 16 m/s². Ballführung mit echten Ballkontakten und leichtem Ballmagnet, kein Klebeball;
+  (4,3 m im Sprint), Stemmschritt 16 m/s². Ballführung mit echten Ballkontakten und Ballmagnet, kein Klebeball;
   im Sprint längere Vorlagen. Körper als Zylinder (Ball prallt ab, kann aber nie auf einem Spieler liegen bleiben), Spieler schieben
   sich gegenseitig weg (Zweikampf).
 
@@ -113,7 +129,7 @@ Ball mit (Sohle/Außenseite). `?zack=0` = altes Gefühl aus Nacht 1 zum Vergleic
 |---|---|
 | `?solo=1` | Training allein (Ball und Käfig wie Nacht 1) |
 | `?bots=1` … `3` | Stärke der Bots (Reaktion, Tempo, Streuung, Fangsicherheit, Fehlerquote), Standard 2 |
-| `?dauer=4`, `?golden=1`, `?anstoss=1` | Minuten je Halbzeit, Golden Goal bei Gleichstand, klassischer Anstoß statt Schnellstart |
+| `?dauer=4`, `?golden=1`, `?anstoss=0` | Minuten je Halbzeit, Golden Goal bei Gleichstand, Schnellstart statt Anstoß nach Tor |
 | `?torraum=4`, `?fanghilfe=0` | Radius des Torraums (m), Fanghilfe für den menschlichen Tormann aus (nur mit `?autotorwart=0`) |
 | `?autotorwart=0`, `?autowurf=2` | Auto-Torwart aus (grüne Knöpfe wie Nacht 2b); Sekunden ohne Eingabe bis zum automatischen Abwurf |
 | `?tormann=1` … `3` | Stärke der CPU-Tormänner getrennt von den Feldspielern (Zwischenwerte wie `1.5` erlaubt; ohne Regler wie `?bots=`). Standard 2 lässt ≈ 30 % der Schüsse rein (Nacht 2b: 14 %) |
@@ -121,8 +137,10 @@ Ball mit (Sohle/Außenseite). `?zack=0` = altes Gefühl aus Nacht 1 zum Vergleic
 | `?wende=13`, `?stemm=16`, `?bremse=9`, `?kurve=20`, `?antritt=0.672` | Kurven-Querbeschleunigung, Stemmschritt-Bremsung, Abbremsen (m/s²), Winkel bis zur reinen Kurve (°), Antritts-Zeitkonstante (s) |
 | `?sprint=8`, `?lauf=5.5` | Sprint-/Lauftempo (m/s) |
 | `?hilfe=0` … `1` | Stärke der Ballführungs-Hilfe (lenkt den Spieler zum Ball) |
-| `?magnet=0` … `1` | Ballmagnet (Standard 0,5; 0 = Ballführung wie Nacht 2b). Feinregler: `?magnetK=112`, `?magnetC=20`, `?magnetAcc=42`, `?magnetLead=0.7`, `?magnetSprint=0.45`, `?magnetOpp=0.5`, `?magnetShield=0.3`, `?magnetTurn0=60`, `?magnetTurn1=120` |
-| `?schuss=32`, `?pass=12`, `?effet=12` | max. Schusstempo, Passtempo, max. Effet (U/s) |
+| `?magnet=0` … `2` | Ballmagnet (Standard 1,2; Nacht 2c 0,5; 0 = Ballführung wie Nacht 2b). Feinregler: `?magnetK=112`, `?magnetC=20`, `?magnetAcc=42`, `?magnetLead=0.7`, `?magnetSprint=0.7` (Nacht 2c 0,45), `?magnetOpp=0.5`, `?magnetShield=0.3`, `?magnetTurn0=60`, `?magnetTurn1=120`, `?magnetSlide=0` (Magnet während einer gegnerischen Grätsche) |
+| `?wucht=1.5` | Endtempo von Vollspann, angeschnittenen Schüssen, Volley und Dropkick (Nacht 2d; `1` = Nacht 2c). `?wuchtDrall=1`: Drall der Banane wächst mit (0 = Drall wie Nacht 2c, die Kurve wird dann kleiner) |
+| `?hechten=0`, `?hechtAb=0.7`, `?hechtVorlauf=0.7`, `?hechtKnapp=0.5`, `?groundT=0.5`, `?diveArmT=0.2` | Tormann-Hechtsprung (Nacht 2d): alte Regel; ab so viel Abstand Ball ↔ Körper (m) hechtet er; frühester Absprung vor dem Ball (s); Spektakel-Hechter bei so knapp daneben (m); am Boden (s, Nacht 2c 0,75); bis die Arme gestreckt sind (s) |
+| `?schuss=32`, `?pass=12`, `?effet=12` | max. Schusstempo (Grundwert vor der Wucht, wirkt auf alle Schüsse), Passtempo, max. Effet (U/s) |
 | `?dach=0`, `?feld=20x13`, `?netz=2` | ohne Dachnetz (Ball kann raus → Abwurf), anderes Feld (Standard 24 × 15; die Kamera zieht mit: Figuren auf 24 × 15 ≈ 17 % kleiner im Bild als auf 20 × 13), Ballfangnetz ohne Dach (m) |
 | `?bande=0.7`, `?abprall=0.62`, `?rollen=0.65` | Stoßzahl Bande, Stoßzahl Rasen, Rollwiderstand Rasen |
 | `?dachhoehe=6`, `?torbreite=3`, `?torhoehe=2` | Käfig-Maße |
@@ -197,7 +215,9 @@ node tests/node/dribble_probe.mjs 20 "magnet=0"  # Messwerkzeug: Parcours (Skrip
 node tests/node/tackle.test.mjs     # Grätsche: Auslöser, Ball zuerst (Pass/Schuss/klären), Gegner zuerst (Ball frei, stolpert), Bots, keine Hänger
 node tests/node/keeper.test.mjs     # Auto-Torwart (hält ohne Knopf, Stick gewinnt, Abwurf nach 2 s), CPU-Tormann je Stufe (24 Spiele), Roller
 node tests/node/keeper_probe.mjs 30 # Tore je Schuss gegen Stufe 1/2/3 (KEEPER_ONLY=1: nur der Tormann wechselt, DETAIL=1: nach Abstand)
-node tests/node/keeper_series.mjs   # Tormann isoliert: feste Eckschuss-Serie je Stufe
+node tests/node/keeper_series.mjs   # Tormann isoliert: feste Eckschuss-Serie je Stufe (mit Hechtsprüngen; SPEED=21-33 = harte Schüsse)
+node tests/node/wucht.test.mjs      # Wucht vorher/nachher (Tempo, Flugzeit, Kurve, leeres Tor), Ziel-Löser, Abwehr > Fang-Grenze, Selbstspiel: Tunneln, Hechtsprünge
+node tests/node/wucht_probe.mjs selfplay "wucht=1" 8   # Messwerkzeug: Schüsse, Tore, Hechtsprünge, schnellster Schuss, Ball draußen
 python3 tests/shots4.py final   # Fotos Nacht 2c: Auto-Torwart hechtet, Grätsche, Flanke, großes Feld (hoch/quer)
 python3 tests/shots3.py final   # Fotos Nacht 2b: Aufladering, Training, Torwand, Fallrückzieher, Kopfball, Ergebnis
 python3 tests/perf_vergleich.py [pfad]  # Leistung je Spieltakt/Bild, z. B. gegen einen Worktree eines älteren Stands

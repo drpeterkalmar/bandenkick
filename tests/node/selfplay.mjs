@@ -9,7 +9,8 @@ export function playGame(seed, { qs = '', levels = null, maxT = null } = {}) {
   const cage = g.cage;
   const st = { seed, goals: [0, 0], events: {}, stuck: [], faults: 0, holdMax: 0, t: 0, keeperSwitches: 0, touches: 0, kicks: {}, air: {}, airGoals: {}, tech: {} };
   let lastAir = null;
-  const limit = maxT ?? (g.rules.halfLen * 2 + 120);
+  // Spielzeit + Unterbrechungen (Jubel und Anstoß je Tor ≈ 4 s; Nacht 2d: bis 32 Tore in Stufe 3 gegen 1 → 300 s Puffer)
+  const limit = maxT ?? (g.rules.halfLen * 2 + 300);
   // Hänger-Erkennung
   let ballRef = { x: 0, z: 0, t: 0 }, cornerT = 0;
   const track = g.players.map((p) => ({ x0: p.x, z0: p.z, path: 0, px: p.x, pz: p.z, t0: 0, minX: p.x, maxX: p.x, minZ: p.z, maxZ: p.z, touchT: 0 }));

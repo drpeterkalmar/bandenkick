@@ -116,7 +116,8 @@ const park = (g) => { // alle Spieler weit weg von Ball und Toren
 {
   const g = mk(); park(g);
   const k = g.players[0]; k.place(-9, 0, 0); g.rules.updateKeepers(0, true);
-  g.ball.place(-9, 0.6, 1.7); g.ball.contact = false; g.ball.v.set(-6, 0, 0.05);
+  // (Nacht 2d: die Arme fahren im Sprung erst in 0,2 s aus – der Ball rollt deshalb langsamer davon als vorher 6 m/s)
+  g.ball.place(-9, 0.6, 1.7); g.ball.contact = false; g.ball.v.set(-2.5, 0, 0.05);
   let caught = false, tGround = -1, mode = [];
   for (let i = 0; i < 1.4 / DT; i++) {
     const a = []; a[0] = i === 0 ? inp({ dive: true, mz: 1, hand: true }) : inp({ hand: true });

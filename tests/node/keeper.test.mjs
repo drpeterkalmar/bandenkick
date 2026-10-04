@@ -134,11 +134,24 @@ function rollers(K) {
   check('Langsame Schüsse (< 12 m/s, auch Stocherbälle aus 2 m) werden Tor', 100 * slow[0] / Math.max(1, slow[1]), 0, 8, '%', 5, `${slow[0]}/${slow[1]} (alle Stufen), harmlose Roller vom Boden ≥ 5 m: ${r.reduce((a, x) => a + x.rollerGoals, 0)}/${r.reduce((a, x) => a + x.rollers, 0)}`);
 }
 
-// 6) Tormann isoliert: feste Eckschuss-Serie (14–22 m/s aus 7–11 m, er stellt sich selbst hin)
+// 6) Tormann isoliert: feste Eckschuss-Serie (er stellt sich selbst hin). Nacht 2d: Tempo × wucht (21–33 m/s aus 7–11 m,
+//    wie die harten Schüsse im Spiel; 14–22 m/s hält jetzt jede Stufe fast alles)
 {
-  const c = [1, 2, 3].map((K) => keeperSeries(K, 60));
+  const W = makeParams('').wucht;
+  const c = [1, 2, 3].map((K) => keeperSeries(K, 60, '', 14 * W, 22 * W));
   const q = c.map((x) => 100 * x.goal / x.n);
-  check('Eckschuss-Serie: Tore gegen Tormann 1 / 2 / 3 monoton', q[0] > q[1] + 10 && q[1] > q[2] + 5 ? 1 : 0, 1, 1, '', 1, c.map((x, i) => `Stufe ${i + 1}: ${x.goal}/${x.n} Tore, ${x.catch} gefangen, ${x.parry} abgewehrt`).join(' · '));
+  // (Stufe 2 und 3 halten isoliert fast alles – der Unterschied liegt dann im Fangen statt Abwehren)
+  check(`Eckschuss-Serie ${(14 * W).toFixed(0)}–${(22 * W).toFixed(0)} m/s: Tore gegen Tormann 1 / 2 / 3 monoton`, q[0] > q[1] + 10 && q[1] >= q[2] && c[2].catch > c[1].catch ? 1 : 0, 1, 1, '', 1, c.map((x, i) => `Stufe ${i + 1}: ${x.goal}/${x.n} Tore, ${x.catch} gefangen, ${x.parry} abgewehrt`).join(' · '));
+}
+// 7) Nacht 2d (Peter: „Torwart soll viel mehr hechten“): In der Eckschuss-Serie (14–22 m/s wie Nacht 2c) endet ein Ball,
+//    der ≥ 0,8 m neben dem Tormann aufs Tor kommt, zu ≥ 70 % mit einem Hechtsprung – auf jeder Stufe
+{
+  for (const K of [1, 2, 3]) {
+    const c = keeperSeries(K, 120), c0 = keeperSeries(K, 120, 'hechten=0');
+    check(`Eckschuss-Serie Stufe ${K}: Ball ≥ 0,8 m neben ihm → Hechtsprung`, 100 * c.wideDive / Math.max(1, c.wide), 70, 100, '%', null, `${c.wideDive}/${c.wide}, alte Hecht-Regel (?hechten=0): ${c0.wideDive}/${c0.wide}; gehechtet gesamt ${c.dive}/${c.n}, davon gehalten ${c.diveSave}`);
+  }
+  const P = makeParams('');
+  check('Hechtsprung: Landung und Aufstehen', P.groundT, 0, 1, 's', null, `Flugphase ${P.diveT}–${P.hechtTMax} s je nach Absprung (bis ${P.hechtVorlauf} s vor dem Ball)`);
 }
 
 process.exit(report('Torwart (Auto-Torwart, CPU-Stufen)', rows, 'keeper') ? 0 : 1);

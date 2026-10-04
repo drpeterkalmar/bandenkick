@@ -258,7 +258,8 @@ export class Ball {
       if (d >= r || d < r - P.netMaxDepth - 0.3) continue;
       const au = dx * R.u[0] + dy * R.u[1] + dz * R.u[2];
       const bv = dx * R.v[0] + dy * R.v[1] + dz * R.v[2];
-      if (au < -R.hu || au > R.hu || bv < -R.hv || bv > R.hv) continue;
+      const X = R.ext; // Nacht 2d: Außennetze greifen über die Kante hinaus (world.js)
+      if (X ? au < -R.hu - X[0] || au > R.hu + X[1] || bv < -R.hv - X[2] || bv > R.hv + X[3] : au < -R.hu || au > R.hu || bv < -R.hv || bv > R.hv) continue;
       const k = R.kind === 'goalnet' ? P.goalNetK : P.netK;
       const c = 2 * P.netZeta * Math.sqrt(k * m);
       let depth = r - d;

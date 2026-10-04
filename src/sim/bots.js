@@ -31,12 +31,12 @@ export const LEVELS = {
 //   posErr     m Stellungsfehler (seitlich, je Ball neu gewürfelt)
 //   reach      Anteil der Hand-Reichweite im Stand (P.catchReach)
 export const KEEPER_LEVELS = {
-  1: { react: 0.44, catchSkill: 0.3, fumble: 0.35, dive: 0.6, run: 0.8, move: 0.86, diveReach: 0.75, catchRel: 15, tip: 0.5, posErr: 0.3, reach: 0.74 },
-  2: { react: 0.38, catchSkill: 0.6, fumble: 0.15, dive: 0.8, run: 0.88, move: 0.78, diveReach: 0.85, catchRel: 17, tip: 0.33, posErr: 0.28, reach: 0.85 },
-  3: { react: 0.24, catchSkill: 0.85, fumble: 0.06, dive: 0.95, run: 0.95, move: 0.8, diveReach: 0.95, catchRel: 22, tip: 0.15, posErr: 0.12, reach: 0.97 },
+  1: { react: 0.2, catchSkill: 0.3, fumble: 0.35, dive: 0.6, run: 0.8, move: 0.86, diveReach: 0.75, catchRel: 15, tip: 0.5, posErr: 0.3, reach: 0.74 },
+  2: { react: 0.1, catchSkill: 0.6, fumble: 0.15, dive: 0.8, run: 0.88, move: 0.78, diveReach: 0.85, catchRel: 17, tip: 0.33, posErr: 0.28, reach: 0.85 },
+  3: { react: 0.07, catchSkill: 0.85, fumble: 0.06, dive: 0.95, run: 0.95, move: 0.8, diveReach: 0.95, catchRel: 22, tip: 0.15, posErr: 0.12, reach: 0.97 },
 };
 // Auto-Torwart des Menschen (Nacht 2c: Fangen und Hechten ohne Knöpfe) = Tormann der alten Stufe 2 (Nacht 2b)
-export const HUMAN_KEEPER = { react: 0.26, catchSkill: 0.8, fumble: 0.12, dive: 0.9, run: 0.88, move: 0.836, diveReach: 1, catchRel: null, tip: 0, posErr: 0, reach: 1 };
+export const HUMAN_KEEPER = { react: 0.1, catchSkill: 0.8, fumble: 0.12, dive: 0.9, run: 0.88, move: 0.836, diveReach: 1, catchRel: null, tip: 0, posErr: 0, reach: 1 };
 // Tormann-Werte für eine Mannschaft der Stufe `teamLevel` (P.tormann > 0 übersteuert, Zwischenwerte linear)
 export function keeperLevel(P, teamLevel) {
   const k = clamp(P.tormann > 0 ? P.tormann : teamLevel, 1, 3);
@@ -631,7 +631,7 @@ export class Bots {
     }
     br.throwAt = -1;
     // Neuer Ball im Spiel: Fang-Sicherheit und Stellungsfehler neu würfeln (Stärke)
-    if (g.lastTouchT !== br.rollT) { br.rollT = g.lastTouchT; br.catchRoll = g.rng.next(); br.diveUsed = false; br.posErr = K.posErr * clamp(g.rng.gauss(), -2, 2); }
+    if (g.lastTouchT !== br.rollT) { br.rollT = g.lastTouchT; br.catchRoll = g.rng.next(); br.diveUsed = false; br.diveWant = 0; br.posErr = K.posErr * clamp(g.rng.gauss(), -2, 2); }
     inp.fumble = br.catchRoll < K.fumble;
     const inOwnBox = R.inBox(team, b.p.x, b.p.z, 0.3);
     // Schuss aufs Tor? Kreuzt der Ball die Linie des Tormanns im Tor-Bereich?
@@ -648,10 +648,17 @@ export class Bots {
           else { // Reaktionszeit auf einen Schuss (Mensch ≈ 0,2–0,3 s)
             // Stellungsfehler nur bei scharfen Schüssen (einen langsamen Ball sieht er kommen)
             const zk = zc + (br.posErr || 0) * 0.5 * clamp((b.v.len() - 9) / 9, 0, 1), dz = zk - pl.z;
-            this.moveTo(inp, pl, pl.x, zk, true, 0.3);
-            const reachRun = P.vSprint * K.run * tc * 0.6;
-            if (!br.diveUsed && Math.abs(dz) > 0.55 && Math.abs(dz) > reachRun && Math.abs(dz) < (P.diveReach * K.diveReach + P.diveSpeed * P.diveT) * K.dive + 0.3 && tc < 0.5 && R.handsOk(pl)) {
-              inp.dive = true; inp.diveX = side * 0.25; inp.diveZ = Math.sign(dz); br.diveUsed = true; this.stats.dives++;
+            // Nacht 2d: Beim ersten Hinsehen entscheidet er, ob er hechtet (Ball weit genug neben ihm) – dann bleibt er
+            // im Absprung stehen (kein Hinlaufen, das den Abstand auffrisst) und springt spätestens P.hechtVorlauf s vorher
+            if (P.hechten && !br.diveUsed && !br.diveWant) br.diveWant = this.diveWanted(K, zc, dz) ? 1 : -1;
+            if (br.diveWant > 0 && !br.diveUsed) { inp.mx = 0; inp.mz = 0; inp.sprint = false; }
+            else this.moveTo(inp, pl, pl.x, zk, true, 0.3);
+            if (!br.diveUsed && R.handsOk(pl)) {
+              const dive = P.hechten && br.diveWant > 0 ? this.diveChoice(K, dz, tc) : this.diveChoice2c(K, dz, tc);
+              if (dive) {
+                inp.dive = true; inp.diveX = side * 0.25; inp.diveZ = Math.sign(dz); inp.diveT = dive.T; inp.diveSp = dive.sp;
+                br.diveUsed = true; this.stats.dives++;
+              }
             }
           }
           return;
@@ -685,6 +692,35 @@ export class Bots {
     const kx = gx + dx / d * rk, kz = clamp(dz / d * rk + (danger ? br.posErr || 0 : 0), -cage.gw - 0.3, cage.gw + 0.3);
     this.moveTo(inp, pl, kx, kz, danger && Math.hypot(kx - pl.x, kz - pl.z) > 1.2, 0.6);
     inp.autoCatch = inOwnBox; inp.hand = inOwnBox;
+  }
+
+  // Hecht-Entscheidung Nacht 2c (?hechten=0): nur wenn Laufen nicht reicht, höchstens 0,5 s vor dem Ball
+  diveChoice2c(K, dz, tc) {
+    const P = this.g.P, reachRun = P.vSprint * K.run * tc * 0.6;
+    if (Math.abs(dz) > 0.55 && Math.abs(dz) > reachRun && Math.abs(dz) < (P.diveReach * K.diveReach + P.diveSpeed * P.diveT) * K.dive + 0.3 && tc < 0.5) return { T: P.diveT, sp: P.diveSpeed };
+    return null;
+  }
+  // Hecht-Entscheidung Nacht 2d (Peter: „Torwart soll viel mehr hechten“): Er hechtet, sobald der Ball beim ersten
+  // Hinsehen mindestens P.hechtAb m neben dem Körper aufs Tor geht – auch wenn Laufen reichen würde –, und bei Bällen
+  // knapp neben den Pfosten (≤ P.hechtKnapp m) als Spektakel. Nur aussichtslos weite Bälle lässt er fliegen.
+  diveWanted(K, zc, dz) {
+    const P = this.g.P, adz = Math.abs(dz), wide = Math.abs(zc) > this.g.cage.gw && Math.abs(zc) < this.g.cage.gw + P.hechtKnapp;
+    if (adz < (wide ? 0.4 : P.hechtAb)) return false;
+    return adz <= (P.diveReach * K.diveReach + P.diveSpeed * P.hechtTMax * 0.675) * K.dive + 0.9;
+  }
+  // Absprung bis P.hechtVorlauf s vor dem Ball; auch zu spät wirft er sich noch (vergeblich gestreckt). Die Flugphase
+  // endet kurz nach dem Ball (T), das Tempo ist so gewählt, dass der Ball etwa in die ausgestreckten Hände kommt
+  // (höchstens P.diveSpeed) → {T, sp} oder null (noch warten).
+  diveChoice(K, dz, tc) {
+    const P = this.g.P, adz = Math.abs(dz);
+    if (tc > P.hechtVorlauf) return null;
+    const T = clamp(tc + 0.06, P.diveT, P.hechtTMax);
+    const tau = Math.min(T, tc + 0.02);
+    // Seitweg bis τ bei sp = 1: Tempo fällt in der Flugphase linear von 1 auf 0,35 (stepDive)
+    const s1 = 0.35 * tau + 0.65 * (tau - tau * tau / (2 * T));
+    const need = adz - 0.6 * P.diveReach * K.diveReach; // die Hände (Strecke bis diveReach) holen den Rest
+    const sp = clamp(need / Math.max(0.05, s1), 1.2, P.diveSpeed);
+    return { T, sp };
   }
 
   // Auto-Torwart des Menschen (Nacht 2c, ?autotorwart=0 = alte Knöpfe): Ist der gesteuerte Spieler die „letzte Hand“,

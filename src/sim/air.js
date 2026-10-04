@@ -148,7 +148,7 @@ function airKick(pl, game, a, errFrac) {
   const vin = b.v.len();
   const cq = clamp(1 - 0.5 * errFrac * errFrac, 0.4, 1);            // Treffgenauigkeit
   const tq = 0.45 + 0.55 * a.tq;                                    // Timing
-  const sp = Math.min(T.vmax, T.v0 + T.vin * vin);
+  const sp = Math.min(T.vmax, T.v0 + T.vin * vin) * (T.wucht ? Math.max(0.3, P.wucht ?? 1) : 1);
   const qMul = tq * cq * TECH_Q[a.tech];
   if (a.purpose === 'clear') {
     const gx = -attackGoalX(game, pl);

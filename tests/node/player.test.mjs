@@ -126,7 +126,8 @@ function dribble(sprint, seconds = 6, PP = PBIG) {
   // Nacht 2c: mit Ballmagnet (Standard 0,5) kürzere Vorlagen – der Ball verlässt den Fuß weiter sichtbar, jeder Meter
   // braucht echte Kontakte (Magnet zieht nur quer und bremst, schiebt nie nach vorn); ohne Magnet die alte Grenze
   const d0 = dribble(false, 6, makeParams('?feld=60x40&magnet=0'));
-  check('Führen (Laufen): Ball entfernt sich zwischen Kontakten (kein Klebeball)', d.maxD, 0.25, 3.0, 'm', null, `max. Abstand Fuß–Ball; ?magnet=0: ${d0.maxD.toFixed(2)} m`);
+  // Nacht 2d (Peter: „viel mehr Ballmagnet“): enger geführt (Nacht 2c ≥ 0,25 m), der Ball löst sich aber weiter vom Fuß
+  check('Führen (Laufen): Ball entfernt sich zwischen Kontakten (kein Klebeball)', d.maxD, 0.12, 3.0, 'm', null, `max. Abstand Fuß–Ball (Nacht 2c 0,28 m); ?magnet=0: ${d0.maxD.toFixed(2)} m`);
   check('?magnet=0: Ball entfernt sich zwischen Kontakten wie Nacht 2b', d0.maxD, 0.45, 3.0, 'm', null, `${d0.touches} Kontakte`);
   check('Magnet trägt nicht: Kontakte je 10 m mindestens wie ohne Magnet', d.touches / Math.max(1, d.x + 28) * 10, d0.touches / Math.max(1, d0.x + 28) * 10, 99, '', null, `${d.touches} Kontakte auf ${(d.x + 28).toFixed(0)} m, ohne Magnet ${d0.touches} auf ${(d0.x + 28).toFixed(0)} m`);
   check('Führen (Laufen): Tempo mit Ball', d.speed, 4.0, 5.3, 'm/s', null, `Vorlage ${d.gap.toFixed(2)} m je Kontakt`);
@@ -173,10 +174,11 @@ function dribble(sprint, seconds = 6, PP = PBIG) {
   const p = kickTest(() => inp({ pass: true }));
   check('?treffpunkt=1: Pass (Tippen) Ballgeschwindigkeit', p.kick ? p.kick.speed : 0, P.passSpeed * 0.9, P.passSpeed * 1.1, 'm/s', P.passSpeed);
   const s = kickTest((t) => (t < 1.1 ? inp({ shootHeld: true }) : inp({ shootRelease: true })));
-  check('?treffpunkt=1: Schuss voll aufgeladen', s.kick ? s.kick.speed : 0, 29, 30.5, 'm/s', 30, s.lk ? `${(s.lk.speed * 3.6).toFixed(0)} km/h, Drall ${s.lk.spinRps.toFixed(2)} U/s` : '');
+  // Nacht 2d: × wucht (1,5) auch in der Profi-Steuerung
+  check('?treffpunkt=1: Schuss voll aufgeladen', s.kick ? s.kick.speed / P.wucht : 0, 29, 30.5, 'm/s ÷ wucht', 30, s.lk ? `${(s.lk.speed * 3.6).toFixed(0)} km/h, Drall ${s.lk.spinRps.toFixed(2)} U/s` : '');
   check('?treffpunkt=1: Vollspann (Treffpunkt Mitte) kaum Drall', s.lk ? s.lk.spinRps : 9, 0, 0.3, 'U/s', 0);
   const h = kickTest((t) => (t < 0.5 ? inp({ shootHeld: true }) : inp({ shootRelease: true })));
-  check('?treffpunkt=1: Schuss halb aufgeladen', h.kick ? h.kick.speed : 0, 16, 20, 'm/s', 18);
+  check('?treffpunkt=1: Schuss halb aufgeladen', h.kick ? h.kick.speed / P.wucht : 0, 16, 20, 'm/s ÷ wucht', 18);
   const c = kickTest((t) => (t < 1.1 ? inp({ shootHeld: true, cx: 1 }) : inp({ shootRelease: true, cx: 1 })));
   check('?treffpunkt=1: Innenseite (Treffpunkt ganz rechts) Effet', c.lk ? c.lk.sideRps : 0, 9, 10.5, 'U/s', 10, c.lk ? `${c.lk.speed.toFixed(1)} m/s` : '');
   const ch = kickTest((t) => (t < 0.6 ? inp({ shootHeld: true, cy: -1 }) : inp({ shootRelease: true, cy: -1 })));

@@ -116,4 +116,48 @@ function netCOR(P) {
   check('?feld=30x15 übernommen', P3.fieldL * 100 + P3.fieldW, 3015, 3015, '', 3015);
 }
 
+// 8) Nacht 2d, Wucht bis 45 m/s (?wucht=1,5): kein Tunneln durch Bande, Netze, Pfosten, Latte, Tornetz, Dach
+{
+  const x8 = hx - 8;
+  for (const sp of [45, 52]) {
+    const a = shot(P, { v: [0, 0.5, sp], T: 1 });
+    check(`${sp} m/s: Bande flach – prallt ab, bleibt drin`, a.ev.some((e) => e.type === 'board') && a.maxAZ < hz ? 1 : 0, 1, 1, '', 1, `max |z| ${a.maxAZ.toFixed(2)} m`);
+    const b = shot(P, { from: [0, 1.2, 0], v: [0, 3, sp], T: 1.5 });
+    check(`${sp} m/s: Seitennetz über der Bande hält`, b.out ? 0 : b.maxAZ - hz, -1, P.netMaxDepth, 'm', null, 'Eindellung');
+    const c = shot(P, { from: [x8, 0.11, 0], v: [sp, 2.2, 0], T: 2 });
+    check(`${sp} m/s: Tornetz hält (Tor, Ball bleibt im Tor)`, c.ev.some((e) => e.type === 'goal') && c.maxAX < hx + P.goalD + P.netMaxDepth ? 1 : 0, 1, 1, '', 1, `max x ${c.maxAX.toFixed(2)} (Rückwand ${(hx + P.goalD).toFixed(1)} m)`);
+    // Pfosten/Latte aus 1,5 m ohne Flatterball voll getroffen (Ballmitte 4 cm innen neben der Rohrmitte)
+    const PK = makeParams('knuckleF30=0');
+    const d = shot(PK, { from: [hx - 1.5, 0.6, P.goalW / 2 - 0.04], v: [sp, 0, 0], T: 1.5 });
+    check(`${sp} m/s: Pfosten (voll getroffen) – harter Abprall, kein Durchrutschen`, d.ev.some((e) => e.type === 'post') && !d.ev.some((e) => e.type === 'goal') ? 1 : 0, 1, 1, '', 1);
+    const e = shot(PK, { from: [hx - 1.5, P.goalH - 0.04, 0], v: [sp, 0, 0], T: 1.5 });
+    check(`${sp} m/s: Latte (voll getroffen) – harter Abprall`, e.ev.some((x) => x.type === 'post') && !e.ev.some((x) => x.type === 'goal') ? 1 : 0, 1, 1, '', 1);
+    const f = shot(P, { v: [2, sp, 1], T: 3 });
+    check(`${sp} m/s: Dachnetz hält`, f.out ? 99 : f.maxY, 0, P.roofH + P.netMaxDepth, 'm', null, 'höchster Punkt');
+  }
+  const rng = new Rng('wucht');
+  let outs = 0, faults = 0, n = 1500;
+  for (let i = 0; i < n; i++) {
+    const sp = rng.range(30, 52), el = rng.range(0, 85) * Math.PI / 180, az = rng.range(0, 2 * Math.PI);
+    const from = [rng.range(-hx + 0.5, hx - 0.5), 0.11, rng.range(-hz + 0.5, hz - 0.5)];
+    const s = shot(P, { from, v: [sp * Math.cos(el) * Math.cos(az), sp * Math.sin(el), sp * Math.cos(el) * Math.sin(az)], w: [rng.gauss() * 20, rng.gauss() * 90, rng.gauss() * 20], T: 4, seed: i });
+    if (s.out) outs++;
+    faults += s.g.faults;
+  }
+  // Tor-Ecken: harte Schüsse in die Ecken des Tornetzes (Rückwand + Seite/Dach) – Ball bleibt im Tor
+  let behind = 0, goals = 0;
+  for (let i = 0; i < 400; i++) {
+    // schräg von der Seite in die lange Ecke (Ball streift das Seitennetz und rutscht zur Rückwand)
+    const sp = rng.range(35, 52), d = rng.range(3, 9), z0 = (rng.next() < 0.5 ? -1 : 1) * rng.range(1, 6), zt = -Math.sign(z0) * rng.range(1.5, 2.2), yt = rng.next() < 0.6 ? rng.range(0.15, 0.5) : rng.range(1.4, 1.85);
+    const from = [hx - d, 0.11, z0], dx = hx + P.goalD - from[0], dz = zt - from[2], L = Math.hypot(dx, dz);
+    const vy = (yt - 0.11) / (L / sp) + 4.9 * (L / sp);
+    const s = shot(P, { from, v: [sp * dx / L, vy, sp * dz / L], w: [0, rng.gauss() * 40, 0], T: 2, seed: 7000 + i });
+    if (s.ev.some((e) => e.type === 'goal')) goals++;
+    if (s.out || s.maxAX > hx + P.goalD + P.netMaxDepth + 0.2) behind++;
+  }
+  check('Tornetz-Ecken 35–52 m/s (400 Schüsse): Ball hinter/neben dem Tor draußen', behind, 0, 0, '×', 0, `${goals} Tore; Nacht 2d: Tor-Seiten- und Dachnetz reichen nach hinten über die Kante (vorher im Selbstspiel 4 von 16 Spielen)`);
+  check(`Zufallsbeschuss 30–52 m/s (${n} Schüsse, Drall bis ~20 U/s): Ball draußen`, outs, 0, 0, '×', 0, 'Nacht 2d: Außennetze reichen um die Eindellung über die Dachkante (vorher 23 draußen)');
+  check('… Numerik-Notbremsen', faults, 0, 0, '×', 0);
+}
+
 process.exit(report('Käfig (Bande, Netze, Dach, Tore)', rows) ? 0 : 1);

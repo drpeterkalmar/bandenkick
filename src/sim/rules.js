@@ -81,7 +81,7 @@ export class Rules {
         if (l < 0.2) { // Hechtrichtung-Hilfe: zum Ball
           dx = b.p.x - pl.x; dz = b.p.z - pl.z; l = Math.hypot(dx, dz) || 1;
         }
-        pl.startDive(dx / l, dz / l);
+        pl.startDive(dx / l, dz / l, inp.diveT, inp.diveSp);
         g.events.push({ type: 'dive', player: pl.id });
       }
       if (b.held === pl.id) { this.holding(dt, pl, inp); continue; }
@@ -100,8 +100,9 @@ export class Rules {
       // Maß ist der Vorbeiflug-Abstand (Ballbahn relativ zu Körper bzw. Händen), nicht der Eintrittspunkt am Rand
       let dPass = d;
       if (inp.tip) {
-        const ex = pl.hand.mode === 'dive' ? dx - pl.hand.dx * clamp(dx * pl.hand.dx + dz * pl.hand.dz, 0, P.diveReach * (inp.diveReach ?? 1)) : dx;
-        const ez = pl.hand.mode === 'dive' ? dz - pl.hand.dz * clamp(dx * pl.hand.dx + dz * pl.hand.dz, 0, P.diveReach * (inp.diveReach ?? 1)) : dz;
+        const ext = this.diveExt(pl, inp);
+        const ex = pl.hand.mode === 'dive' ? dx - pl.hand.dx * clamp(dx * pl.hand.dx + dz * pl.hand.dz, 0, ext) : dx;
+        const ez = pl.hand.mode === 'dive' ? dz - pl.hand.dz * clamp(dx * pl.hand.dx + dz * pl.hand.dz, 0, ext) : dz;
         const rx = b.v.x - pl.vx, rz = b.v.z - pl.vz, rl = Math.hypot(rx, rz);
         dPass = rl > 1 ? Math.abs(ex * rz - ez * rx) / rl : d;
       }
@@ -145,11 +146,18 @@ export class Rules {
     const hB = b.p.y, rH = hB < 0.7 ? 0.55 + 0.45 * clamp((hB - 0.12) / 0.58, 0, 1) : hB > 1.9 ? 1 - 0.25 * clamp((hB - 1.9) / 0.45, 0, 1) : 1;
     let reach = Math.min(!inp.hand && inp.autoReach ? inp.autoReach : P.catchReach, P.catchReach * rH) * (inp.reachMul ?? 1), hi = P.catchHigh, d = Math.hypot(dx, dz);
     if (pl.hand.mode === 'dive') { // im Flug: Strecke Körper → ausgestreckte Hände (Nacht 2c: je Tormann-Stufe)
-      const t = clamp(dx * pl.hand.dx + dz * pl.hand.dz, 0, P.diveReach * (inp.diveReach ?? 1));
+      const t = clamp(dx * pl.hand.dx + dz * pl.hand.dz, 0, this.diveExt(pl, inp));
       d = Math.hypot(dx - pl.hand.dx * t, dz - pl.hand.dz * t);
       reach = 0.42; hi = 1.75;
     }
     return { dx, dz, d, reach, hi };
+  }
+
+  // Strecke Körper → Hände im Hechtsprung. Nacht 2d: die Arme fahren erst aus (P.diveArmT s von 35 % auf 100 %) – sonst
+  // erreichte ein Tormann, der erst springt, wenn der Ball schon fast da ist, sofort 1,3 m weit (jeder Elfmeter gehalten)
+  diveExt(pl, inp) {
+    const P = this.g.P, full = P.diveReach * (inp.diveReach ?? 1);
+    return P.diveArmT > 0 ? full * clamp(0.35 + 0.65 * pl.hand.t / P.diveArmT, 0.35, 1) : full;
   }
 
   // Nimmt der Tormann den Ball gleich mit den Händen? Er will fangen, darf es, und der Ball ist in Reichweite der

@@ -8,7 +8,7 @@ import { Ball } from './ball.js';
 import { Player, EMPTY_INPUT } from './player.js';
 import { buildCage, goalSide, outOfCage } from './world.js';
 import { Rules } from './rules.js';
-import { Bots } from './bots.js';
+import { Bots, keeperLevel } from './bots.js';
 import { newGestures, stepGestures, gestureView } from '../input/gesture.js';
 import { makeChallenge, challengeDef } from './challenges.js';
 
@@ -46,6 +46,9 @@ export class Game {
       this.rules = new Rules(this);
       this.bots = opts.bots === false || (cdef && this.players.length < 2) ? null : new Bots(this, (cdef && cdef.botLevel) || (opts.botLevel ?? params.botLevel), opts.botLevels);
       if (cdef) { // Training/Challenge: eigene Welt, keine Uhr, kein Anstoß, Mensch fest (Orange 0)
+        // Nacht 2d: eigene Tormann-Stufe je Übung (Elfmeter: der schnellere Tormann von Nacht 2d würde aus 6 m jeden
+        // 1,5-mal härteren Schuss halten – Stufe 1 reagiert wie bisher erst, wenn der Ball schon da ist)
+        if (this.bots && cdef.keeperLevel) this.bots.K = [0, 1].map(() => keeperLevel(params, cdef.keeperLevel));
         this.human = 0;
         this.rules.phase = 'play';
         this.rules.handsOffTeam = cdef.hands ? -1 : 0;
