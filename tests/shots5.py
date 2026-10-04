@@ -20,7 +20,7 @@ def freeze_at(s, cond, sec=90):
 with Server() as srv, sync_playwright() as pw:
     s = Session(pw, srv.base, 'hoch')
     for i, form in enumerate(os.environ.get('FORMS', 'hoch,quer').split(',')):
-        if i: s.new_context(form)
+        if i or form != 'hoch': s.new_context(form)
         s.open('?nosw&seed=3&q=2&nohelp&play')
         res = {}
         if 'luft' in parts:
@@ -52,6 +52,7 @@ with Server() as srv, sync_playwright() as pw:
             s.ev("__game.autoplay(false)")
         if 'hechten' in parts:
             # CPU-Tormann (Blau, rechtes Tor) hechtet gegen einen harten Eckschuss (35 m/s)
+            s.open('?nosw&seed=3&q=2&nohelp&play')
             hx = s.ev("__game.game.cage.hx")
             s.ev("__game.freeze(false); __game.newGame(); __game.game.rules.phase = 'play'; __game.bots(true); __game.human(-1)")
             s.frames(3)
@@ -60,7 +61,34 @@ with Server() as srv, sync_playwright() as pw:
             s.ev(f"__game.kick({{from:[{hx - 9}, 0.3, 1.5], v:[33.5, 2.2, -9.2], w:[0,0,0]}}); __game.game.lastTouch = 0; __game.game.lastTouchT = __game.game.t")
             res['hechten'] = freeze_at(s, "g.players.some(p => p.team === 1 && p.hand.mode === 'dive' && p.hand.t > 0.12)", 3)
             print(s.shot(f'n2d_{form}_hechten', sub))
+            # nah: vom Feld aus aufs Tor (Seitenkamera wie im Fernsehen)
+            s.ev(f"__game.cam([{hx - 5.5}, 1.5, 3.2], [{hx - 0.6}, 0.7, -0.6])"); s.frames(3)
+            print(s.shot(f'n2d_{form}_hechten_nah', sub))
+            s.ev("__game.cam(null)")
             s.ev("__game.freeze(false)")
+        if 'replay' in parts:
+            # Tor-Wiederholung: Orange 2 (Mensch) schießt per Tipp aus 9 m ins Tor (Blau ohne Bots, Tormann zur Seite),
+            # nach 1 s Live-Jubel läuft die Wiederholung; Fotos in jedem Abschnitt (angehalten), danach Anstoß
+            s.open('?nosw&seed=3&q=2&nohelp&play')
+            hx = s.ev("__game.game.cage.hx")
+            s.ev("__game.freeze(false); __game.replayHold(null); __game.newGame(); __game.game.rules.phase = 'play'; __game.bots(false); __game.human(1)")
+            s.frames(3)
+            s.ev(f"__game.placePlayer({hx - 9.4}, 1.2, -0.12, 1); __game.placeBall({hx - 9.0}, 0.11, 1.15); __game.placePlayer({hx - 0.6}, -2.6, Math.PI, 3);"
+                 f" __game.placePlayer(-4, 4, 0, 4); __game.placePlayer(-4, -4, 0, 5); __game.placePlayer(-8, 0, 0, 0); __game.placePlayer(-3, 3, 0, 2)")
+            s.frames(2)
+            s.ev("__game.replayHold('aufbau', 0.75); __game.press([[0, 0.07, 'shot']], [1, -0.25], 0.3)")
+            for k, (ph, fr) in enumerate([('aufbau', 0.75), ('kontakt', 0.55 if form == 'quer' else 0.62), ('flug', 0.5), ('fancam', 0.55)]):
+                if k and ph not in s.ev("__game.replay().segs"): continue  # Flug fehlt bei sehr harten Schüssen
+                s.ev(f"__game.replayHold('{ph}', {fr})")
+                try: s.pg.wait_for_function(f"(() => {{ const r = __game.replay(); return r.held && r.phase === '{ph}'; }})()", timeout=20000)
+                except Exception: print('  (Abschnitt nicht erreicht)', ph); continue
+                s.frames(4)
+                res['replay_' + ph] = s.ev("__game.replay()")
+                print(s.shot(f'n2d_{form}_replay_{k + 1}_{ph}', sub))
+            s.ev("__game.replayHold(null)")
+            s.pg.wait_for_function("!__game.replay().active", timeout=20000)
+            s.wait_sim(2.0, timeout=30000)
+            res['nach_replay'] = s.ev("({ phase: __game.game.rules.phase, score: __game.game.score })")
         print(form, json.dumps(res, ensure_ascii=False))
     errs = s.errors + ['JSERR ' + e for e in s.ev('window.__errors')]
     print('Fehler:', errs[:5])

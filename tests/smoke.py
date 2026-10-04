@@ -92,6 +92,32 @@ with Server() as srv, sync_playwright() as pw:
         st = s.state()
         kt = s.ev("__game.game.rules.kickoffTeam")
         ok(kt == 1 and st['ball']['held'] == -1 and st['rules']['phase'] in ('kickoff', 'play'), f"Anstoß nach Tor: Blau stößt an (Team {kt}, Ball frei {st['ball']['held']}, Phase {st['rules']['phase']})")
+        # Nacht 2d: Tor-Wiederholung – Mensch schießt per Tipp ins leere Tor, 1 s Jubel, alle Abschnitte, dann Anstoß;
+        # beim zweiten Tor überspringt ein Tipp die Wiederholung
+        def goal_shot():
+            hx = s.ev("__game.game.cage.hx")
+            s.ev("__game.newGame(); __game.game.rules.phase = 'play'; __game.bots(false); __game.human(1)")
+            s.frames(2)
+            s.ev(f"__game.placePlayer({hx - 7.4}, 0.6, 0, 1); __game.placeBall({hx - 7.0}, 0.11, 0.6); __game.placePlayer({hx - 0.6}, -2.8, Math.PI, 3)")
+            s.frames(2)
+            s.ev("__game.press([[0, 0.07, 'shot']], [1, -0.1], 0.3)")
+        goal_shot()
+        seen, t0 = [], time.time()
+        while time.time() - t0 < 25:
+            r = s.ev("__game.replay()")
+            if r['active'] and (not seen or seen[-1] != r['phase']): seen.append(r['phase'])
+            if seen and not r['active']: break
+            time.sleep(0.05)
+        s.wait_sim(2.2, timeout=60000)
+        st = s.state()
+        ok('kontakt' in seen and 'fancam' in seen and st['rules']['phase'] in ('kickoff', 'play') and st['score'] == [1, 0],
+           f"Tor-Wiederholung: Abschnitte {seen} ({r.get('label', '')}), danach Phase {st['rules']['phase']}, Stand {st['score']}")
+        goal_shot()
+        s.pg.wait_for_function("__game.replay().active && __game.replay().real > 0.5", timeout=20000)
+        box = s.pg.locator('#c').bounding_box()
+        s.pg.mouse.click(box['x'] + box['width'] / 2, box['y'] + box['height'] / 2)
+        time.sleep(0.4)
+        ok(not s.ev("__game.replay().active"), 'Tor-Wiederholung: Tippen überspringt')
         # Mensch als letzte Hand mit Ball: Knöpfe werden Abwurf/Abschlag, Abwurf per Pass-Taste
         s.ev("__game.newGame(); __game.game.rules.phase = 'play'; __game.game.rules.giveKeeper(0)")
         s.frames(4)

@@ -52,7 +52,8 @@ export function buildHud(root, canvas) {
       <button class="btn sec" data-act="newgame">Neu starten</button>
       <button class="btn sec" data-act="help">Steuerung</button>
     </div>
-    <div class="row"><button class="btn sec" data-act="sound">Ton: an</button><button class="btn sec" data-act="slowmo">Zeitlupe: an</button><button class="btn sec" data-act="trainmenu">Training</button></div>
+    <div class="row"><button class="btn sec" data-act="sound">Ton: an</button><button class="btn sec" data-act="slowmo">Zeitlupe: an</button><button class="btn sec" data-act="replay">Wiederholung: an</button></div>
+    <div class="row"><button class="btn sec" data-act="trainmenu">Training</button></div>
     <p class="small lastshot"></p>
     <p class="small physics"></p>
     <div class="row"><button class="btn sec" data-act="credits">Credits</button><button class="btn sec" data-act="title">Startbildschirm</button></div>
@@ -100,7 +101,11 @@ export function buildHud(root, canvas) {
     <p class="small">Der Pass geht zum Mitspieler, auf den der Stick zeigt (±35°), in seinen Laufweg – zeigst du auf die Bande, geht er über die Bande.
     Der Schuss geht immer aufs Tor: Stick seitlich = flache Ecke, schräg nach vorn = hohe Ecke. Schlechte Lage (spitzer Winkel, Rücken zum Tor, Gegner dran) = langsamer und zentraler.</p>
     <div class="row stick"><button class="btn" data-act="helpok">Verstanden</button></div></div>`;
-  root.append(top, banner, charge, hold, touch, dbg, start, menu, credits, train, hint, result, help);
+  // Tor-Wiederholung (Nacht 2d): Kinobalken, Vignette, Blitz, Einblendungen – reines CSS (kein Nachbearbeitungs-Pass)
+  const replay = h('div', 'replay', '<i class="lb t"></i><i class="lb b"></i><i class="vig"></i><i class="flash"></i>' +
+    '<div class="rp-label"><b>WIEDERHOLUNG</b><span></span></div><div class="fancam"><i></i>FAN-CAM</div><div class="rp-skip">Tippen = weiter</div>');
+  replay.id = 'replay';
+  root.append(top, banner, charge, hold, touch, dbg, start, menu, credits, train, hint, result, help, replay);
 
   const howto = (touchUI) => touchUI
     ? `<li><b>Stick links:</b> laufen · ganz außen oder Knopf = Sprint · <b>⇄</b> Spieler wechseln (sonst automatisch)</li>
@@ -114,7 +119,11 @@ export function buildHud(root, canvas) {
 
   let bannerT = 0, kickT = 0, lastScore = '', lastKeeper = '', lastCharge = null, lastStatus = '';
   const clock = (sec) => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, '0')}`;
+  const rpLabel = replay.querySelector('.rp-label span'), rpFlash = replay.querySelector('.flash');
   return {
+    // Wiederholung: an/aus mit Text (Schütze · Technik · km/h), Fan-Cam-Abzeichen, Blitz-Stärke 0…1
+    replayShow(on, text = '') { document.body.classList.toggle('replaying', on); if (on) rpLabel.textContent = text; },
+    replayState(fan, flash) { replay.classList.toggle('fan', fan); rpFlash.style.opacity = flash.toFixed(3); },
     root, score, kick, menuBtn, banner, touch, stickZone, stickBase, stickKnob, bShot, bPass, bSprint, bSwitch, dbg, start, menu, credits, canvas, charge, chargeFill, hold,
     train, hint, result, help,
     setHowto,

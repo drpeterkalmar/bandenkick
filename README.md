@@ -67,6 +67,14 @@ Als App installierbar (PWA), läuft offline.
 - **Profi-Steuerung** `?treffpunkt=1`: altes Modell aus Nacht 1/2 – Finger auf dem Schuss-Knopf verschieben =
   Treffpunkt (seitlich Effet, unten Heber, Mitte Vollspann), Tastatur Q/E/R/F.
 - **Zeitlupe** bei Luftbällen (0,9 s, 40 % Tempo, Kamera zoomt leicht) – im Pause-Menü abschaltbar.
+- **Tor-Wiederholung** (Nacht 2d, Peter: „Actionreplay mit extrem zoom und effekt fan cam slo mo“): nach jedem Tor im
+  Spiel 1 s Live-Jubel, dann die Wiederholung (höchstens 7 s): Aufbau aus der TV-Kamera in Echtzeit → **Ballkontakt in
+  Zeitlupe (0,2 ×) mit extremem Zoom** auf Fuß und Ball (quer seitlich, hoch über die Schulter des Schützen), Blitz,
+  Druckwelle und Leuchtspur hinter dem Ball → **Fan-Cam** hinter dem Tor außerhalb des Käfigs auf Zuschauerhöhe,
+  wackelnd, Zeitlupe (0,3 ×), wenn der Ball über die Linie ins Netz schlägt → zurück zum Jubel, dann Anstoß.
+  Einblendung „WIEDERHOLUNG“ mit Schütze, Technik und km/h, Kinobalken und Vignette. **Tippen** (oder eine Taste)
+  überspringt. Im Pause-Menü „Wiederholung: an/aus“, `?replay=0` = aus; im Training keine Wiederholung. Aufgezeichnet
+  wird nur der Darstellungs-Zustand (Ringpuffer 8 s), die Simulation steht währenddessen still und bleibt unverändert.
 - Beim ersten Start erklärt eine **Hilfekarte** die Gesten; später über ☰ → Steuerung.
 
 **Ballmagnet (Nacht 2c, Peter: „leichter ballmagnet, sonst kein dribbling“; Nacht 2d: „viel mehr Ballmagnet“ → Stärke 1,2
@@ -161,6 +169,7 @@ Ball mit (Sohle/Außenseite). `?zack=0` = altes Gefühl aus Nacht 1 zum Vergleic
 | `?schusshilfe=1` | Schuss-Hilfe: > 1 = gute Lage zählt mehr (z. B. 1.5 leichter), < 1 = strenger |
 | `?luft=0` | keine automatischen Luftball-Techniken (Volley, Kopfball …) |
 | `?zeitlupe=0` | keine Zeitlupe bei Luftbällen |
+| `?replay=0`, `?replayDelay=1` | keine Tor-Wiederholung (sonst im Pause-Menü umschaltbar); Sekunden Live-Jubel davor |
 | `?challenge=torwand` | direkt in eine Übung (torwand, volley, bande, dribbel, elfmeter, doppelpass, tw_serie, tw_reaktion, tw_1gegen1) |
 | `?nohelp` | Hilfekarte beim ersten Start überspringen |
 
@@ -177,6 +186,8 @@ Ball mit (Sohle/Außenseite). `?zack=0` = altes Gefühl aus Nacht 1 zum Vergleic
   Bande), `shot.js` (Qualität q, Eckenwahl), `technique.js` (Technik-Tabellen, Luftball-Bewertung), `air.js`
   (Luftball-Planer und -Ausführung – Bots nutzen dieselbe API), `challenges.js` (9 Übungen, Ballmaschine, Sterne).
   `src/render/training.js` (Ballmaschine, Torwand, Hütchen, Dummies, Zielmarken).
+- `src/sim/replay.js` (Nacht 2d): Ringpuffer des Darstellungs-Zustands, Ablauf und Kameras der Tor-Wiederholung (ohne
+  DOM, in Node getestet); `src/render/replayfx.js`: Leuchtspur und Druckwelle (je 1 Draw-Call), Kinobalken/Blitz per CSS.
 - `src/render/` – Szene, Käfig, Ball/Granulat, `avatars.js` (Rocketbox-Menschen, Lauf-Blend, Leibchen, Posen), Kamera
   je Format. `src/audio/sound.js` – alle Geräusche selbst synthetisiert, per OfflineAudioContext vorgerendert.
   `src/input/` – Touch, Tastatur/Maus, Gamepad.
@@ -218,6 +229,8 @@ node tests/node/keeper_probe.mjs 30 # Tore je Schuss gegen Stufe 1/2/3 (KEEPER_O
 node tests/node/keeper_series.mjs   # Tormann isoliert: feste Eckschuss-Serie je Stufe (mit Hechtsprüngen; SPEED=21-33 = harte Schüsse)
 node tests/node/wucht.test.mjs      # Wucht vorher/nachher (Tempo, Flugzeit, Kurve, leeres Tor), Ziel-Löser, Abwehr > Fang-Grenze, Selbstspiel: Tunneln, Hechtsprünge
 node tests/node/wucht_probe.mjs selfplay "wucht=1" 8   # Messwerkzeug: Schüsse, Tore, Hechtsprünge, schnellster Schuss, Ball draußen
+node tests/node/replay.test.mjs     # Tor-Wiederholung: Ringpuffer, Kontakt-Takt, Ablauf ≤ 7 s, Überspringen, Spielzustand unverändert
+python3 tests/shots5.py final       # Fotos Nacht 2d: sechs Luftball-Techniken im Kontakt (Spiel- und Seitenkamera), Hechtsprung, Wiederholung (FORMS=hoch)
 python3 tests/shots4.py final   # Fotos Nacht 2c: Auto-Torwart hechtet, Grätsche, Flanke, großes Feld (hoch/quer)
 python3 tests/shots3.py final   # Fotos Nacht 2b: Aufladering, Training, Torwand, Fallrückzieher, Kopfball, Ergebnis
 python3 tests/perf_vergleich.py [pfad]  # Leistung je Spieltakt/Bild, z. B. gegen einen Worktree eines älteren Stands

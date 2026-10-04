@@ -202,6 +202,10 @@ export const DEFAULTS = {
                           // 0,1 – mit dem stärkeren Magnet liegt der Ball enger am Fuß des Gegners, Grätschen sollen weiter erobern)
   tackleShotD: 11,        // m: Schuss-Knopf schießt aus der Grätsche aufs Tor, wenn das Tor näher ist, sonst klärt er
   zeitlupe: 1,            // Zeitlupe + Kurz-Zoom bei spektakulären Luftbällen (0 = aus)            [?zeitlupe=0]
+  // Nacht 2d (Peter: „nach tor Actionreplay mit extrem zoom und effekt fan cam slo mo im moment des Ballkontaktes und im
+  // Torbereich“): Wiederholung nach jedem Tor im Spiel (nicht im Training), nach replayDelay s Live-Jubel; Tippen überspringt
+  replay: 1,              // 0 = aus (sonst im Pause-Menü umschaltbar)                              [?replay=0]
+  replayDelay: 1.0,       // s Live-Jubel vor der Wiederholung
 
   // ---------------- Spiel 3 gegen 3 (Plan: „letzte Hand“, Schnellstart, Spielzeit) ----------------
   perTeam: 3,             // Spieler je Mannschaft

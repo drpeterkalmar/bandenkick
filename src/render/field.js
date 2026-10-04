@@ -332,8 +332,8 @@ export function buildField(P, cage, tex, renderer) {
     if (c.x > hx + cage.gD) f[5] = 0.35; if (c.x < -hx - cage.gD) f[6] = 0.35;
     return f;
   };
-  function update(ballNet, cam) {
-    const f = fadeFor(cam);
+  function update(ballNet, cam, noFade = false) {
+    const f = noFade ? [1, 1, 1, 1, 1, 1, 1, 1] : fadeFor(cam); // Fan-Cam (Nacht 2d): durch Zaun und Netz, nichts ausblenden
     // Gestell zwischen Kamera und Feld ausblenden (Schnittansicht wie im TV-Bild)
     for (let i = 0; i < 5; i++) if (frames[i]) frames[i].visible = f[i] > 0.9;
     for (const m of [netMat, goalNetMat]) {

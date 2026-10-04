@@ -16,6 +16,8 @@ import { GameCamera } from './render/camera.js';
 import { Input } from './input/input.js';
 import { buildHud } from './ui/hud.js';
 import { Sound } from './audio/sound.js';
+import { ReplayRecorder, ReplayDirector, replayCamera } from './sim/replay.js';
+import { ReplayFx } from './render/replayfx.js';
 import { BUILD } from './build.js';
 
 const qs = new URLSearchParams(location.search);
@@ -92,6 +94,11 @@ let slowmoOn = !!P.zeitlupe && localStorage.getItem('bk_zeitlupe') !== '0';
 const slowBtn = hud.menu.querySelector('[data-act="slowmo"]');
 const slowLabel = () => { slowBtn.textContent = 'Zeitlupe: ' + (slowmoOn ? 'an' : 'aus'); };
 slowLabel();
+// Tor-Wiederholung (Nacht 2d): an/aus im Pause-Menü (localStorage bk_replay), ?replay=0
+let replayOn = !!P.replay && localStorage.getItem('bk_replay') !== '0';
+const replayBtn = hud.menu.querySelector('[data-act="replay"]');
+const replayLabel = () => { replayBtn.textContent = 'Wiederholung: ' + (replayOn ? 'an' : 'aus'); };
+replayLabel();
 let helpBack = 'menu', helpThen = null;
 // Steuerungskarte beim ersten Start (danach über ☰ / Startbildschirm)
 function withHelp(then) {
@@ -100,6 +107,8 @@ function withHelp(then) {
 }
 function startChallenge(id) {
   challengeId = id; setSolo(false);
+  if (rp.dir) endReplay();
+  rp.wait = -1;
   document.body.classList.add('challenge');
   game = newGame(); resetPrev(); challengeDone = false;
   if (props) props.dispose();
@@ -136,6 +145,7 @@ hud.root.addEventListener('click', (e) => {
   if (a === 'help') { helpBack = mode; helpThen = null; setMode('help'); }
   if (a === 'helpok') { localStorage.setItem('bk_hilfe', '1'); if (helpThen) { const f = helpThen; helpThen = null; f(); } else setMode(helpBack); }
   if (a === 'slowmo') { slowmoOn = !slowmoOn; localStorage.setItem('bk_zeitlupe', slowmoOn ? '1' : '0'); slowLabel(); }
+  if (a === 'replay') { replayOn = !replayOn; localStorage.setItem('bk_replay', replayOn ? '1' : '0'); replayLabel(); }
   if (a === 'resume') setMode('play');
   if (a === 'credits') { creditsBack = mode; setMode('credits'); }
   if (a === 'back') setMode(creditsBack);
@@ -153,6 +163,8 @@ function setSolo(s) {
   solo = s; document.body.classList.toggle('solo', solo);
 }
 function startPlay(fresh = false) {
+  if (rp.dir) endReplay();
+  rp.wait = -1;
   if (fresh || game.match === solo) { game = newGame(); resetPrev(); }
   setMode('play');
   if (!game.match && (game.state !== 'play' || game.t < 0.01)) game.kickoff();
@@ -205,6 +217,7 @@ async function boot() {
   gran = new Granulate();
   scene.add(gran.points);
   markers = new AimMarkers(scene);
+  rp.fx = new ReplayFx(scene);
   await sound.init().catch((e) => window.__errors.push('Ton: ' + e.message));
   resize();
   input.resetStick();
@@ -305,6 +318,7 @@ function handleEvents(ev) {
     } else if (e.type === 'goal' && e.challenge) {
       // Challenge meldet selbst (Treffer/gehalten)
     } else if (e.type === 'goal') {
+      if (R && replayOn && rp.rec && game.players.length === rp.rec.n) { rp.goal = { ...e, t: game.t - DT }; rp.wait = P.replayDelay; }
       if (R) {
         const mine = e.team === me().team;
         hud.flash(mine ? 'TOR!' : 'Gegentor', `${TEAM_NAMES[e.team]} · ${Math.round(e.speed * 3.6)} km/h${e.own ? ' · Eigentor' : e.saved ? ' · Tormann war noch dran' : ''}`, 2.4);
@@ -436,7 +450,7 @@ function frame() {
   heldPrev = raw.shotDown; passPrev = raw.passDown;
   const b = game.ball;
   const tS = performance.now();
-  if (mode === 'play' && !frozen) {
+  if (mode === 'play' && !frozen && !rp.dir) {
     acc += dt * slowScale(dt);
     let first = true, steps = 0;
     // Knopf-Flanken mit echtem Zeitstempel auf die Takte dieses Bildes verteilen (Tipp-Dauer unabhängig von der
@@ -459,7 +473,9 @@ function frame() {
       if (!first) { wi.switch = false; wi.throw = false; wi.punt = false; wi.dive = false; }
       const ins = [];
       ins[Math.max(0, game.human)] = wi;
-      handleEvents(game.step(ins));
+      const evs = game.step(ins);
+      handleEvents(evs);
+      recordReplay(evs);
       first = false;
       acc -= DT; steps++;
       if (G.freezeFn && G.freezeFn(game)) { frozen = true; G.freezeFn = null; acc = 0; break; } // Tests: im richtigen Takt anhalten
@@ -471,17 +487,22 @@ function frame() {
   if (!raw.shotDown && !raw.shotRelease) chargeHold = 0;
   autoQuality(dt);
   const a = mode === 'play' ? Math.min(1, acc / DT) : 1;
-  const bx = prev.bx + (b.p.x - prev.bx) * a, by = prev.by + (b.p.y - prev.by) * a, bz = prev.bz + (b.p.z - prev.bz) * a;
+  // Tor-Wiederholung: nach dem Live-Jubel starten; läuft sie, zeigt die Grafik den aufgezeichneten Zustand
+  if (rp.wait > 0 && mode === 'play' && !frozen) { rp.wait -= dt; if (rp.wait <= 0) startReplay(); }
+  const rdt = mode === 'play' && !(rp.hold && rp.held) ? dt : 0;
+  const rf = rp.dir && (mode === 'play' || mode === 'pause') ? replayFrame(rdt, raw) : null;
+  let bx = prev.bx + (b.p.x - prev.bx) * a, by = prev.by + (b.p.y - prev.by) * a, bz = prev.bz + (b.p.z - prev.bz) * a;
+  if (rf) { bx = rf.ball.p.x; by = rf.ball.p.y; bz = rf.ball.p.z; ballMesh.quaternion.set(rf.ball.q[1], rf.ball.q[2], rf.ball.q[3], rf.ball.q[0]); }
+  else ballMesh.quaternion.set(b.q[1], b.q[2], b.q[3], b.q[0]);
   ballMesh.position.set(bx, by, bz);
-  ballMesh.quaternion.set(b.q[1], b.q[2], b.q[3], b.q[0]);
   poseBlob(blob, bx, by, bz, P.ballR);
   const tA = performance.now();
-  drawPlayers(dt, a);
+  drawPlayers(rf ? rdt * rp.rate : dt, a, rf);
   perf.av.push(performance.now() - tA); if (perf.av.length > 240) perf.av.shift();
   const pl = me();
   const px = prev.px[pl.id] + (pl.x - prev.px[pl.id]) * a, pz = prev.pz[pl.id] + (pl.z - prev.pz[pl.id]) * a;
   gcam.update(dt, { x: bx, z: bz, vx: b.v.x, vz: b.v.z }, { x: px, z: pz }, mode === 'play' || mode === 'pause' ? 'play' : 'menu');
-  field.update(b.net, gcam.cam);
+  field.update(rf ? rf.ball.net : b.net, gcam.cam, !!(rf && rp.dir && rp.dir.cur.cam === 'fan'));
   gran.update(dt);
   hud.tick(dt);
   const touchUI = document.body.classList.contains('touch');
@@ -515,32 +536,98 @@ function frame() {
 }
 const avg = (a) => (a.length ? a.reduce((s, x) => s + x, 0) / a.length : 0);
 
+// ---------------- Tor-Wiederholung (Nacht 2d) ----------------
+// Aufzeichnung je Spieltakt (nur im Spiel), nach einem Tor P.replayDelay s Live-Jubel, dann Wiederholung: die Simulation
+// steht so lange still (sie wird nicht verändert), die Grafik zeigt den aufgezeichneten Zustand mit eigener Kamera.
+// Tippen, Taste oder Knopf überspringt; danach läuft der Jubel weiter und es folgt der Anstoß wie gewohnt.
+const rp = { rec: null, recGame: null, dir: null, wait: -1, goal: null, frame: {}, rate: 1, trail: [], hold: null, held: false, fx: null, label: '', ctx: null };
+function recordReplay(evs) {
+  if (!game.match || game.challenge || !replayOn) { rp.recGame = null; return; }
+  if (rp.recGame !== game || !rp.rec || rp.rec.n !== game.players.length) { rp.rec = new ReplayRecorder(game.players.length); rp.recGame = game; rp.wait = -1; }
+  rp.rec.record(game, evs);
+}
+function startReplay() {
+  rp.wait = -1;
+  if (!rp.rec || !rp.goal || rp.recGame !== game || mode !== 'play') return;
+  const D = new ReplayDirector(rp.rec, rp.goal);
+  if (D.done) return;
+  rp.dir = D; rp.held = false;
+  const c = D.contact, g = rp.goal;
+  // Kamera beim Kontakt auf der Feldseite (nicht hinter dem Zaun), Text: Schütze · Technik · km/h
+  let side = 1;
+  if (c) { const dl = Math.hypot(c.dx, c.dz) || 1, nx = -c.dz / dl, nz = c.dx / dl; side = nx * -c.x + nz * -c.z >= 0 ? 1 : -1; }
+  rp.ctx = { cage: game.cage, mode: gcam.mode, contact: c, goal: { side: g.side }, time: 0, frac: 0, side };
+  const sc = g.scorer >= 0 ? game.players[g.scorer] : null;
+  const idx = sc ? game.players.filter((p) => p.team === sc.team).indexOf(sc) + 1 : 0;
+  const who = g.own ? 'Eigentor' : sc ? `${TEAM_NAMES[sc.team]} ${idx}${sc.id === game.human ? ' (du)' : ''}` : TEAM_NAMES[g.team];
+  const tech = c && c.tech ? techName(c.tech) : '';
+  rp.label = [who, tech ? tech + (c.tech === 'fallrueck' || c.tech === 'seitfall' || c.tech === 'flugkopf' ? '!' : '') : '', c && c.speed ? `${Math.round(c.speed * 3.6)} km/h` : ''].filter(Boolean).join(' · ');
+  hud.replayShow(true, rp.label);
+  markers && markers.hide();
+}
+function endReplay() {
+  rp.dir = null; rp.goal = null; rp.held = false;
+  gcam.override = null;
+  hud.replayShow(false); hud.replayState(false, 0);
+  if (rp.fx) rp.fx.hide();
+  resetPrev(); acc = 0;
+}
+function skipReplay() { if (rp.dir) { rp.dir.skip(); } }
+// Ein Bild der Wiederholung: Zeit weiter, Zustand, Kamera, Effekte → Zustand (oder null, wenn zu Ende)
+function replayFrame(dt, raw) {
+  const D = rp.dir;
+  if (raw && (raw.passDown || raw.shotDown) && D.real > 0.3) D.skip();
+  const s0 = D.cur;
+  rp.rate = D.done ? 1 : s0.rate;
+  const t = D.update(dt);
+  if (rp.hold && !D.done && D.phase === rp.hold.phase && D.segFrac() >= rp.hold.frac) { rp.held = true; }
+  if (D.done) { endReplay(); return null; }
+  const f = rp.rec.frameAt(t, rp.frame, P);
+  const ctx = rp.ctx; ctx.time = D.real; ctx.frac = D.segFrac(); ctx.mode = gcam.mode;
+  const cam = replayCamera(D.cur.cam, f, ctx);
+  gcam.override = { pos: cam.pos, look: cam.look };
+  if (Math.abs(gcam.cam.fov - cam.fov) > 0.01) { gcam.cam.fov = cam.fov; gcam.cam.updateProjectionMatrix(); }
+  const c = D.contact, k = c ? t - c.t : -1;
+  // Blitz und Druckwelle beim Kontakt, Ballspur danach (je Tempo), Fan-Cam-Abzeichen
+  const flash = c && D.phase === 'kontakt' ? Math.max(0, 1 - Math.abs(k) / 0.05) * 0.75 : 0;
+  hud.replayState(D.cur.cam === 'fan', flash);
+  if (rp.fx) {
+    rp.fx.setRing(c, k);
+    const sp = Math.hypot(f.ball.v.x, f.ball.v.y, f.ball.v.z);
+    rp.fx.setTrail(k > 0 ? rp.rec.trail(t, Math.min(0.22, k), 20, rp.trail) : null, gcam.cam, Math.min(1, Math.max(0, (sp - 6) / 20)));
+  }
+  return f;
+}
+addEventListener('pointerdown', () => { if (rp.dir && mode === 'play' && rp.dir.real > 0.3) skipReplay(); }, true);
+addEventListener('keydown', (e) => { if (rp.dir && mode === 'play' && e.code !== 'Escape' && rp.dir.real > 0.3) skipReplay(); });
+
 // Menschen zeichnen: Position interpoliert, Pose aus dem Sim-Zustand (Blend nach Tempo, Tormann, Jubel)
-function drawPlayers(dt, a) {
-  const R = game.match ? game.rules : null, b = game.ball;
+function drawPlayers(dt, a, rf = null) {
+  const R = game.match ? game.rules : null, b = rf ? rf.ball : game.ball;
   const n = game.players.length;
-  // Figur je Spieler: Mannschaft × Platz (Challenges haben weniger Spieler, Farbe muss passen)
+  // Figur je Spieler: Mannschaft × Platz (Challenges haben weniger Spieler, Farbe muss passen); Wiederholung: Geister
   const slot = figSlot || (figSlot = []), cnt = [0, 0];
   slot.length = 0;
-  for (const p of game.players) slot[p.team * 3 + cnt[p.team]++] = p;
+  for (const p of game.players) slot[p.team * 3 + cnt[p.team]++] = rf ? Object.assign(rf.players[p.id], { team: p.team }) : p;
   for (let i = 0; i < figs.length; i++) {
     const f = figs[i], pl = slot[i];
     const vis = !!pl;
     if (f.capsule) { f.capsule.group.visible = vis; } else f.root.visible = vis;
     if (!vis) continue;
-    const x = prev.px[pl.id] + (pl.x - prev.px[pl.id]) * a, z = prev.pz[pl.id] + (pl.z - prev.pz[pl.id]) * a;
+    const x = rf ? pl.x : prev.px[pl.id] + (pl.x - prev.px[pl.id]) * a, z = rf ? pl.z : prev.pz[pl.id] + (pl.z - prev.pz[pl.id]) * a;
     if (f.capsule) { posePlayer(f.capsule, pl, x, z); continue; }
-    const keeper = R ? R.keeper[pl.team] === pl.id && R.phase !== 'end' && R.handsOffTeam !== pl.team : false;
+    const keeper = rf ? pl.keeper : R ? R.keeper[pl.team] === pl.id && R.phase !== 'end' && R.handsOffTeam !== pl.team : false;
     let special = null;
-    if (R) {
+    if (R && !rf) {
       if (R.phase === 'goal' && pl.speed < 0.8) special = R.scoredTeam === pl.team ? ((R.goals.length ? R.goals[R.goals.length - 1].scorer : game.lastTouch) === pl.id ? 'cheer' : 'clap') : 'wait';
       else if (R.phase === 'end' && pl.speed < 0.8) special = R.winner < 0 ? 'clap' : R.winner === pl.team ? 'cheer2' : 'wait';
       else if (R.phase === 'halftime' && pl.speed < 0.8) special = 'wait';
     }
     const ownGoalX = R ? R.goalX(pl.team) : -99;
     const ready = keeper && b.held < 0 && Math.hypot(b.p.x - ownGoalX, b.p.z) < 9 && pl.speed < 2.5 && pl.hand.mode === 'none';
-    f.update(dt, pl, { x, z, keeper, holding: b.held === pl.id, ready, special, t: game.t });
+    f.update(dt, pl, { x, z, keeper, holding: b.held === pl.id, ready, special, t: rf ? rf.t : game.t });
   }
+  if (rf) { marker.visible = false; return; }
   void n;
   const pl = me();
   const mx = prev.px[pl.id] + (pl.x - prev.px[pl.id]) * a, mz = prev.pz[pl.id] + (pl.z - prev.pz[pl.id]) * a;
@@ -623,6 +710,10 @@ Object.assign(G, {
   frozen() { return frozen; },
   freezeWhen(src) { G.freezeFn = new Function('g', 'return (' + src + ')'); },
   cam(pos, look) { gcam.override = pos ? { pos, look } : null; },
+  // Tor-Wiederholung (Tests/Fotos): Zustand, sofort starten (letztes Tor), anhalten in Abschnitt/Anteil, überspringen
+  replay() { const D = rp.dir; return { active: !!D, wait: rp.wait, phase: D ? D.phase : null, frac: D ? D.segFrac() : 0, real: D ? D.real : 0, total: D ? D.realTotal : 0, label: rp.label, held: rp.held, contact: D && D.contact ? { ...D.contact } : null, recCount: rp.rec ? rp.rec.count : 0, segs: D ? D.segs.map((x) => x.name) : [] }; },
+  replayHold(phase = null, frac = 0.5) { rp.hold = phase ? { phase, frac } : null; rp.held = false; },
+  replaySkip() { skipReplay(); },
   // Simulation synchron vorspulen (ohne Grafik), z. B. für Schuss-Tests; o = Eingabe des Menschen
   sim(sec, o = null) {
     const n = Math.round(sec / DT); const ev = [];

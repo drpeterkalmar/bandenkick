@@ -149,3 +149,28 @@ table.gest th { font-size: 13px; opacity: .8; }
 @media (max-width: 560px) { .cols2 { grid-template-columns: 1fr; } table.gest { font-size: 12.5px; } }
 #dbg { position: absolute; left: 8px; bottom: 8px; font: 11px/1.3 ui-monospace, monospace; background: rgba(0,0,0,.5); padding: 4px 6px; border-radius: 6px; display: none; }
 body.debug #dbg { display: block; }
+
+/* --- Tor-Wiederholung (Nacht 2d): Kinobalken, Vignette, Blitz, Einblendungen; Steuerung und Anzeige ausgeblendet --- */
+.replay { position: absolute; inset: 0; display: none; pointer-events: none; }
+body.replaying .replay { display: block; }
+body.replaying #touch, body.replaying .hud-top, body.replaying .banner, body.replaying .charge, body.replaying #hold { visibility: hidden; }
+.replay .lb { position: absolute; left: 0; right: 0; height: 9%; background: #000; }
+.replay .lb.t { top: 0; } .replay .lb.b { bottom: 0; }
+body.hoch .replay .lb { height: 7%; }
+.replay .vig { position: absolute; inset: 0; background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,.55) 100%); }
+.replay .flash { position: absolute; inset: 0; background: #fff; opacity: 0; }
+.replay .rp-label { position: absolute; left: 4%; top: calc(9% + 12px); color: #fff; font-weight: 900; letter-spacing: 3px; font-size: 22px;
+  text-shadow: 0 2px 10px rgba(0,0,0,.7); }
+.replay .rp-label b { display: inline-block; background: #ffd84a; color: #1a1a1a; padding: 3px 10px; border-radius: 6px; letter-spacing: 3px; }
+.replay .rp-label span { display: block; margin-top: 6px; font-size: 16px; font-weight: 700; letter-spacing: 0.5px; }
+body.hoch .replay .rp-label { top: calc(7% + 10px); font-size: 18px; }
+.replay .fancam { position: absolute; right: 4%; top: calc(9% + 12px); display: none; color: #fff; font: 800 18px ui-monospace, Menlo, monospace;
+  letter-spacing: 2px; background: rgba(0,0,0,.45); padding: 4px 10px; border-radius: 6px; }
+.replay .fancam i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #ff3b30; margin-right: 8px; vertical-align: 1px;
+  animation: rpblink 1s steps(2) infinite; }
+.replay.fan .fancam { display: block; }
+body.hoch .replay .fancam { top: auto; bottom: calc(7% + 12px); }
+.replay .rp-skip { position: absolute; left: 50%; bottom: calc(9% + 10px); transform: translateX(-50%); color: #fff; opacity: .75; font-size: 14px; font-weight: 600;
+  text-shadow: 0 1px 6px rgba(0,0,0,.7); }
+body.hoch .replay .rp-skip { bottom: calc(7% + 10px); }
+@keyframes rpblink { 50% { opacity: 0; } }
