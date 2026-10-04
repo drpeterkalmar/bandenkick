@@ -285,6 +285,14 @@ python3 tools/fetch_assets.py && python3 tools/make_assets.py   # Assets neu bau
 ```
 Browser-Tests laufen headless über die GPU (ANGLE/Metal), nie zwei Browser gleichzeitig.
 
+## Änderungen
+- **Nacht 2e (04.10.)** – Peters Wünsche vom 03.10.: alle Sounds raus (Spiel ist stumm), Tormann wirft nach ~1 s ab (Median
+  3,4 → 1,1 s, spätestens 2 s, Zeitregel 3 s), kein Rückpass (Tormann kein Empfänger, keine Hände nach Mitspieler-Pass),
+  Passsystem repariert (Pässe bei freiem Weg: stehend 59 → 92 %, laufend 26 → 88 %, Sprint 29 → 83 %; Bot-Pässe 33 → 60 %).
+  Details und Ursachen: [`NACHT2E_BERICHT.md`](NACHT2E_BERICHT.md). A/B: `?halten=0`, `?rueckpass=1`, `?passfix=0`.
+- Nacht 2d: Wucht, Magnet, Hechten, Fallrückzieher, Tor-Wiederholung ([`NACHT2D_BERICHT.md`](NACHT2D_BERICHT.md)); Nacht 2c:
+  Spielgefühl für Kinderhände; Nacht 2b: Ballgefühl; Nacht 2: 3 gegen 3; Nacht 1: Käfig und Physik (jeweils `NACHT*_BERICHT.md`).
+
 ## Credits
 - **Himmel/Licht:** „Suburban Football Field“ von Grzegorz Wronkowski, Poly Haven, CC0.
 - **Rasen-Texturen:** Grass004 und Grass005, ambientCG, CC0 (Kunstrasen umgefärbt, Faser-Normalmap selbst erzeugt).
