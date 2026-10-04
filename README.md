@@ -12,8 +12,13 @@ Als App installierbar (PWA), läuft offline.
 - **„Letzte Hand“:** der hinterste Spieler jeder Mannschaft (kleinster Abstand zur eigenen Torlinie; Wechsel erst
   bei ≥ 0,5 m Vorsprung für ≥ 0,3 s) trägt **leuchtende Handschuhe** und einen **Ring am Boden**. Nur er darf die
   Hände nehmen, und nur im **eigenen Torraum** (Halbkreis 4 m): Fangen, Hechten, Abwurf, Abschlag. Außerhalb geht
-  keine Handaktion – es gibt keine Handspiel-Pfiffe. Ball in der Hand höchstens **6 s** (Leiste im HUD), solange
-  greift niemand an.
+  keine Handaktion – es gibt keine Handspiel-Pfiffe. Ball in der Hand höchstens **3 s** (Leiste im HUD; bis Nacht 2d
+  6 s), solange greift niemand an.
+- **Tormann gibt den Ball schnell weiter (Nacht 2e, Peter 03.10.: „nicht so lange in die Hand nehmen“):** der Bot-Tormann
+  wirft nach 0,3–0,7 s auf einen sicher freien Mitspieler ab, ab 0,9 s auch auf einen weniger freien (nie in einen Weg, den
+  ein Gegner abfangen kann), spätestens nach 2 s schlägt er weit in die freiere Hälfte ab. Gemessen in 6 Bot-Spielen:
+  Haltezeit Median 3,4 → 0,9 s, längste 4,4 → 2,0 s, abgefangene Abwürfe 20 → 8 %. Der Auto-Torwart des Menschen wirft nach
+  1 s ohne Eingabe ab (vorher 2 s). `?halten=0` = Nacht 2d, `?halten=1.5` = etwas länger (Sekunden bis zum Abwurf).
 - **Nach einem Tor:** kurzer Jubel, alle laufen in ihre Hälfte, dann **Anstoß in der Mitte** (seit 30.09.;
   `?anstoss=0` = Schnellstart: der Tormann der Mannschaft, die das Tor bekommen hat, hat den Ball in der Hand).
 - **Spielzeit** 2 × 4 min (`?dauer=`), Anzeige Spielstand und Restzeit, Pfiffe zu Halbzeit und Ende,
@@ -34,7 +39,7 @@ Als App installierbar (PWA), läuft offline.
 | | |
 |---|---|
 | **Handy** | **Stick links** (Finger irgendwo in der linken Hälfte): laufen, ganz nach außen = Sprint. **Pass** und **Schuss** tippen oder doppeltippen (Tabelle unten), der Ring um den Knopf zeigt den Modus. **Sprint:** Knopf halten. **⇄** Spieler wechseln (sonst automatisch zum ballnächsten, nach deinem Pass zum Empfänger). |
-| **Als letzte Hand im eigenen Torraum** | **Auto-Torwart (Nacht 2c):** Fangen und Hechten macht er selbst – so sicher wie ein Bot-Tormann der alten Stufe 2. Laufen darfst du selbst (der Stick gewinnt; lässt du ihn los, stellt er sich hin). Mit Ball: Pass-Knopf = **Abwurf** (auf den Stick bzw. den freiesten Mitspieler), Schuss-Knopf = **Abschlag**; ohne Eingabe wirft er nach 2 s selbst ab. `?autotorwart=0` = alte grüne Knöpfe (Schuss = Fangen, Pass = Hechten). In den drei Torwart-Übungen im Training bleiben die Knöpfe, dort ist Fangen die Aufgabe. |
+| **Als letzte Hand im eigenen Torraum** | **Auto-Torwart (Nacht 2c):** Fangen und Hechten macht er selbst – so sicher wie ein Bot-Tormann der alten Stufe 2. Laufen darfst du selbst (der Stick gewinnt; lässt du ihn los, stellt er sich hin). Mit Ball: Pass-Knopf = **Abwurf** (auf den Stick bzw. den freiesten Mitspieler), Schuss-Knopf = **Abschlag**; ohne Eingabe wirft er nach 1 s selbst ab (Nacht 2e; ohne freien Mitspieler nach 2 s weiter Abschlag). `?autotorwart=0` = alte grüne Knöpfe (Schuss = Fangen, Pass = Hechten). In den drei Torwart-Übungen im Training bleiben die Knöpfe, dort ist Fangen die Aufgabe. |
 | **Tastatur/Maus** | WASD/Pfeile laufen, Shift Sprint, **C/Tab** Wechsel. Maus zielt. **J/Enter/Linksklick = Pass-Knopf**, **Leertaste/K/Rechtsklick = Schuss-Knopf** – gleiche Gesten wie am Handy (Tormann mit Ball: Abwurf bzw. Abschlag). Esc Pause. |
 | **Gamepad** | Linker Stick laufen, A = Pass-Knopf, X oder RT = Schuss-Knopf (Gesten wie am Handy), **Y Wechsel**, LB/RB Sprint. |
 
@@ -142,7 +147,8 @@ Ball mit (Sohle/Außenseite). `?zack=0` = altes Gefühl aus Nacht 1 zum Vergleic
 | `?bots=1` … `3` | Stärke der Bots (Reaktion, Tempo, Streuung, Fangsicherheit, Fehlerquote), Standard 2 |
 | `?dauer=4`, `?golden=1`, `?anstoss=0` | Minuten je Halbzeit, Golden Goal bei Gleichstand, Schnellstart statt Anstoß nach Tor |
 | `?torraum=4`, `?fanghilfe=0` | Radius des Torraums (m), Fanghilfe für den menschlichen Tormann aus (nur mit `?autotorwart=0`) |
-| `?autotorwart=0`, `?autowurf=2` | Auto-Torwart aus (grüne Knöpfe wie Nacht 2b); Sekunden ohne Eingabe bis zum automatischen Abwurf |
+| `?autotorwart=0`, `?autowurf=1` | Auto-Torwart aus (grüne Knöpfe wie Nacht 2b); Sekunden ohne Eingabe bis zum automatischen Abwurf (Nacht 2e: 1, vorher 2) |
+| `?halten=1.2`, `?holdMax=3` | Tormann mit Ball (Nacht 2e): Sekunden bis zum Abwurf des Bot-Tormanns (spätestens + 0,8 s Abschlag), `0` = Nacht 2d (wartet bis ~4,4 s, Zeitregel 6 s, Auto-Torwart 2 s); Zeitregel (s) |
 | `?tormann=1` … `3` | Stärke der CPU-Tormänner getrennt von den Feldspielern (Zwischenwerte wie `1.5` erlaubt; ohne Regler wie `?bots=`). Standard 2 lässt ≈ 30 % der Schüsse rein (Nacht 2b: 14 %) |
 | `?zack=0` | altes Bewegungsmodell aus Nacht 1 (A/B-Vergleich) |
 | `?wende=13`, `?stemm=16`, `?bremse=9`, `?kurve=20`, `?antritt=0.672` | Kurven-Querbeschleunigung, Stemmschritt-Bremsung, Abbremsen (m/s²), Winkel bis zur reinen Kurve (°), Antritts-Zeitkonstante (s) |
@@ -180,7 +186,7 @@ Ball mit (Sohle/Außenseite). `?zack=0` = altes Gefühl aus Nacht 1 zum Vergleic
   Service-Worker (Cache-Busting über Inhalts-Hash: `python3 tools/update_sw.py`).
 - `src/sim/` – Physik ohne DOM (läuft auch in Node): `params.js` (alle Werte mit Quelle), `aero.js`, `ball.js`,
   `world.js` (Käfig), `player.js`, `step.js` (Spielwelt 120 Hz), `lab.js` (FIFA-Prüfverfahren als Simulation).
-- `src/sim/rules.js` (letzte Hand, Torraum, Hände, 6 s, Schnellstart, Uhr), `src/sim/bots.js` (Utility-KI, Bandenpass
+- `src/sim/rules.js` (letzte Hand, Torraum, Hände, 3 s, Schnellstart, Uhr), `src/sim/bots.js` (Utility-KI, Bandenpass
   mit gemessener Abprall-Kennzahl der Ballphysik), Schuss-/Pass-API `Player.kickAt({kind, target, technique})`.
 - **Ballgefühl (Nacht 2b):** `src/input/gesture.js` (Gesten-Parser, reine Funktion je Spieltakt; Knopf-Flanken tragen
   den Zeitstempel des Touch-Ereignisses, damit ein kurzer Tipp auch bei langsamen Bildern kurz bleibt),
@@ -209,7 +215,7 @@ node tests/node/aero.test.mjs   # Drag-Crisis, Magnus-Kurve, Flatterball-Streuun
 node tests/node/cage.test.mjs   # Bande, Netz, Dach, Tore, 1500 Zufallsschüsse: Ball bleibt im Käfig
 node tests/node/player.test.mjs # Laufwerte, Zack-Zieltabelle (Peters Probe), Kurve, Ballführung, Hilfe ≤ 0,3 s, Pass, Schuss
 node tests/node/agility.mjs     # Richtungswechsel-Tabelle wie Peters Probe (z. B. node tests/node/agility.mjs zack=0)
-node tests/node/rules.test.mjs  # letzte Hand, Hysterese, Torraum, Hände, 6 s, Hechten, Schnellstart, Spielzeit, Golden Goal
+node tests/node/rules.test.mjs  # letzte Hand, Hysterese, Torraum, Hände, 3 s, Hechten, Schnellstart, Spielzeit, Golden Goal
 node tests/node/selfplay.test.mjs  # 200 Bot-Spiele à 2 × 4 min: keine Hänger, Tore, beide treffen, Stärken (≈ 2 min)
 node tools/calibrate.mjs        # Rasenwerte neu auf die FIFA-Ziele stellen
 python3 tests/smoke.py          # Browser (Pixel 7 hoch/quer, Desktop): 0 Fehler; Training: Führen/Schuss/Bande/Dach;
@@ -226,7 +232,9 @@ node tests/node/challenge.test.mjs  # alle 9 Übungen headless mit Skript-Spiele
 node tests/node/magnet.test.mjs     # Ballmagnet vorher/nachher: Kinder-Stick (Ball weg je Minute), Parcours, Selbstspiel-Ballverluste, Regeln
 node tests/node/dribble_probe.mjs 20 "magnet=0"  # Messwerkzeug: Parcours (Skript/Kinderhand), Ballverluste beim Führen im Selbstspiel
 node tests/node/tackle.test.mjs     # Grätsche: Auslöser, Ball zuerst (Pass/Schuss/klären), Gegner zuerst (Ball frei, stolpert), Bots, keine Hänger
-node tests/node/keeper.test.mjs     # Auto-Torwart (hält ohne Knopf, Stick gewinnt, Abwurf nach 2 s), CPU-Tormann je Stufe (24 Spiele), Roller
+node tests/node/halten.test.mjs     # Tormann mit Ball (Nacht 2e): Haltezeit Median/max, keine Zwangsabwürfe, abgefangene Abwürfe vorher/nachher
+node tests/node/keeper_hold_probe.mjs 8 "halten=0"  # Messwerkzeug: Haltezeit, Abwürfe, abgefangen, Rückpässe
+node tests/node/keeper.test.mjs     # Auto-Torwart (hält ohne Knopf, Stick gewinnt, Abwurf nach 1 s), CPU-Tormann je Stufe (24 Spiele), Roller
 node tests/node/keeper_probe.mjs 30 # Tore je Schuss gegen Stufe 1/2/3 (KEEPER_ONLY=1: nur der Tormann wechselt, DETAIL=1: nach Abstand)
 node tests/node/keeper_series.mjs   # Tormann isoliert: feste Eckschuss-Serie je Stufe (mit Hechtsprüngen; SPEED=21-33 = harte Schüsse)
 node tests/node/wucht.test.mjs      # Wucht vorher/nachher (Tempo, Flugzeit, Kurve, leeres Tor), Ziel-Löser, Abwehr > Fang-Grenze, Selbstspiel: Tunneln, Hechtsprünge

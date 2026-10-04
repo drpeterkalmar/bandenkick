@@ -1,5 +1,5 @@
 // Regeln 3 gegen 3: „letzte Hand“ (hinterster Spieler, Hysterese 0,5 m / 0,3 s), Torraum (Halbkreis 4 m,
-// ?torraum=), Hände nur dort, Ball in der Hand max. 6 s, niemand darf angreifen, Hechtsprung, Schnellstart
+// ?torraum=), Hände nur dort, Ball in der Hand max. P.holdMax (Nacht 2e: 3 s, vorher 6 s), niemand darf angreifen, Hechtsprung, Schnellstart
 // nach Tor bzw. ?anstoss=1, Spielzeit 2 × dauer, Golden Goal. Aufruf: node tests/node/rules.test.mjs
 import { makeParams } from '../../src/sim/params.js';
 import { Game, DT } from '../../src/sim/step.js';
@@ -84,7 +84,7 @@ const park = (g) => { // alle Spieler weit weg von Ball und Toren
   check('Letzte Hand außerhalb des Torraums: keine Hand möglich', tryCatch(-hx + 5, 0).caught ? 0 : 1, 1, 1, '', 1, 'Ball prallt nur ab / wird mit dem Fuß gespielt');
   check('Nicht-hinterster Spieler im Torraum: keine Hand', tryCatch(-hx + 2, 0, false).caught ? 0 : 1, 1, 1, '', 1);
 }
-// 5) Ball in der Hand höchstens 6 s, dann automatisch Abwurf; solange darf niemand angreifen
+// 5) Ball in der Hand höchstens P.holdMax (Nacht 2e: 3 s), dann automatisch Abwurf; solange darf niemand angreifen
 {
   const g = mk(); park(g);
   const k = g.players[0];
@@ -100,7 +100,8 @@ const park = (g) => { // alle Spieler weit weg von Ball und Toren
     if (g.lastTouch === opp.id) stolen = true;
   }
   const held = rel;
-  check('Ball in der Hand: automatischer Abwurf nach', held, 5.95, 6.1, 's', 6, sixsec ? 'Ereignis „6 s“' : 'ohne Ereignis?');
+  const HM = g.P.holdMax;
+  check('Ball in der Hand: automatischer Abwurf nach', held, HM - 0.05, HM + 0.1, 's', HM, (sixsec ? 'Ereignis „Zeit“' : 'ohne Ereignis?') + ' (Nacht 2e: 3 s, vorher 6 s)');
   check('Während des Haltens: Gegner kommt nicht an den Ball', stolen ? 0 : 1, 1, 1, '', 1, 'Gegner lief 1,5 s lang in den Tormann');
   // Abwurf per Eingabe landet beim Mitspieler
   const g2 = mk(); park(g2);
@@ -194,4 +195,4 @@ const park = (g) => { // alle Spieler weit weg von Ball und Toren
   check('Ohne Golden Goal: 0:0 → Unentschieden', nog.rules.phase === 'end' && nog.rules.winner === -1 ? 1 : 0, 1, 1, '', 1);
 }
 
-process.exit(report('Regeln 3 gegen 3 (letzte Hand, Torraum, 6 s, Schnellstart, Spielzeit)', rows) ? 0 : 1);
+process.exit(report('Regeln 3 gegen 3 (letzte Hand, Torraum, 3 s, Schnellstart, Spielzeit)', rows, 'regeln_3_gegen_3_letzte_hand_torraum_6_s') ? 0 : 1);

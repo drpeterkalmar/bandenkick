@@ -25,7 +25,7 @@ export function buildHud(root, canvas) {
   const bPass = h('button', 'tb', '<span class="ring"></span><span class="sym"></span><span class="pl">Pass</span>'); bPass.id = 'bPass';
   const bSprint = h('button', 'tb', 'Sprint'); bSprint.id = 'bSprint';
   const bSwitch = h('button', 'tb', '⇄'); bSwitch.id = 'bSwitch'; bSwitch.setAttribute('aria-label', 'Spieler wechseln');
-  const hold = h('div', 'holdbar', '<i></i><span>Abwurf in 6 s</span>'); hold.id = 'hold';
+  const hold = h('div', 'holdbar', '<i></i><span>Abwurf in 3 s</span>'); hold.id = 'hold';
   touch.append(stickZone, stickBase, bShot, bPass, bSprint, bSwitch);
 
   const dbg = h('div'); dbg.id = 'dbg';
@@ -109,10 +109,10 @@ export function buildHud(root, canvas) {
   const howto = (touchUI) => touchUI
     ? `<li><b>Stick links:</b> laufen · ganz außen oder Knopf = Sprint · <b>⇄</b> Spieler wechseln (sonst automatisch)</li>
        <li><b>Pass/Schuss:</b> tippen = flach/Vollspann, <b>doppeltippen</b> = hoch/angeschnitten (Ring zeigt den Modus)</li>
-       <li><b>Torwart</b> (letzte Hand im Torraum): fängt und hechtet von selbst. Mit Ball: Pass = <b>Abwurf</b>, Schuss = <b>Abschlag</b> – sonst wirft er nach 2 s selbst ab</li>`
+       <li><b>Torwart</b> (letzte Hand im Torraum): fängt und hechtet von selbst. Mit Ball: Pass = <b>Abwurf</b>, Schuss = <b>Abschlag</b> – sonst wirft er nach 1 s selbst ab</li>`
     : `<li><b>WASD / Pfeile:</b> laufen, <b>Shift:</b> Sprint, <b>C / Tab:</b> Spieler wechseln</li>
        <li><b>J / Enter / Linksklick:</b> Pass · <b>Leertaste / K / Rechtsklick:</b> Schuss – tippen = flach/Vollspann, <b>doppeltippen</b> = hoch/angeschnitten; Maus zielt</li>
-       <li><b>Torwart</b> (letzte Hand im Torraum): fängt und hechtet von selbst; mit Ball J = Abwurf, Leertaste = Abschlag (sonst nach 2 s von selbst)</li>
+       <li><b>Torwart</b> (letzte Hand im Torraum): fängt und hechtet von selbst; mit Ball J = Abwurf, Leertaste = Abschlag (sonst nach 1 s von selbst)</li>
        <li><b>Gamepad:</b> Stick laufen, A Pass/Abwurf, X/RT Schuss/Abschlag, Y Wechsel, LB/RB Sprint</li>`;
   const setHowto = (touchUI) => root.querySelectorAll('.howto').forEach((u) => { u.innerHTML = howto(touchUI); });
 

@@ -619,7 +619,8 @@ export class Bots {
     const g = this.g, b = g.ball, R = g.rules, P = g.P, cage = g.cage, team = pl.team;
     const gx = R.goalX(team), side = team === 0 ? 1 : -1;
     inp.speedCap = K.move;
-    if (b.held === pl.id) { // Ball in der Hand: Abwurf, sobald ein Mitspieler frei anspielbar ist
+    if (b.held === pl.id && P.halten > 0) { this.keeperRelease(pl, br, inp, L, human); return; }
+    if (b.held === pl.id) { // Ball in der Hand: Abwurf, sobald ein Mitspieler frei anspielbar ist (?halten=0: Nacht 2d)
       if (human) { if (br.idleT < P.autoWurf) { br.throwAt = -1; return; } if (br.throwAt < 0) br.throwAt = g.t; }
       else if (br.throwAt < 0) br.throwAt = g.t + 0.8 + g.rng.next() * 0.8 + (1 - L.catchSkill) * 0.6;
       // Abwurf nur bei freiem Passweg (gute Tormänner: ≥ 2 m zum Weg, Empfänger ≥ 2,3 m frei) – sonst warten bzw.
@@ -703,6 +704,31 @@ export class Bots {
     const kx = gx + dx / d * rk, kz = clamp(dz / d * rk + (danger ? br.posErr || 0 : 0), -cage.gw - 0.3, cage.gw + 0.3);
     this.moveTo(inp, pl, kx, kz, danger && Math.hypot(kx - pl.x, kz - pl.z) > 1.2, 0.6);
     inp.autoCatch = inOwnBox; inp.hand = inOwnBox;
+  }
+
+  // Nacht 2e (Peter: „lass den Torwart nicht den Ball so lange in die Hand nehmen“): Ball in der Hand → schnell weiter.
+  // Ab 0,3–0,7 s (aufgestanden, umgeschaut) Abwurf auf einen sicher anspielbaren Mitspieler (gute Tormänner strenger), ab
+  // 0,75·P.halten s auch auf einen weniger freien (Weg ≥ 1,2 m, nie abfangbar), spätestens nach P.halten + 0,8 s weiter Abschlag in
+  // die freiere Hälfte – nie ein Abwurf in einen zugestellten Weg vor dem eigenen Tor. Auto-Torwart des Menschen: erst nach
+  // P.autoWurf s ohne Eingabe (der Mensch kann vorher selbst abwerfen), dann dieselbe Leiter.
+  keeperRelease(pl, br, inp, L, human) {
+    const g = this.g, R = g.rules, P = g.P, team = pl.team;
+    const gx = R.goalX(team), side = team === 0 ? 1 : -1;
+    this.moveTo(inp, pl, gx + side * 1.6, clamp(pl.z, -1.5, 1.5), false, 1);
+    if (pl.hand.mode !== 'hold') { br.throwAt = -1; return; }            // liegt noch (Hechtsprung): erst aufstehen
+    if (human && br.idleT < P.autoWurf) { br.throwAt = -1; return; }
+    if (br.throwAt < 0) br.throwAt = human ? g.t : g.t + 0.3 + g.rng.next() * 0.4;
+    if (g.t < br.throwAt) return;
+    const late = pl.holdT >= 0.75 * P.halten, last = pl.holdT >= P.halten + 0.8 || (human && br.idleT >= P.autoWurf + 1);
+    const safe = L.catchSkill > 0.5;
+    const mate = R.bestMate(pl, true, late ? 1.2 : safe ? 1.6 : 1.4, late ? 1.5 : safe ? 2.0 : 1.7, true);
+    const far = mate ? Math.hypot(mate.x - pl.x, mate.z - pl.z) : 99;
+    if (mate && far <= 13) {
+      inp.aimX = mate.x + mate.vx * 0.5; inp.aimZ = mate.z + mate.vz * 0.5; inp.throw = true;
+    } else if (last || (mate && far > 13)) {
+      const [ax, az] = R.freeHalfAim(pl); inp.aimX = ax; inp.aimZ = az; inp.punt = true;
+    } else return;
+    br.throwAt = -1; this.stats.throws++;
   }
 
   // Hecht-Entscheidung Nacht 2c (?hechten=0): nur wenn Laufen nicht reicht, höchstens 0,5 s vor dem Ball

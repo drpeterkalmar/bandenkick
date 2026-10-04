@@ -1,4 +1,4 @@
-// Spielregeln 3 gegen 3 (ohne DOM): „letzte Hand“, Torraum, Fangen/Hechten/Abwurf, 6-s-Regel, Anstoß in der Mitte
+// Spielregeln 3 gegen 3 (ohne DOM): „letzte Hand“, Torraum, Fangen/Hechten/Abwurf, Zeitregel (Nacht 2e: 3 s), Anstoß in der Mitte
 // nach Tor (Peter 30.09.; ?anstoss=0 = Schnellstart: Tormann des Gegentors hat den Ball), Spielzeit 2 × dauer min, Golden Goal.
 // Mannschaft 0 verteidigt das linke Tor (x = −L/2) und spielt nach rechts, Mannschaft 1 umgekehrt.
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
@@ -189,6 +189,13 @@ export class Rules {
     if (l > R) { dx *= R / l; dz *= R / l; }
     pl.x = gx + dx; pl.z = dz;
     const auto = pl.holdT >= P.holdMax;
+    if (auto && !inp.throw && !inp.punt && P.halten > 0 && !this.bestMate(pl, true, 1.2, 1.5, true)) {
+      // Nacht 2e: Zwangsabwurf ohne freien Mitspieler → weit in die freiere Hälfte statt in einen zugestellten Weg
+      const [ax, az] = this.freeHalfAim(pl);
+      this.release(pl, ax, az, 'punt', 1);
+      g.events.push({ type: 'sixsec', player: pl.id });
+      return;
+    }
     if (inp.throw || inp.punt || auto) {
       let tx = inp.aimX, tz = inp.aimZ;
       if (tx === undefined || (Math.hypot(tx - pl.x, tz - pl.z) < 1 && !inp.punt)) {
@@ -204,7 +211,7 @@ export class Rules {
 
   // Anspielbarer Mitspieler für den Abwurf: frei (Abstand zum nächsten Gegner), Passweg frei, eher vorn.
   // Gibt null zurück, wenn niemand sinnvoll anspielbar ist (dann Abschlag weit).
-  bestMate(pl, needLane = false, minLane = 1.2, minFree = 1.5) {
+  bestMate(pl, needLane = false, minLane = 1.2, minFree = 1.5, strict = false) {
     const g = this.g;
     let best = null, bs = -1e9;
     for (const m of g.players) {
@@ -217,12 +224,25 @@ export class Rules {
         const t = clamp(((o.x - pl.x) * ex + (o.z - pl.z) * ez) / L2, 0, 1);
         lane = Math.min(lane, Math.hypot(o.x - pl.x - ex * t, o.z - pl.z - ez * t));
       }
-      if (needLane && (lane < minLane || free < minFree || (minLane > 1.5 && this.interceptable(pl, m)))) continue;
+      if (needLane && (lane < minLane || free < minFree || ((minLane > 1.5 || strict) && this.interceptable(pl, m)))) continue;
       const fwd = (pl.team === 0 ? m.x : -m.x);
       const s = Math.min(free, 5) * 1.2 + Math.min(lane, 3) * 1.5 + fwd * 0.15 - Math.abs(Math.sqrt(L2) - 8) * 0.2;
       if (s > bs) { bs = s; best = m; }
     }
     return best;
+  }
+
+  // Nacht 2e: Abschlag in die freiere Hälfte – Zielpunkt in der gegnerischen Hälfte auf der Seite (z), auf der weniger
+  // Gegner stehen (bei Gleichstand die Seite des am weitesten vorn stehenden Mitspielers)
+  freeHalfAim(pl) {
+    const g = this.g, side = pl.team === 0 ? 1 : -1, hz = g.cage.hz;
+    let cnt = 0, mz = 0, best = -1e9;
+    for (const o of g.players) {
+      if (o.team !== pl.team) cnt += o.z > 0 ? 1 : -1;
+      else if (o.id !== pl.id && side * o.x > best) { best = side * o.x; mz = o.z; }
+    }
+    const zs = cnt > 0 ? -1 : cnt < 0 ? 1 : (mz >= 0 ? 1 : -1);
+    return [side * 6, zs * (hz - 2.5)];
   }
 
   // Kann ein Gegner einen Abwurf von pl zu m abfangen? Für Punkte entlang des Wegs: Gegner (Sprint, 0,3 s Reaktion,

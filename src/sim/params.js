@@ -217,12 +217,16 @@ export const DEFAULTS = {
   // mindestens keeperDist näher an der Linie ist, und das mindestens keeperT lang (kein Flackern).
   keeperDist: 0.5,        // m
   keeperT: 0.3,           // s
-  holdMax: 6,             // s Ball in der Hand, dann automatisch Abwurf
+  holdMax: 3,             // s Ball in der Hand, dann automatisch Abwurf (Nacht 2e: 3 statt 6 – Peter: „nicht so lange in der Hand“)
+  // Nacht 2e: Tormann gibt den Ball schnell weiter. Bot-Tormann: Abwurf typisch nach ≤ halten s (sicherer Passweg), danach
+  // auch auf einen weniger freien Mitspieler, spätestens nach halten + 0,8 s weiter Abschlag in die freiere Hälfte (kein
+  // abgefangener Abwurf vor dem eigenen Tor). 0 = alt (Nacht 2d: 0,8–2,2 s, ohne freien Weg bis ≈ 4–4,6 s warten)
+  halten: 1.2,            //                                                                         [?halten=]
   fanghilfe: 1,           // Mensch als Tormann fängt Bälle auf den Körper (≤ 55 cm) auch ohne Knopf [?fanghilfe=0]
   // Nacht 2c (Peter: „Torwart soll alleine fangen und hechten ohne eigene Knöpfe. Cpu goalie ist zu stark.“)
   autoTorwart: 1,         // Mensch als letzte Hand: Fangen/Hechten automatisch (Stärke = alte Bot-Stufe 2), Knöpfe
                           // nur mit Ball (Abwurf/Abschlag); 0 = grüne Tormann-Knöpfe wie Nacht 2b       [?autotorwart=0]
-  autoWurf: 2.0,          // s ohne Eingabe mit Ball in der Hand, dann wirft der Auto-Torwart selbst ab     [?autowurf=]
+  autoWurf: 1.0,          // s ohne Eingabe mit Ball in der Hand, dann wirft der Auto-Torwart selbst ab (Nacht 2e: 1 statt 2) [?autowurf=]
   tormann: 0,             // Stärke der CPU-Tormänner 1…3 (Zwischenwerte erlaubt), 0 = wie die Mannschaft [?tormann=]
   catchReach: 0.92,       // m Reichweite der Hände waagrecht (Körpermitte → Ball, mit Strecken; Nacht 2b: 1,0 → 0,92)
   catchLow: 0.12,         // m … bis zu dieser Höhe (Ballmitte) aufnehmen …
@@ -258,6 +262,8 @@ export const ALIASES = {
 const ZACK0 = { aLat: 6.0, aBrake: 6.5 };
 // ?laden=1: Fenster für den zweiten Druck wie Nacht 2b, sofern nicht ausdrücklich übersteuert
 const LADEN1 = { doppel: 0.25 };
+// ?halten=0: Tormann mit Ball wie Nacht 2d (6 s Zwangsabwurf, Auto-Torwart nach 2 s), sofern nicht ausdrücklich übersteuert
+const HALTEN0 = { holdMax: 6, autoWurf: 2 };
 const ZACK0_ALIAS = { antritt: 'tauAcc' };
 
 // Liest Overrides aus einem Query-String (oder Objekt) und gibt ein vollständiges Parameter-Objekt zurück.
@@ -290,6 +296,7 @@ export function makeParams(overrides = {}) {
   }
   if (zack0) for (const [k, v] of Object.entries(ZACK0)) if (!set.has(k)) P[k] = v;
   if (P.laden) for (const [k, v] of Object.entries(LADEN1)) if (!set.has(k)) P[k] = v;
+  if (!P.halten) for (const [k, v] of Object.entries(HALTEN0)) if (!set.has(k)) P[k] = v;
   P.zack = P.zack ? 1 : 0;
   P.roof = P.roof ? 1 : 0;
   P.goalW = clamp(P.goalW, 1, P.fieldW - 2);

@@ -1,8 +1,9 @@
 // Selbstspiel-Gate: ≥ 200 Bot-Spiele (2 × 4 min) headless im Zeitraffer, alle 9 Stärke-Paarungen reihum.
 // Keine Hänger (Ball liegt fest / in der Ecke eingeklemmt, Bots laufen im Kreis), keine Numerik-Fehler,
-// Ball nie länger als 6 s in der Hand, Tore fallen, beide Mannschaften treffen. SELFPLAY_N=20 für kurze Läufe.
+// Ball nie länger als P.holdMax (Nacht 2e: 3 s) in der Hand, Tore fallen, beide Mannschaften treffen. SELFPLAY_N=20 für kurze Läufe.
 import { playGame } from './selfplay.mjs';
 import { report } from './report.mjs';
+import { makeParams } from '../../src/sim/params.js';
 
 const N = +(process.env.SELFPLAY_N || 200);
 const rows = [];
@@ -48,7 +49,7 @@ check('Spiele regulär beendet (Abpfiff)', agg.ended, N, N, `/${N}`, N);
 check('Hänger: Ball liegt fest / in der Ecke eingeklemmt', (kinds['Ball liegt fest'] || 0) + (kinds['Ball in der Ecke eingeklemmt'] || 0), 0, 0, '×', 0, agg.stuck.slice(0, 3).map((x) => `Seed ${x.seed} t=${x.t}`).join(', '));
 check('Hänger: Bot läuft im Kreis', kinds['Bot läuft im Kreis'] || 0, 0, 0, '×', 0);
 check('Numerik-Fehler', agg.faults, 0, 0, '×', 0);
-check('Ball höchstens 6 s in der Hand', agg.holdMax, 0, 6.01, 's', 6);
+check("Ball höchstens P.holdMax in der Hand (Nacht 2e: 3 s)", agg.holdMax, 0, makeParams("").holdMax + 0.01, "s", makeParams("").holdMax);
 check('Tore fallen: Spiele ohne Tor', agg.noGoal, 0, Math.floor(N * 0.02), '', 0, `Ø ${(G / N).toFixed(1)} Tore je Spiel (${(G / min).toFixed(2)} je Minute), höchstens ${agg.maxGoals}, Remis ${agg.draws}`);
 check('Beide Mannschaften treffen (gesamt)', Math.min(agg.goals[0], agg.goals[1]), 1, Infinity, 'Tore', null, `Mannschaft 0: ${agg.goals[0]}, Mannschaft 1: ${agg.goals[1]}`);
 check('Spiele, in denen beide treffen', agg.bothScore / N * 100, 80, 100, '%', null, `Mannschaft 0 trifft in ${agg.team0}, Mannschaft 1 in ${agg.team1} von ${N}`);
