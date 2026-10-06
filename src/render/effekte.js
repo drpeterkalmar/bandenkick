@@ -121,10 +121,8 @@ export class BallSpur {
   contact() { this.since = 0; }
   // je Bild: Ball (Position p, Geschwindigkeit v), Kamera; on = Spielansicht ohne Wiederholung; still = angehalten
   update(dt, p, v, cam, on, still = false) {
-    if (still && this.held) return; // angehalten: einmal an die aktuelle Position, dann stehen lassen
-    this.held = still;
     if (!on) { this.reset(); return; }
-    if (!still) this.since += dt;
+    if (!still) this.since += dt; // angehalten (Pause, Test): Spur bleibt am Ball, Zeit steht
     const speed = Math.hypot(v.x, v.y, v.z), k = Math.max(0, Math.min(1, (speed - 17) / 12)), tau = Math.min(TAU, this.since);
     if (k <= 0.01 || tau < 0.02) { this.mesh.visible = false; return; }
     const P = this.pos, A = this.alpha, cp = cam.position;

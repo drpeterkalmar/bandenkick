@@ -106,6 +106,18 @@ Als App installierbar (PWA), läuft offline.
   komplett stumm – kein AudioContext, keine Umgebungsschleife, keine Effekte, auch nicht in Menü, Training und
   Wiederholung. Der Ton-Knopf im Pause-Menü ist weg. Wiedereinbau nur auf Wunsch.
 - Beim ersten Start erklärt eine **Hilfekarte** die Gesten; später über ☰ → Steuerung.
+- **Verschönerung (Deko, 06.10., Peter: „mehr Details und Eye Candy“, reine Optik):**
+  - **Licht:** freundlicher Himmel mit richtigen Farben, Kunstrasen mit Mähstreifen je Blickrichtung, Faserglanz und
+    abgetretenen Torräumen, weiche Schatten in Sonnenrichtung.
+  - **Anlage:** Betonweg, Flutlichtmasten, Bänke mit Taschen, Vereinsheim, Geländer, gemalte Herbstbäume.
+  - **Zuschauer:** 22 Zuschauer, beim Start aus den Rocketbox-Menschen gerendert; sie jubeln bei Toren.
+  - **Tor und Aktion:** Konfetti, leuchtendes TOR!, Blitzlichter; Ballspur bei harten Schüssen; Rasenfetzen und
+    Rutschspuren bei Grätsche und Hechtsprung; Rückennummern.
+  - **Training:** Sterne und Konfetti bei der Ergebniskarte.
+  - **Abend mit Flutlicht:** Pause-Menü „Licht: automatisch/Tag/Abend“ – Dämmerungshimmel, Lichtkegel, vier
+    Flutlicht-Schatten je Spieler.
+  - **Leistung:** im Budget (Bild-Arbeit p95 höchstens +5 %, Stufe 0 gleich, +39 KB). `?deko=0` = altes Aussehen.
+  - Details, Messwerte und Collagen: [`DEKO_BERICHT.md`](DEKO_BERICHT.md).
 
 **Ballmagnet (Nacht 2c, Peter: „leichter ballmagnet, sonst kein dribbling“; Nacht 2d: „viel mehr Ballmagnet“ → Stärke 1,2
 statt 0,5, im Sprint 70 % statt 45 %):** zwischen den echten Ballkontakten führt
@@ -186,6 +198,7 @@ Ball mit (Sohle/Außenseite). `?zack=0` = altes Gefühl aus Nacht 1 zum Vergleic
 | `?dachhoehe=6`, `?torbreite=3`, `?torhoehe=2` | Käfig-Maße |
 | `?<Parametername>=Wert` | jeder Wert aus `src/sim/params.js`, z. B. `?keeperDist=0.8`, `?holdMax=8` |
 | `?deko=0` | Aussehen wie Nacht 2e ohne Verschönerung (A/B-Vergleich; Details in `DEKO_BERICHT.md`) |
+| `?licht=tag` / `abend` / `auto` | Licht der Verschönerung: Tag, Abend mit Flutlicht, automatisch nach Uhrzeit (Standard; im Pause-Menü umschaltbar und gespeichert) |
 | `?q=0/1/2` | Grafikstufe fest: 0 niedrig, 1 mittel (Handy: Blob-Schatten unter den Menschen), 2 hoch (Echtzeit-Schatten). Ohne `?q=` Automatik: bei < ~42 fps erst Auflösung, dann Menschen-Schatten, dann alle Schatten runter |
 | `?figur=kapsel` | Kapsel-Figuren statt Rocketbox-Menschen (Rückfall) |
 | `?seed=4711`, `?debug`, `?play` | fester Zufall, Anzeige Bildrate/Draw-Calls, Startbildschirm überspringen |
@@ -221,6 +234,10 @@ Ball mit (Sohle/Außenseite). `?zack=0` = altes Gefühl aus Nacht 1 zum Vergleic
   `src/render/training.js` (Ballmaschine, Torwand, Hütchen, Dummies, Zielmarken).
 - `src/sim/replay.js` (Nacht 2d): Ringpuffer des Darstellungs-Zustands, Ablauf und Kameras der Tor-Wiederholung (ohne
   DOM, in Node getestet); `src/render/replayfx.js`: Leuchtspur und Druckwelle (je 1 Draw-Call), Kinobalken/Blitz per CSS.
+- Verschönerung (Deko): `src/render/deko.js` bündelt `stimmung.js` (Himmel, Rasen-Shader, Außenboden, Abnutzung),
+  `umgebung.js` (Anlage, gemalte Bäume als Billboards, Boden-Detailtextur), `zuschauer.js` (Atlas aus den Rocketbox-
+  Menschen, Bildtafeln mit Jubel im Shader), `effekte.js` (Konfetti/Rasenfetzen im Shader, Ballspur, Rutschspuren,
+  Blitzlichter) und `abend.js` (Nacht-Umgebungslicht, Lichtfeld, Flutlicht, Spieler-Schatten in einem Draw-Call).
 - `src/render/` – Szene, Käfig, Ball/Granulat, `avatars.js` (Rocketbox-Menschen, Lauf-Blend, Leibchen, Posen), Kamera
   je Format. `src/audio/sound.js` – **stumm** seit Nacht 2e (Stub mit alter Schnittstelle, kein AudioContext).
   `src/input/` – Touch, Tastatur/Maus, Gamepad.
@@ -230,7 +247,8 @@ Ball mit (Sohle/Außenseite). `?zack=0` = altes Gefühl aus Nacht 1 zum Vergleic
   WebP 1024²/512², Rotationen Int16, meshopt). Prüfstand: `tools/avatar_view.html` (`tests/avatar_view.py`).
 - Debug-API für Tests: `window.__game` (`state()`, `info()`, `perf()`, `input()`, `kick()`, `sim()`, `human()`,
   `bots()`, `newGame()` …).
-- Erstladung 6,6 MB (Budget 15 MB): 6 Menschen 1,7 MB, Bewegungen 0,9 MB.
+- Erstladung 6,9 MB, gzip 4,8 MB (Budget 15 MB): 6 Menschen 1,7 MB, Bewegungen 0,9 MB; die Verschönerung bringt keine neuen
+  Dateien mit (+39 KB Code gzip), Bäume, Zuschauer-Atlas und Boden-Details entstehen beim Start.
 
 ## Entwicklung und Tests
 ```bash
@@ -278,6 +296,9 @@ python3 tests/perf_vergleich.py [pfad]  # Leistung je Spieltakt/Bild, z. B. gege
 python3 tests/perf.py           # CPU- und GPU-Zeit je Bild, Draw-Calls, Dreiecke je Format und Stufe
 python3 tests/test_autoq.py     # Qualitäts-Automatik (ohne ?q=) greift, mit ?q= bleibt alles fest
 python3 tests/test_live.py      # GitHub Pages: HTTP 200, Version = lokal, 0 Fehler, PWA installierbar, offline
+python3 tests/deko_shots.py nachher ""      # Verschönerung: Fotos aller Ansichten (Zusatz "&deko=0" = alt, "&licht=abend")
+python3 tests/deko_perf.py . "" spiel_hoch  # Leistung (CPU 4× gedrosselt, 60-fps-Takt); alt/neu: REPOS="alt=<worktree>,neu=."
+python3 tests/deko_atlas.py && python3 tests/deko_collage.py   # Prüfbilder der Atlanten, Vergleichscollagen
 python3 tests/shots.py final    # Fotos Training (Nacht 1) nach tests/shots/final/
 python3 tests/shots2.py final   # Fotos 3 gegen 3: Anstoß, Zweikampf, Tormann mit Ball, Hechtsprung, Tor-Jubel, Pause
 python3 tests/avatar_view.py    # Avatar-Prüfstand: Clips nebeneinander, Füße/Blickrichtung gemessen
@@ -287,6 +308,10 @@ python3 tools/fetch_assets.py && python3 tools/make_assets.py   # Assets neu bau
 Browser-Tests laufen headless über die GPU (ANGLE/Metal), nie zwei Browser gleichzeitig.
 
 ## Änderungen
+- **Verschönerung (06.10.)** – Peters Wunsch vom 05.10. („mehr Details und Eye Candy“, ressourcenschonend): Licht und Rasen,
+  Anlage mit Herbstbäumen, Flutlichtmasten und Vereinsheim, 22 jubelnde Zuschauer, Konfetti, Ballspur, Rasenfetzen,
+  Rückennummern, Abend mit Flutlicht. Bild-Arbeit p95 höchstens +5 %, Stufe 0 gleich, Ladegröße +39 KB. Bericht und Collagen:
+  [`DEKO_BERICHT.md`](DEKO_BERICHT.md). A/B: `?deko=0`, `?licht=tag|abend`.
 - **Nacht 2e (04.10.)** – Peters Wünsche vom 03.10.: alle Sounds raus (Spiel ist stumm), Tormann wirft nach ~1 s ab (Median
   3,4 → 1,1 s, spätestens 2 s, Zeitregel 3 s), kein Rückpass (Tormann kein Empfänger, keine Hände nach Mitspieler-Pass),
   Passsystem repariert (Pässe bei freiem Weg: stehend 59 → 92 %, laufend 26 → 88 %, Sprint 29 → 83 %; Bot-Pässe 33 → 60 %).
@@ -303,5 +328,7 @@ Browser-Tests laufen headless über die GPU (ANGLE/Metal), nie zwei Browser glei
 - **Physik-Quellen:** Hong & Asai 2014; Asai et al. 2007; Goff & Carré 2009/2010; Cross 2002; FIFA Quality Programme
   for Football Turf (Handbook of Test Methods 2015, Test Manual 2024).
 
-Details: [`LICENSES.md`](LICENSES.md). Code, Käfig, Ball, Leibchen, Posen, Physik, Bots: eigene Arbeit (MIT).
+Details: [`LICENSES.md`](LICENSES.md). Code, Käfig, Ball, Leibchen, Posen, Physik, Bots: eigene Arbeit (MIT). Verschönerung
+(Bäume, Anlage, Konfetti, Flutlicht, Abendhimmel): eigene Arbeit, zur Laufzeit gemalt; die Zuschauer werden aus den
+Rocketbox-Menschen gerendert (MIT).
 Keine Vereins- oder Markenlogos, keine echten Spielernamen.

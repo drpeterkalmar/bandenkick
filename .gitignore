@@ -4,6 +4,7 @@ node_modules/
 # Test-Artefakte (Auswahl in tests/shots/final bleibt)
 tests/shots/*
 !tests/shots/final/
+!tests/shots/deko/
 tests/out/
 __pycache__/
 *.pyc
