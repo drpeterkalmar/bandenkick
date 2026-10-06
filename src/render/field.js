@@ -3,6 +3,7 @@
 // Netze als Alpha-Textur mit Ausbeulung am Ball, Tore.
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { patchTurf, outerGroundMaterial, paintTurfWear, wearLines } from './stimmung.js';
 
 export const RAL6005 = 0x0f4336;   // Moosgrün (Bande, Gestell)
 const NET_MESH = 0.10;              // m Maschenweite Ballfangnetz
@@ -42,18 +43,19 @@ function boardTexture() {
   return t;
 }
 
-// Linien + dezente Streifen als Decal-Textur über dem Feld (Maße aus den Parametern → passt zu ?feld=)
-function linesTexture(P, pad) {
+// Linien + dezente Streifen als Decal-Textur über dem Feld (Maße aus den Parametern → passt zu ?feld=). Deko: Streifen
+// macht der Rasen-Shader (je Blickrichtung), dafür Abnutzung und leicht abgenutzte Linien (stimmung.js)
+function linesTexture(P, pad, deko = false) {
   const L = P.fieldL + 2 * pad, W = P.fieldW + 2 * pad;
   const ppm = Math.min(64, 2048 / L);           // Pixel je Meter
   const c = document.createElement('canvas');
   c.width = Math.round(L * ppm); c.height = Math.round(W * ppm);
-  const g = c.getContext('2d');
+  let g = c.getContext('2d');
   const X = (x) => (x + L / 2) * ppm, Z = (z) => (z + W / 2) * ppm;
   g.clearRect(0, 0, c.width, c.height);
   // Streifen (zwei Rasentöne) quer zur Spielrichtung, 2 m breit
   g.fillStyle = 'rgba(0,0,0,0.075)';
-  for (let x = -P.fieldL / 2, i = 0; x < P.fieldL / 2; x += 2, i++) if (i % 2) g.fillRect(X(x), Z(-P.fieldW / 2), 2 * ppm, P.fieldW * ppm);
+  if (!deko) for (let x = -P.fieldL / 2, i = 0; x < P.fieldL / 2; x += 2, i++) if (i % 2) g.fillRect(X(x), Z(-P.fieldW / 2), 2 * ppm, P.fieldW * ppm);
   const hx = P.fieldL / 2, hz = P.fieldW / 2;
   // Verschattung an der Bande (diffuses Himmelslicht wird von der Bande abgeschirmt)
   const ao = 0.7 * ppm;
@@ -62,6 +64,10 @@ function linesTexture(P, pad) {
     gr.addColorStop(0, 'rgba(0,0,0,0.32)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
     g.fillStyle = gr; g.fillRect(X(x0), Z(z0), (x1 - x0) * ppm, (z1 - z0) * ppm);
   }
+  const out = g;
+  if (deko) paintTurfWear(g, X, Z, ppm, P);
+  let lc = c;
+  if (deko) { lc = document.createElement('canvas'); lc.width = c.width; lc.height = c.height; g = lc.getContext('2d'); }
   g.strokeStyle = 'rgba(245,245,240,0.92)';
   g.lineWidth = 0.08 * ppm;
   g.beginPath(); g.moveTo(X(0), Z(-hz)); g.lineTo(X(0), Z(hz)); g.stroke();                 // Mittellinie
@@ -73,6 +79,7 @@ function linesTexture(P, pad) {
     // Torlinie zwischen den Pfosten
     g.beginPath(); g.moveTo(X(s * (hx - 0.04)), Z(-P.goalW / 2)); g.lineTo(X(s * (hx - 0.04)), Z(P.goalW / 2)); g.stroke();
   }
+  if (deko) { wearLines(g, lc); out.drawImage(lc, 0, 0); }
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.SRGBColorSpace;
   return t;
@@ -167,7 +174,8 @@ function sideSlot(R) {
   return 3;
 }
 
-export function buildField(P, cage, tex, renderer) {
+export function buildField(P, cage, tex, renderer, opts = {}) {
+  const deko = !!opts.deko;
   const group = new THREE.Group();
   group.name = 'field';
   const aniso = Math.min(8, renderer.capabilities.getMaxAnisotropy());
@@ -178,7 +186,8 @@ export function buildField(P, cage, tex, renderer) {
   for (const t of [gc, gn]) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(160 / 3, 160 / 3); t.anisotropy = aniso; }
   gc.colorSpace = THREE.SRGBColorSpace;
   const outer = new THREE.Mesh(new THREE.PlaneGeometry(160, 160).rotateX(-Math.PI / 2),
-    new THREE.MeshStandardMaterial({ map: gc, normalMap: gn, normalScale: new THREE.Vector2(0.6, 0.6), roughness: 0.95, color: 0xd8dccf }));
+    deko ? outerGroundMaterial(gc, opts.groundAmb || new THREE.Color(0.62, 0.64, 0.62))
+      : new THREE.MeshStandardMaterial({ map: gc, normalMap: gn, normalScale: new THREE.Vector2(0.6, 0.6), roughness: 0.95, color: 0xd8dccf }));
   outer.position.y = -0.02;
   outer.receiveShadow = true;
   outer.name = 'grass';
@@ -193,7 +202,9 @@ export function buildField(P, cage, tex, renderer) {
   tn.repeat.set(TL / 0.8, TW / 0.8);
   const turfMat = new THREE.MeshStandardMaterial({ map: tc, normalMap: tn, normalScale: new THREE.Vector2(0.7, 0.7), roughness: 0.86, metalness: 0.0, color: 0xb4beb0 });
   // Großflächige Unruhe (Abnutzung, Granulat-Verteilung): dieselbe Textur 6× größer, schwach eingemischt
-  turfMat.onBeforeCompile = (sh) => {
+  // (Deko: dazu Mähstreifen je Blickrichtung und Faserglanz, stimmung.js)
+  if (deko) patchTurf(turfMat);
+  else turfMat.onBeforeCompile = (sh) => {
     sh.fragmentShader = sh.fragmentShader.replace('#include <map_fragment>', `#include <map_fragment>
       { vec3 mac = texture2D(map, vMapUv * 0.163 + vec2(0.37, 0.11)).rgb;
         float l = dot(mac, vec3(0.299, 0.587, 0.114));
@@ -206,7 +217,7 @@ export function buildField(P, cage, tex, renderer) {
 
   // --- Linien als Decal ---
   const pad = 0.15;
-  const lt = linesTexture(P, pad);
+  const lt = linesTexture(P, pad, deko);
   lt.anisotropy = aniso;
   const lines = new THREE.Mesh(new THREE.PlaneGeometry(P.fieldL + 2 * pad, P.fieldW + 2 * pad).rotateX(-Math.PI / 2),
     new THREE.MeshStandardMaterial({ map: lt, transparent: true, depthWrite: false, roughness: 0.8, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
@@ -344,5 +355,5 @@ export function buildField(P, cage, tex, renderer) {
       } else m.uniforms.uHit.value.w = 0;
     }
   }
-  return { group, update, turf, boards, nets, goalNets, frames };
+  return { group, update, turf, boards, nets, goalNets, frames, outer, lines };
 }

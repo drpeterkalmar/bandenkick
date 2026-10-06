@@ -9,6 +9,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 import { AIR_POSE } from '../sim/technique.js';
+import { figureShadowTexture, figureShadowGeometry } from './stimmung.js';
 
 export const TEAM_COLORS = [0xff6a13, 0x1f6fff];   // Leibchen: Orange / Blau (auch farbfehlsichtig gut trennbar)
 export const TEAM_NAMES = ['Orange', 'Blau'];
@@ -180,8 +181,12 @@ export class Avatar {
     this.ring = new THREE.Mesh(new THREE.RingGeometry(0.55, 0.68, 40).rotateX(-Math.PI / 2), rm);
     this.ring.position.y = 0.014; this.ring.renderOrder = 3; this.ring.visible = false;
     this.root.add(this.ring);
-    this.blob = new THREE.Mesh(new THREE.PlaneGeometry(1.05, 1.05).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ map: blobTexture(), transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
+    // Deko: weicher Schatten in Lichtrichtung (dunkler Kern an den Füßen, Schweif vom Licht weg) statt runder Fleck
+    const dk = opts.deko;
+    this.blob = new THREE.Mesh(dk ? figureShadowGeometry() : new THREE.PlaneGeometry(1.05, 1.05).rotateX(-Math.PI / 2),
+      new THREE.MeshBasicMaterial({ map: dk ? figureShadowTexture() : blobTexture(), transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
     this.blob.position.y = 0.006; this.blob.renderOrder = 1;
+    this.shadowYaw = dk ? Math.atan2(dk.sunDir.z, -dk.sunDir.x) : null; // +x der Schattenebene zeigt vom Licht weg
     this.root.add(this.blob);
     // Animation
     this.mixer = new THREE.AnimationMixer(this.model);
@@ -263,6 +268,7 @@ export class Avatar {
     this.ring.visible = !!st.keeper;
     if (st.keeper) this.ring.material.opacity = 0.55 + 0.25 * Math.sin(performance.now() / 180);
     this.blob.scale.setScalar(1 + this.dive * 0.8);
+    if (this.shadowYaw !== null) { this.blob.rotation.y = this.shadowYaw - this.root.rotation.y; this.blob.position.y = 0.006 - this.root.position.y; }
     if (!proc) { this.tilt.rotation.set(0, 0, 0); this.tilt.position.y = 0.95; return; }
     let roll = 0, pitch = 0;
     if (plantK > 0.01 || this.lean > 0.01) {

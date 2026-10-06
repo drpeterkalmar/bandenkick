@@ -8,7 +8,8 @@ import { previewShot, autoShotPower, attackGoalX } from './sim/shot.js';
 import { planPass } from './sim/pass.js';
 import { techName, CHALLENGES, challengeDef } from './sim/challenges.js';
 import { TrainingProps, AimMarkers } from './render/training.js';
-import { createRenderer, loadEnvironment, makeSky, makeSun } from './render/scene.js';
+import { createRenderer, loadEnvironment, makeSky, makeSun, dirFromUV } from './render/scene.js';
+import { makeSkyDeko } from './render/stimmung.js';
 import { buildField } from './render/field.js';
 import { makeBall, makeBlob, poseBlob, makePlayer, posePlayer, Granulate } from './render/actors.js';
 import { loadAvatarAssets, Avatar, ROSTER, TEAM_NAMES } from './render/avatars.js';
@@ -22,6 +23,8 @@ import { BUILD } from './build.js';
 
 const qs = new URLSearchParams(location.search);
 const P = makeParams(location.search);
+// Verschönerung (Deko, ab 06.10.): ?deko=0 = Aussehen wie Nacht 2e (A/B)
+const DEKO = !!P.deko;
 const isTouch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
 const qLevel = qs.has('q') ? +qs.get('q') : (isTouch ? 1 : 2);
 // Stufen: 0 niedrig (DPR 1, keine Schattenkarte), 1 mittel (Handy: Blob-Schatten unter den Menschen, Schattenkarte
@@ -185,13 +188,14 @@ async function boot() {
   ]);
   scene.environment = env;
   scene.environmentIntensity = 1.0;
-  const sky = makeSky(skyTex, skyInfo);
+  const sunDir = dirFromUV(skyInfo.u, skyInfo.v);
+  const sky = DEKO ? makeSkyDeko(skyTex, skyInfo, sunDir) : makeSky(skyTex, skyInfo);
   scene.add(sky);
   const fogCol = new THREE.Color().setRGB(...skyInfo.ground, THREE.SRGBColorSpace).lerp(new THREE.Color().setRGB(...skyInfo.horizon, THREE.SRGBColorSpace), 0.35);
   scene.fog = new THREE.Fog(fogCol, 45, 140);
   const { sun } = makeSun(skyInfo, quality, game.cage);
   scene.add(sun, sun.target);
-  field = buildField(P, game.cage, { turfColor, turfNormal, grassColor, grassNormal }, renderer);
+  field = buildField(P, game.cage, { turfColor, turfNormal, grassColor, grassNormal }, renderer, { deko: DEKO });
   scene.add(field.group);
   ballMesh = makeBall(P.ballR);
   blob = makeBlob();
@@ -202,7 +206,7 @@ async function boot() {
   scene.add(marker);
   if (A) {
     for (let team = 0; team < 2; team++) for (let i = 0; i < 3; i++) {
-      const av = new Avatar(A, ROSTER[team][i % ROSTER[team].length], team, { shadows: quality.avatarShadows });
+      const av = new Avatar(A, ROSTER[team][i % ROSTER[team].length], team, { shadows: quality.avatarShadows, deko: DEKO ? { sunDir } : null });
       figs.push(av); scene.add(av.root);
     }
   } else {
@@ -433,12 +437,15 @@ function aimFrame(pl, raw, km) {
   }
 }
 
+let halfRate = false;
 function frame() {
   requestAnimationFrame(frame);
   const t0 = performance.now();
   if (perf.lastRaf) { perf.raf.push(t0 - perf.lastRaf); if (perf.raf.length > 240) perf.raf.shift(); }
   perf.lastRaf = t0;
   if (!G.ready) return;
+  // Deko: Menüs und Karten (Szene läuft nur als Hintergrund) mit halber Bildrate – spart Akku und Wärme
+  if (DEKO && mode !== 'play' && !rp.dir) { halfRate = !halfRate; if (halfRate) { G.frames++; return; } }
   const now = t0 / 1000;
   const dt = Math.min(0.1, now - last); last = now;
   let raw = input.sample(now);

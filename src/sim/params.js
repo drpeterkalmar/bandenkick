@@ -212,6 +212,9 @@ export const DEFAULTS = {
   // Torbereich“): Wiederholung nach jedem Tor im Spiel (nicht im Training), nach replayDelay s Live-Jubel; Tippen überspringt
   replay: 1,              // 0 = aus (sonst im Pause-Menü umschaltbar)                              [?replay=0]
   replayDelay: 1.0,       // s Live-Jubel vor der Wiederholung
+  // Verschönerung (Peter 05.10.: „mehr Details und Eye Candy“, reine Optik): Himmel, Rasen, Schatten, Umgebung,
+  // Zuschauer, Effekte. 0 = Aussehen wie Nacht 2e (A/B-Vergleich)                                        [?deko=0]
+  deko: 1,
 
   // ---------------- Spiel 3 gegen 3 (Plan: „letzte Hand“, Schnellstart, Spielzeit) ----------------
   perTeam: 3,             // Spieler je Mannschaft

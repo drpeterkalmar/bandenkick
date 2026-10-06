@@ -185,6 +185,7 @@ Ball mit (Sohle/Außenseite). `?zack=0` = altes Gefühl aus Nacht 1 zum Vergleic
 | `?bande=0.7`, `?abprall=0.62`, `?rollen=0.65` | Stoßzahl Bande, Stoßzahl Rasen, Rollwiderstand Rasen |
 | `?dachhoehe=6`, `?torbreite=3`, `?torhoehe=2` | Käfig-Maße |
 | `?<Parametername>=Wert` | jeder Wert aus `src/sim/params.js`, z. B. `?keeperDist=0.8`, `?holdMax=8` |
+| `?deko=0` | Aussehen wie Nacht 2e ohne Verschönerung (A/B-Vergleich; Details in `DEKO_BERICHT.md`) |
 | `?q=0/1/2` | Grafikstufe fest: 0 niedrig, 1 mittel (Handy: Blob-Schatten unter den Menschen), 2 hoch (Echtzeit-Schatten). Ohne `?q=` Automatik: bei < ~42 fps erst Auflösung, dann Menschen-Schatten, dann alle Schatten runter |
 | `?figur=kapsel` | Kapsel-Figuren statt Rocketbox-Menschen (Rückfall) |
 | `?seed=4711`, `?debug`, `?play` | fester Zufall, Anzeige Bildrate/Draw-Calls, Startbildschirm überspringen |
