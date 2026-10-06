@@ -10,6 +10,7 @@ import { techName, CHALLENGES, challengeDef } from './sim/challenges.js';
 import { TrainingProps, AimMarkers } from './render/training.js';
 import { createRenderer, loadEnvironment, makeSky, makeSun, dirFromUV } from './render/scene.js';
 import { makeSkyDeko } from './render/stimmung.js';
+import { Deko } from './render/deko.js';
 import { buildField } from './render/field.js';
 import { makeBall, makeBlob, poseBlob, makePlayer, posePlayer, Granulate } from './render/actors.js';
 import { loadAvatarAssets, Avatar, ROSTER, TEAM_NAMES } from './render/avatars.js';
@@ -25,6 +26,8 @@ const qs = new URLSearchParams(location.search);
 const P = makeParams(location.search);
 // Verschönerung (Deko, ab 06.10.): ?deko=0 = Aussehen wie Nacht 2e (A/B)
 const DEKO = !!P.deko;
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+let deko = null;
 const isTouch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
 const qLevel = qs.has('q') ? +qs.get('q') : (isTouch ? 1 : 2);
 // Stufen: 0 niedrig (DPR 1, keine Schattenkarte), 1 mittel (Handy: Blob-Schatten unter den Menschen, Schattenkarte
@@ -213,6 +216,7 @@ async function boot() {
     for (let i = 0; i < 6; i++) { const c = i ? makePlayer(i < 3 ? 0xff6a13 : 0x1f6fff) : capsule; figs.push({ capsule: c }); scene.add(c.group); }
   }
   G.avatars = !!A;
+  if (DEKO) { deko = new Deko({ scene, renderer, field, sunDir, quality, A, reduceMotion }); G.deko = deko; }
   gran = new Granulate();
   scene.add(gran.points);
   markers = new AimMarkers(scene);
@@ -302,6 +306,7 @@ function worldInput(inp) {
 function handleEvents(ev) {
   const R = game.match ? game.rules : null;
   for (const e of ev) {
+    if (deko) deko.onEvent(e);
     if (e.type === 'kick') {
       const k = game.players[e.player].lastKick;
       if (k && (e.player === game.human || e.human)) hud.kickInfo(k); // e.human: nach dem Pass wechselt die Steuerung sofort
@@ -525,6 +530,7 @@ function frame() {
   gcam.update(dt, { x: bx, z: bz, vx: b.v.x, vz: b.v.z }, { x: px, z: pz }, mode === 'play' || mode === 'pause' ? 'play' : 'menu');
   field.update(rf ? rf.ball.net : b.net, gcam.cam, !!(rf && rp.dir && rp.dir.cur.cam === 'fan'));
   gran.update(dt);
+  if (deko) deko.update(dt, { inGame: (mode === 'play' || mode === 'pause') && !rf && !gcam.override, hoch: gcam.mode === 'hoch' });
   hud.tick(dt);
   const touchUI = document.body.classList.contains('touch');
   const km = keeperMode();

@@ -1,5 +1,5 @@
 // Service-Worker: offline spielbar, Cache-Busting über Inhalts-Hash (tools/update_sw.py)
-const VERSION = '9142307029';
+const VERSION = 'f95a53aca0';
 const CACHE = 'bandenkick-' + VERSION;
 const ASSETS = [
   './',
@@ -42,11 +42,14 @@ const ASSETS = [
   'src/render/actors.js',
   'src/render/avatars.js',
   'src/render/camera.js',
+  'src/render/deko.js',
   'src/render/field.js',
   'src/render/replayfx.js',
   'src/render/scene.js',
   'src/render/stimmung.js',
   'src/render/training.js',
+  'src/render/umgebung.js',
+  'src/render/zuschauer.js',
   'src/sim/aero.js',
   'src/sim/air.js',
   'src/sim/ball.js',

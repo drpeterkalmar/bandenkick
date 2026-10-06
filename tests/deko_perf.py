@@ -49,6 +49,7 @@ def measure(s, scene, extra):
     s.errors = []
     s.pg.on("pageerror", lambda e: s.errors.append("PAGEERROR " + str(e)))
     s.open(url + extra)
+    s.pg.wait_for_function("!window.__game.deko || window.__game.deko.ready", timeout=60000, polling=100)
     if prep == 'bots':
         s.ev("__game.human(-1)")
     cdp = s.ctx.new_cdp_session(s.pg)

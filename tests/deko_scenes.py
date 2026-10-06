@@ -13,25 +13,32 @@ DUEL = """() => { const G = __game; G.human(-1);
   } return null; }"""
 
 
+def open_ready(s, q):
+    """Seite öffnen und warten, bis die Deko fertig ist (Zuschauer werden kurz nach dem Start vorbereitet)."""
+    s.open(q)
+    s.pg.wait_for_function("!window.__game.deko || window.__game.deko.ready", timeout=60000)
+    s.frames(3)
+
+
 def hide_cards(s, on=True):
     s.ev(f"document.querySelectorAll('.overlay').forEach(o => o.style.visibility = {'\"hidden\"' if on else '\"\"'})")
 
 
 def menu(s, extra=''):
     """Startbildschirm: Rundflug um den Käfig (Kamera wie beim ersten Öffnen)."""
-    s.open(f'?nosw&seed=7&q=1{extra}')
+    open_ready(s, f'?nosw&seed=7&q=1{extra}')
     s.ev("__game.gcam.menuT = 1.0")
     s.frames(6)
 
 
 def kickoff(s, extra=''):
-    s.open(f'?nosw&seed=7&play&q=1&nohelp{extra}')
+    open_ready(s, f'?nosw&seed=7&play&q=1&nohelp{extra}')
     s.wait_sim(0.4)
     s.ev("__game.freeze(true)"); s.frames(4)
 
 
 def duel(s, extra=''):
-    s.open(f'?nosw&seed=7&play&q=1&nohelp{extra}')
+    open_ready(s, f'?nosw&seed=7&play&q=1&nohelp{extra}')
     r = s.ev(DUEL)
     s.ev("__game.freeze(true)"); s.frames(4)
     return r
@@ -47,7 +54,7 @@ def goal_setup(s):
 
 def jubel(s, extra=''):
     """Live-Jubel 0,75 s nach dem Tor (vor der Wiederholung)."""
-    s.open(f'?nosw&seed=7&play&q=1&nohelp{extra}')
+    open_ready(s, f'?nosw&seed=7&play&q=1&nohelp{extra}')
     goal_setup(s)
     s.pg.wait_for_function("__game.game.rules.phase === 'goal'", timeout=30000)
     s.wait_sim(0.75)
@@ -57,7 +64,7 @@ def jubel(s, extra=''):
 def replay_shots(s, shoot, extra=''):
     """Tor-Wiederholung: Schuss aus 9 m (Mensch Orange 2), angehalten im Aufbau (TV-Kamera) und in der Fan-Cam.
     shoot(name) wird in jedem Abschnitt aufgerufen."""
-    s.open(f'?nosw&seed=3&q=1&nohelp&play{extra}')
+    open_ready(s, f'?nosw&seed=3&q=1&nohelp&play{extra}')
     hx = s.ev("__game.game.cage.hx")
     s.ev("__game.freeze(false); __game.replayHold(null); __game.newGame(); __game.game.rules.phase = 'play'; __game.bots(false); __game.human(1)")
     s.frames(3)
@@ -87,7 +94,7 @@ def replay_shots(s, shoot, extra=''):
 
 def training_result(s, extra=''):
     """Training Elfmeter mit Skript-Spieler bis zur Ergebniskarte (Erfolg mit Sternen)."""
-    s.open(f'?nosw&seed=5&q=1&nohelp{extra}')
+    open_ready(s, f'?nosw&seed=5&q=1&nohelp{extra}')
     s.ev("__game.challenge('elfmeter')"); s.frames(3)
     s.ev("__game.autoplay(true)")
     s.pg.wait_for_function("__game.state().mode === 'result'", timeout=400000)

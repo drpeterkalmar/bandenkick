@@ -91,7 +91,7 @@ export function outerGroundMaterial(gc, amb) {
     // auf das alte PBR-Gras abgeglichen (Mittelwert im Bild ≤ 3 Stufen Abweichung, Menü und Spielansicht)
     uAmb: { value: amb.clone() }, uAdd: { value: new THREE.Color(0.016, 0.020, 0.034) }, uAlb: { value: new THREE.Color(0.86, 0.85, 0.86) },
     uDetail: { value: null }, uDetailOn: { value: 0 }, uDetailBox: { value: new THREE.Vector4(-40, -30, 80, 60) },
-    uPave: { value: new THREE.Color(0.20, 0.19, 0.175) }, uDirt: { value: new THREE.Color(0.16, 0.12, 0.075) },
+    uPave: { value: new THREE.Color(0.165, 0.158, 0.148) }, uDirt: { value: new THREE.Color(0.15, 0.115, 0.075) },
   };
   const mat = new THREE.MeshLambertMaterial({ map: gc, color: 0xd8dccf });
   mat.userData.u = u;
@@ -107,8 +107,8 @@ export function outerGroundMaterial(gc, amb) {
         vec2 dq = (vGXZ - uDetailBox.xy) / uDetailBox.zw;
         vec4 gDet = (dq.x > 0.0 && dq.x < 1.0 && dq.y > 0.0 && dq.y < 1.0) ? texture2D(uDetail, dq) : vec4(0.0);
         float n = clamp(dot(diffuseColor.rgb, vec3(0.3, 0.55, 0.15)) / 0.09, 0.4, 1.8);
-        diffuseColor.rgb = mix(diffuseColor.rgb, uDirt * (0.7 + 0.3 * n), gDet.g);
-        diffuseColor.rgb = mix(diffuseColor.rgb, uPave * (0.78 + 0.22 * n), gDet.r);
+        diffuseColor.rgb = mix(diffuseColor.rgb, uDirt * (0.7 + 0.3 * n), gDet.g * (1.0 - gDet.r));
+        diffuseColor.rgb = mix(diffuseColor.rgb, uPave * (0.88 + 0.12 * n), gDet.r);
         diffuseColor.rgb *= 1.0 - 0.6 * gDet.b;
       }`)
       .replace('#include <emissivemap_fragment>', 'totalEmissiveRadiance = diffuseColor.rgb * uAmb + uAdd;');
