@@ -37,6 +37,7 @@ export class Deko {
     scene.add(this.konfetti.mesh, this.spur.mesh, this.spuren.mesh, this.blitze.points, this.fetzen.mesh);
     this.gran = null; this.prevSlide = []; this.prevHand = []; this.slideTick = 0; this.paused = false;
     this.renderer = renderer;
+    if (quality.level < 1) this.setLite(); // niedrigste Stufe: schlanke Effekte wie bei der Auto-Drosselung
     // Abend (Etappe 4): Flutlicht-Kegel/Glanz (nur Menü/Wiederholung, liegt bei den fernen Teilen), Flutlicht-Schatten
     this.flut = new Flutlicht(this.env.lamps); this.env.far.add(this.flut.group);
     this.schatten = new SpielerSchatten(LAYOUT.masts, sunDir, 6); scene.add(this.schatten.mesh);

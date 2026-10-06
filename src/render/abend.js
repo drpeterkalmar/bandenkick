@@ -65,13 +65,13 @@ export function poolTexture(masts) {
 // Lichtkegel (eine Geometrie für alle Strahler, additiv, zur Spitze hin heller) und Leuchtpunkte (Punkte, additiv)
 export class Flutlicht {
   constructor(lamps) {
-    // ein Kegel je Mast (vom mittleren Strahler), 70 % der Strecke zum Feld – sie verblassen ohnehin (spart Füllrate)
+    // ein Kegel je Mast (vom mittleren Strahler), 60 % der Strecke zum Feld – sie verblassen ohnehin (spart Füllrate)
     const cones = [];
     lamps.filter((l, i) => i % 3 === 1).forEach((l) => {
       const ax = -Math.sign(l.x) * 4, az = -Math.sign(l.z) * 2.5;
       const from = new THREE.Vector3(l.x, l.y, l.z), full = from.distanceTo(new THREE.Vector3(ax, 0, az));
-      const to = from.clone().lerp(new THREE.Vector3(ax, 0, az), 0.7), len = full * 0.7;
-      const g = new THREE.CylinderGeometry(0.6, len * 0.24, len, 12, 3, true);
+      const to = from.clone().lerp(new THREE.Vector3(ax, 0, az), 0.6), len = full * 0.6;
+      const g = new THREE.CylinderGeometry(0.6, len * 0.17, len, 12, 2, true);
       g.translate(0, -len / 2, 0); // Spitze im Ursprung, Kegel nach −y
       const t = new Float32Array(g.attributes.position.count);
       for (let k = 0; k < t.length; k++) t[k] = -g.attributes.position.getY(k) / len; // 0 an der Lampe … 1 am Boden
@@ -93,13 +93,13 @@ export class Flutlicht {
     });
     this.cones = new THREE.Mesh(merged, this.coneMat);
     this.cones.name = 'lichtkegel'; this.cones.frustumCulled = false; this.cones.renderOrder = 6;
-    // Leuchtpunkte
-    const pos = new Float32Array(lamps.length * 3);
-    lamps.forEach((l, i) => pos.set([l.x, l.y, l.z], i * 3));
+    // Leuchthöfe: einer je Mast (die drei Strahler leuchten selbst über ihr Glas) – spart Füllrate
+    const mids = lamps.filter((l, i) => i % 3 === 1), pos = new Float32Array(mids.length * 3);
+    mids.forEach((l, i) => pos.set([l.x, l.y, l.z], i * 3));
     const pg = new THREE.BufferGeometry(); pg.setAttribute('position', new THREE.BufferAttribute(pos, 3));
     this.glowMat = new THREE.ShaderMaterial({
       uniforms: { uK: { value: 0 }, uScale: { value: 300 } },
-      vertexShader: `uniform float uScale; void main() { vec4 mv = modelViewMatrix * vec4(position, 1.0); gl_PointSize = uScale * 4.5 / -mv.z; gl_Position = projectionMatrix * mv; }`,
+      vertexShader: `uniform float uScale; void main() { vec4 mv = modelViewMatrix * vec4(position, 1.0); gl_PointSize = uScale * 5.0 / -mv.z; gl_Position = projectionMatrix * mv; }`,
       fragmentShader: `uniform float uK; void main() { vec2 d = gl_PointCoord - 0.5; float r2 = dot(d, d);
         float a = uK * (exp(-r2 * 300.0) * 1.4 + exp(-r2 * 45.0) * 0.55 + (exp(-r2 * 14.0) - 0.03) * 0.3); if (a < 0.003) discard;
         gl_FragColor = vec4(vec3(1.0, 0.97, 0.9) * a, a); }`,

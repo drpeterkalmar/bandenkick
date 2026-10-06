@@ -30,6 +30,8 @@ SCENES = {
     'menu_hoch': ('hoch', '?nosw&gpu&seed=5&q=1', 'menu'),
     'spiel_hoch_q0': ('hoch', '?nosw&gpu&seed=5&play&q=0&nohelp', 'bots'),
     'tor_hoch_q0': ('hoch', '?nosw&gpu&seed=7&play&q=0&nohelp', 'tor'),
+    'tor_hoch_q0_ohnegpu': ('hoch', '?nosw&seed=7&play&q=0&nohelp', 'tor'),
+    'tor_hoch_ohnegpu': ('hoch', '?nosw&seed=7&play&q=1&nohelp', 'tor'),
     'abend_spiel_hoch': ('hoch', '?nosw&gpu&seed=5&play&q=1&nohelp&licht=abend', 'bots'),
     'abend_tor_hoch': ('hoch', '?nosw&gpu&seed=7&play&q=1&nohelp&licht=abend', 'tor'),
     'abend_menu_hoch': ('hoch', '?nosw&gpu&seed=5&q=1&licht=abend', 'menu'),
