@@ -127,26 +127,34 @@ function mergeAll(geos) {
   return m;
 }
 
-// Flutlicht-Schatten: je Spieler vier lange, weiche Schatten (einer je Mast), Länge aus Masthöhe und Abstand
-export class NachtSchatten {
-  constructor(masts, nFigs = 6) {
-    this.masts = masts; this.n = nFigs * masts.length;
-    const mat = new THREE.MeshBasicMaterial({ map: figureShadowTexture(), transparent: true, depthWrite: false, opacity: 0.5, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
-    this.mesh = new THREE.InstancedMesh(figureShadowGeometry(2.0, 0.8), mat, this.n);
-    this.mesh.name = 'flutlicht_schatten'; this.mesh.frustumCulled = false; this.mesh.renderOrder = 1; this.mesh.visible = false;
+// Spieler-Schatten (alle Spieler in einem Draw-Call statt sechs Einzel-Flecken): tagsüber ein weicher Schatten je Spieler in
+// Sonnenrichtung (wächst beim Hechtsprung), abends vier lange Flutlicht-Schatten je Spieler (einer je Mast, Länge aus
+// Masthöhe und Abstand). Die Schatten bleiben beim Springen am Boden.
+export class SpielerSchatten {
+  constructor(masts, sunDir, nFigs = 6) {
+    this.masts = masts; this.n = nFigs * masts.length; this.sunYaw = Math.atan2(sunDir.z, -sunDir.x);
+    this.mat = new THREE.MeshBasicMaterial({ map: figureShadowTexture(), transparent: true, depthWrite: false, opacity: 1, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+    this.mesh = new THREE.InstancedMesh(figureShadowGeometry(2.0, 0.86), this.mat, this.n);
+    this.mesh.name = 'spieler_schatten'; this.mesh.frustumCulled = false; this.mesh.renderOrder = 1;
     this._m = new THREE.Matrix4(); this._q = new THREE.Quaternion(); this._s = new THREE.Vector3(); this._p = new THREE.Vector3(); this._y = new THREE.Vector3(0, 1, 0);
+    this._zero = new THREE.Matrix4().makeScale(0, 0, 0);
   }
-  // figs: Avatar-Wurzeln (position, visible), lift: Sprunghöhe ignorieren (Schatten bleibt am Boden)
-  update(roots) {
+  // figs: Avatare (root, dive); night: Flutlicht
+  update(figs, night) {
     let k = 0;
-    for (const r of roots) {
-      for (const [mx, mz] of this.masts) {
-        if (!r || !r.visible) { this._m.makeScale(0, 0, 0); this.mesh.setMatrixAt(k++, this._m); continue; }
-        const dx = r.position.x - mx, dz = r.position.z - mz, d = Math.hypot(dx, dz) || 1;
-        const len = Math.min(2.6, 1.8 * d / MAST_H / 1.5); // Textur-Schatten ≈ 1,5 m bei Maßstab 1
-        this._p.set(r.position.x, 0.007, r.position.z);
-        this._q.setFromAxisAngle(this._y, Math.atan2(-dz, dx));
-        this._s.set(len, 1, 1);
+    this.mat.opacity = night ? 0.5 : 1;
+    for (const f of figs) {
+      const r = f.root;
+      for (let j = 0; j < this.masts.length; j++) {
+        if (!r.visible || (!night && j > 0)) { this.mesh.setMatrixAt(k++, this._zero); continue; }
+        let yaw, len, w = 1;
+        if (night) {
+          const [mx, mz] = this.masts[j], dx = r.position.x - mx, dz = r.position.z - mz, d = Math.hypot(dx, dz) || 1;
+          yaw = Math.atan2(-dz, dx); len = Math.min(2.6, 1.8 * d / MAST_H / 1.5); w = 0.93; // Textur-Schatten ≈ 1,5 m bei Maßstab 1
+        } else { yaw = this.sunYaw; len = w = 1 + (f.dive || 0) * 0.8; }
+        this._p.set(r.position.x, 0.006, r.position.z);
+        this._q.setFromAxisAngle(this._y, yaw);
+        this._s.set(len, 1, w);
         this._m.compose(this._p, this._q, this._s); this.mesh.setMatrixAt(k++, this._m);
       }
     }

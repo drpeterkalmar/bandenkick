@@ -363,6 +363,9 @@ export function buildUmgebung({ aa, sunDir, spots = [] }) {
   const endL = BL.mesh(smat); endL.name = 'umgebung_links';
   const farStatics = F.mesh(smat); farStatics.name = 'umgebung_bauten';
   group.add(statics, endL); far.add(farStatics);
+  // Menü und Wiederholung zeigen alles: dort ein gemeinsames Mesh statt drei (weniger Draw-Calls)
+  const allStatics = new THREE.Mesh(mergeGeometries([statics.geometry, endL.geometry, farStatics.geometry]), smat);
+  allStatics.name = 'umgebung_alles'; allStatics.visible = false; group.add(allStatics);
   // Gläser der Strahler (8) und Fenster des Vereinsheims: getrennt, damit sie am Abend leuchten können
   const G = new Builder();
   for (const l of lamps) G.box(0.58, 0.4, 0.02, l.x, l.y, l.z, COL.white, l.yaw, -0.5);
@@ -378,14 +381,18 @@ export function buildUmgebung({ aa, sunDir, spots = [] }) {
   const treeMat = billboardMaterial(A.tex, aa);
   const trees = billboardMesh(items, treeMat); trees.name = 'umgebung_baeume';
   const bushes = billboardMesh(near, treeMat); bushes.name = 'umgebung_buesche';
-  far.add(trees); group.add(bushes);
+  const allBill = billboardMesh(items.concat(near), treeMat); allBill.name = 'umgebung_alle_baeume'; allBill.visible = false;
+  far.add(trees); group.add(bushes, allBill);
   const detail = paintGroundDetail(L, sunDir, spots);
   return {
     group, far, statics, endL, glass, trees, bushes, lamps, detail, treeCanvas: A.canvas,
     // inGame: Spielkamera (Fernes ist dort nie im Bild) → ausblenden; hoch: hinter dem eigenen (linken) Tor nichts zeigen
     update(dt, t, inGame, hoch) {
       treeMat.uniforms.uTime.value = t; far.visible = !inGame;
-      const hide = inGame && hoch; endL.visible = !hide; treeMat.uniforms.uHideX.value = hide ? -13 : -1e4;
+      const hide = inGame && hoch; treeMat.uniforms.uHideX.value = hide ? -13 : -1e4;
+      // im Spiel: nahe Teile einzeln (Fernes aus, hochkant auch hinter dem eigenen Tor); sonst je ein Sammel-Mesh
+      statics.visible = bushes.visible = inGame; endL.visible = inGame && !hoch;
+      farStatics.visible = trees.visible = false; allStatics.visible = allBill.visible = !inGame;
     },
     // Abend (Etappe 4): 0 = Tag … 1 = Flutlicht
     setNight(k) {

@@ -5,13 +5,15 @@ import { buildUmgebung } from './umgebung.js';
 import * as THREE from 'three';
 import { spectatorBake, Zuschauer, SPOTS } from './zuschauer.js';
 import { Konfetti, BallSpur, Rutschspuren, Blitzlichter } from './effekte.js';
-import { nightEnvironment, poolTexture, Flutlicht, NachtSchatten, MAST_H } from './abend.js';
+import { nightEnvironment, poolTexture, Flutlicht, SpielerSchatten, MAST_H } from './abend.js';
 import { LAYOUT } from './umgebung.js';
 
 const C = (hex) => new THREE.Color(hex);
 const TEAM = [[C(0xff6a13), C(0xff9a3c)], [C(0x1f6fff), C(0x5d9bff)]];
 const WHITE = C(0xf4f4f0), GOLD = C(0xffd84a);
 const TURF = [C(0x0d0d0c), C(0x2f6a22), C(0x5f9a3a)]; // Gummigranulat, Faser dunkel, Faser hell
+// Objekt und Kinder: Matrizen einmal rechnen, danach nicht mehr je Bild (sie bewegen sich nie als Ganzes)
+const freeze = (root) => root.traverse((o) => { o.updateMatrix(); o.matrixAutoUpdate = false; o.updateMatrixWorld(true); });
 
 export class Deko {
   constructor({ scene, renderer, field, sunDir, quality, A, reduceMotion, sun, sky, figs = [] }) {
@@ -37,10 +39,12 @@ export class Deko {
     this.renderer = renderer;
     // Abend (Etappe 4): Flutlicht-Kegel/Glanz (nur Menü/Wiederholung, liegt bei den fernen Teilen), Flutlicht-Schatten
     this.flut = new Flutlicht(this.env.lamps); this.env.far.add(this.flut.group);
-    this.nacht = new NachtSchatten(LAYOUT.masts, 6); scene.add(this.nacht.mesh);
+    this.schatten = new SpielerSchatten(LAYOUT.masts, sunDir, 6); scene.add(this.schatten.mesh);
     this.day = { env: scene.environment, fog: scene.fog ? scene.fog.color.clone() : null, sunCol: sun ? sun.color.clone() : null, sunI: sun ? sun.intensity : 1,
       amb: field.outer.material.userData.u ? field.outer.material.userData.u.uAmb.value.clone() : null, sheen: field.turf.material.userData.u ? field.turf.material.userData.u.uSheen.value.clone() : null };
     this.night = 0; this.licht = 'tag';
+    // feste Teile: keine Matrix-Neuberechnung je Bild (die Zuschauer kommen später dazu, siehe _stepFans)
+    for (const root of [this.env.group, this.konfetti.mesh, this.spur.mesh, this.spuren.mesh, this.blitze.points, this.fetzen.mesh, this.schatten.mesh]) freeze(root);
     this.timing.gesamt = performance.now() - t0;
   }
   // Spielereignisse (aus der Simulation) → Reaktionen der Zuschauer und Effekte; game für Ball/Käfig
@@ -145,7 +149,6 @@ export class Deko {
     if (this.fans) this.fans.mat.uniforms.uLight.value.setRGB(1 - 0.36 * k, 1 - 0.35 * k, 1 - 0.27 * k);
     this._fansLight = k;
     for (const f of this.figs) if (f.setNight) f.setNight(!!k, this.quality.avatarShadows);
-    this.nacht.mesh.visible = !!k;
   }
   // Auto-Drosselung (main.js autoQuality): weniger Konfetti und Rasenfetzen, keine Blitzlichter
   setLite() { this.lite = true; this.amount = Math.min(this.amount, 0.35); this.blitzeOff = true; }
@@ -167,7 +170,7 @@ export class Deko {
       if (j.c >= j.bake.count) {
         this.atlas = j.bake.finish();
         this.fans = new Zuschauer(this.atlas, { aa: j.aa, calm: this.reduce });
-        this.scene.add(this.fans.mesh);
+        this.scene.add(this.fans.mesh); freeze(this.fans.mesh);
         this._fanJob = null;
         if (this._fansLight) this.fans.mat.uniforms.uLight.value.setRGB(0.64, 0.65, 0.73);
       }
@@ -190,6 +193,8 @@ export class Deko {
       this.blitze.update(dt, this.fans && !this.blitzeOff ? Math.min(1, this.fans.ex * 1.4) : 0, px);
       if (this.night) this.flut.set(this.night, px);
     }
-    if (this.night) this.nacht.update(this.figs.map((f) => f.root));
+    // Spieler-Schatten: tags nur, wenn die Menschen keine Echtzeit-Schatten werfen (Stufe 2), abends immer
+    this.schatten.mesh.visible = this.figs.length > 0 && (!!this.night || !this.quality.avatarShadows);
+    if (this.schatten.mesh.visible) this.schatten.update(this.figs, this.night);
   }
 }

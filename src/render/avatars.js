@@ -219,6 +219,7 @@ export class Avatar {
       new THREE.MeshBasicMaterial({ map: dk ? figureShadowTexture() : blobTexture(), transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
     this.blob.position.y = 0.006; this.blob.renderOrder = 1;
     this.shadowYaw = dk ? Math.atan2(dk.sunDir.z, -dk.sunDir.x) : null; // +x der Schattenebene zeigt vom Licht weg
+    this.extShadow = !!(dk && dk.extShadow); // Deko: Schatten aller Spieler zeichnet abend.js in einem Draw-Call
     this.root.add(this.blob);
     // Animation
     this.mixer = new THREE.AnimationMixer(this.model);
@@ -234,7 +235,7 @@ export class Avatar {
     this.setShadows(!!opts.shadows);
   }
 
-  setShadows(on) { for (const m of this.meshes) m.castShadow = on; this.blob.visible = !on && !this.night; }
+  setShadows(on) { for (const m of this.meshes) m.castShadow = on; this.blob.visible = !on && !this.night && !this.extShadow; }
   // Deko-Abend: eigene Flutlicht-Schatten (abend.js) statt Fleck/Schattenkarte
   setNight(on, shadows) { this.night = on; this.setShadows(on ? false : shadows); }
 
