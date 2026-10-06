@@ -28,6 +28,12 @@ const P = makeParams(location.search);
 const DEKO = !!P.deko;
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 let deko = null;
+// Deko-Licht: Tag oder Abend mit Flutlicht. 'auto' = nach Uhrzeit (ab kurz vor Sonnenuntergang, Mitteleuropa, bis 6:30),
+// im Pause-Menü umschaltbar (localStorage bk_licht), ?licht=tag|abend|auto
+const SUNSET_H = [16.6, 17.4, 18.1, 19.9, 20.6, 21.0, 20.9, 20.3, 19.3, 18.3, 16.6, 16.2];
+let lichtPref = ['tag', 'abend', 'auto'].includes(qs.get('licht')) ? qs.get('licht') : (localStorage.getItem('bk_licht') || 'auto');
+const autoLicht = () => { const d = new Date(), h = d.getHours() + d.getMinutes() / 60; return h >= SUNSET_H[d.getMonth()] - 0.4 || h < 6.5 ? 'abend' : 'tag'; };
+const lichtMode = () => (lichtPref === 'auto' ? autoLicht() : lichtPref);
 const isTouch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
 const qLevel = qs.has('q') ? +qs.get('q') : (isTouch ? 1 : 2);
 // Stufen: 0 niedrig (DPR 1, keine Schattenkarte), 1 mittel (Handy: Blob-Schatten unter den Menschen, Schattenkarte
@@ -107,6 +113,8 @@ let replayOn = !!P.replay && localStorage.getItem('bk_replay') !== '0';
 const replayBtn = hud.menu.querySelector('[data-act="replay"]');
 const replayLabel = () => { replayBtn.textContent = 'Wiederholung: ' + (replayOn ? 'an' : 'aus'); };
 replayLabel();
+const lichtBtn = hud.menu.querySelector('[data-act="licht"]');
+function lichtLabel() { if (lichtBtn) lichtBtn.textContent = 'Licht: ' + (lichtPref === 'auto' ? `automatisch (${lichtMode() === 'abend' ? 'Abend' : 'Tag'})` : lichtPref === 'abend' ? 'Abend' : 'Tag'); }
 let helpBack = 'menu', helpThen = null;
 // Steuerungskarte beim ersten Start (danach über ☰ / Startbildschirm)
 function withHelp(then) {
@@ -150,6 +158,10 @@ hud.root.addEventListener('click', (e) => {
   if (a === 'helpok') { localStorage.setItem('bk_hilfe', '1'); if (helpThen) { const f = helpThen; helpThen = null; f(); } else setMode(helpBack); }
   if (a === 'slowmo') { slowmoOn = !slowmoOn; localStorage.setItem('bk_zeitlupe', slowmoOn ? '1' : '0'); slowLabel(); }
   if (a === 'replay') { replayOn = !replayOn; localStorage.setItem('bk_replay', replayOn ? '1' : '0'); replayLabel(); }
+  if (a === 'licht' && deko) {
+    lichtPref = { auto: 'tag', tag: 'abend', abend: 'auto' }[lichtPref] || 'auto';
+    localStorage.setItem('bk_licht', lichtPref); deko.setLicht(lichtMode()); lichtLabel();
+  }
   if (a === 'resume') setMode('play');
   if (a === 'credits') { creditsBack = mode; setMode('credits'); }
   if (a === 'back') setMode(creditsBack);
@@ -200,6 +212,7 @@ async function boot() {
   scene.fog = new THREE.Fog(fogCol, 45, 140);
   const { sun } = makeSun(skyInfo, quality, game.cage);
   scene.add(sun, sun.target);
+  G.sun = sun; G.sky = sky;
   field = buildField(P, game.cage, { turfColor, turfNormal, grassColor, grassNormal }, renderer, { deko: DEKO });
   scene.add(field.group);
   ballMesh = makeBall(P.ballR);
@@ -218,7 +231,10 @@ async function boot() {
     for (let i = 0; i < 6; i++) { const c = i ? makePlayer(i < 3 ? 0xff6a13 : 0x1f6fff) : capsule; figs.push({ capsule: c }); scene.add(c.group); }
   }
   G.avatars = !!A;
-  if (DEKO) { deko = new Deko({ scene, renderer, field, sunDir, quality, A, reduceMotion }); G.deko = deko; }
+  if (DEKO) {
+    deko = new Deko({ scene, renderer, field, sunDir, quality, A, reduceMotion, sun, sky, figs: figs.filter((f) => f.root) });
+    deko.setLicht(lichtMode()); lichtLabel(); G.deko = deko;
+  }
   gran = new Granulate();
   scene.add(gran.points);
   if (deko) deko.gran = gran;

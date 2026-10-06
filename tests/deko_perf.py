@@ -30,6 +30,10 @@ SCENES = {
     'menu_hoch': ('hoch', '?nosw&gpu&seed=5&q=1', 'menu'),
     'spiel_hoch_q0': ('hoch', '?nosw&gpu&seed=5&play&q=0&nohelp', 'bots'),
     'tor_hoch_q0': ('hoch', '?nosw&gpu&seed=7&play&q=0&nohelp', 'tor'),
+    'abend_spiel_hoch': ('hoch', '?nosw&gpu&seed=5&play&q=1&nohelp&licht=abend', 'bots'),
+    'abend_tor_hoch': ('hoch', '?nosw&gpu&seed=7&play&q=1&nohelp&licht=abend', 'tor'),
+    'abend_menu_hoch': ('hoch', '?nosw&gpu&seed=5&q=1&licht=abend', 'menu'),
+    'abend_spiel_hoch_q0': ('hoch', '?nosw&gpu&seed=5&play&q=0&nohelp&licht=abend', 'bots'),
 }
 FRAMES = int(os.environ.get('BILDER', '600'))
 RATE = float(os.environ.get('DROSSEL', '4'))
@@ -48,7 +52,7 @@ def measure(s, scene, extra):
     s.pg.close(); s.pg = s.ctx.new_page()
     s.errors = []
     s.pg.on("pageerror", lambda e: s.errors.append("PAGEERROR " + str(e)))
-    s.open(url + extra)
+    s.open(url + extra + ('' if 'licht=' in url + extra else '&licht=tag'))
     s.pg.wait_for_function("!window.__game.deko || window.__game.deko.ready", timeout=60000, polling=100)
     if prep == 'bots':
         s.ev("__game.human(-1)")

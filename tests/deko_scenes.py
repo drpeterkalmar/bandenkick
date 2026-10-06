@@ -14,7 +14,9 @@ DUEL = """() => { const G = __game; G.human(-1);
 
 
 def open_ready(s, q):
-    """Seite öffnen und warten, bis die Deko fertig ist (Zuschauer werden kurz nach dem Start vorbereitet)."""
+    """Seite öffnen und warten, bis die Deko fertig ist (Zuschauer werden kurz nach dem Start vorbereitet).
+    Licht fest auf Tag, außer die Szene verlangt ?licht= (sonst hinge das Bild von der Uhrzeit ab)."""
+    if 'licht=' not in q: q += '&licht=tag'
     s.open(q)
     s.pg.wait_for_function("!window.__game.deko || window.__game.deko.ready", timeout=60000)
     s.frames(3)

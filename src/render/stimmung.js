@@ -16,7 +16,7 @@ export function makeSkyDeko(tex, info, sunDir) {
   const u = {
     sky: { value: tex }, cutV: { value: info.cutV }, ground: { value: ground }, sunDir: { value: sunDir.clone() },
     uTop: { value: new THREE.Color(0.80, 0.90, 1.08) }, uSun: { value: new THREE.Color(1.0, 0.86, 0.62) }, uExpo: { value: 0.92 },
-    uNight: { value: 0 }, uNightTop: { value: new THREE.Color(0.012, 0.022, 0.06) }, uNightHor: { value: new THREE.Color(0.36, 0.16, 0.07) },
+    uNight: { value: 0 }, uNightTop: { value: new THREE.Color(0.008, 0.015, 0.045) }, uNightHor: { value: new THREE.Color(0.32, 0.12, 0.035) },
   };
   const mat = new THREE.ShaderMaterial({
     uniforms: u,
@@ -31,11 +31,15 @@ export function makeSkyDeko(tex, info, sunDir) {
         float h = clamp(d.y, 0.0, 1.0), sn = max(dot(d, sunDir), 0.0);
         vec3 day = c * mix(vec3(1.0), uTop, smoothstep(0.06, 0.65, h));
         day *= 1.0 + uSun * (pow(sn, 6.0) * 0.45 + pow(sn, 48.0) * 0.6);
-        // Abend: Wolken als dunkle Silhouetten vor einem Dämmerungsverlauf (Horizont warm, Zenit tiefblau)
+        // Abend: Dämmerungsverlauf (Horizont violett-grau, darüber blau, Zenit tiefblau), warmes Nachglühen nur tief in
+        // Sonnenrichtung; Wolken aus dem Foto heben sich leicht ab, Baumreihe und Häuser werden Silhouetten
         float l = dot(c, vec3(0.299, 0.587, 0.114));
-        vec3 dusk = mix(uNightHor, uNightTop, pow(smoothstep(0.0, 0.55, h), 0.7));
-        vec3 night = dusk * (0.45 + 0.75 * l) + uNightHor * 0.5 * pow(max(dot(d.xz, sunDir.xz), 0.0), 3.0) * (1.0 - smoothstep(0.0, 0.3, h));
-        night = v < cutV - 0.002 ? night : c * 0.08;
+        vec3 dusk = mix(vec3(0.062, 0.056, 0.092), vec3(0.022, 0.034, 0.078), smoothstep(0.0, 0.2, h));
+        dusk = mix(dusk, uNightTop, smoothstep(0.15, 0.75, h));
+        vec2 sxz = normalize(sunDir.xz + vec2(1e-4)), dxz = normalize(d.xz + vec2(1e-4));
+        dusk += uNightHor * 0.55 * pow(max(dot(dxz, sxz), 0.0), 3.0) * (1.0 - smoothstep(0.0, 0.22, h));
+        vec3 night = dusk * (0.5 + 0.7 * l);
+        night = v < cutV - 0.002 ? night : c * 0.06;
         gl_FragColor = vec4(mix(day, night, uNight) * uExpo, 1.0);
         #include <colorspace_fragment>
       }`,
@@ -92,6 +96,7 @@ export function outerGroundMaterial(gc, amb) {
     uAmb: { value: amb.clone() }, uAdd: { value: new THREE.Color(0.016, 0.020, 0.034) }, uAlb: { value: new THREE.Color(0.86, 0.85, 0.86) },
     uDetail: { value: null }, uDetailOn: { value: 0 }, uDetailBox: { value: new THREE.Vector4(-40, -30, 80, 60) },
     uPave: { value: new THREE.Color(0.165, 0.158, 0.148) }, uDirt: { value: new THREE.Color(0.15, 0.115, 0.075) },
+    uNightK: { value: 0 }, // Abend: außerhalb des Flutlichts dunkler
   };
   const mat = new THREE.MeshLambertMaterial({ map: gc, color: 0xd8dccf });
   mat.userData.u = u;
@@ -100,7 +105,7 @@ export function outerGroundMaterial(gc, amb) {
     sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec2 vGXZ;')
       .replace('#include <project_vertex>', '#include <project_vertex>\nvGXZ = (modelMatrix * vec4(transformed, 1.0)).xz;');
     sh.fragmentShader = sh.fragmentShader.replace('#include <common>', `#include <common>
-      varying vec2 vGXZ; uniform vec3 uAmb, uAdd, uAlb; uniform sampler2D uDetail; uniform float uDetailOn; uniform vec4 uDetailBox; uniform vec3 uPave, uDirt;`)
+      varying vec2 vGXZ; uniform vec3 uAmb, uAdd, uAlb; uniform sampler2D uDetail; uniform float uDetailOn, uNightK; uniform vec4 uDetailBox; uniform vec3 uPave, uDirt;`)
       .replace('#include <map_fragment>', `#include <map_fragment>
       diffuseColor.rgb *= uAlb;
       if (uDetailOn > 0.5) {
@@ -110,7 +115,8 @@ export function outerGroundMaterial(gc, amb) {
         diffuseColor.rgb = mix(diffuseColor.rgb, uDirt * (0.7 + 0.3 * n), gDet.g * (1.0 - gDet.r));
         diffuseColor.rgb = mix(diffuseColor.rgb, uPave * (0.88 + 0.12 * n), gDet.r);
         diffuseColor.rgb *= 1.0 - 0.6 * gDet.b;
-      }`)
+      }
+      if (uNightK > 0.0) diffuseColor.rgb *= mix(1.0, 0.16 + 0.84 * (1.0 - smoothstep(14.0, 44.0, length(vGXZ * vec2(0.8, 1.0)))), uNightK);`)
       .replace('#include <emissivemap_fragment>', 'totalEmissiveRadiance = diffuseColor.rgb * uAmb + uAdd;');
   };
   mat.customProgramCacheKey = () => 'groundDeko';

@@ -5,6 +5,8 @@ import { buildUmgebung } from './umgebung.js';
 import * as THREE from 'three';
 import { spectatorBake, Zuschauer, SPOTS } from './zuschauer.js';
 import { Konfetti, BallSpur, Rutschspuren, Blitzlichter } from './effekte.js';
+import { nightEnvironment, poolTexture, Flutlicht, NachtSchatten, MAST_H } from './abend.js';
+import { LAYOUT } from './umgebung.js';
 
 const C = (hex) => new THREE.Color(hex);
 const TEAM = [[C(0xff6a13), C(0xff9a3c)], [C(0x1f6fff), C(0x5d9bff)]];
@@ -12,8 +14,9 @@ const WHITE = C(0xf4f4f0), GOLD = C(0xffd84a);
 const TURF = [C(0x0d0d0c), C(0x2f6a22), C(0x5f9a3a)]; // Gummigranulat, Faser dunkel, Faser hell
 
 export class Deko {
-  constructor({ scene, renderer, field, sunDir, quality, A, reduceMotion }) {
+  constructor({ scene, renderer, field, sunDir, quality, A, reduceMotion, sun, sky, figs = [] }) {
     this.scene = scene; this.quality = quality; this.reduce = !!reduceMotion; this.t = 0;
+    this.field = field; this.sun = sun; this.sky = sky; this.figs = figs; this.sunDir = sunDir.clone();
     const t0 = performance.now(); this.timing = {};
     const aa = !!quality.aa;
     this.env = buildUmgebung({ aa, sunDir, spots: SPOTS });
@@ -32,6 +35,12 @@ export class Deko {
     scene.add(this.konfetti.mesh, this.spur.mesh, this.spuren.mesh, this.blitze.points, this.fetzen.mesh);
     this.gran = null; this.prevSlide = []; this.prevHand = []; this.slideTick = 0; this.paused = false;
     this.renderer = renderer;
+    // Abend (Etappe 4): Flutlicht-Kegel/Glanz (nur Menü/Wiederholung, liegt bei den fernen Teilen), Flutlicht-Schatten
+    this.flut = new Flutlicht(this.env.lamps); this.env.far.add(this.flut.group);
+    this.nacht = new NachtSchatten(LAYOUT.masts, 6); scene.add(this.nacht.mesh);
+    this.day = { env: scene.environment, fog: scene.fog ? scene.fog.color.clone() : null, sunCol: sun ? sun.color.clone() : null, sunI: sun ? sun.intensity : 1,
+      amb: field.outer.material.userData.u ? field.outer.material.userData.u.uAmb.value.clone() : null, sheen: field.turf.material.userData.u ? field.turf.material.userData.u.uSheen.value.clone() : null };
+    this.night = 0; this.licht = 'tag';
     this.timing.gesamt = performance.now() - t0;
   }
   // Spielereignisse (aus der Simulation) → Reaktionen der Zuschauer und Effekte; game für Ball/Käfig
@@ -112,6 +121,32 @@ export class Deko {
     }
     return out;
   }
+  // Licht: 'tag' oder 'abend' (Flutlicht). Schaltet Himmel, Umgebungslicht, Lichtfarbe/-richtung, Nebel, Rasen-Lichtfeld,
+  // Außenboden, Bäume/Bauten/Zuschauer-Helligkeit, Lampen, Fenster und Schatten um (keine Überblendung nötig)
+  setLicht(mode) {
+    const k = mode === 'abend' ? 1 : 0;
+    this.licht = k ? 'abend' : 'tag'; this.night = k;
+    const sc = this.scene, tu = this.field.turf.material.userData.u, gu = this.field.outer.material.userData.u;
+    if (k && !this.nightEnv) { this.nightEnv = nightEnvironment(this.renderer, LAYOUT.masts); this.pool = poolTexture(LAYOUT.masts); }
+    sc.environment = k ? this.nightEnv : this.day.env;
+    sc.environmentIntensity = k ? 1.8 : 1.0; // Abend: auf die Tageshelligkeit des Rasens abgeglichen (≈ 88 %, Spieler ≈ 95 %)
+    if (sc.fog && this.day.fog) sc.fog.color.copy(k ? new THREE.Color(0.028, 0.03, 0.05) : this.day.fog);
+    if (this.sun) {
+      const [mx, mz] = LAYOUT.masts[0];
+      const dir = k ? new THREE.Vector3(mx, MAST_H, mz).normalize() : this.sunDir;
+      this.sun.position.copy(dir).multiplyScalar(40);
+      this.sun.color.copy(k ? new THREE.Color(0.88, 0.94, 1.0) : this.day.sunCol); // LED-Flutlicht, kühles Weiß
+      this.sun.intensity = k ? 2.0 : this.day.sunI;
+    }
+    if (this.sky) this.sky.material.uniforms.uNight.value = k;
+    if (tu) { tu.uPoolOn.value = k; if (this.pool) { tu.uPool.value = this.pool.tex; tu.uPoolBox.value.copy(this.pool.box); } tu.uSheen.value.copy(this.day.sheen).multiplyScalar(k ? 0.45 : 1); }
+    if (gu) { gu.uNightK.value = k; gu.uAmb.value.copy(this.day.amb).multiplyScalar(k ? 0.32 : 1); }
+    this.env.setNight(k);
+    if (this.fans) this.fans.mat.uniforms.uLight.value.setRGB(1 - 0.36 * k, 1 - 0.35 * k, 1 - 0.27 * k);
+    this._fansLight = k;
+    for (const f of this.figs) if (f.setNight) f.setNight(!!k, this.quality.avatarShadows);
+    this.nacht.mesh.visible = !!k;
+  }
   // Auto-Drosselung (main.js autoQuality): weniger Konfetti und Rasenfetzen, keine Blitzlichter
   setLite() { this.lite = true; this.amount = Math.min(this.amount, 0.35); this.blitzeOff = true; }
   // fertig: Zuschauer gerendert und ganz eingeblendet (Tests warten darauf)
@@ -134,6 +169,7 @@ export class Deko {
         this.fans = new Zuschauer(this.atlas, { aa: j.aa, calm: this.reduce });
         this.scene.add(this.fans.mesh);
         this._fanJob = null;
+        if (this._fansLight) this.fans.mat.uniforms.uLight.value.setRGB(0.64, 0.65, 0.73);
       }
     }
   }
@@ -150,8 +186,10 @@ export class Deko {
     const b = ctx.ball;
     if (b && ctx.cam) this.spur.update(dt, b.p, b.v, ctx.cam, !!ctx.live && !this.paused, !!ctx.still);
     if (ctx.cam) {
-      const h = this.renderer.getDrawingBufferSize(this._v2 || (this._v2 = new THREE.Vector2())).y;
-      this.blitze.update(dt, this.fans && !this.blitzeOff ? Math.min(1, this.fans.ex * 1.4) : 0, h / (2 * Math.tan(ctx.cam.fov * Math.PI / 360)));
+      const h = this.renderer.getDrawingBufferSize(this._v2 || (this._v2 = new THREE.Vector2())).y, px = h / (2 * Math.tan(ctx.cam.fov * Math.PI / 360));
+      this.blitze.update(dt, this.fans && !this.blitzeOff ? Math.min(1, this.fans.ex * 1.4) : 0, px);
+      if (this.night) this.flut.set(this.night, px);
     }
+    if (this.night) this.nacht.update(this.figs.map((f) => f.root));
   }
 }

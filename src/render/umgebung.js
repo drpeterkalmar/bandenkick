@@ -210,7 +210,7 @@ function cellRect(col, row) {
 // Billboards (Achse senkrecht, drehen sich zur Kamera): Instanz = Position, Größe, Atlas-Zelle, Phase/Spiegel/Helligkeit/Wind.
 // Alpha-to-Coverage bei Kantenglättung (weiche Ränder), sonst harter Schnitt. Nebel wie die Szene.
 export function billboardMaterial(map, aa) {
-  const u = THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { uMap: { value: null }, uTime: { value: 0 }, uLight: { value: new THREE.Color(1, 1, 1) }, uHideX: { value: -1e4 } }]);
+  const u = THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { uMap: { value: null }, uTime: { value: 0 }, uLight: { value: new THREE.Color(1, 1, 1) }, uHideX: { value: -1e4 }, uDesat: { value: 0 } }]);
   u.uMap.value = map;
   return new THREE.ShaderMaterial({
     uniforms: u, fog: true, alphaToCoverage: !!aa, transparent: false,
@@ -230,10 +230,11 @@ export function billboardMaterial(map, aa) {
         gl_Position = projectionMatrix * mvPosition;
         #include <fog_vertex>
       }`,
-    fragmentShader: `uniform sampler2D uMap; uniform vec3 uLight; varying vec2 vUv; varying float vTint;
+    fragmentShader: `uniform sampler2D uMap; uniform vec3 uLight; uniform float uDesat; varying vec2 vUv; varying float vTint;
       #include <fog_pars_fragment>
       void main() {
         vec4 c = texture2D(uMap, vUv);
+        c.rgb = mix(c.rgb, vec3(dot(c.rgb, vec3(0.3, 0.55, 0.15))), uDesat);
         #ifdef A2C
           float a = (c.a - 0.5) / max(fwidth(c.a), 1e-4) + 0.5;
           if (a < 0.02) discard;
@@ -391,7 +392,8 @@ export function buildUmgebung({ aa, sunDir, spots = [] }) {
       glass.visible = k > 0.01;
       glassMat.emissiveIntensity = 2.2 * k;
       glassMat.color.setRGB(0.16 + 0.6 * k, 0.19 + 0.55 * k, 0.22 + 0.4 * k);
-      treeMat.uniforms.uLight.value.setScalar(1 - 0.62 * k);
+      treeMat.uniforms.uLight.value.setRGB(1 - 0.8 * k, 1 - 0.78 * k, 1 - 0.7 * k); treeMat.uniforms.uDesat.value = 0.5 * k;
+      smat.color.setScalar(1 - 0.45 * k);
     },
   };
 }

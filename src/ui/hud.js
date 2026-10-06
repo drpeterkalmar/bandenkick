@@ -52,7 +52,7 @@ export function buildHud(root, canvas) {
       <button class="btn sec" data-act="newgame">Neu starten</button>
       <button class="btn sec" data-act="help">Steuerung</button>
     </div>
-    <div class="row"><button class="btn sec" data-act="slowmo">Zeitlupe: an</button><button class="btn sec" data-act="replay">Wiederholung: an</button></div>
+    <div class="row"><button class="btn sec" data-act="slowmo">Zeitlupe: an</button><button class="btn sec" data-act="replay">Wiederholung: an</button><button class="btn sec" data-act="licht">Licht: Tag</button></div>
     <div class="row"><button class="btn sec" data-act="trainmenu">Training</button></div>
     <p class="small lastshot"></p>
     <p class="small physics"></p>
@@ -72,6 +72,7 @@ export function buildHud(root, canvas) {
         FIFA Quality Programme for Football Turf – Handbook of Test Methods 2015, Test Manual 2024.</li>
     </ul>
     <p class="small">Ball, Käfig, Figur, Linien, Netze, Physik und Code: eigene Arbeit. Keine Vereins- oder Markenlogos.</p>
+    <p class="small deko-only">Umgebung, Bäume, Konfetti, Flutlicht und Abendhimmel: eigene Arbeit, zur Laufzeit gemalt. Die Zuschauer werden beim Start aus den Rocketbox-Menschen gerendert.</p>
     <div class="row"><button class="btn" data-act="back">Zurück</button></div>
   </div>`;
   // Training: Challenges je Gruppe, Hinweis vor dem Start, Ergebnis mit Sternen, Steuerungskarte

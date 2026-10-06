@@ -1,5 +1,5 @@
 // Service-Worker: offline spielbar, Cache-Busting über Inhalts-Hash (tools/update_sw.py)
-const VERSION = 'bfd3393cf6';
+const VERSION = 'c700549282';
 const CACHE = 'bandenkick-' + VERSION;
 const ASSETS = [
   './',
@@ -39,6 +39,7 @@ const ASSETS = [
   'src/input/gesture.js',
   'src/input/input.js',
   'src/main.js',
+  'src/render/abend.js',
   'src/render/actors.js',
   'src/render/avatars.js',
   'src/render/camera.js',

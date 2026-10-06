@@ -234,7 +234,9 @@ export class Avatar {
     this.setShadows(!!opts.shadows);
   }
 
-  setShadows(on) { for (const m of this.meshes) m.castShadow = on; this.blob.visible = !on; }
+  setShadows(on) { for (const m of this.meshes) m.castShadow = on; this.blob.visible = !on && !this.night; }
+  // Deko-Abend: eigene Flutlicht-Schatten (abend.js) statt Fleck/Schattenkarte
+  setNight(on, shadows) { this.night = on; this.setShadows(on ? false : shadows); }
 
   // Figur für den Sim-Zustand stellen. st: {x, z, face, speed, vx, vz, plant, plantX, plantZ, kickT, kickFoot,
   // hand, handT, holding, keeper, ready, cheer, human}

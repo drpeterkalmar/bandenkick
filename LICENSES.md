@@ -17,6 +17,11 @@ Tormann-Handschuhe und prozedurale Posen sind eigene Arbeit (MIT, siehe unten; d
 
 Reserve-HDRI (nicht verwendet): „Suburban Soccer Park“ (Dimitrios Savva, Jarod Guest), Poly Haven, CC0.
 
+**Verschönerung (Deko, Oktober 2026): keine neuen fremden Dateien.** Bäume, Büsche, Anlage (Masten, Bänke, Vereinsheim,
+Geländer, Wege), Boden-Details, Abnutzung, Konfetti, Rasenfetzen, Ballspur, Flutlicht, Abendhimmel und Rückennummern sind
+eigene Arbeit (zur Laufzeit gemalt bzw. gebaut). Die Zuschauer sind Bildtafeln, die beim Start aus den oben genannten
+Rocketbox-Avataren und -Bewegungen gerendert werden (MIT, wie oben). Der Abendhimmel färbt das Poly-Haven-Panorama um (CC0).
+
 ## Messwerte aus der Literatur (keine Dateien übernommen)
 - Hong S., Asai T. (2014): Effect of panel shape of soccer ball on its flight characteristics. Sci. Rep. 4:5068
   (CC BY-NC-SA 3.0 – nur Zahlenwerte zitiert).
