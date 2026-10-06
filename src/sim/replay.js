@@ -228,7 +228,8 @@ export function replayCamera(kind, f, ctx) {
     const sx = goal.side, gx = sx * cage.hx;
     const zs = c && c.z < 0 ? 1 : -1; // von der Seite gegenüber dem Schützen: Ball fliegt auf die Kamera zu
     const px = gx + sx * (cage.gD + 2.6), pz = zs * (cage.gw + 1.6), py = 1.65;
-    const w = (s, k) => Math.sin(time * s + k) * 0.5 + Math.sin(time * s * 2.3 + k * 1.7) * 0.25; // Wackeln
+    const wa = ctx.calm ? 0.2 : 1; // Deko: „Bewegung reduzieren“ → kaum Wackeln
+    const w = (s, k) => (Math.sin(time * s + k) * 0.5 + Math.sin(time * s * 2.3 + k * 1.7) * 0.25) * wa; // Wackeln
     const lx = clamp(b.x, gx - sx * 6, gx + sx * 0.6), lz = clamp(b.z, -cage.gw - 1, cage.gw + 1);
     return { pos: [px + w(1.9, 0.3) * 0.05, py + w(2.6, 1.1) * 0.05, pz + w(1.4, 2.2) * 0.05],
       look: [lx * 0.7 + gx * 0.3 + w(2.2, 0.7) * 0.12, clamp(b.y, 0.4, 1.8) * 0.7 + 0.3, lz * 0.8 + w(1.7, 2.9) * 0.1], fov: hoch ? 62 : 44 };

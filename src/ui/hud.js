@@ -145,7 +145,7 @@ export function buildHud(root, canvas) {
     },
     showResult(def, res, rec, isBest, fmt) {
       result.querySelector('.rt').textContent = `${def.icon} ${def.name}`;
-      result.querySelector('.stars').textContent = '★'.repeat(res.stars) + '☆'.repeat(3 - res.stars);
+      result.querySelector('.stars').innerHTML = [0, 1, 2].map((i) => (i < res.stars ? '<i class="voll">★</i>' : '<i>☆</i>')).join('');
       result.querySelector('.rs').textContent = res.score == null ? 'Nicht geschafft' : `Ergebnis: ${fmt(def, res.score)}${def.better === 'hi' ? ` von ${def.attempts}` : ''}`;
       result.querySelector('.rb').textContent = isBest ? 'Neuer Bestwert!' : rec && rec.best != null ? `Bestwert: ${fmt(def, rec.best)} (${'★'.repeat(rec.stars || 0)})` : '';
     },
@@ -171,7 +171,15 @@ export function buildHud(root, canvas) {
       hold.style.display = frac >= 0 ? 'block' : 'none';
       if (frac >= 0) { hold.firstChild.style.width = (frac * 100).toFixed(1) + '%'; hold.lastChild.textContent = `Ball in der Hand – Abwurf in ${Math.ceil(secLeft)} s`; }
     },
-    flash(text, sub = '', dur = 1.8) { banner.innerHTML = text + (sub ? `<small>${sub}</small>` : ''); banner.classList.add('on'); bannerT = dur; },
+    // cls (Deko): z. B. 'tor t0' – Aufspringen und Leuchten in Mannschaftsfarbe (nur mit body.deko sichtbar)
+    flash(text, sub = '', dur = 1.8, cls = '') {
+      banner.innerHTML = text + (sub ? `<small>${sub}</small>` : '');
+      if (cls || banner.dataset.cls) {
+        banner.className = 'banner' + (cls ? ' ' + cls : ''); banner.dataset.cls = cls;
+        if (cls) void banner.offsetWidth; // Animation neu starten
+      }
+      banner.classList.add('on'); bannerT = dur;
+    },
     kickInfo(k) {
       const kmh = Math.round(k.speed * 3.6);
       const names = { vollspann: 'Vollspann', innenrist: 'Innenrist', aussenrist: 'Außenrist', innen: 'Innenseite', aussen: 'Außenrist', ferse: 'Hacke', chip: 'Chip',

@@ -100,3 +100,71 @@ def training_result(s, extra=''):
     s.pg.wait_for_function("__game.state().mode === 'result'", timeout=400000)
     s.frames(8)
     return s.ev("__game.lastResult")
+
+
+def freeze_when(s, cond, timeout=15000):
+    s.ev(f"__game.freezeWhen({cond!r})")
+    try:
+        s.pg.wait_for_function("__game.frozen()", timeout=timeout)
+    except Exception:
+        print('  (nicht eingefroren)', cond)
+    s.frames(4)
+
+
+def tor_konfetti(s, shoot, extra=''):
+    """Tor ohne Wiederholung: Konfetti 0,6 s und 2,2 s nach dem Tor (Spiel läuft weiter)."""
+    open_ready(s, f'?nosw&seed=7&play&q=1&nohelp&replay=0{extra}')
+    goal_setup(s)
+    s.pg.wait_for_function("__game.game.rules.phase === 'goal'", timeout=30000)
+    s.wait_sim(0.6); shoot('08_konfetti_a')
+    s.wait_sim(1.6); shoot('08_konfetti_b')
+
+
+def schuss_spur(s, extra=''):
+    """Harter Vollspann (Tipp) aus 9 m, angehalten, wenn der Ball ~5 m unterwegs ist (Ballspur)."""
+    open_ready(s, f'?nosw&seed=3&q=1&nohelp&play&replay=0{extra}')
+    hx = s.ev("__game.game.cage.hx")
+    s.ev("__game.freeze(false); __game.newGame(); __game.game.rules.phase = 'play'; __game.bots(false); __game.human(1)")
+    s.frames(3)
+    s.ev(f"__game.placePlayer({hx - 10.4}, 1.2, -0.12, 1); __game.placeBall({hx - 10.0}, 0.11, 1.15); __game.placePlayer({hx - 0.6}, -2.6, Math.PI, 3);"
+         f" __game.placePlayer(-4, 4, 0, 4); __game.placePlayer(-4, -4, 0, 5); __game.placePlayer(-8, 0, 0, 0); __game.placePlayer(-3, 3, 0, 2)")
+    s.frames(2)
+    s.ev("__game.press([[0, 0.07, 'shot']], [1, -0.25], 0.3)")
+    freeze_when(s, f"Math.hypot(g.ball.v.x, g.ball.v.z) > 25 && g.ball.p.x > {hx - 6.5}")
+
+
+def graetsche(s, shoot, extra=''):
+    """Grätsche: Orange 1 grätscht Blau 4 den Ball weg; Foto im Rutschen und 1,2 s später (Rutschspur)."""
+    open_ready(s, f'?nosw&seed=11&play&q=1&nohelp{extra}')
+    s.ev("__game.freeze(false); __game.newGame(); __game.game.rules.phase = 'play'; __game.bots(false)")
+    s.frames(3)
+    s.ev("__game.human(1); __game.placePlayer(-2.2, 0.4, 0, 1); __game.placePlayer(0.4, 0.5, 0, 4); __game.placeBall(0.0, 0.11, 0.45); __game.game.lastTouch = 4; __game.press([[0, 0.07, 'shot']])")
+    freeze_when(s, "g.players[1].slide && g.players[1].slide.phase === 'slide' && g.players[1].slide.t > 0.22")
+    shoot('09_graetsche_a')
+    s.ev("__game.freeze(false)"); s.wait_sim(1.2); s.ev("__game.freeze(true)"); s.frames(4)
+    shoot('09_graetsche_b')
+    s.ev("__game.freeze(false)")
+
+
+def nummern(s, extra=''):
+    """Rückennummern: Kamera hinter Orange 10 (Mensch) und Blau 11 beim Anstoß."""
+    open_ready(s, f'?nosw&seed=7&play&q=1&nohelp{extra}')
+    s.wait_sim(0.3); s.ev("__game.freeze(true)")
+    p = s.ev("(() => { const a = __game.game.players[1], b = __game.game.players[4]; return [a.x, a.z, a.face, b.x, b.z, b.face]; })()")
+    import math
+    ax, az, af, bx, bz, bf = p
+    s.ev(f"__game.cam([{ax - math.cos(af) * 2.3 + 0.4}, 1.55, {az - math.sin(af) * 2.3 - 0.6}], [{ax}, 1.15, {az}])"); s.frames(4)
+
+
+def hechten(s, shoot, extra=''):
+    """Auto-Torwart (Orange 0) hechtet; Foto bei der Landung (Rasenfetzen) und 1 s später (Spur)."""
+    open_ready(s, f'?nosw&seed=11&play&q=1&nohelp&replay=0{extra}')
+    hx = s.ev("__game.game.cage.hx")
+    s.ev("__game.freeze(false); __game.newGame(); __game.game.rules.phase = 'play'; __game.bots(false)")
+    s.frames(3)
+    s.ev(f"__game.bots(true); __game.human(0); __game.placePlayer({-hx + 1.0}, -0.6, 0, 0); __game.placePlayer(-2, 5, 0, 1); __game.placePlayer(-2, -5, 0, 2); __game.kick({{from:[{-hx + 9.5}, 0.3, -2], v:[-19.5, 1.6, 6.6], w:[0,0,0]}})")
+    freeze_when(s, "g.players[0].hand.mode === 'ground' && g.players[0].hand.t > 0.06")
+    shoot('12_hechten_a')
+    s.ev("__game.freeze(false)"); s.wait_sim(0.9); s.ev("__game.freeze(true)"); s.frames(4)
+    shoot('12_hechten_b')
+    s.ev("__game.freeze(false)")

@@ -33,6 +33,12 @@ with Server() as srv, sync_playwright() as pw:
             S.jubel(s, extra); shot('05_jubel')
         if want('replay'):
             res['replay'] = list(S.replay_shots(s, lambda n: shot('06_' + n), extra).keys())
+        if want('effekte'):
+            S.tor_konfetti(s, lambda n: shot(n), extra)
+            S.schuss_spur(s, extra); shot('10_ballspur')
+            S.graetsche(s, lambda n: shot(n), extra)
+            S.nummern(s, extra); shot('11_nummer'); s.ev("__game.cam(null)")
+            S.hechten(s, lambda n: shot(n), extra)
         if want('training'):
             res['training'] = S.training_result(s, extra); shot('07_training_ergebnis')
         info = s.ev("__game.info()")

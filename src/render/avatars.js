@@ -59,8 +59,9 @@ export async function loadAvatarAssets(onProgress = () => {}) {
 export function sexOf(name) { return /Female/.test(name) ? 'f' : 'm'; }
 function boneMap(root) { const b = {}; root.traverse((o) => { if (o.isBone) b[o.name] = o; }); return b; }
 
-// Trainingsleibchen aus dem Körpermesh: Dreiecke mit überwiegend Rumpf-Gewichten, 2 cm entlang der Normalen
-function makeBib(body, color) {
+// Trainingsleibchen aus dem Körpermesh: Dreiecke mit überwiegend Rumpf-Gewichten, 2 cm entlang der Normalen.
+// Deko: num = Rückennummer (zylindrische Koordinaten um den Rumpf, Rücken = −z in der Ruhepose)
+function makeBib(body, color, num = 0) {
   const geo = body.geometry, pos = geo.attributes.position, nrm = geo.attributes.normal;
   const si = geo.attributes.skinIndex, sw = geo.attributes.skinWeight, bones = body.skeleton.bones;
   const n = pos.count;
@@ -100,6 +101,8 @@ function makeBib(body, color) {
   }
   const used = [...new Set(tri)], map = new Map(used.map((v, i) => [v, i]));
   const m = used.length;
+  let cxm = 0, czm = 0; for (const i of used) { cxm += world[i * 3]; czm += world[i * 3 + 2]; } cxm /= m || 1; czm /= m || 1;
+  const NUM = num ? new Float32Array(m * 2) : null, yNum = (pelvisY + neckY) / 2 + 0.03;
   const P = new Float32Array(m * 3), N = new Float32Array(m * 3), UV = new Float32Array(m * 2), SI = new Uint16Array(m * 4), SW = new Float32Array(m * 4);
   const off = 0.021 / S;
   for (let j = 0; j < m; j++) {
@@ -111,6 +114,10 @@ function makeBib(body, color) {
     N[j * 3] = _v.x; N[j * 3 + 1] = _v.y; N[j * 3 + 2] = _v.z;
     // Stoff-Muster zylindrisch um den Rumpf (Weltmaß, 1 Kachel ≈ 12 cm)
     UV[j * 2] = Math.atan2(world[i * 3], world[i * 3 + 2]) / (2 * Math.PI) * 5.5; UV[j * 2 + 1] = y / 0.12;
+    if (NUM) { // Rückennummer: ±0,45 rad um die Rückenmitte, 24 cm hoch
+      let th = Math.atan2(world[i * 3] - cxm, world[i * 3 + 2] - czm) - Math.PI; while (th < -Math.PI) th += 2 * Math.PI;
+      NUM[j * 2] = 0.5 + th / 0.9; NUM[j * 2 + 1] = (y - (yNum - 0.12)) / 0.24;
+    }
     for (let k = 0; k < 4; k++) { SI[j * 4 + k] = si.getComponent(i, k); SW[j * 4 + k] = sw.getComponent(i, k); }
   }
   const g = new THREE.BufferGeometry();
@@ -121,12 +128,37 @@ function makeBib(body, color) {
   g.setAttribute('skinWeight', new THREE.BufferAttribute(SW, 4));
   g.setIndex(tri.map((v) => map.get(v)));
   const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.82, metalness: 0, map: bibTexture(), side: THREE.DoubleSide });
+  if (NUM) {
+    g.setAttribute('aNum', new THREE.BufferAttribute(NUM, 2));
+    const numTex = numberTexture(num);
+    mat.onBeforeCompile = (sh) => {
+      sh.uniforms.uNum = { value: numTex };
+      sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute vec2 aNum; varying vec2 vNum;')
+        .replace('#include <uv_vertex>', '#include <uv_vertex>\nvNum = aNum;');
+      sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform sampler2D uNum; varying vec2 vNum;')
+        .replace('#include <map_fragment>', `#include <map_fragment>
+          if (vNum.x > 0.0 && vNum.x < 1.0 && vNum.y > 0.0 && vNum.y < 1.0) diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.92), texture2D(uNum, vNum).a * 0.95);`);
+    };
+    mat.customProgramCacheKey = () => 'bibNum';
+  }
   const bib = new THREE.SkinnedMesh(g, mat);
   bib.name = 'bib';
   bib.position.copy(body.position); bib.quaternion.copy(body.quaternion); bib.scale.copy(body.scale);
   bib.bind(body.skeleton, body.bindMatrix);
   bib.frustumCulled = false;
   return bib;
+}
+
+// Rückennummer als kleine Textur (weiß, Rest durchsichtig)
+function numberTexture(num) {
+  const c = document.createElement('canvas'); c.width = 64; c.height = 96;
+  const g = c.getContext('2d');
+  g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  const two = num > 9;
+  g.font = `900 ${two ? 74 : 86}px system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif`;
+  g.save(); g.translate(32, 50); if (two) g.scale(0.62, 1); g.fillText(String(num), 0, 0); g.restore();
+  const t = new THREE.CanvasTexture(c); t.anisotropy = 4;
+  return t;
 }
 
 let _bibTex = null;
@@ -167,7 +199,7 @@ export class Avatar {
     this.meshes = [];
     this.model.traverse((o) => { if (o.isSkinnedMesh) { this.meshes.push(o); o.frustumCulled = false; } });
     const body = this.meshes.find((m) => /body/.test(m.material.name)) || this.meshes[0];
-    this.bib = makeBib(body, TEAM_COLORS[team]);
+    this.bib = makeBib(body, TEAM_COLORS[team], opts.deko && opts.deko.num);
     body.parent.add(this.bib);
     this.meshes.push(this.bib);
     // Tormann: leuchtende Handschuhe + Bodenring

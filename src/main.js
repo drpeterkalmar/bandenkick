@@ -41,6 +41,7 @@ const quality = {
   avatarShadows: qLevel >= 2,
 };
 if (isTouch) document.body.classList.add('touch');
+if (DEKO) document.body.classList.add('deko');
 if (P.treffpunkt) document.body.classList.add('treffpunkt');
 if (qs.has('debug')) document.body.classList.add('debug');
 const urlSolo = qs.has('solo') || qs.get('modus') === 'training';
@@ -68,6 +69,7 @@ const gcam = new GameCamera(innerWidth / innerHeight, game.cage);
 const input = new Input(hud);
 const sound = new Sound(); // Nacht 2e: stumm (Stub), kein AudioContext
 
+const BIB_NUMS = [[7, 10, 4], [9, 11, 5]]; // Deko: Rückennummern der Leibchen (Mensch = Orange Mitte → 10)
 const G = window.__game = {
   ready: false, frames: 0, build: BUILD, P, quality, errors: window.__errors,
   get game() { return game; },
@@ -209,7 +211,7 @@ async function boot() {
   scene.add(marker);
   if (A) {
     for (let team = 0; team < 2; team++) for (let i = 0; i < 3; i++) {
-      const av = new Avatar(A, ROSTER[team][i % ROSTER[team].length], team, { shadows: quality.avatarShadows, deko: DEKO ? { sunDir } : null });
+      const av = new Avatar(A, ROSTER[team][i % ROSTER[team].length], team, { shadows: quality.avatarShadows, deko: DEKO ? { sunDir, num: BIB_NUMS[team][i] } : null });
       figs.push(av); scene.add(av.root);
     }
   } else {
@@ -219,6 +221,7 @@ async function boot() {
   if (DEKO) { deko = new Deko({ scene, renderer, field, sunDir, quality, A, reduceMotion }); G.deko = deko; }
   gran = new Granulate();
   scene.add(gran.points);
+  if (deko) deko.gran = gran;
   markers = new AimMarkers(scene);
   rp.fx = new ReplayFx(scene);
   resize();
@@ -306,7 +309,7 @@ function worldInput(inp) {
 function handleEvents(ev) {
   const R = game.match ? game.rules : null;
   for (const e of ev) {
-    if (deko) deko.onEvent(e);
+    if (deko) deko.onEvent(e, game);
     if (e.type === 'kick') {
       const k = game.players[e.player].lastKick;
       if (k && (e.player === game.human || e.human)) hud.kickInfo(k); // e.human: nach dem Pass wechselt die Steuerung sofort
@@ -314,7 +317,7 @@ function handleEvents(ev) {
     } else if (e.type === 'ground' && e.speed > 4) {
       gran.emit(e.x, e.z, game.ball.v.x, game.ball.v.z, Math.min(0.5, e.speed / 20), rnd);
     } else if ((e.type === 'board' || e.type === 'post') && e.speed > 11) {
-      gcam.shake = Math.min(1, e.speed / 25);
+      if (!(DEKO && reduceMotion)) gcam.shake = Math.min(1, e.speed / 25); // Deko: „Bewegung reduzieren“ → kein Wackeln
     } else if (e.type === 'airstart' && slowmoOn && (e.tech === 'fallrueck' || e.tech === 'seitfall' || e.tech === 'flugkopf') && e.player === game.human) {
       slow.t = 0; slow.on = true; // Spektakel: kurze Zeitlupe + Zoom (abschaltbar, Steuerung bleibt)
     } else if (e.type === 'goal' && e.challenge) {
@@ -323,8 +326,8 @@ function handleEvents(ev) {
       if (R && replayOn && rp.rec && game.players.length === rp.rec.n) { rp.goal = { ...e, t: game.t - DT }; rp.wait = P.replayDelay; }
       if (R) {
         const mine = e.team === me().team;
-        hud.flash(mine ? 'TOR!' : 'Gegentor', `${TEAM_NAMES[e.team]} · ${Math.round(e.speed * 3.6)} km/h${e.own ? ' · Eigentor' : e.saved ? ' · Tormann war noch dran' : ''}`, 2.4);
-      } else { hud.flash('TOR!', `${Math.round(e.speed * 3.6)} km/h`, 2.2); hud.setScore(game.score); }
+        hud.flash(mine ? 'TOR!' : 'Gegentor', `${TEAM_NAMES[e.team]} · ${Math.round(e.speed * 3.6)} km/h${e.own ? ' · Eigentor' : e.saved ? ' · Tormann war noch dran' : ''}`, 2.4, DEKO ? `tor t${e.team}` : '');
+      } else { hud.flash('TOR!', `${Math.round(e.speed * 3.6)} km/h`, 2.2, DEKO ? 'tor t0' : ''); hud.setScore(game.score); }
     } else if (e.type === 'out') {
       hud.flash('Aus', R ? 'Abwurf' : 'Ball kommt zurück', 1.2);
     } else if (e.type === 'halftime') {
@@ -402,7 +405,7 @@ function challengeFrame() {
     try { localStorage.setItem('bk_ch_' + C.id, JSON.stringify(rec)); } catch (_) { /* privat */ }
     hud.showResult(def, res, rec, better, fmtScore);
     G.lastResult = res;
-    setTimeout(() => setMode('result'), 900);
+    setTimeout(() => { setMode('result'); if (deko) deko.celebrate(res.stars); }, 900);
   }
 }
 // Anzeigehilfen beim Aufladen: Pass → Empfänger + Treffpunkt im Laufweg, Schuss → Zielpunkt im Tor mit Streuung
@@ -530,7 +533,8 @@ function frame() {
   gcam.update(dt, { x: bx, z: bz, vx: b.v.x, vz: b.v.z }, { x: px, z: pz }, mode === 'play' || mode === 'pause' ? 'play' : 'menu');
   field.update(rf ? rf.ball.net : b.net, gcam.cam, !!(rf && rp.dir && rp.dir.cur.cam === 'fan'));
   gran.update(dt);
-  if (deko) deko.update(dt, { inGame: (mode === 'play' || mode === 'pause') && !rf && !gcam.override, hoch: gcam.mode === 'hoch' });
+  if (deko) deko.update(dt, { inGame: (mode === 'play' || mode === 'pause') && !rf && !gcam.override, hoch: gcam.mode === 'hoch',
+    live: mode === 'play' && !rf, paused: mode === 'pause', still: frozen || mode === 'pause', game, cam: gcam.cam, ball: { p: ballMesh.position, v: b.v } });
   hud.tick(dt);
   const touchUI = document.body.classList.contains('touch');
   const km = keeperMode();
@@ -582,7 +586,7 @@ function startReplay() {
   // Kamera beim Kontakt auf der Feldseite (nicht hinter dem Zaun), Text: Schütze · Technik · km/h
   let side = 1;
   if (c) { const dl = Math.hypot(c.dx, c.dz) || 1, nx = -c.dz / dl, nz = c.dx / dl; side = nx * -c.x + nz * -c.z >= 0 ? 1 : -1; }
-  rp.ctx = { cage: game.cage, mode: gcam.mode, contact: c, goal: { side: g.side }, time: 0, frac: 0, side };
+  rp.ctx = { cage: game.cage, mode: gcam.mode, contact: c, goal: { side: g.side }, time: 0, frac: 0, side, calm: DEKO && reduceMotion };
   const sc = g.scorer >= 0 ? game.players[g.scorer] : null;
   const idx = sc ? game.players.filter((p) => p.team === sc.team).indexOf(sc) + 1 : 0;
   const who = g.own ? 'Eigentor' : sc ? `${TEAM_NAMES[sc.team]} ${idx}${sc.id === game.human ? ' (du)' : ''}` : TEAM_NAMES[g.team];
@@ -590,9 +594,11 @@ function startReplay() {
   rp.label = [who, tech ? tech + (c.tech === 'fallrueck' || c.tech === 'seitfall' || c.tech === 'flugkopf' ? '!' : '') : '', c && c.speed ? `${Math.round(c.speed * 3.6)} km/h` : ''].filter(Boolean).join(' · ');
   hud.replayShow(true, rp.label);
   markers && markers.hide();
+  if (deko) deko.replay(true);
 }
 function endReplay() {
   rp.dir = null; rp.goal = null; rp.held = false;
+  if (deko) deko.replay(false);
   gcam.override = null;
   hud.replayShow(false); hud.replayState(false, 0);
   if (rp.fx) rp.fx.hide();
@@ -663,7 +669,8 @@ function drawPlayers(dt, a, rf = null) {
 }
 
 // Qualitäts-Automatik (nur ohne ?q=): liegt der Bildabstand im Spiel 3 s lang über 24 ms (< ~42 fps), erst die
-// Auflösung in 0,25er-Schritten bis 1,0 senken, dann Echtzeit-Schatten der Menschen aus (Blob), dann alle Schatten aus.
+// Auflösung in 0,25er-Schritten bis 1,0 senken, dann Echtzeit-Schatten der Menschen aus (Blob), dann (Deko) weniger
+// Effekte, dann alle Schatten aus.
 const autoQ = { on: !qs.has('q'), t: 0, sum: 0, n: 0, steps: [] };
 function autoQuality(dt) {
   if (!autoQ.on || mode !== 'play') return;
@@ -675,6 +682,7 @@ function autoQuality(dt) {
   const d = renderer.getPixelRatio();
   if (d > 1.01) { renderer.setPixelRatio(Math.max(1, d - 0.25)); resize(); autoQ.steps.push('dpr ' + renderer.getPixelRatio()); }
   else if (quality.avatarShadows) { quality.avatarShadows = false; for (const f of figs) if (f.setShadows) f.setShadows(false); autoQ.steps.push('menschen blob'); }
+  else if (deko && !deko.lite) { deko.setLite(); autoQ.steps.push('deko einfach'); }
   else if (renderer.shadowMap.enabled) {
     renderer.shadowMap.enabled = false;
     scene.traverse((o) => { if (o.material) for (const m of [].concat(o.material)) m.needsUpdate = true; });
