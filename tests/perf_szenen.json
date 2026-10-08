@@ -1,0 +1,133 @@
+{
+ "_kommentar": "Bandenkick-Szenen für tests/perf_gate.py (Grafik-Kern aus der Stuntbahn, n4-Technik). Grafikstufe fest per ?q= (Autopilot aus), außer spiel_auto. ?startprobe=0: keine Kurzmessung beim Laden (auf main ohne Wirkung). ?licht=tag bzw. abend fest (sonst nach Uhrzeit). Spiel: alle sechs Figuren sind Bots (__game.human(-1)). Vor jeder Szene wird gewartet, bis die Zuschauer gebacken und eingeblendet sind (deko.ready). Replay: Schuss aus 9 m wie in tests/deko_scenes.py (replay_shots), die Wiederholung wird im Abschnitt „kontakt“ angehalten (extremer Zoom, Zeitlupe, Tiefenschärfe ab n4) – das Bild wird weiter jedes Mal gezeichnet. Training: Ballmaschine (Torwart, 12 Schüsse) mit Skript-Spieler.",
+ "bereit": "window.__game && window.__game.ready && window.__game.frames > 3",
+ "info": "() => { const i = __game.renderer.info; return { calls: i.render.calls, tris: i.render.triangles, tex: i.memory.textures }; }",
+ "zusatz": "() => { const i = __game.info(); return { dpr: i.dpr, size: i.size, level: i.quality && i.quality.level, kino: i.kino || null, auto: i.auto || null, shadow: i.shadow || null }; }",
+ "ladeQuery": "?nosw&seed=5&licht=tag",
+ "ladeNachlauf": 4,
+ "szenen": [
+  {
+   "name": "menu_s1",
+   "query": "?nosw&seed=5&q=1&licht=tag&startprobe=0",
+   "schritte": [
+    {
+     "bis": "!__game.deko || __game.deko.ready",
+     "max": 60
+    },
+    {
+     "warte": 2
+    }
+   ]
+  },
+  {
+   "name": "spiel_s0",
+   "query": "?nosw&seed=5&play&nohelp&q=0&licht=tag&startprobe=0",
+   "schritte": [
+    {
+     "bis": "!__game.deko || __game.deko.ready",
+     "max": 60
+    },
+    "__game.human(-1)",
+    {
+     "warte": 2
+    }
+   ]
+  },
+  {
+   "name": "spiel_s1",
+   "query": "?nosw&seed=5&play&nohelp&q=1&licht=tag&startprobe=0",
+   "schritte": [
+    {
+     "bis": "!__game.deko || __game.deko.ready",
+     "max": 60
+    },
+    "__game.human(-1)",
+    {
+     "warte": 2
+    }
+   ]
+  },
+  {
+   "name": "spiel_s2",
+   "query": "?nosw&seed=5&play&nohelp&q=2&licht=tag&startprobe=0",
+   "schritte": [
+    {
+     "bis": "!__game.deko || __game.deko.ready",
+     "max": 60
+    },
+    "__game.human(-1)",
+    {
+     "warte": 2
+    }
+   ]
+  },
+  {
+   "name": "spiel_abend_s1",
+   "query": "?nosw&seed=5&play&nohelp&q=1&licht=abend&startprobe=0",
+   "schritte": [
+    {
+     "bis": "!__game.deko || __game.deko.ready",
+     "max": 60
+    },
+    "__game.human(-1)",
+    {
+     "warte": 2
+    }
+   ]
+  },
+  {
+   "name": "spiel_auto",
+   "query": "?nosw&seed=5&play&nohelp&licht=tag&startprobe=0",
+   "schritte": [
+    {
+     "bis": "!__game.deko || __game.deko.ready",
+     "max": 60
+    },
+    "__game.human(-1)",
+    {
+     "warte": 3
+    }
+   ]
+  },
+  {
+   "name": "training_s1",
+   "query": "?nosw&seed=5&nohelp&q=1&licht=tag&startprobe=0&challenge=tw_serie",
+   "schritte": [
+    {
+     "bis": "!__game.deko || __game.deko.ready",
+     "max": 60
+    },
+    "__game.autoplay(true)",
+    {
+     "warte": 1.5
+    }
+   ]
+  },
+  {
+   "name": "replay_s1",
+   "query": "?nosw&seed=3&play&nohelp&q=1&licht=tag&startprobe=0",
+   "schritte": [
+    {
+     "bis": "!__game.deko || __game.deko.ready",
+     "max": 60
+    },
+    "__game.freeze(false); __game.replayHold(null); __game.newGame(); __game.game.rules.phase = 'play'; __game.bots(false); __game.human(1)",
+    {
+     "bilder": 3
+    },
+    "(() => { const hx = __game.game.cage.hx; __game.placePlayer(hx - 9.4, 1.2, -0.12, 1); __game.placeBall(hx - 9.0, 0.11, 1.15); __game.placePlayer(hx - 0.6, -2.6, Math.PI, 3); __game.placePlayer(-4, 4, 0, 4); __game.placePlayer(-4, -4, 0, 5); __game.placePlayer(-8, 0, 0, 0); __game.placePlayer(-3, 3, 0, 2); })()",
+    {
+     "bilder": 2
+    },
+    "__game.replayHold('kontakt', 0.6); __game.press([[0, 0.07, 'shot']], [1, -0.25], 0.3)",
+    {
+     "bis": "(() => { const r = __game.replay(); return r.held && r.phase === 'kontakt'; })()",
+     "max": 40
+    },
+    {
+     "bilder": 5
+    }
+   ]
+  }
+ ]
+}
