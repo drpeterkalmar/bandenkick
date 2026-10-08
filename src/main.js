@@ -8,7 +8,7 @@ import { previewShot, autoShotPower, attackGoalX } from './sim/shot.js';
 import { planPass } from './sim/pass.js';
 import { techName, CHALLENGES, challengeDef } from './sim/challenges.js';
 import { TrainingProps, AimMarkers } from './render/training.js';
-import { createRenderer, loadEnvironment, makeSky, makeSun, dirFromUV } from './render/scene.js';
+import { createRenderer, loadEnvironment, makeSky, makeSun, dirFromUV, sonnenSchatten, schattenExt } from './render/scene.js';
 import { makeSkyDeko } from './render/stimmung.js';
 import { Deko } from './render/deko.js';
 import { buildField } from './render/field.js';
@@ -21,8 +21,11 @@ import { Sound } from './audio/sound.js';
 import { ReplayRecorder, ReplayDirector, replayCamera } from './sim/replay.js';
 import { ReplayFx } from './render/replayfx.js';
 import { BUILD } from './build.js';
-import { makeKino, kinoLicht, KontaktSchatten } from './render/kino.js';
+import { makeKino, kinoLicht, kinoStufeSetzen, KontaktSchatten } from './render/kino.js';
 import { kinoOptionen, replayDof } from './render/kino_logik.js';
+import { GrafikSteuerung, stufenWerte, skalaBereich, startStufe, startSkala, ladeStufe, merkeStufe } from './render/grafik.js';
+import { geraeteSchluessel, ladeGeraet, merkeGeraet, messeBilder } from './render/kern/startprobe.js';
+import { bildFlaeche, schattenAusschnitt, randPunkte } from './render/schatten.js';
 
 const qs = new URLSearchParams(location.search);
 const P = makeParams(location.search);
@@ -37,17 +40,19 @@ let lichtPref = ['tag', 'abend', 'auto'].includes(qs.get('licht')) ? qs.get('lic
 const autoLicht = () => { const d = new Date(), h = d.getHours() + d.getMinutes() / 60; return h >= SUNSET_H[d.getMonth()] - 0.4 || h < 6.5 ? 'abend' : 'tag'; };
 const lichtMode = () => (lichtPref === 'auto' ? autoLicht() : lichtPref);
 const isTouch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
-const qLevel = qs.has('q') ? +qs.get('q') : (isTouch ? 1 : 2);
+// n4 Qualitäts-Autopilot (Audit #2, render/grafik.js): ?autopilot=0 = alte Automatik (nur abwärts), ?q= = feste Stufe.
+// Startstufe: ?q= > zuletzt gefahrene Stufe dieses Geräts > Touch 1 / Desktop 2. ?schattenkam=0 = Schattenkarte über den
+// ganzen Käfig wie bisher (sonst folgt sie dem Bildausschnitt, render/schatten.js), ?schatten2=1024 = kleinere Karte auf Stufe 2.
+const AUTOPILOT = qs.get('autopilot') !== '0';
+// n4 (Audit #8): Figuren außerhalb des Bildes nicht zeichnen und nur jedes 2. Bild animieren; ?cull=0 = wie bisher
+const AV_CULL = qs.get('cull') !== '0';
+const SCHATTENKAM = qs.get('schattenkam') !== '0';
+const SCHATTEN2 = qs.get('schatten2') === '1024' ? 1024 : 2048;
+const START = startStufe({ q: qs.has('q') ? qs.get('q') : null, gemerkt: AUTOPILOT && !qs.has('q') ? ladeStufe(localStorage) : null, touch: isTouch, autopilot: AUTOPILOT });
+const qLevel = START.stufe;
 // Stufen: 0 niedrig (DPR 1, keine Schattenkarte), 1 mittel (Handy: Blob-Schatten unter den Menschen, Schattenkarte
 // nur für Ball/Käfig), 2 hoch (Desktop: Echtzeit-Schatten auch für die Menschen, 2048²)
-const quality = {
-  level: qLevel,
-  dpr: Math.min(devicePixelRatio || 1, qLevel >= 2 ? 2 : qLevel === 1 ? 1.5 : 1),
-  aa: qLevel >= 1,
-  shadows: qLevel >= 1,
-  shadowSize: qLevel >= 2 ? 2048 : 1024,
-  avatarShadows: qLevel >= 2,
-};
+const quality = stufenWerte(qLevel, { dpr: devicePixelRatio || 1, schatten2: SCHATTEN2 });
 if (isTouch) document.body.classList.add('touch');
 if (DEKO) document.body.classList.add('deko');
 if (P.treffpunkt) document.body.classList.add('treffpunkt');
@@ -212,7 +217,7 @@ let field, ballMesh, blob, gran, marker, figs = [], capsule = null, figSlot = nu
 async function boot() {
   const texLoader = new THREE.TextureLoader();
   const tl = (u) => texLoader.loadAsync(u);
-  const avatarsP = qs.get('figur') === 'kapsel' ? Promise.resolve(null) : loadAvatarAssets((p) => { loadMsg.textContent = `Bandenkick lädt … Spieler ${Math.round(p * 100)} %`; }).catch((e) => { window.__errors.push('Avatare: ' + e.message); return null; });
+  const avatarsP = qs.get('figur') === 'kapsel' ? Promise.resolve(null) : loadAvatarAssets((p) => { loadMsg.textContent = `Bandenkick lädt … Spieler ${Math.round(p * 100)} %`; }, { renderer, ktx: qs.get('ktx') !== '0' }).catch((e) => { window.__errors.push('Avatare: ' + e.message); return null; });
   const [env, skyTex, skyInfo, turfColor, turfNormal, grassColor, grassNormal, A] = await Promise.all([
     loadEnvironment(renderer), tl('assets/hdri/sky.jpg'), fetch('assets/hdri/sky.json').then((r) => r.json()),
     tl('assets/tex/turf_color.jpg'), tl('assets/tex/turf_normal.jpg'), tl('assets/tex/grass_color.jpg'), tl('assets/tex/grass_normal.jpg'), avatarsP,
@@ -238,13 +243,13 @@ async function boot() {
   scene.add(marker);
   if (A) {
     for (let team = 0; team < 2; team++) for (let i = 0; i < 3; i++) {
-      const av = new Avatar(A, ROSTER[team][i % ROSTER[team].length], team, { shadows: quality.avatarShadows, deko: DEKO ? { sunDir, num: BIB_NUMS[team][i], extShadow: true } : null });
+      const av = new Avatar(A, ROSTER[team][i % ROSTER[team].length], team, { shadows: quality.avatarShadows, cull: AV_CULL, deko: DEKO ? { sunDir, num: BIB_NUMS[team][i], extShadow: true } : null });
       figs.push(av); scene.add(av.root);
     }
   } else {
     for (let i = 0; i < 6; i++) { const c = i ? makePlayer(i < 3 ? 0xff6a13 : 0x1f6fff) : capsule; figs.push({ capsule: c }); scene.add(c.group); }
   }
-  G.avatars = !!A;
+  G.avatars = !!A; G.ktx2 = A ? A.ktx2 || 0 : 0;
   if (DEKO) {
     deko = new Deko({ scene, renderer, field, sunDir, quality, A, reduceMotion, sun, sky, figs: figs.filter((f) => f.root) });
     setLicht(lichtMode()); lichtLabel(); G.deko = deko;
@@ -263,6 +268,7 @@ async function boot() {
   rp.fx = new ReplayFx(scene);
   resize();
   input.resetStick();
+  if (AUTOPILOT && !START.fest) await startGrafik();
   loadMsg.remove();
   setMode(qs.has('play') ? 'play' : 'menu');
   if (challengeId) startChallenge(challengeId);
@@ -486,6 +492,7 @@ let halfRate = false;
 function frame() {
   requestAnimationFrame(frame);
   const t0 = performance.now();
+  const rafDt = perf.lastRaf ? (t0 - perf.lastRaf) / 1000 : 0;
   if (perf.lastRaf) { perf.raf.push(t0 - perf.lastRaf); if (perf.raf.length > 240) perf.raf.shift(); }
   perf.lastRaf = t0;
   if (!G.ready) return;
@@ -594,15 +601,24 @@ function frame() {
     hud.setHold(holder && holder.team === pl.team && holder.id === game.human ? holder.holdT / P.holdMax : -1, holder ? P.holdMax - holder.holdT : 0);
   }
   let q = null;
-  if (gpuExt) { gpuPoll(); q = gl.createQuery(); gl.beginQuery(gpuExt.TIME_ELAPSED_EXT, q); }
+  if (gpuExt && !(grafik && grafik.gpu && grafik.gpu.ok)) { gpuPoll(); q = gl.createQuery(); gl.beginQuery(gpuExt.TIME_ELAPSED_EXT, q); }
   const tR = performance.now();
-  if (kino) kino.render(scene, gcam.cam, { dt, dof: rf ? rp.dof : null });
-  else renderer.render(scene, gcam.cam);
+  schattenFolgen();
+  const gz = grafik && grafik.gpu && grafik.gpu.ok ? grafik.gpu : null;
+  if (gz) gz.anfang();
+  zeichne(dt, rf);
+  if (gz) { gz.ende(); if (gpuExt && gz.ms != null && gz.ms !== gpuLast) { gpuLast = gz.ms; gpuMs.push(gz.ms); if (gpuMs.length > 240) gpuMs.shift(); } }
   perf.rd.push(performance.now() - tR); if (perf.rd.length > 240) perf.rd.shift();
   if (q) { gl.endQuery(gpuExt.TIME_ELAPSED_EXT); gpuQ.push(q); }
   G.frames++;
   const ft = performance.now() - t0;
   perf.ft.push(ft); if (perf.ft.length > 240) perf.ft.shift();
+  // n4 Autopilot: nur Bilder im Spiel (auch Wiederholung) zählen – Menüs laufen mit halber Bildrate; nach dem Wechsel ins
+  // Spiel 1,5 s Schonzeit
+  if (grafik) {
+    if (mode === 'play') { if (apMode !== 'play') grafik.schonen(1.5); grafik.bild(rafDt, ft); }
+    apMode = mode;
+  }
   if (document.body.classList.contains('debug') && (G.frames % 15 === 0)) {
     const i = renderer.info.render;
     hud.dbg.textContent = `${(1000 / avg(perf.raf)).toFixed(0)} fps · CPU ${avg(perf.ft).toFixed(1)} ms · ${i.calls} DC · ${(i.triangles / 1000).toFixed(0)}k △ · ${gcam.mode} · v ${b.v.len().toFixed(1)} m/s`;
@@ -678,12 +694,16 @@ function replayFrame(dt, raw) {
 addEventListener('pointerdown', () => { if (rp.dir && mode === 'play' && rp.dir.real > 0.3) skipReplay(); }, true);
 addEventListener('keydown', (e) => { if (rp.dir && mode === 'play' && e.code !== 'Escape' && rp.dir.real > 0.3) skipReplay(); });
 
+const CULL = { f: new THREE.Frustum(), m: new THREE.Matrix4(), s: new THREE.Sphere(new THREE.Vector3(), 1.5) };
 // Menschen zeichnen: Position interpoliert, Pose aus dem Sim-Zustand (Blend nach Tempo, Tormann, Jubel)
 function drawPlayers(dt, a, rf = null) {
   const R = game.match ? game.rules : null, b = rf ? rf.ball : game.ball;
   const n = game.players.length;
   // Figur je Spieler: Mannschaft × Platz (Challenges haben weniger Spieler, Farbe muss passen); Wiederholung: Geister
   const slot = figSlot || (figSlot = []), cnt = [0, 0];
+  // n4: Sichtbarkeit je Figur mit der Kamera des letzten Bildes (Kugel 1,5 m um die Hüfte – etwas größer als die Zeichen-Kugel, damit am Bildrand nichts im Halbtakt zuckt); nicht in der Wiederholung
+  const sparen = AV_CULL && !rf && G.ready;
+  if (sparen) { CULL.m.multiplyMatrices(gcam.cam.projectionMatrix, gcam.cam.matrixWorldInverse); CULL.f.setFromProjectionMatrix(CULL.m); }
   slot.length = 0;
   for (const p of game.players) slot[p.team * 3 + cnt[p.team]++] = rf ? Object.assign(rf.players[p.id], { team: p.team }) : p;
   for (let i = 0; i < figs.length; i++) {
@@ -702,7 +722,8 @@ function drawPlayers(dt, a, rf = null) {
     }
     const ownGoalX = R ? R.goalX(pl.team) : -99;
     const ready = keeper && b.held < 0 && Math.hypot(b.p.x - ownGoalX, b.p.z) < 9 && pl.speed < 2.5 && pl.hand.mode === 'none';
-    f.update(dt, pl, { x, z, keeper, holding: b.held === pl.id, ready, special, t: rf ? rf.t : game.t });
+    if (sparen) CULL.s.center.set(x, 1.0 + (pl.jumpY || 0), z);
+    f.update(dt, pl, { x, z, keeper, holding: b.held === pl.id, ready, special, t: rf ? rf.t : game.t, sparen: sparen && !CULL.f.intersectsSphere(CULL.s) });
   }
   if (rf) { marker.visible = false; return; }
   void n;
@@ -716,7 +737,7 @@ function drawPlayers(dt, a, rf = null) {
 // Qualitäts-Automatik (nur ohne ?q=): liegt der Bildabstand im Spiel 3 s lang über 24 ms (< ~42 fps), erst die
 // Auflösung in 0,25er-Schritten bis 1,0 senken, dann Echtzeit-Schatten der Menschen aus (Blob), dann (Deko) weniger
 // Effekte, dann alle Schatten aus.
-const autoQ = { on: !qs.has('q'), t: 0, sum: 0, n: 0, steps: [] };
+const autoQ = { on: !qs.has('q') && !AUTOPILOT, t: 0, sum: 0, n: 0, steps: [] };
 function autoQuality(dt) {
   if (!autoQ.on || mode !== 'play') return;
   autoQ.t += dt; autoQ.sum += dt; autoQ.n++;
@@ -733,6 +754,87 @@ function autoQuality(dt) {
     scene.traverse((o) => { if (o.material) for (const m of [].concat(o.material)) m.needsUpdate = true; });
     autoQ.steps.push('schatten aus');
   } else autoQ.on = false;
+}
+
+// ---------------- n4: Zeichnen, Qualitäts-Autopilot, enge Schattenkamera ----------------
+let grafik = null, grafikKey = null, apMode = 'load', gpuLast = null;
+function zeichne(dt, rf = null) {
+  if (kino) kino.render(scene, gcam.cam, { dt, dof: rf ? rp.dof : null });
+  else renderer.render(scene, gcam.cam);
+}
+// Kurzmessung (Ladebildschirm): Startszene zeichnen wie im Menü
+function zeichneProbe() {
+  if (kino) renderer.info.reset();
+  drawPlayers(1 / 60, 1, null);
+  gcam.update(1 / 60, { x: 0, z: 0, vx: 0, vz: 0 }, { x: 0, z: 0 }, 'menu');
+  schattenFolgen();
+  zeichne(1 / 60, null);
+}
+// Pixeldichte: Stufe × (ohne Kino-Render-Target) Renderskala des Autopiloten
+const kinoSkaliert = () => !!(kino && kino.pipeline && kino.stages.scale);
+function pixelDichte() { renderer.setPixelRatio(quality.dpr * (grafik && !kinoSkaliert() ? grafik.skala : 1)); }
+function skalaAnwenden(s) { if (kinoSkaliert()) kino.renderScale = s; pixelDichte(); }
+function menschenAnwenden() {
+  quality.avatarShadows = quality.level >= 2 && (!grafik || grafik.menschenAn);
+  for (const f of figs) if (f.setShadows) f.setShadows(quality.avatarShadows && !f.night);
+}
+function dekoAnwenden() { if (!deko) return; if (quality.level < 1 || (grafik && !grafik.dekoAn)) deko.setLite(); else deko.setFull(); }
+// Grafikstufe zur Laufzeit wechseln (Autopilot): Pixeldichte, Kino-Stufe, Schattenkarte (an/aus = Shader neu), Menschen-
+// Schatten, Deko-Effekte. Die Kantenglättung des Canvas bleibt wie beim Start (Stufe 1/2 glätten im Kino-Look selbst).
+function stufeAnwenden(l) {
+  const w = stufenWerte(l, { dpr: devicePixelRatio || 1, schatten2: SCHATTEN2 });
+  const wechsel = w.shadows !== renderer.shadowMap.enabled;
+  Object.assign(quality, w, { aa: quality.aa });
+  kinoStufeSetzen(kino, l);
+  pixelDichte();
+  if (G.sun) sonnenSchatten(G.sun, quality, game.cage);
+  if (wechsel) { renderer.shadowMap.enabled = quality.shadows; scene.traverse((o) => { if (o.material) for (const m of [].concat(o.material)) m.needsUpdate = true; }); }
+  menschenAnwenden(); dekoAnwenden();
+}
+async function startGrafik() {
+  const gl = renderer.getContext();
+  grafikKey = geraeteSchluessel(gl, { w: screen.width, h: screen.height, dpr: devicePixelRatio });
+  grafik = new GrafikSteuerung({ level: quality.level, kino, gl, wirkung: {
+    stufe: stufeAnwenden, skala: skalaAnwenden, deko: dekoAnwenden, menschenschatten: menschenAnwenden,
+    merke: (z) => { merkeStufe(localStorage, z.level); merkeGeraet(localStorage, grafikKey, { skala: z.skala, stufe: z.level }); },
+  } });
+  G.grafik = grafik;
+  const [lo, hi, st] = skalaBereich(quality.level, kino);
+  const mem = ladeGeraet(localStorage, grafikKey);
+  let skala = null;
+  if (mem && (mem.stufe ?? quality.level) === quality.level) { skala = mem.skala; G.startProbe = { gespeichert: true, skala }; }
+  else if (qs.get('startprobe') !== '0') {
+    loadMsg.textContent = 'Bandenkick lädt … Grafik einstellen';
+    grafik.start(st);
+    const r = await messeBilder(() => zeichneProbe(), gl, { bilder: 20, vorlauf: 4 });
+    skala = startSkala(r.median, [lo, hi], st);
+    G.startProbe = { ...r, skala };
+  }
+  grafik.start(skala ?? st);
+  merkeGeraet(localStorage, grafikKey, { skala: grafik.skala, stufe: grafik.level }); merkeStufe(localStorage, grafik.level);
+}
+// Schattenkamera folgt dem Bildausschnitt (render/schatten.js). Richtung zur Sonne: wie makeSun/Deko-Abend sie setzen
+// (Ziel im Ursprung) – ändert jemand die Sonne von außen, wird die Richtung neu übernommen.
+const SCH = { prev: null, dirs: randPunkte(3), vp: new THREE.Matrix4(), d: new THREE.Vector3(), gesetzt: new THREE.Vector3(NaN, 0, 0), v: new THREE.Vector3() };
+function schattenFolgen() {
+  const sun = G.sun;
+  if (!SCHATTENKAM || !sun || !sun.castShadow || !renderer.shadowMap.enabled) return;
+  if (!sun.position.equals(SCH.gesetzt)) SCH.d.copy(sun.position).normalize();
+  const cam = gcam.cam, cage = game.cage, d = SCH.d;
+  sun.userData.schattenkam = true;
+  const m = cage.hx + cage.gD + 2.5, box = [-m, m, -(cage.hz + 2.5), cage.hz + 2.5];
+  cam.updateMatrixWorld();
+  SCH.vp.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
+  const dirs = SCH.dirs.map(([x, y]) => { SCH.v.set(x, y, 0.5).unproject(cam).sub(cam.position).normalize(); return [SCH.v.x, SCH.v.y, SCH.v.z]; });
+  const pts = bildFlaeche([cam.position.x, cam.position.y, cam.position.z], dirs, { box, vp: SCH.vp.elements });
+  const a = schattenAusschnitt(pts, [d.x, d.y, d.z], { mapSize: sun.shadow.mapSize.x, maxExt: schattenExt(cage), prevExt: SCH.prev });
+  SCH.prev = a.ext;
+  const sc = sun.shadow.camera;
+  if (sc.right !== a.ext) { sc.left = -a.ext; sc.right = a.ext; sc.top = a.ext; sc.bottom = -a.ext; sc.updateProjectionMatrix(); }
+  sun.target.position.set(a.target[0], a.target[1], a.target[2]);
+  sun.position.set(a.pos[0], a.pos[1], a.pos[2]);
+  SCH.gesetzt.copy(sun.position);
+  G.schatten = { ext: a.ext, texel: +a.texel.toFixed(4), karte: sun.shadow.mapSize.x };
 }
 
 // ---------------- Debug-API für Tests ----------------
@@ -755,7 +857,9 @@ Object.assign(G, {
   info() {
     const i = renderer.info;
     return { calls: i.render.calls, triangles: i.render.triangles, points: i.render.points, geometries: i.memory.geometries, textures: i.memory.textures, programs: i.programs ? i.programs.length : null,
-      dpr: renderer.getPixelRatio(), size: [renderer.domElement.width, renderer.domElement.height], quality, shadows: renderer.shadowMap.enabled, auto: { on: autoQ.on, steps: [...autoQ.steps] },
+      dpr: renderer.getPixelRatio(), size: [renderer.domElement.width, renderer.domElement.height], quality, shadows: renderer.shadowMap.enabled,
+      auto: grafik ? { on: true, autopilot: grafik.zustand(), steps: grafik.schritte(), startProbe: G.startProbe || null } : { on: autoQ.on, steps: [...autoQ.steps] },
+      shadow: G.schatten || null, figuren: { cull: AV_CULL, gespart: figs.reduce((n, f) => n + (f.gespart || 0), 0) },
       kino: kino ? { ...kino.describe(), licht: kino.licht, bloom: [kino.bloomThreshold, kino.bloomStrength], dof: rp.dof, kontakt: !!kontakt } : null };
   },
   perf() {

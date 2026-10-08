@@ -153,6 +153,8 @@ export class Deko {
   }
   // Auto-Drosselung (main.js autoQuality): weniger Konfetti und Rasenfetzen, keine Blitzlichter
   setLite() { this.lite = true; this.amount = Math.min(this.amount, 0.35); this.blitzeOff = true; }
+  // n4 Qualitäts-Autopilot: wieder volle Effekte (wie im Konstruktor), wenn Luft ist
+  setFull() { this.lite = false; this.amount = (this.quality.level >= 1 ? 1 : 0.6) * (this.reduce ? 0.3 : 1); this.blitzeOff = false; }
   // fertig: Zuschauer gerendert und ganz eingeblendet (Tests warten darauf)
   get ready() { return !this._fanJob && (!this.fans || this.fans.mat.uniforms.uAppear.value >= 1); }
   _stepFans() {
