@@ -8,7 +8,7 @@ import { previewShot, autoShotPower, attackGoalX } from './sim/shot.js';
 import { planPass } from './sim/pass.js';
 import { techName, CHALLENGES, challengeDef } from './sim/challenges.js';
 import { TrainingProps, AimMarkers } from './render/training.js';
-import { createRenderer, loadEnvironment, makeSky, makeSun, dirFromUV } from './render/scene.js';
+import { createRenderer, loadEnvironment, makeSky, makeSun, dirFromUV, sonnenSchatten, schattenExt } from './render/scene.js';
 import { makeSkyDeko } from './render/stimmung.js';
 import { Deko } from './render/deko.js';
 import { buildField } from './render/field.js';
@@ -21,6 +21,11 @@ import { Sound } from './audio/sound.js';
 import { ReplayRecorder, ReplayDirector, replayCamera } from './sim/replay.js';
 import { ReplayFx } from './render/replayfx.js';
 import { BUILD } from './build.js';
+import { makeKino, kinoLicht, kinoStufeSetzen, KontaktSchatten } from './render/kino.js';
+import { kinoOptionen, replayDof } from './render/kino_logik.js';
+import { GrafikSteuerung, stufenWerte, skalaBereich, startStufe, startSkala, ladeStufe, merkeStufe } from './render/grafik.js';
+import { geraeteSchluessel, ladeGeraet, merkeGeraet, messeBilder } from './render/kern/startprobe.js';
+import { bildFlaeche, schattenAusschnitt, randPunkte } from './render/schatten.js';
 
 const qs = new URLSearchParams(location.search);
 const P = makeParams(location.search);
@@ -35,17 +40,21 @@ let lichtPref = ['tag', 'abend', 'auto'].includes(qs.get('licht')) ? qs.get('lic
 const autoLicht = () => { const d = new Date(), h = d.getHours() + d.getMinutes() / 60; return h >= SUNSET_H[d.getMonth()] - 0.4 || h < 6.5 ? 'abend' : 'tag'; };
 const lichtMode = () => (lichtPref === 'auto' ? autoLicht() : lichtPref);
 const isTouch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
-const qLevel = qs.has('q') ? +qs.get('q') : (isTouch ? 1 : 2);
+// n4 Qualitäts-Autopilot (Audit #2, render/grafik.js): ?autopilot=0 = alte Automatik (nur abwärts), ?q= = feste Stufe.
+// Startstufe: ?q= > zuletzt gefahrene Stufe dieses Geräts > Touch 1 / Desktop 2. ?schattenkam=0 = Schattenkarte über den
+// ganzen Käfig wie bisher (sonst folgt sie dem Bildausschnitt, render/schatten.js), ?schatten2=1024 = kleinere Karte auf Stufe 2.
+const AUTOPILOT = qs.get('autopilot') !== '0';
+// n4 (Audit #8): Figuren außerhalb des Bildes nicht zeichnen und nur jedes 2. Bild animieren; ?cull=0 = wie bisher
+const AV_CULL = qs.get('cull') !== '0';
+// n4 (Audit #5): Fuß-IK (Boden + Ballkontakt), ?ik=0 = aus
+const AV_IK = qs.get('ik') !== '0';
+const SCHATTENKAM = qs.get('schattenkam') !== '0';
+const SCHATTEN2 = qs.get('schatten2') === '1024' ? 1024 : 2048;
+const START = startStufe({ q: qs.has('q') ? qs.get('q') : null, gemerkt: AUTOPILOT && !qs.has('q') ? ladeStufe(localStorage) : null, touch: isTouch, autopilot: AUTOPILOT });
+const qLevel = START.stufe;
 // Stufen: 0 niedrig (DPR 1, keine Schattenkarte), 1 mittel (Handy: Blob-Schatten unter den Menschen, Schattenkarte
 // nur für Ball/Käfig), 2 hoch (Desktop: Echtzeit-Schatten auch für die Menschen, 2048²)
-const quality = {
-  level: qLevel,
-  dpr: Math.min(devicePixelRatio || 1, qLevel >= 2 ? 2 : qLevel === 1 ? 1.5 : 1),
-  aa: qLevel >= 1,
-  shadows: qLevel >= 1,
-  shadowSize: qLevel >= 2 ? 2048 : 1024,
-  avatarShadows: qLevel >= 2,
-};
+const quality = stufenWerte(qLevel, { dpr: devicePixelRatio || 1, schatten2: SCHATTEN2 });
 if (isTouch) document.body.classList.add('touch');
 if (DEKO) document.body.classList.add('deko');
 if (P.treffpunkt) document.body.classList.add('treffpunkt');
@@ -63,6 +72,12 @@ loadMsg.textContent = 'Bandenkick lädt …';
 document.body.append(loadMsg);
 
 const renderer = createRenderer(canvas, quality);
+// n4 Kino-Look (Audit #1): Endbild mit Renderskala + Hochskalieren/Nachschärfen, Bloom, TV-Farbkorrektur, Vignette,
+// Kontaktschatten; Tiefenschärfe nur in der Wiederholung. ?kino=0 = direktes Zeichnen wie bis n3.
+const KO = kinoOptionen(qs);
+const kino = KO.on ? makeKino(renderer, quality.level, KO) : null;
+if (kino) renderer.info.autoReset = false; // mehrere Durchgänge je Bild → Zähler je Bild selbst zurücksetzen
+let kontakt = null;
 const scene = new THREE.Scene();
 const seed = qs.get('seed') || String(Date.now() % 100000);
 // Mensch = Mitte der Mannschaft Orange (stößt an); danach automatischer Wechsel zum ballnächsten Mitspieler
@@ -144,6 +159,12 @@ function lastShotLine() {
   el.textContent = `Letzter Schuss: ${techName(k.tech)} · ${Math.round(k.speed * 3.6)} km/h${q}${k.timing != null ? ` · Timing ${Math.round(k.timing * 100)} %` : ''}`;
 }
 let creditsBack = 'menu';
+// Licht Tag/Abend: Deko (Himmel, Flutlicht …) und n4 Kino-Look (Farbkorrektur, Bloom-Schwelle) und Kontaktschatten
+function setLicht(m) {
+  if (deko) deko.setLicht(m);
+  kinoLicht(kino, m);
+  if (kontakt) kontakt.night = m === 'abend';
+}
 hud.root.addEventListener('click', (e) => {
   const b = e.target.closest('[data-act]');
   if (!b) return;
@@ -160,7 +181,7 @@ hud.root.addEventListener('click', (e) => {
   if (a === 'replay') { replayOn = !replayOn; localStorage.setItem('bk_replay', replayOn ? '1' : '0'); replayLabel(); }
   if (a === 'licht' && deko) {
     lichtPref = { auto: 'tag', tag: 'abend', abend: 'auto' }[lichtPref] || 'auto';
-    localStorage.setItem('bk_licht', lichtPref); deko.setLicht(lichtMode()); lichtLabel();
+    localStorage.setItem('bk_licht', lichtPref); setLicht(lichtMode()); lichtLabel();
   }
   if (a === 'resume') setMode('play');
   if (a === 'credits') { creditsBack = mode; setMode('credits'); }
@@ -198,7 +219,7 @@ let field, ballMesh, blob, gran, marker, figs = [], capsule = null, figSlot = nu
 async function boot() {
   const texLoader = new THREE.TextureLoader();
   const tl = (u) => texLoader.loadAsync(u);
-  const avatarsP = qs.get('figur') === 'kapsel' ? Promise.resolve(null) : loadAvatarAssets((p) => { loadMsg.textContent = `Bandenkick lädt … Spieler ${Math.round(p * 100)} %`; }).catch((e) => { window.__errors.push('Avatare: ' + e.message); return null; });
+  const avatarsP = qs.get('figur') === 'kapsel' ? Promise.resolve(null) : loadAvatarAssets((p) => { loadMsg.textContent = `Bandenkick lädt … Spieler ${Math.round(p * 100)} %`; }, { renderer, ktx: qs.get('ktx') !== '0' }).catch((e) => { window.__errors.push('Avatare: ' + e.message); return null; });
   const [env, skyTex, skyInfo, turfColor, turfNormal, grassColor, grassNormal, A] = await Promise.all([
     loadEnvironment(renderer), tl('assets/hdri/sky.jpg'), fetch('assets/hdri/sky.json').then((r) => r.json()),
     tl('assets/tex/turf_color.jpg'), tl('assets/tex/turf_normal.jpg'), tl('assets/tex/grass_color.jpg'), tl('assets/tex/grass_normal.jpg'), avatarsP,
@@ -224,16 +245,23 @@ async function boot() {
   scene.add(marker);
   if (A) {
     for (let team = 0; team < 2; team++) for (let i = 0; i < 3; i++) {
-      const av = new Avatar(A, ROSTER[team][i % ROSTER[team].length], team, { shadows: quality.avatarShadows, deko: DEKO ? { sunDir, num: BIB_NUMS[team][i], extShadow: true } : null });
+      const av = new Avatar(A, ROSTER[team][i % ROSTER[team].length], team, { shadows: quality.avatarShadows, cull: AV_CULL, ik: AV_IK, deko: DEKO ? { sunDir, num: BIB_NUMS[team][i], extShadow: true } : null });
       figs.push(av); scene.add(av.root);
     }
   } else {
     for (let i = 0; i < 6; i++) { const c = i ? makePlayer(i < 3 ? 0xff6a13 : 0x1f6fff) : capsule; figs.push({ capsule: c }); scene.add(c.group); }
   }
-  G.avatars = !!A;
+  G.avatars = !!A; G.ktx2 = A ? A.ktx2 || 0 : 0;
   if (DEKO) {
     deko = new Deko({ scene, renderer, field, sunDir, quality, A, reduceMotion, sun, sky, figs: figs.filter((f) => f.root) });
-    deko.setLicht(lichtMode()); lichtLabel(); G.deko = deko;
+    setLicht(lichtMode()); lichtLabel(); G.deko = deko;
+  }
+  // n4: Kontaktschatten unter Ball und Figuren (ein Draw-Call), ersetzt Ball-Blob und runde Figuren-Flecken
+  if (kino && kino.stages.contact && A) {
+    kontakt = new KontaktSchatten(figs.filter((f) => f.root), P.ballR);
+    kontakt.night = !!(deko && deko.night);
+    scene.add(kontakt.mesh); blob.visible = false;
+    for (const f of figs) if (f.setContact) f.setContact(true);
   }
   gran = new Granulate();
   scene.add(gran.points);
@@ -242,6 +270,7 @@ async function boot() {
   rp.fx = new ReplayFx(scene);
   resize();
   input.resetStick();
+  if (AUTOPILOT && !START.fest) await startGrafik();
   loadMsg.remove();
   setMode(qs.has('play') ? 'play' : 'menu');
   if (challengeId) startChallenge(challengeId);
@@ -465,11 +494,15 @@ let halfRate = false;
 function frame() {
   requestAnimationFrame(frame);
   const t0 = performance.now();
+  const rafDt = perf.lastRaf ? (t0 - perf.lastRaf) / 1000 : 0;
+  // Tests (tests/test_autopilot.py): künstliche Arbeit je Bild in ms, zählt zur CPU-Zeit des Bildes
+  if (G.testLast > 0) { const tE = t0 + G.testLast; while (performance.now() < tE); }
   if (perf.lastRaf) { perf.raf.push(t0 - perf.lastRaf); if (perf.raf.length > 240) perf.raf.shift(); }
   perf.lastRaf = t0;
   if (!G.ready) return;
   // Deko: Menüs und Karten (Szene läuft nur als Hintergrund) mit halber Bildrate – spart Akku und Wärme
   if (DEKO && mode !== 'play' && !rp.dir) { halfRate = !halfRate; if (halfRate) { G.frames++; return; } }
+  if (kino) renderer.info.reset();
   const now = t0 / 1000;
   const dt = Math.min(0.1, now - last); last = now;
   let raw = input.sample(now);
@@ -541,15 +574,20 @@ function frame() {
   else ballMesh.quaternion.set(b.q[1], b.q[2], b.q[3], b.q[0]);
   ballMesh.position.set(bx, by, bz);
   poseBlob(blob, bx, by, bz, P.ballR);
+  if (kontakt) blob.visible = false;
   const tA = performance.now();
   drawPlayers(rf ? rdt * rp.rate : dt, a, rf);
+  if (kontakt) kontakt.update(bx, by, bz);
   perf.av.push(performance.now() - tA); if (perf.av.length > 240) perf.av.shift();
   const pl = me();
   const px = prev.px[pl.id] + (pl.x - prev.px[pl.id]) * a, pz = prev.pz[pl.id] + (pl.z - prev.pz[pl.id]) * a;
   gcam.update(dt, { x: bx, z: bz, vx: b.v.x, vz: b.v.z }, { x: px, z: pz }, mode === 'play' || mode === 'pause' ? 'play' : 'menu');
   field.update(rf ? rf.ball.net : b.net, gcam.cam, !!(rf && rp.dir && rp.dir.cur.cam === 'fan'));
   gran.update(dt);
-  if (deko) deko.update(dt, { inGame: (mode === 'play' || mode === 'pause') && !rf && !gcam.override, hoch: gcam.mode === 'hoch',
+  // n4: Punkt-Größen in Pixeln gelten für den Bildschirm – im verkleinerten Render-Target des Kino-Looks mitskalieren
+  const pxK = kino && kino.pipeline && kino.stages.scale ? kino.renderScale : 1;
+  gran.points.material.size = 0.05 * pxK;
+  if (deko) deko.update(dt, { pxK, inGame: (mode === 'play' || mode === 'pause') && !rf && !gcam.override, hoch: gcam.mode === 'hoch',
     live: mode === 'play' && !rf, paused: mode === 'pause', still: frozen || mode === 'pause', game, cam: gcam.cam, ball: { p: ballMesh.position, v: b.v } });
   hud.tick(dt);
   const touchUI = document.body.classList.contains('touch');
@@ -567,14 +605,24 @@ function frame() {
     hud.setHold(holder && holder.team === pl.team && holder.id === game.human ? holder.holdT / P.holdMax : -1, holder ? P.holdMax - holder.holdT : 0);
   }
   let q = null;
-  if (gpuExt) { gpuPoll(); q = gl.createQuery(); gl.beginQuery(gpuExt.TIME_ELAPSED_EXT, q); }
+  if (gpuExt && !(grafik && grafik.gpu && grafik.gpu.ok)) { gpuPoll(); q = gl.createQuery(); gl.beginQuery(gpuExt.TIME_ELAPSED_EXT, q); }
   const tR = performance.now();
-  renderer.render(scene, gcam.cam);
+  schattenFolgen();
+  const gz = grafik && grafik.gpu && grafik.gpu.ok ? grafik.gpu : null;
+  if (gz) gz.anfang();
+  zeichne(dt, rf);
+  if (gz) { gz.ende(); if (gpuExt && gz.ms != null && gz.ms !== gpuLast) { gpuLast = gz.ms; gpuMs.push(gz.ms); if (gpuMs.length > 240) gpuMs.shift(); } }
   perf.rd.push(performance.now() - tR); if (perf.rd.length > 240) perf.rd.shift();
   if (q) { gl.endQuery(gpuExt.TIME_ELAPSED_EXT); gpuQ.push(q); }
   G.frames++;
   const ft = performance.now() - t0;
   perf.ft.push(ft); if (perf.ft.length > 240) perf.ft.shift();
+  // n4 Autopilot: nur Bilder im Spiel (auch Wiederholung) zählen – Menüs laufen mit halber Bildrate; nach dem Wechsel ins
+  // Spiel 1,5 s Schonzeit
+  if (grafik) {
+    if (mode === 'play') { if (apMode !== 'play') grafik.schonen(1.5); grafik.bild(rafDt, ft); }
+    apMode = mode;
+  }
   if (document.body.classList.contains('debug') && (G.frames % 15 === 0)) {
     const i = renderer.info.render;
     hud.dbg.textContent = `${(1000 / avg(perf.raf)).toFixed(0)} fps · CPU ${avg(perf.ft).toFixed(1)} ms · ${i.calls} DC · ${(i.triangles / 1000).toFixed(0)}k △ · ${gcam.mode} · v ${b.v.len().toFixed(1)} m/s`;
@@ -586,7 +634,7 @@ const avg = (a) => (a.length ? a.reduce((s, x) => s + x, 0) / a.length : 0);
 // Aufzeichnung je Spieltakt (nur im Spiel), nach einem Tor P.replayDelay s Live-Jubel, dann Wiederholung: die Simulation
 // steht so lange still (sie wird nicht verändert), die Grafik zeigt den aufgezeichneten Zustand mit eigener Kamera.
 // Tippen, Taste oder Knopf überspringt; danach läuft der Jubel weiter und es folgt der Anstoß wie gewohnt.
-const rp = { rec: null, recGame: null, dir: null, wait: -1, goal: null, frame: {}, rate: 1, trail: [], hold: null, held: false, fx: null, label: '', ctx: null };
+const rp = { rec: null, recGame: null, dir: null, wait: -1, goal: null, frame: {}, rate: 1, trail: [], hold: null, held: false, fx: null, label: '', ctx: null, dof: null };
 function recordReplay(evs) {
   if (!game.match || game.challenge || !replayOn) { rp.recGame = null; return; }
   if (rp.recGame !== game || !rp.rec || rp.rec.n !== game.players.length) { rp.rec = new ReplayRecorder(game.players.length); rp.recGame = game; rp.wait = -1; }
@@ -613,7 +661,7 @@ function startReplay() {
   if (deko) deko.replay(true);
 }
 function endReplay() {
-  rp.dir = null; rp.goal = null; rp.held = false;
+  rp.dir = null; rp.goal = null; rp.held = false; rp.dof = null;
   if (deko) deko.replay(false);
   gcam.override = null;
   hud.replayShow(false); hud.replayState(false, 0);
@@ -634,6 +682,7 @@ function replayFrame(dt, raw) {
   const ctx = rp.ctx; ctx.time = D.real; ctx.frac = D.segFrac(); ctx.mode = gcam.mode;
   const cam = replayCamera(D.cur.cam, f, ctx);
   gcam.override = { pos: cam.pos, look: cam.look };
+  rp.dof = replayDof(D.cur.cam, cam.pos, cam.look); // n4: Tiefenschärfe nur im Replay (Zoom, Fan-Cam)
   if (Math.abs(gcam.cam.fov - cam.fov) > 0.01) { gcam.cam.fov = cam.fov; gcam.cam.updateProjectionMatrix(); }
   const c = D.contact, k = c ? t - c.t : -1;
   // Blitz und Druckwelle beim Kontakt, Ballspur danach (je Tempo), Fan-Cam-Abzeichen
@@ -649,12 +698,18 @@ function replayFrame(dt, raw) {
 addEventListener('pointerdown', () => { if (rp.dir && mode === 'play' && rp.dir.real > 0.3) skipReplay(); }, true);
 addEventListener('keydown', (e) => { if (rp.dir && mode === 'play' && e.code !== 'Escape' && rp.dir.real > 0.3) skipReplay(); });
 
+const CULL = { f: new THREE.Frustum(), m: new THREE.Matrix4(), s: new THREE.Sphere(new THREE.Vector3(), 1.5) };
+const BALLPOS = [0, 0, 0]; // n4: Ball (wie gezeichnet) für die Fuß-IK beim Kontakt
 // Menschen zeichnen: Position interpoliert, Pose aus dem Sim-Zustand (Blend nach Tempo, Tormann, Jubel)
 function drawPlayers(dt, a, rf = null) {
   const R = game.match ? game.rules : null, b = rf ? rf.ball : game.ball;
   const n = game.players.length;
+  BALLPOS[0] = ballMesh.position.x; BALLPOS[1] = ballMesh.position.y; BALLPOS[2] = ballMesh.position.z;
   // Figur je Spieler: Mannschaft × Platz (Challenges haben weniger Spieler, Farbe muss passen); Wiederholung: Geister
   const slot = figSlot || (figSlot = []), cnt = [0, 0];
+  // n4: Sichtbarkeit je Figur mit der Kamera des letzten Bildes (Kugel 1,5 m um die Hüfte – etwas größer als die Zeichen-Kugel, damit am Bildrand nichts im Halbtakt zuckt); nicht in der Wiederholung
+  const sparen = AV_CULL && !rf && G.ready;
+  if (sparen) { CULL.m.multiplyMatrices(gcam.cam.projectionMatrix, gcam.cam.matrixWorldInverse); CULL.f.setFromProjectionMatrix(CULL.m); }
   slot.length = 0;
   for (const p of game.players) slot[p.team * 3 + cnt[p.team]++] = rf ? Object.assign(rf.players[p.id], { team: p.team }) : p;
   for (let i = 0; i < figs.length; i++) {
@@ -673,7 +728,8 @@ function drawPlayers(dt, a, rf = null) {
     }
     const ownGoalX = R ? R.goalX(pl.team) : -99;
     const ready = keeper && b.held < 0 && Math.hypot(b.p.x - ownGoalX, b.p.z) < 9 && pl.speed < 2.5 && pl.hand.mode === 'none';
-    f.update(dt, pl, { x, z, keeper, holding: b.held === pl.id, ready, special, t: rf ? rf.t : game.t });
+    if (sparen) CULL.s.center.set(x, 1.0 + (pl.jumpY || 0), z);
+    f.update(dt, pl, { x, z, keeper, holding: b.held === pl.id, ready, special, t: rf ? rf.t : game.t, sparen: sparen && !CULL.f.intersectsSphere(CULL.s), ball: BALLPOS });
   }
   if (rf) { marker.visible = false; return; }
   void n;
@@ -687,7 +743,7 @@ function drawPlayers(dt, a, rf = null) {
 // Qualitäts-Automatik (nur ohne ?q=): liegt der Bildabstand im Spiel 3 s lang über 24 ms (< ~42 fps), erst die
 // Auflösung in 0,25er-Schritten bis 1,0 senken, dann Echtzeit-Schatten der Menschen aus (Blob), dann (Deko) weniger
 // Effekte, dann alle Schatten aus.
-const autoQ = { on: !qs.has('q'), t: 0, sum: 0, n: 0, steps: [] };
+const autoQ = { on: !qs.has('q') && !AUTOPILOT, t: 0, sum: 0, n: 0, steps: [] };
 function autoQuality(dt) {
   if (!autoQ.on || mode !== 'play') return;
   autoQ.t += dt; autoQ.sum += dt; autoQ.n++;
@@ -706,9 +762,90 @@ function autoQuality(dt) {
   } else autoQ.on = false;
 }
 
+// ---------------- n4: Zeichnen, Qualitäts-Autopilot, enge Schattenkamera ----------------
+let grafik = null, grafikKey = null, apMode = 'load', gpuLast = null;
+function zeichne(dt, rf = null) {
+  if (kino) kino.render(scene, gcam.cam, { dt, dof: rf ? rp.dof : null });
+  else renderer.render(scene, gcam.cam);
+}
+// Kurzmessung (Ladebildschirm): Startszene zeichnen wie im Menü
+function zeichneProbe() {
+  if (kino) renderer.info.reset();
+  drawPlayers(1 / 60, 1, null);
+  gcam.update(1 / 60, { x: 0, z: 0, vx: 0, vz: 0 }, { x: 0, z: 0 }, 'menu');
+  schattenFolgen();
+  zeichne(1 / 60, null);
+}
+// Pixeldichte: Stufe × (ohne Kino-Render-Target) Renderskala des Autopiloten
+const kinoSkaliert = () => !!(kino && kino.pipeline && kino.stages.scale);
+function pixelDichte() { renderer.setPixelRatio(quality.dpr * (grafik && !kinoSkaliert() ? grafik.skala : 1)); }
+function skalaAnwenden(s) { if (kinoSkaliert()) kino.renderScale = s; pixelDichte(); }
+function menschenAnwenden() {
+  quality.avatarShadows = quality.level >= 2 && (!grafik || grafik.menschenAn);
+  for (const f of figs) if (f.setShadows) f.setShadows(quality.avatarShadows && !f.night);
+}
+function dekoAnwenden() { if (!deko) return; if (quality.level < 1 || (grafik && !grafik.dekoAn)) deko.setLite(); else deko.setFull(); }
+// Grafikstufe zur Laufzeit wechseln (Autopilot): Pixeldichte, Kino-Stufe, Schattenkarte (an/aus = Shader neu), Menschen-
+// Schatten, Deko-Effekte. Die Kantenglättung des Canvas bleibt wie beim Start (Stufe 1/2 glätten im Kino-Look selbst).
+function stufeAnwenden(l) {
+  const w = stufenWerte(l, { dpr: devicePixelRatio || 1, schatten2: SCHATTEN2 });
+  const wechsel = w.shadows !== renderer.shadowMap.enabled;
+  Object.assign(quality, w, { aa: quality.aa });
+  kinoStufeSetzen(kino, l);
+  pixelDichte();
+  if (G.sun) sonnenSchatten(G.sun, quality, game.cage);
+  if (wechsel) { renderer.shadowMap.enabled = quality.shadows; scene.traverse((o) => { if (o.material) for (const m of [].concat(o.material)) m.needsUpdate = true; }); }
+  menschenAnwenden(); dekoAnwenden();
+}
+async function startGrafik() {
+  const gl = renderer.getContext();
+  grafikKey = geraeteSchluessel(gl, { w: screen.width, h: screen.height, dpr: devicePixelRatio });
+  grafik = new GrafikSteuerung({ level: quality.level, kino, gl, wirkung: {
+    stufe: stufeAnwenden, skala: skalaAnwenden, deko: dekoAnwenden, menschenschatten: menschenAnwenden,
+    merke: (z) => { merkeStufe(localStorage, z.level); merkeGeraet(localStorage, grafikKey, { skala: z.skala, stufe: z.level }); },
+  } });
+  G.grafik = grafik;
+  const [lo, hi, st] = skalaBereich(quality.level, kino);
+  const mem = ladeGeraet(localStorage, grafikKey);
+  let skala = null;
+  if (mem && (mem.stufe ?? quality.level) === quality.level) { skala = mem.skala; G.startProbe = { gespeichert: true, skala }; }
+  else if (qs.get('startprobe') !== '0') {
+    loadMsg.textContent = 'Bandenkick lädt … Grafik einstellen';
+    grafik.start(st);
+    const r = await messeBilder(() => zeichneProbe(), gl, { bilder: 20, vorlauf: 4 });
+    skala = startSkala(r.median, [lo, hi], st);
+    G.startProbe = { ...r, skala };
+  }
+  grafik.start(skala ?? st);
+  merkeGeraet(localStorage, grafikKey, { skala: grafik.skala, stufe: grafik.level }); merkeStufe(localStorage, grafik.level);
+}
+// Schattenkamera folgt dem Bildausschnitt (render/schatten.js). Richtung zur Sonne: wie makeSun/Deko-Abend sie setzen
+// (Ziel im Ursprung) – ändert jemand die Sonne von außen, wird die Richtung neu übernommen.
+const SCH = { prev: null, dirs: randPunkte(3), vp: new THREE.Matrix4(), d: new THREE.Vector3(), gesetzt: new THREE.Vector3(NaN, 0, 0), v: new THREE.Vector3() };
+function schattenFolgen() {
+  const sun = G.sun;
+  if (!SCHATTENKAM || !sun || !sun.castShadow || !renderer.shadowMap.enabled) return;
+  if (!sun.position.equals(SCH.gesetzt)) SCH.d.copy(sun.position).normalize();
+  const cam = gcam.cam, cage = game.cage, d = SCH.d;
+  sun.userData.schattenkam = true;
+  const m = cage.hx + cage.gD + 2.5, box = [-m, m, -(cage.hz + 2.5), cage.hz + 2.5];
+  cam.updateMatrixWorld();
+  SCH.vp.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
+  const dirs = SCH.dirs.map(([x, y]) => { SCH.v.set(x, y, 0.5).unproject(cam).sub(cam.position).normalize(); return [SCH.v.x, SCH.v.y, SCH.v.z]; });
+  const pts = bildFlaeche([cam.position.x, cam.position.y, cam.position.z], dirs, { box, vp: SCH.vp.elements });
+  const a = schattenAusschnitt(pts, [d.x, d.y, d.z], { mapSize: sun.shadow.mapSize.x, maxExt: schattenExt(cage), prevExt: SCH.prev });
+  SCH.prev = a.ext;
+  const sc = sun.shadow.camera;
+  if (sc.right !== a.ext) { sc.left = -a.ext; sc.right = a.ext; sc.top = a.ext; sc.bottom = -a.ext; sc.updateProjectionMatrix(); }
+  sun.target.position.set(a.target[0], a.target[1], a.target[2]);
+  sun.position.set(a.pos[0], a.pos[1], a.pos[2]);
+  SCH.gesetzt.copy(sun.position);
+  G.schatten = { ext: a.ext, texel: +a.texel.toFixed(4), karte: sun.shadow.mapSize.x };
+}
+
 // ---------------- Debug-API für Tests ----------------
 Object.assign(G, {
-  scene, renderer, gcam, inputs: input, sound,
+  scene, renderer, gcam, inputs: input, sound, kino,
   start() { startPlay(); },
   mode: () => mode,
   setMode(m) { G.forceMode = m || null; resize(); },
@@ -726,7 +863,10 @@ Object.assign(G, {
   info() {
     const i = renderer.info;
     return { calls: i.render.calls, triangles: i.render.triangles, points: i.render.points, geometries: i.memory.geometries, textures: i.memory.textures, programs: i.programs ? i.programs.length : null,
-      dpr: renderer.getPixelRatio(), size: [renderer.domElement.width, renderer.domElement.height], quality, shadows: renderer.shadowMap.enabled, auto: { on: autoQ.on, steps: [...autoQ.steps] } };
+      dpr: renderer.getPixelRatio(), size: [renderer.domElement.width, renderer.domElement.height], quality, shadows: renderer.shadowMap.enabled,
+      auto: grafik ? { on: true, autopilot: grafik.zustand(), steps: grafik.schritte(), log: grafik.log.slice(-20), startProbe: G.startProbe || null } : { on: autoQ.on, steps: [...autoQ.steps] },
+      shadow: G.schatten || null, figuren: { cull: AV_CULL, gespart: figs.reduce((n, f) => n + (f.gespart || 0), 0), ik: AV_IK, ikN: figs.reduce((n, f) => n + (f.ikN || 0), 0), ikMs: +figs.reduce((n, f) => n + (f.ikZeit || 0), 0).toFixed(2) },
+      kino: kino ? { ...kino.describe(), licht: kino.licht, bloom: [kino.bloomThreshold, kino.bloomStrength], dof: rp.dof, kontakt: !!kontakt } : null };
   },
   perf() {
     const p95 = (a) => { if (!a.length) return null; const b = [...a].sort((x, y) => x - y); return b[Math.floor(b.length * 0.95)]; };

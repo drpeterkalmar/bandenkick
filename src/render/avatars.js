@@ -10,26 +10,44 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 import { AIR_POSE } from '../sim/technique.js';
 import { figureShadowTexture, figureShadowGeometry } from './stimmung.js';
+import { KTX2_AVATARE } from './avatar_ktx2.js';
+import { zweiKnochen, bodenHub, kickGewicht, kickZiel } from './ik.js';
 
 export const TEAM_COLORS = [0xff6a13, 0x1f6fff];   // Leibchen: Orange / Blau (auch farbfehlsichtig gut trennbar)
 export const TEAM_NAMES = ['Orange', 'Blau'];
 // Aufstellung: je Mannschaft drei Figuren (Mannschaft 0 = links, Mensch)
 export const ROSTER = [['Sports_Male_02', 'Sports_Female_02', 'Male_Adult_10'], ['Sports_Male_03', 'Female_Adult_12', 'Sports_Male_04']];
 const LOCO = ['walk', 'jog', 'run', 'sprint'];
+export const BOUND_R = 1.25; // m: Begrenzungskugel der Figuren um die Hüfte (Node-Test: schlimmste Pose füllt ~84 %)
 const TORSO = new Set(['Bip01_Spine', 'Bip01_Spine1', 'Bip01_Spine2', 'Bip01_L_Clavicle', 'Bip01_R_Clavicle', 'Bip01_Pelvis']);
 const _v = new THREE.Vector3(), _w = new THREE.Vector3(), _s = new THREE.Vector3(), _q = new THREE.Quaternion(), _q2 = new THREE.Quaternion(), _m = new THREE.Matrix4();
+// Fuß-IK (n4): Hilfswerte ohne Neuanlage je Bild
+const IK = { a: new THREE.Vector3(), b: new THREE.Vector3(), c: new THREE.Vector3(), z: new THREE.Vector3(), p: new THREE.Vector3(), s: new THREE.Vector3(),
+  qT: new THREE.Quaternion(), qC: new THREE.Quaternion(), qF: new THREE.Quaternion(), qP: new THREE.Quaternion(), qH: new THREE.Quaternion(), qK: new THREE.Quaternion(),
+  hip: new THREE.Quaternion(), knee: new THREE.Quaternion() };
+const BALL_R = 0.11;
 
-export async function loadAvatarAssets(onProgress = () => {}) {
+// n4 (Audit #7): KTX2-Texturen, wenn tools/build_ktx2_avatars.mjs sie erzeugt hat (avatar_ktx2.js) und nicht ?ktx=0 –
+// KTX2Loader mit detectSupport (ETC2/ASTC/BC je Gerät), bei Fehlern je Figur Rückfall auf die WebP-Fassung.
+async function ktx2Lader(renderer) {
+  const { KTX2Loader } = await import('three/addons/loaders/KTX2Loader.js');
+  return new KTX2Loader().setTranscoderPath('lib/three/addons/libs/basis/').detectSupport(renderer);
+}
+export async function loadAvatarAssets(onProgress = () => {}, opts = {}) {
   const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
   const names = [...new Set(ROSTER.flat())];
+  let ktx = null;
+  if (KTX2_AVATARE && opts.ktx !== false && opts.renderer) { try { ktx = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).setKTX2Loader(await ktx2Lader(opts.renderer)); } catch (e) { ktx = null; } }
+  const ladeFigur = (n) => (ktx && KTX2_AVATARE[n] ? ktx.loadAsync(KTX2_AVATARE[n]).then((g) => ((g.userData.ktx2 = true), g)).catch(() => loader.loadAsync(`assets/avatars/${n}.glb`)) : loader.loadAsync(`assets/avatars/${n}.glb`));
   let done = 0;
   const tick = () => onProgress(++done / (names.length + 2));
   const [anims, meta, avatars] = await Promise.all([
     Promise.all(['m', 'f'].map((s) => loader.loadAsync(`assets/anims/${s}.glb`).then((g) => (tick(), g)))),
     Promise.all(['m', 'f'].map((s) => fetch(`assets/anims/${s}.json`).then((r) => r.json()))),
-    Promise.all(names.map((n) => loader.loadAsync(`assets/avatars/${n}.glb`).then((g) => (tick(), [n, g])))),
+    Promise.all(names.map((n) => ladeFigur(n).then((g) => (tick(), [n, g])))),
   ]);
   const A = { avatars: Object.fromEntries(avatars), clips: {}, meta: { m: meta[0], f: meta[1] }, phase: {} };
+  A.ktx2 = avatars.filter(([, g]) => g.userData.ktx2).length;
   ['m', 'f'].forEach((s, i) => { A.clips[s] = Object.fromEntries(anims[i].animations.map((c) => [c.name, c])); });
   // Phase der Laufzyklen einmal je Geschlecht messen: Zeitpunkt, an dem der linke Fuß am weitesten vorn ist
   for (const s of ['m', 'f']) {
@@ -198,6 +216,7 @@ export class Avatar {
     this.bones = boneMap(this.model);
     this.meshes = [];
     this.model.traverse((o) => { if (o.isSkinnedMesh) { this.meshes.push(o); o.frustumCulled = false; } });
+    this.cull = opts.cull !== false; // n4 (Audit #8): Sichtbarkeitsprüfung wieder an, ?cull=0 = aus wie bisher
     const body = this.meshes.find((m) => /body/.test(m.material.name)) || this.meshes[0];
     this.bib = makeBib(body, TEAM_COLORS[team], opts.deko && opts.deko.num);
     body.parent.add(this.bib);
@@ -233,15 +252,53 @@ export class Avatar {
     this.prevFace = 0; this.turnRate = 0;
     this.touched = new Map(); // Knochen mit prozeduraler Zusatzdrehung → Mischer-Wert davor
     this.setShadows(!!opts.shadows);
+    this.sparDt = 0; this.sparN = 0;
+    if (this.cull) this.setBounds();
+    // n4 Fuß-IK (Audit #5): Ruhehöhen von Knöchel und Zehen (Sohle auf dem Rasen) einmal messen; ?ik=0 = aus
+    const beine = ['L', 'R'].every((s) => this.bones[`Bip01_${s}_Thigh`] && this.bones[`Bip01_${s}_Calf`] && this.bones[`Bip01_${s}_Foot`] && this.bones[`Bip01_${s}_Toe0`]);
+    this.ik = opts.ik !== false && beine;
+    if (beine) {
+      this.root.updateMatrixWorld(true);
+      const h = (n) => (this.bones[`Bip01_L_${n}`].getWorldPosition(_v).y + this.bones[`Bip01_R_${n}`].getWorldPosition(_w).y) / 2;
+      this.ruhe = { knoechel: h('Foot'), zeh: h('Toe0') };
+    }
+    this.kickPunkt = null; this.ktPrev = 9; this.ikZeit = 0; this.ikN = 0;
   }
 
-  setShadows(on) { for (const m of this.meshes) m.castShadow = on; this.blob.visible = !on && !this.night && !this.extShadow; }
+  // n4 (Audit #8): Begrenzungskugel je Teil-Mesh aus der Ruhepose, auf mindestens BOUND_R Meter (Welt) vergrößert, damit
+  // Hechtsprung, Fallrückzieher und ausgestreckte Beine nicht abgeschnitten werden; danach prüft three.js je Bild (auch
+  // für die Schattenkarte) per Kugel statt die Figur immer zu zeichnen. Die Kugel dreht und springt mit der Figur mit.
+  setBounds(R = BOUND_R) {
+    this.root.updateMatrixWorld(true);
+    for (const m of this.meshes) {
+      m.computeBoundingSphere();
+      const sc = m.matrixWorld.getMaxScaleOnAxis() || 1;
+      m.boundingSphere.radius = Math.max(m.boundingSphere.radius, R / sc);
+      m.frustumCulled = true;
+    }
+  }
+  setShadows(on) { this.shadowsOn = on; for (const m of this.meshes) m.castShadow = on; this.blob.visible = !on && !this.night && !this.extShadow && !this.contact; }
+  // n4 Kino-Look: Kontaktschatten aller Figuren in einem Draw-Call (kino.js) statt des eigenen runden Flecks
+  setContact(on) { this.contact = !!on; this.setShadows(!!this.shadowsOn); }
   // Deko-Abend: eigene Flutlicht-Schatten (abend.js) statt Fleck/Schattenkarte
   setNight(on, shadows) { this.night = on; this.setShadows(on ? false : shadows); }
 
   // Figur für den Sim-Zustand stellen. st: {x, z, face, speed, vx, vz, plant, plantX, plantZ, kickT, kickFoot,
   // hand, handT, holding, keeper, ready, cheer, human}
   update(dt, pl, st) {
+    // n4 (Audit #8): nicht im Bild (st.sparen) → Mischer und prozedurale Schichten nur jedes 2. Bild, die Zeit sammelt sich
+    // (Phase, Drehrate und Überblendungen laufen mit der Summe weiter); Lage und Blickrichtung jedes Bild
+    if (st.sparen) {
+      this.sparDt += dt;
+      this.sparN = (this.sparN + 1) % 2;
+      if (this.sparN === 1) {
+        this.root.position.set(st.x, pl.jumpY || 0, st.z); this.root.rotation.y = Math.PI / 2 - pl.face;
+        this.gespart = (this.gespart || 0) + 1;
+        return;
+      }
+      dt = this.sparDt;
+    }
+    this.sparDt = 0;
     // Prozedurale Drehungen vom letzten Bild zurücknehmen: der Mischer schreibt einen Knochen nur, wenn sich sein
     // Animationswert ändert – bei statischen Spuren würde sich die Zusatzdrehung sonst Bild für Bild aufaddieren.
     for (const [b, q] of this.touched) b.quaternion.copy(q);
@@ -293,6 +350,9 @@ export class Avatar {
     const hold = st.holding ? 1 : 0;
     this.holdW = (this.holdW || 0) + (hold - (this.holdW || 0)) * Math.min(1, dt * 8);
     const kt = pl.kickT ?? 9;
+    // n4: Ballkontakt merken (kickT springt auf ~0) → Ziel für die Fuß-IK des Schussbeins
+    if (kt < this.ktPrev - 1e-4 && kt < 0.05 && st.ball) { this.kickPunkt = [st.ball[0], st.ball[1], st.ball[2]]; this.kickVon = [st.x, 0, st.z]; }
+    this.ktPrev = kt;
     // Technik-Pose (Nacht 2b, prozedural bis zu den Mixamo-Clips): Luftball im Anflug, am Boden danach, Kick-Arten
     const tp = techPose(pl, st.t ?? 0);
     this.tpW = (this.tpW || 0) + ((tp ? 1 : 0) - (this.tpW || 0)) * Math.min(1, dt * (tp ? 14 : 5));
@@ -356,6 +416,48 @@ export class Avatar {
         if (this.holdW > 0.01) { this.rotBoneWorld(`Bip01_${s}_Forearm`, 'side', -0.55 * this.holdW); this.rotBoneWorld(`Bip01_${s}_Forearm`, 'up', sg * -0.38 * this.holdW); }
       }
     }
+    if (this.ik) this.fussIK(pl, kt);
+  }
+
+  // n4 Fuß-IK (Audit #5), nur wenn prozedurale Schichten aktiv sind (sonst stehen die Clips von selbst auf dem Boden):
+  //  • Boden: aufrecht (kein Hechtsprung/Grätsche/Luftball/Liegen) dürfen Knöchel und Zehen nicht unter ihre Ruhehöhe –
+  //    Stemmschritt und Rücklage drückten die Füße bisher in den Rasen. Nur anheben, nie herunterziehen.
+  //  • Ballkontakt: das Schussbein (wie die Schwung-Schicht: kickFoot) greift beim Kontakt zum Kontaktpunkt aus der Simulation
+  //    (Ball beim Sprung von kickT auf 0) und blendet in KICK_T = 0,12 s aus – der Fuß trifft den Ball sichtbar.
+  fussIK(pl, kt) {
+    const t0 = typeof performance !== 'undefined' ? performance.now() : 0;
+    const aufrecht = this.dive < 0.2 && !pl.slide && !pl.fall && !(pl.air && pl.air.go);
+    const kw = this.kickPunkt ? kickGewicht(kt) : 0;
+    if (!aufrecht && kw <= 0) return;
+    const R = this.ruhe, yaw = this.root.rotation.y, pol = [Math.sin(yaw), 0, Math.cos(yaw)];
+    const kickSeite = pl.kickFoot > 0 ? 'R' : 'L';
+    for (const s of ['L', 'R']) {
+      const T = this.bones[`Bip01_${s}_Thigh`], C = this.bones[`Bip01_${s}_Calf`], F = this.bones[`Bip01_${s}_Foot`], Z = this.bones[`Bip01_${s}_Toe0`];
+      T.getWorldPosition(IK.a); C.getWorldPosition(IK.b); F.getWorldPosition(IK.c);
+      let tx = IK.c.x, ty = IK.c.y, tz = IK.c.z, an = false;
+      if (kw > 0 && s === kickSeite) {
+        const k = kickZiel(this.kickPunkt, this.kickVon, BALL_R, R.knoechel);
+        tx += (k[0] - tx) * kw; ty += (k[1] - ty) * kw; tz += (k[2] - tz) * kw; an = true;
+      } else if (aufrecht) {
+        Z.getWorldPosition(IK.z);
+        const hub = bodenHub(IK.c.y, IK.z.y, R.knoechel - 0.01, R.zeh - 0.01, 0);
+        if (hub > 0.002) { ty += hub; an = true; }
+      }
+      if (!an) continue;
+      const L = zweiKnochen(IK.a.toArray(), IK.b.toArray(), IK.c.toArray(), [tx, ty, tz], pol);
+      for (const b of [T, C, F]) if (!this.touched.has(b)) this.touched.set(b, b.quaternion.clone());
+      T.matrixWorld.decompose(IK.p, IK.qT, IK.s); C.matrixWorld.decompose(IK.p, IK.qC, IK.s); F.matrixWorld.decompose(IK.p, IK.qF, IK.s);
+      T.parent.matrixWorld.decompose(IK.p, IK.qP, IK.s);
+      IK.qH.fromArray(L.qHuefte); IK.qK.fromArray(L.qKnie);
+      IK.hip.multiplyQuaternions(IK.qH, IK.qT);                        // Oberschenkel neu (Welt)
+      IK.knee.multiplyQuaternions(IK.qH, IK.qK).multiply(IK.qC);        // Unterschenkel neu (Welt)
+      T.quaternion.copy(IK.qP.invert().multiply(IK.hip));
+      C.quaternion.copy(IK.qP.copy(IK.hip).invert().multiply(IK.knee));
+      F.quaternion.copy(IK.qP.copy(IK.knee).invert().multiply(IK.qF));  // Fuß behält seine Welt-Ausrichtung
+      T.updateMatrixWorld(true);
+      this.ikN++;
+    }
+    if (t0) this.ikZeit += performance.now() - t0;
   }
 
   // Knochen um eine Achse im Figuren-Raum drehen (unabhängig von den lokalen Achsen des Biped-Skeletts):

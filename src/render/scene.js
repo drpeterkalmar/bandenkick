@@ -60,16 +60,22 @@ export function makeSun(info, quality, cage) {
   const sun = new THREE.DirectionalLight(0xfff4e8, 1.25);
   sun.position.copy(dir).multiplyScalar(40);
   sun.target.position.set(0, 0, 0);
-  if (quality.shadows) {
-    sun.castShadow = true;
-    const s = quality.shadowSize;
-    sun.shadow.mapSize.set(s, s);
-    const ext = Math.max(cage.hx + cage.gD, cage.hz) + 2.5;
-    const cam = sun.shadow.camera;
-    cam.left = -ext; cam.right = ext; cam.top = ext; cam.bottom = -ext; cam.near = 5; cam.far = 90;
-    sun.shadow.bias = -0.0004;
-    sun.shadow.normalBias = 0.02;
-    sun.shadow.radius = 3;
-  }
+  sonnenSchatten(sun, quality, cage);
   return { sun, dir };
+}
+// Schatten der Sonne nach der Qualität (n4: auch nachträglich, wenn der Autopilot die Stufe wechselt). Ausschnitt: ganzer
+// Käfig um den Ursprung (±ext); die enge Schattenkamera (schatten.js) setzt Ausschnitt und Ziel danach je Bild selbst.
+export function schattenExt(cage) { return Math.max(cage.hx + cage.gD, cage.hz) + 2.5; }
+export function sonnenSchatten(sun, quality, cage) {
+  sun.castShadow = !!quality.shadows;
+  if (!quality.shadows) return;
+  const s = quality.shadowSize;
+  if (sun.shadow.mapSize.x !== s) { sun.shadow.mapSize.set(s, s); if (sun.shadow.map) { sun.shadow.map.dispose(); sun.shadow.map = null; } }
+  const ext = schattenExt(cage);
+  const cam = sun.shadow.camera;
+  if (!sun.userData.schattenkam) { cam.left = -ext; cam.right = ext; cam.top = ext; cam.bottom = -ext; }
+  cam.near = 5; cam.far = 90; cam.updateProjectionMatrix();
+  sun.shadow.bias = -0.0004;
+  sun.shadow.normalBias = 0.02;
+  sun.shadow.radius = 3;
 }

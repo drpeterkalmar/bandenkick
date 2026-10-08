@@ -153,6 +153,8 @@ export class Deko {
   }
   // Auto-Drosselung (main.js autoQuality): weniger Konfetti und Rasenfetzen, keine Blitzlichter
   setLite() { this.lite = true; this.amount = Math.min(this.amount, 0.35); this.blitzeOff = true; }
+  // n4 Qualitäts-Autopilot: wieder volle Effekte (wie im Konstruktor), wenn Luft ist
+  setFull() { this.lite = false; this.amount = (this.quality.level >= 1 ? 1 : 0.6) * (this.reduce ? 0.3 : 1); this.blitzeOff = false; }
   // fertig: Zuschauer gerendert und ganz eingeblendet (Tests warten darauf)
   get ready() { return !this._fanJob && (!this.fans || this.fans.mat.uniforms.uAppear.value >= 1); }
   _stepFans() {
@@ -190,7 +192,8 @@ export class Deko {
     const b = ctx.ball;
     if (b && ctx.cam) this.spur.update(dt, b.p, b.v, ctx.cam, !!ctx.live && !this.paused, !!ctx.still);
     if (ctx.cam) {
-      const h = this.renderer.getDrawingBufferSize(this._v2 || (this._v2 = new THREE.Vector2())).y, px = h / (2 * Math.tan(ctx.cam.fov * Math.PI / 360));
+      // n4: ctx.pxK = Renderskala des Kino-Looks (Punkte werden im kleineren Render-Target gezeichnet)
+      const h = this.renderer.getDrawingBufferSize(this._v2 || (this._v2 = new THREE.Vector2())).y, px = h / (2 * Math.tan(ctx.cam.fov * Math.PI / 360)) * (ctx.pxK || 1);
       this.blitze.update(dt, this.fans && !this.blitzeOff ? Math.min(1, this.fans.ex * 1.4) : 0, px);
       if (this.night) this.flut.set(this.night, px);
     }
