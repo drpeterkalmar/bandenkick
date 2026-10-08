@@ -495,6 +495,8 @@ function frame() {
   requestAnimationFrame(frame);
   const t0 = performance.now();
   const rafDt = perf.lastRaf ? (t0 - perf.lastRaf) / 1000 : 0;
+  // Tests (tests/test_autopilot.py): künstliche Arbeit je Bild in ms, zählt zur CPU-Zeit des Bildes
+  if (G.testLast > 0) { const tE = t0 + G.testLast; while (performance.now() < tE); }
   if (perf.lastRaf) { perf.raf.push(t0 - perf.lastRaf); if (perf.raf.length > 240) perf.raf.shift(); }
   perf.lastRaf = t0;
   if (!G.ready) return;
@@ -862,7 +864,7 @@ Object.assign(G, {
     const i = renderer.info;
     return { calls: i.render.calls, triangles: i.render.triangles, points: i.render.points, geometries: i.memory.geometries, textures: i.memory.textures, programs: i.programs ? i.programs.length : null,
       dpr: renderer.getPixelRatio(), size: [renderer.domElement.width, renderer.domElement.height], quality, shadows: renderer.shadowMap.enabled,
-      auto: grafik ? { on: true, autopilot: grafik.zustand(), steps: grafik.schritte(), startProbe: G.startProbe || null } : { on: autoQ.on, steps: [...autoQ.steps] },
+      auto: grafik ? { on: true, autopilot: grafik.zustand(), steps: grafik.schritte(), log: grafik.log.slice(-20), startProbe: G.startProbe || null } : { on: autoQ.on, steps: [...autoQ.steps] },
       shadow: G.schatten || null, figuren: { cull: AV_CULL, gespart: figs.reduce((n, f) => n + (f.gespart || 0), 0), ik: AV_IK, ikN: figs.reduce((n, f) => n + (f.ikN || 0), 0), ikMs: +figs.reduce((n, f) => n + (f.ikZeit || 0), 0).toFixed(2) },
       kino: kino ? { ...kino.describe(), licht: kino.licht, bloom: [kino.bloomThreshold, kino.bloomStrength], dof: rp.dof, kontakt: !!kontakt } : null };
   },
