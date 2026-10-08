@@ -17,8 +17,8 @@ const STAGES_STD = { scale: true, aa: true, sharpen: true, ssao: false, bloom: t
 export const BK_PRESETS = [
   { name: 'Einfach', pipeline: false, stages: { contact: true } },
   {
-    name: 'Standard', pipeline: true, msaa: 0, scale: [0.8, 0.7, 0.85], stages: { ...STAGES_STD },
-    sharpen: 0.45, bloom: { levels: 3, strength: 0.32, threshold: 0.93 }, bloomSky: 0, vignette: 0.12, blurHalf: true,
+    name: 'Standard', pipeline: true, msaa: 0, scale: [0.85, 0.7, 0.85], stages: { ...STAGES_STD },
+    sharpen: 0.7, bloom: { levels: 3, strength: 0.32, threshold: 0.93 }, bloomSky: 0, vignette: 0.12, blurHalf: true,
   },
   {
     name: 'Kino', pipeline: true, msaa: 4, scale: [0.9, 0.7, 1], stages: { ...STAGES_STD, aa: false, ssao: true },
@@ -30,16 +30,18 @@ export const BK_PRESETS = [
 // Grün-Bremse: der Kunstrasen darf satt bleiben wie im Fernsehen. Abend: LED-Flutlicht leicht kühl, etwas mehr Kontrast.
 export const BK_GRADES = {
   tv: { wb: [1, 1, 1], lift: [0.002, 0.003, 0.006], gamma: [1, 1, 1], gain: [1.01, 1.01, 1.0], shadow: [-0.006, 0, 0.01], high: [0.008, 0.004, -0.006], split: 1, sat: 1.07, vib: 0.12, contrast: 0.14, green: 0 },
-  tvAbend: { wb: [0.98, 0.995, 1.03], lift: [0.004, 0.006, 0.012], gamma: [1, 1, 0.99], gain: [1.0, 1.0, 1.02], shadow: [-0.006, 0, 0.018], high: [0.006, 0.006, 0], split: 1, sat: 1.05, vib: 0.1, contrast: 0.18, green: 0 },
+  // n4-Abnahme: Kontrast 0,18 machte den Abend am Handy zu dunkel (Rasen/Figuren absaufen) → 0,08 und etwas mehr Gain
+  tvAbend: { wb: [0.98, 0.995, 1.03], lift: [0.006, 0.008, 0.014], gamma: [0.97, 0.97, 0.96], gain: [1.05, 1.05, 1.07], shadow: [-0.006, 0, 0.018], high: [0.006, 0.006, 0], split: 1, sat: 1.05, vib: 0.1, contrast: 0.08, green: 0 },
 };
 
 // Licht → Farbkorrektur und Bloom. Bloom soll nur Leuchtendes treffen (Flutlicht-Strahler, Fenster, Handschuhe der
-// letzten Hand), nicht weiße Linien/Ball/Leibchen in der Sonne: tagsüber Schwelle fast 1 und schwächer, abends die
-// Preset-Schwelle (Strahler und Leuchthöfe liegen nach dem Tonemapping nahe 1).
+// letzten Hand), nicht weiße Linien/Ball/Leibchen in der Sonne: tagsüber leuchtet nichts (Strahler aus) → Bloom ganz aus
+// (n4-Messung: spart 5 Durchgänge je Bild, die CPU ist der Engpass); abends die Preset-Schwelle (Strahler und Leuchthöfe
+// liegen nach dem Tonemapping nahe 1). bloom = Vorgabe für die Stufe (?kl=+bloom/-bloom gewinnt).
 export function lichtLook(licht, level) {
   const P = BK_PRESETS[level] || BK_PRESETS[1], B = P.bloom || BK_PRESETS[1].bloom;
-  if (licht === 'abend') return { grade: 'tvAbend', bloomThreshold: B.threshold, bloomStrength: B.strength };
-  return { grade: 'tv', bloomThreshold: Math.max(B.threshold, 0.97), bloomStrength: +(B.strength * 0.7).toFixed(3) };
+  if (licht === 'abend') return { grade: 'tvAbend', bloom: true, bloomThreshold: B.threshold, bloomStrength: B.strength };
+  return { grade: 'tv', bloom: false, bloomThreshold: Math.max(B.threshold, 0.97), bloomStrength: +(B.strength * 0.7).toFixed(3) };
 }
 
 // URL-Regler: ?kino=0 = alter Weg (direkt zeichnen, Blob-Schatten), ?look=0|1|2 = Kino-Stufe erzwingen (unabhängig von

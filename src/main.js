@@ -71,12 +71,17 @@ loadMsg.style.cssText = 'position:fixed;inset:0;display:grid;place-items:center;
 loadMsg.textContent = 'Bandenkick lädt …';
 document.body.append(loadMsg);
 
-const renderer = createRenderer(canvas, quality);
 // n4 Kino-Look (Audit #1): Endbild mit Renderskala + Hochskalieren/Nachschärfen, Bloom, TV-Farbkorrektur, Vignette,
 // Kontaktschatten; Tiefenschärfe nur in der Wiederholung. ?kino=0 = direktes Zeichnen wie bis n3.
 const KO = kinoOptionen(qs);
+// Mit Kino-Look glätten Stufe 1/2 im Endbild (FXAA-Art bzw. MSAA im Render-Target) → Canvas ohne MSAA (spart am Handy das
+// Auflösen eines 4-fach-Bildschirmpuffers); Stufe 0 glättete schon bisher nicht.
+const renderer = createRenderer(canvas, { ...quality, aa: quality.aa && !(KO.on && KO.look !== 0) });
 const kino = KO.on ? makeKino(renderer, quality.level, KO) : null;
 if (kino) renderer.info.autoReset = false; // mehrere Durchgänge je Bild → Zähler je Bild selbst zurücksetzen
+// ?skala=0.7…1: feste Renderskala des Kino-Looks (Vergleiche/Tests; der Autopilot regelt sonst selbst)
+const SKALA_FEST = qs.has('skala') ? Math.max(0.5, Math.min(1, +qs.get('skala') || 1)) : null;
+if (kino && SKALA_FEST) kino.renderScale = SKALA_FEST;
 let kontakt = null;
 const scene = new THREE.Scene();
 const seed = qs.get('seed') || String(Date.now() % 100000);

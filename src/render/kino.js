@@ -24,6 +24,7 @@ export function kinoLicht(kino, licht) {
   if (!kino) return;
   const L = lichtLook(licht, kino.level);
   kino.licht = licht; kino.grade = L.grade; kino.bloomThreshold = L.bloomThreshold; kino.bloomStrength = L.bloomStrength;
+  if (!('bloom' in kino.overrides)) kino.stages.bloom = L.bloom && !!(kino.preset.stages && kino.preset.stages.bloom);
 }
 
 // Weicher, dunkler Fleck (radial, dichter Kern) – eine kleine Datentextur für alle Kontaktschatten

@@ -1,5 +1,5 @@
 // Service-Worker: offline spielbar, Cache-Busting über Inhalts-Hash (tools/update_sw.py)
-const VERSION = 'bfc26f560e';
+const VERSION = '535597887b';
 const CACHE = 'bandenkick-' + VERSION;
 const ASSETS = [
   './',
@@ -41,13 +41,22 @@ const ASSETS = [
   'src/main.js',
   'src/render/abend.js',
   'src/render/actors.js',
+  'src/render/avatar_ktx2.js',
   'src/render/avatars.js',
   'src/render/camera.js',
   'src/render/deko.js',
   'src/render/effekte.js',
   'src/render/field.js',
+  'src/render/grafik.js',
+  'src/render/ik.js',
+  'src/render/kern/autopilot.js',
+  'src/render/kern/kinolook.js',
+  'src/render/kern/startprobe.js',
+  'src/render/kino.js',
+  'src/render/kino_logik.js',
   'src/render/replayfx.js',
   'src/render/scene.js',
+  'src/render/schatten.js',
   'src/render/stimmung.js',
   'src/render/training.js',
   'src/render/umgebung.js',

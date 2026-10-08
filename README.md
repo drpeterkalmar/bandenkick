@@ -199,7 +199,11 @@ Ball mit (Sohle/Außenseite). `?zack=0` = altes Gefühl aus Nacht 1 zum Vergleic
 | `?<Parametername>=Wert` | jeder Wert aus `src/sim/params.js`, z. B. `?keeperDist=0.8`, `?holdMax=8` |
 | `?deko=0` | Aussehen wie Nacht 2e ohne Verschönerung (A/B-Vergleich; Details in `DEKO_BERICHT.md`) |
 | `?licht=tag` / `abend` / `auto` | Licht der Verschönerung: Tag, Abend mit Flutlicht, automatisch nach Uhrzeit (Standard; im Pause-Menü umschaltbar und gespeichert) |
-| `?q=0/1/2` | Grafikstufe fest: 0 niedrig, 1 mittel (Handy: Blob-Schatten unter den Menschen), 2 hoch (Echtzeit-Schatten). Ohne `?q=` Automatik: bei < ~42 fps erst Auflösung, dann Menschen-Schatten, dann alle Schatten runter |
+| `?q=0/1/2` | Grafikstufe fest (Autopilot aus): 0 niedrig, 1 mittel (Handy), 2 hoch (Echtzeit-Schatten auch der Menschen). Ohne `?q=` regelt der **Qualitäts-Autopilot** (n4) auf- und abwärts: Renderskala → Deko-Effekte → Menschen-Schatten → Stufe; Startwert per Kurzmessung im Ladebildschirm, je Gerät gemerkt |
+| `?autopilot=0`, `?startprobe=0` | alte Automatik (nur abwärts) statt Autopilot; ohne Kurzmessung beim Laden |
+| `?kino=0`, `?look=0/1/2`, `?kl=-bloom,+ssao`, `?skala=0.85` | n4 Kino-Look aus (direktes Zeichnen wie n3) / Kino-Stufe erzwingen / einzelne Stufen des Endbilds (`scale aa sharpen ssao bloom grade vignette dither contact dof`) / feste Renderskala |
+| `?schattenkam=0`, `?schatten2=1024` | Schattenkarte über den ganzen Käfig wie bisher (sonst folgt sie dem Bildausschnitt) / Stufe 2 mit 1024er- statt 2048er-Karte |
+| `?cull=0`, `?ik=0`, `?ktx=0` | Figuren immer zeichnen und jedes Bild animieren / ohne Fuß-IK / ohne KTX2-Texturen (erst wirksam, wenn erzeugt) |
 | `?figur=kapsel` | Kapsel-Figuren statt Rocketbox-Menschen (Rückfall) |
 | `?seed=4711`, `?debug`, `?play` | fester Zufall, Anzeige Bildrate/Draw-Calls, Startbildschirm überspringen |
 | `?doppel=0.11`, `?tipp=0.2` | Gesten: Fenster für den 2. Druck nach dem Loslassen (s; Kinder mit langsamem Doppeltipp: `0.15`), längster Tipp (s) |
@@ -238,6 +242,11 @@ Ball mit (Sohle/Außenseite). `?zack=0` = altes Gefühl aus Nacht 1 zum Vergleic
   `umgebung.js` (Anlage, gemalte Bäume als Billboards, Boden-Detailtextur), `zuschauer.js` (Atlas aus den Rocketbox-
   Menschen, Bildtafeln mit Jubel im Shader), `effekte.js` (Konfetti/Rasenfetzen im Shader, Ballspur, Rutschspuren,
   Blitzlichter) und `abend.js` (Nacht-Umgebungslicht, Lichtfeld, Flutlicht, Spieler-Schatten in einem Draw-Call).
+- **Technik n4 (Fernsehbild bei 60 fps, Details `TECHNIK_BERICHT.md`):** `src/render/kern/` (Kopien aus dem Grafik-Kern der
+  Stuntbahn: `kinolook.js` Endbild, `autopilot.js` + `startprobe.js` Qualitäts-Autopilot), `kino.js`/`kino_logik.js`
+  (Bandenkick-Stufen, TV-Farbkorrektur, Kontaktschatten unter Ball und Figuren in einem Draw-Call, Tiefenschärfe nur im
+  Replay), `grafik.js` (Autopilot-Anschluss), `schatten.js` (Schattenkamera folgt dem Bildausschnitt), `ik.js`
+  (Zwei-Knochen-Fuß-IK: Boden + Ballkontakt). Mess-Gate: `tests/perf_gate.py --szenen tests/perf_szenen.json`.
 - `src/render/` – Szene, Käfig, Ball/Granulat, `avatars.js` (Rocketbox-Menschen, Lauf-Blend, Leibchen, Posen), Kamera
   je Format. `src/audio/sound.js` – **stumm** seit Nacht 2e (Stub mit alter Schnittstelle, kein AudioContext).
   `src/input/` – Touch, Tastatur/Maus, Gamepad.

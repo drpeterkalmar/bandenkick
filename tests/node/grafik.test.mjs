@@ -46,9 +46,9 @@ const w0 = stufenWerte(0, { dpr: 2.6 }), w1 = stufenWerte(1, { dpr: 2.6 }), w2 =
 yes('Stufenwerte: Pixeldichte 1 / 1,5 / 2 (Deckel wie bisher)', w0.dpr === 1 && w1.dpr === 1.5 && w2.dpr === 2 && DPR_CAP.join() === '1,1.5,2');
 yes('Stufenwerte: Schatten ab 1, Menschen-Schatten ab 2, MSAA-Canvas ab 1', !w0.shadows && w1.shadows && !w1.avatarShadows && w2.avatarShadows && !w0.aa && w1.aa);
 yes('Schattenkarte: Stufe 1 = 1024, Stufe 2 = 2048 (wie bisher), ?schatten2=1024 möglich', w1.shadowSize === 1024 && w2.shadowSize === 2048 && w2a.shadowSize === 1024);
-yes('Skalenbereich: Stufe 1 = Kino-Look 0,7–0,85 (Start 0,8), Stufe 0 direkt', skalaBereich(1, kinoFake).join() === '0.7,0.85,0.8' && skalaBereich(0, kinoFake).join() === SKALA_DIREKT[0].join());
+yes('Skalenbereich: Stufe 1 = Kino-Look 0,7–0,85 (Start 0,85), Stufe 0 direkt', skalaBereich(1, kinoFake).join() === '0.7,0.85,0.85' && skalaBereich(0, kinoFake).join() === SKALA_DIREKT[0].join());
 yes('Skalenbereich ohne Kino-Look (?kino=0): Pixeldichte-Faktor', skalaBereich(1, null).join() === SKALA_DIREKT[1].join());
-yes('Skalenbereich der Ziel-Stufe, auch wenn der Kino-Look gerade auf Stufe 0 steht; ?kl=-scale → direkt', skalaBereich(1, { ...kinoFake, stages: { contact: true } }).join() === '0.7,0.85,0.8'
+yes('Skalenbereich der Ziel-Stufe, auch wenn der Kino-Look gerade auf Stufe 0 steht; ?kl=-scale → direkt', skalaBereich(1, { ...kinoFake, stages: { contact: true } }).join() === '0.7,0.85,0.85'
   && skalaBereich(1, { ...kinoFake, overrides: { scale: false } }).join() === SKALA_DIREKT[1].join());
 
 // ---- Start ----
@@ -80,7 +80,7 @@ const C = lauf(geraet({ cpu: [3, 4, 5], gpuVoll: [6, 27, 40] }), { level: 1, sek
 yes('mittleres Handy: bleibt auf Stufe 1, nur die Renderskala sinkt', C.S.level === 1 && C.S.skala < 0.8 && C.S.skala >= 0.7, `Skala ${C.S.skala}, Deko ${C.S.dekoAn}`);
 // CPU-gebunden: GPU klein, CPU 17 ms → Renderskala hilft nicht → Deko/Menschen/Stufe
 const D = lauf(geraet({ cpu: [12, 17, 19], gpuVoll: [3, 4, 6] }), { level: 1, sek: 20 });
-yes('CPU-gebunden: Renderskala bleibt, zuerst Deko aus', D.verlauf[0] && D.verlauf[0].skala === 0.8 && !D.verlauf[0].deko, D.verlauf.slice(0, 3).map((e) => `L${e.level} s${e.skala}${e.deko ? '' : ' -deko'}`).join(' · '));
+yes('CPU-gebunden: Renderskala bleibt, zuerst Deko aus', D.verlauf[0] && D.verlauf[0].skala === 0.85 && !D.verlauf[0].deko, D.verlauf.slice(0, 3).map((e) => `L${e.level} s${e.skala}${e.deko ? '' : ' -deko'}`).join(' · '));
 // ohne GPU-Zeit (viele Android-Geräte): starkes Gerät tastet sich hoch, schwaches regelt herunter
 const E = lauf(geraet({ cpu: [2.5, 3, 3.5], gpuVoll: [3, 5, 9], gpuTimer: false }), { level: 1, sek: 90 });
 check('ohne GPU-Zeit, starkes Gerät: Stufe nach 90 s', E.S.level, 2, 2, '', `Skala ${E.S.skala}`);

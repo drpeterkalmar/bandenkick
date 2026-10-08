@@ -17,7 +17,7 @@ const yes = (name, cond, note = '') => check(name, cond ? 1 : 0, 1, 1, '', note)
 // ---- Stufen ----
 const [S0, S1, S2] = BK_PRESETS;
 yes('Stufe 0 zeichnet direkt (kein Render-Target), Kontaktschatten an', !S0.pipeline && S0.stages.contact);
-yes('Stufe 1: Renderskala 0,7–0,85, Start 0,8', S1.scale[1] === 0.7 && S1.scale[2] === 0.85 && S1.scale[0] === 0.8);
+yes('Stufe 1: Renderskala 0,7–0,85, Start 0,85 (n4-Abnahme: 0,8 zu weich)', S1.scale[1] === 0.7 && S1.scale[2] === 0.85 && S1.scale[0] === 0.85);
 // heute: Handy Stufe 1 = DPR 1,5 mit MSAA; neu: Szene in 1,5 × 0,85 höchstens, ohne MSAA → weniger Szenen-Pixel
 check('Stufe 1: Szenen-Pixel neu/alt bei Renderskala max (DPR 1,5)', (1.5 * S1.scale[2]) ** 2 / 1.5 ** 2, 0, 0.75, '×', 'heute 1,5² mit MSAA');
 yes('Stufe 1 ohne MSAA, mit Kantenglättung + Nachschärfen', S1.msaa === 0 && S1.stages.aa && S1.stages.sharpen);
@@ -61,7 +61,7 @@ yes('Ball: am Boden dunkel und klein, hoch größer und blasser', B0.a === 1 && 
 // ---- KinoLook aus dem Kern mit Bandenkick-Presets ----
 const fakeR = { capabilities: { isWebGL2: true }, getDrawingBufferSize: (v) => v.set(1000, 500) };
 const k = makeKino(fakeR, 1, kinoOptionen(q('')));
-yes('makeKino: Standard, Pipeline, Startskala 0,8', k.level === 1 && k.pipeline && k.renderScale === 0.8);
+yes('makeKino: Standard, Pipeline, Startskala 0,85', k.level === 1 && k.pipeline && k.renderScale === 0.85);
 yes('makeKino: Farbe tv, Tag-Bloom gesetzt', k.grade === 'tv' && k.bloomThreshold >= 0.97 && GRADES.tv === BK_GRADES.tv);
 kinoStufeSetzen(k, 2);
 yes('Stufe 2: Kino mit AO, Skala 0,9', k.level === 2 && k.stages.ssao && k.renderScale === 0.9 && k.msaa() === 4);
