@@ -1,0 +1,1154 @@
+{
+ "datum": "2026-10-08T14:03:04",
+ "stand": "vorbau",
+ "wurzel": "C:\\Users\\drpet\\dev\\bandenkick",
+ "git": "54532f1",
+ "profil": {
+  "drossel": 4,
+  "dpr": 2.6,
+  "sek": 10,
+  "geraete": "hoch,quer",
+  "gpu": "ANGLE/D3D11 headless (Windows)",
+  "start": "direkt",
+  "vsync": false,
+  "zusatz": ""
+ },
+ "szenen": {
+  "menu_s1": {
+   "hoch": {
+    "n": 740,
+    "p50": 16.7,
+    "p95": 18.3,
+    "p99": 18.7,
+    "fps": 73.8,
+    "calls": 60,
+    "callsMax": 60,
+    "tris": 78581,
+    "tex": 69,
+    "zusatz": {
+     "dpr": 1.5,
+     "size": [
+      618,
+      1372
+     ],
+     "level": 1,
+     "kino": {
+      "level": 1,
+      "name": "Standard",
+      "pipeline": true,
+      "scale": 0.8,
+      "msaa": 0,
+      "stages": [
+       "scale",
+       "aa",
+       "sharpen",
+       "bloom",
+       "grade",
+       "vignette",
+       "dither",
+       "contact",
+       "dof"
+      ],
+      "grade": "tv",
+      "size": [
+       494,
+       1098
+      ],
+      "licht": "tag",
+      "bloom": [
+       0.97,
+       0.224
+      ],
+      "dof": null,
+      "kontakt": true
+     },
+     "auto": {
+      "on": false,
+      "steps": []
+     },
+     "shadow": {
+      "ext": 15.5,
+      "texel": 0.0303,
+      "karte": 1024
+     }
+    },
+    "boot_s": 5.5,
+    "fehler": []
+   },
+   "quer": {
+    "n": 744,
+    "p50": 16.7,
+    "p95": 18.4,
+    "p99": 18.7,
+    "fps": 74.2,
+    "calls": 60,
+    "callsMax": 60,
+    "tris": 78583,
+    "tex": 69,
+    "zusatz": {
+     "dpr": 1.5,
+     "size": [
+      1372,
+      618
+     ],
+     "level": 1,
+     "kino": {
+      "level": 1,
+      "name": "Standard",
+      "pipeline": true,
+      "scale": 0.8,
+      "msaa": 0,
+      "stages": [
+       "scale",
+       "aa",
+       "sharpen",
+       "bloom",
+       "grade",
+       "vignette",
+       "dither",
+       "contact",
+       "dof"
+      ],
+      "grade": "tv",
+      "size": [
+       1098,
+       494
+      ],
+      "licht": "tag",
+      "bloom": [
+       0.97,
+       0.224
+      ],
+      "dof": null,
+      "kontakt": true
+     },
+     "auto": {
+      "on": false,
+      "steps": []
+     },
+     "shadow": {
+      "ext": 15.5,
+      "texel": 0.0303,
+      "karte": 1024
+     }
+    },
+    "boot_s": 5.5,
+    "fehler": []
+   }
+  },
+  "spiel_s0": {
+   "hoch": {
+    "n": 358,
+    "p50": 27,
+    "p95": 38.5,
+    "p99": 59.5,
+    "fps": 35.7,
+    "calls": 44,
+    "callsMax": 46,
+    "tris": 67977,
+    "tex": 62,
+    "zusatz": {
+     "dpr": 1,
+     "size": [
+      412,
+      915
+     ],
+     "level": 0,
+     "kino": {
+      "level": 0,
+      "name": "Einfach",
+      "pipeline": false,
+      "scale": 1,
+      "msaa": 0,
+      "stages": [
+       "contact"
+      ],
+      "grade": "tv",
+      "size": null,
+      "licht": "tag",
+      "bloom": [
+       0.97,
+       0.224
+      ],
+      "dof": null,
+      "kontakt": true
+     },
+     "auto": {
+      "on": false,
+      "steps": []
+     },
+     "shadow": null
+    },
+    "boot_s": 5.7,
+    "fehler": []
+   },
+   "quer": {
+    "n": 366,
+    "p50": 26,
+    "p95": 36.4,
+    "p99": 62.4,
+    "fps": 36.5,
+    "calls": 42,
+    "callsMax": 46,
+    "tris": 63430,
+    "tex": 62,
+    "zusatz": {
+     "dpr": 1,
+     "size": [
+      915,
+      412
+     ],
+     "level": 0,
+     "kino": {
+      "level": 0,
+      "name": "Einfach",
+      "pipeline": false,
+      "scale": 1,
+      "msaa": 0,
+      "stages": [
+       "contact"
+      ],
+      "grade": "tv",
+      "size": null,
+      "licht": "tag",
+      "bloom": [
+       0.97,
+       0.224
+      ],
+      "dof": null,
+      "kontakt": true
+     },
+     "auto": {
+      "on": false,
+      "steps": []
+     },
+     "shadow": null
+    },
+    "boot_s": 5.8,
+    "fehler": []
+   }
+  },
+  "spiel_s1": {
+   "hoch": {
+    "n": 322,
+    "p50": 30,
+    "p95": 46.5,
+    "p99": 51.5,
+    "fps": 32.1,
+    "calls": 56,
+    "callsMax": 60,
+    "tris": 70138,
+    "tex": 70,
+    "zusatz": {
+     "dpr": 1.5,
+     "size": [
+      618,
+      1372
+     ],
+     "level": 1,
+     "kino": {
+      "level": 1,
+      "name": "Standard",
+      "pipeline": true,
+      "scale": 0.8,
+      "msaa": 0,
+      "stages": [
+       "scale",
+       "aa",
+       "sharpen",
+       "bloom",
+       "grade",
+       "vignette",
+       "dither",
+       "contact",
+       "dof"
+      ],
+      "grade": "tv",
+      "size": [
+       494,
+       1098
+      ],
+      "licht": "tag",
+      "bloom": [
+       0.97,
+       0.224
+      ],
+      "dof": null,
+      "kontakt": true
+     },
+     "auto": {
+      "on": false,
+      "steps": []
+     },
+     "shadow": {
+      "ext": 15,
+      "texel": 0.0293,
+      "karte": 1024
+     }
+    },
+    "boot_s": 5.9,
+    "fehler": []
+   },
+   "quer": {
+    "n": 320,
+    "p50": 30.1,
+    "p95": 45.9,
+    "p99": 52,
+    "fps": 31.9,
+    "calls": 54,
+    "callsMax": 61,
+    "tris": 64625,
+    "tex": 70,
+    "zusatz": {
+     "dpr": 1.5,
+     "size": [
+      1372,
+      618
+     ],
+     "level": 1,
+     "kino": {
+      "level": 1,
+      "name": "Standard",
+      "pipeline": true,
+      "scale": 0.8,
+      "msaa": 0,
+      "stages": [
+       "scale",
+       "aa",
+       "sharpen",
+       "bloom",
+       "grade",
+       "vignette",
+       "dither",
+       "contact",
+       "dof"
+      ],
+      "grade": "tv",
+      "size": [
+       1098,
+       494
+      ],
+      "licht": "tag",
+      "bloom": [
+       0.97,
+       0.224
+      ],
+      "dof": null,
+      "kontakt": true
+     },
+     "auto": {
+      "on": false,
+      "steps": []
+     },
+     "shadow": {
+      "ext": 15.5,
+      "texel": 0.0303,
+      "karte": 1024
+     }
+    },
+    "boot_s": 6.3,
+    "fehler": []
+   }
+  },
+  "spiel_s2": {
+   "hoch": {
+    "n": 264,
+    "p50": 37.1,
+    "p95": 52.1,
+    "p99": 68.5,
+    "fps": 26.3,
+    "calls": 81,
+    "callsMax": 84,
+    "tris": 123983,
+    "tex": 71,
+    "zusatz": {
+     "dpr": 2,
+     "size": [
+      824,
+      1830
+     ],
+     "level": 2,
+     "kino": {
+      "level": 2,
+      "name": "Kino",
+      "pipeline": true,
+      "scale": 0.9,
+      "msaa": 4,
+      "stages": [
+       "scale",
+       "sharpen",
+       "ssao",
+       "bloom",
+       "grade",
+       "vignette",
+       "dither",
+       "contact",
+       "dof"
+      ],
+      "grade": "tv",
+      "size": [
+       742,
+       1647
+      ],
+      "licht": "tag",
+      "bloom": [
+       0.97,
+       0.252
+      ],
+      "dof": null,
+      "kontakt": true
+     },
+     "auto": {
+      "on": false,
+      "steps": []
+     },
+     "shadow": {
+      "ext": 15.5,
+      "texel": 0.0151,
+      "karte": 2048
+     }
+    },
+    "boot_s": 5.9,
+    "fehler": []
+   },
+   "quer": {
+    "n": 264,
+    "p50": 37,
+    "p95": 52.5,
+    "p99": 67,
+    "fps": 26.3,
+    "calls": 79,
+    "callsMax": 85,
+    "tris": 118554,
+    "tex": 71,
+    "zusatz": {
+     "dpr": 2,
+     "size": [
+      1830,
+      824
+     ],
+     "level": 2,
+     "kino": {
+      "level": 2,
+      "name": "Kino",
+      "pipeline": true,
+      "scale": 0.9,
+      "msaa": 4,
+      "stages": [
+       "scale",
+       "sharpen",
+       "ssao",
+       "bloom",
+       "grade",
+       "vignette",
+       "dither",
+       "contact",
+       "dof"
+      ],
+      "grade": "tv",
+      "size": [
+       1647,
+       742
+      ],
+      "licht": "tag",
+      "bloom": [
+       0.97,
+       0.252
+      ],
+      "dof": null,
+      "kontakt": true
+     },
+     "auto": {
+      "on": false,
+      "steps": []
+     },
+     "shadow": {
+      "ext": 15.5,
+      "texel": 0.0151,
+      "karte": 2048
+     }
+    },
+    "boot_s": 5.8,
+    "fehler": []
+   }
+  },
+  "spiel_abend_s1": {
+   "hoch": {
+    "n": 299,
+    "p50": 31.9,
+    "p95": 51.2,
+    "p99": 68.4,
+    "fps": 29.8,
+    "calls": 56,
+    "callsMax": 58,
+    "tris": 70367,
+    "tex": 71,
+    "zusatz": {
+     "dpr": 1.5,
+     "size": [
+      618,
+      1372
+     ],
+     "level": 1,
+     "kino": {
+      "level": 1,
+      "name": "Standard",
+      "pipeline": true,
+      "scale": 0.8,
+      "msaa": 0,
+      "stages": [
+       "scale",
+       "aa",
+       "sharpen",
+       "bloom",
+       "grade",
+       "vignette",
+       "dither",
+       "contact",
+       "dof"
+      ],
+      "grade": "tvAbend",
+      "size": [
+       494,
+       1098
+      ],
+      "licht": "abend",
+      "bloom": [
+       0.93,
+       0.32
+      ],
+      "dof": null,
+      "kontakt": true
+     },
+     "auto": {
+      "on": false,
+      "steps": []
+     },
+     "shadow": {
+      "ext": 12.5,
+      "texel": 0.0244,
+      "karte": 1024
+     }
+    },
+    "boot_s": 6.6,
+    "fehler": []
+   },
+   "quer": {
+    "n": 309,
+    "p50": 31,
+    "p95": 49.5,
+    "p99": 52.4,
+    "fps": 30.8,
+    "calls": 56,
+    "callsMax": 61,
+    "tris": 66695,
+    "tex": 72,
+    "zusatz": {
+     "dpr": 1.5,
+     "size": [
+      1372,
+      618
+     ],
+     "level": 1,
+     "kino": {
+      "level": 1,
+      "name": "Standard",
+      "pipeline": true,
+      "scale": 0.8,
+      "msaa": 0,
+      "stages": [
+       "scale",
+       "aa",
+       "sharpen",
+       "bloom",
+       "grade",
+       "vignette",
+       "dither",
+       "contact",
+       "dof"
+      ],
+      "grade": "tvAbend",
+      "size": [
+       1098,
+       494
+      ],
+      "licht": "abend",
+      "bloom": [
+       0.93,
+       0.32
+      ],
+      "dof": null,
+      "kontakt": true
+     },
+     "auto": {
+      "on": false,
+      "steps": []
+     },
+     "shadow": {
+      "ext": 14,
+      "texel": 0.0273,
+      "karte": 1024
+     }
+    },
+    "boot_s": 6.5,
+    "fehler": []
+   }
+  },
+  "spiel_auto": {
+   "hoch": {
+    "n": 236,
+    "p50": 29,
+    "p95": 46,
+    "p99": 83.6,
+    "fps": 23.5,
+    "calls": 52,
+    "callsMax": 56,
+    "tris": 69043,
+    "tex": 70,
+    "zusatz": {
+     "dpr": 1,
+     "size": [
+      412,
+      915
+     ],
+     "level": 0,
+     "kino": {
+      "level": 0,
+      "name": "Einfach",
+      "pipeline": false,
+      "scale": 1,
+      "msaa": 0,
+      "stages": [
+       "contact"
+      ],
+      "grade": "tv",
+      "size": [
+       494,
+       1098
+      ],
+      "licht": "tag",
+      "bloom": [
+       0.97,
+       0.224
+      ],
+      "dof": null,
+      "kontakt": true
+     },
+     "auto": {
+      "on": true,
+      "autopilot": {
+       "skala": 1,
+       "bereich": [
+        0.75,
+        1
+       ],
+       "stufen": {
+        "deko": 0,
+        "menschenschatten": 0,
+        "stufe": 0
+       },
+       "fps": 37,
+       "arbeit": 25.41,
+       "cpu": 25.41,
+       "gpu": 2.21,
+       "engpass": "cpu",
+       "gedeckelt": false,
+       "gesperrtBis": 1.4,
+       "aenderungen": 5,
+       "t": 12.2,
+       "level": 0,
+       "deko": false,
+       "menschenschatten": false
+      },
+      "steps": [
+       "skala + (Skala 0.85, 220.8 fps)",
+       "skala − (Skala 0.8, 36.2 fps)",
+       "deko − (Skala 0.8, 33.3 fps)",
+       "menschenschatten − (Skala 0.8, 34.1 fps)",
+       "stufe − (Skala 1, 34.8 fps)"
+      ],
+      "log": [
+       {
+        "t": 4.02,
+        "was": "skala",
+        "richtung": 1,
+        "skala": 0.85,
+        "fps": 220.8,
+        "arbeit": 4.24
+       },
+       {
+        "t": 5.56,
+        "was": "skala",
+        "richtung": -1,
+        "skala": 0.8,
+        "fps": 36.2,
+        "arbeit": 25.58
+       },
+       {
+        "t": 7.12,
+        "was": "deko",
+        "richtung": -1,
+        "skala": 0.8,
+        "fps": 33.3,
+        "arbeit": 28.2
+       },
+       {
+        "t": 8.66,
+        "was": "menschenschatten",
+        "richtung": -1,
+        "skala": 0.8,
+        "fps": 34.1,
+        "arbeit": 27.41
+       },
+       {
+        "t": 10.2,
+        "was": "stufe",
+        "richtung": -1,
+        "skala": 1,
+        "fps": 34.8,
+        "arbeit": 26.8
+       }
+      ],
+      "startProbe": null
+     },
+     "shadow": {
+      "ext": 15,
+      "texel": 0.0293,
+      "karte": 1024
+     }
+    },
+    "boot_s": 5.8,
+    "fehler": []
+   },
+   "quer": {
+    "n": 213,
+    "p50": 31,
+    "p95": 51.1,
+    "p99": 80.4,
+    "fps": 21.2,
+    "calls": 52,
+    "callsMax": 58,
+    "tris": 69912,
+    "tex": 69,
+    "zusatz": {
+     "dpr": 1,
+     "size": [
+      915,
+      412
+     ],
+     "level": 0,
+     "kino": {
+      "level": 0,
+      "name": "Einfach",
+      "pipeline": false,
+      "scale": 1,
+      "msaa": 0,
+      "stages": [
+       "contact"
+      ],
+      "grade": "tv",
+      "size": [
+       1098,
+       494
+      ],
+      "licht": "tag",
+      "bloom": [
+       0.97,
+       0.224
+      ],
+      "dof": null,
+      "kontakt": true
+     },
+     "auto": {
+      "on": true,
+      "autopilot": {
+       "skala": 1,
+       "bereich": [
+        0.75,
+        1
+       ],
+       "stufen": {
+        "deko": 0,
+        "menschenschatten": 0,
+        "stufe": 0
+       },
+       "fps": 36,
+       "arbeit": 26.08,
+       "cpu": 26.08,
+       "gpu": 2.31,
+       "engpass": "cpu",
+       "gedeckelt": false,
+       "gesperrtBis": 1.1,
+       "aenderungen": 5,
+       "t": 12.5,
+       "level": 0,
+       "deko": false,
+       "menschenschatten": false
+      },
+      "steps": [
+       "skala + (Skala 0.85, 209.3 fps)",
+       "skala − (Skala 0.8, 29.3 fps)",
+       "deko − (Skala 0.8, 23.6 fps)",
+       "menschenschatten − (Skala 0.8, 32 fps)",
+       "stufe − (Skala 1, 29.5 fps)"
+      ],
+      "log": [
+       {
+        "t": 4.01,
+        "was": "skala",
+        "richtung": 1,
+        "skala": 0.85,
+        "fps": 209.3,
+        "arbeit": 4.49
+       },
+       {
+        "t": 5.56,
+        "was": "skala",
+        "richtung": -1,
+        "skala": 0.8,
+        "fps": 29.3,
+        "arbeit": 32.01
+       },
+       {
+        "t": 7.15,
+        "was": "deko",
+        "richtung": -1,
+        "skala": 0.8,
+        "fps": 23.6,
+        "arbeit": 38.84
+       },
+       {
+        "t": 8.7,
+        "was": "menschenschatten",
+        "richtung": -1,
+        "skala": 0.8,
+        "fps": 32,
+        "arbeit": 29.64
+       },
+       {
+        "t": 10.24,
+        "was": "stufe",
+        "richtung": -1,
+        "skala": 1,
+        "fps": 29.5,
+        "arbeit": 31.76
+       }
+      ],
+      "startProbe": null
+     },
+     "shadow": {
+      "ext": 15.5,
+      "texel": 0.0303,
+      "karte": 1024
+     }
+    },
+    "boot_s": 5.7,
+    "fehler": []
+   }
+  },
+  "training_s1": {
+   "hoch": {
+    "n": 509,
+    "p50": 19.7,
+    "p95": 35,
+    "p99": 36.6,
+    "fps": 50.7,
+    "calls": 71,
+    "callsMax": 72,
+    "tris": 31376,
+    "tex": 50,
+    "zusatz": {
+     "dpr": 1.5,
+     "size": [
+      618,
+      1372
+     ],
+     "level": 1,
+     "kino": {
+      "level": 1,
+      "name": "Standard",
+      "pipeline": true,
+      "scale": 0.8,
+      "msaa": 0,
+      "stages": [
+       "scale",
+       "aa",
+       "sharpen",
+       "bloom",
+       "grade",
+       "vignette",
+       "dither",
+       "contact",
+       "dof"
+      ],
+      "grade": "tv",
+      "size": [
+       494,
+       1098
+      ],
+      "licht": "tag",
+      "bloom": [
+       0.97,
+       0.224
+      ],
+      "dof": null,
+      "kontakt": true
+     },
+     "auto": {
+      "on": false,
+      "steps": []
+     },
+     "shadow": {
+      "ext": 15.5,
+      "texel": 0.0303,
+      "karte": 1024
+     }
+    },
+    "boot_s": 4.8,
+    "fehler": []
+   },
+   "quer": {
+    "n": 491,
+    "p50": 20.1,
+    "p95": 34.6,
+    "p99": 36.2,
+    "fps": 49,
+    "calls": 73,
+    "callsMax": 74,
+    "tris": 31347,
+    "tex": 51,
+    "zusatz": {
+     "dpr": 1.5,
+     "size": [
+      1372,
+      618
+     ],
+     "level": 1,
+     "kino": {
+      "level": 1,
+      "name": "Standard",
+      "pipeline": true,
+      "scale": 0.8,
+      "msaa": 0,
+      "stages": [
+       "scale",
+       "aa",
+       "sharpen",
+       "bloom",
+       "grade",
+       "vignette",
+       "dither",
+       "contact",
+       "dof"
+      ],
+      "grade": "tv",
+      "size": [
+       1098,
+       494
+      ],
+      "licht": "tag",
+      "bloom": [
+       0.97,
+       0.224
+      ],
+      "dof": null,
+      "kontakt": true
+     },
+     "auto": {
+      "on": false,
+      "steps": []
+     },
+     "shadow": {
+      "ext": 15.5,
+      "texel": 0.0303,
+      "karte": 1024
+     }
+    },
+    "boot_s": 4.7,
+    "fehler": []
+   }
+  },
+  "replay_s1": {
+   "hoch": {
+    "n": 520,
+    "p50": 19.5,
+    "p95": 35.3,
+    "p99": 36.1,
+    "fps": 51.9,
+    "calls": 40,
+    "callsMax": 41,
+    "tris": 34515,
+    "tex": 70,
+    "zusatz": {
+     "dpr": 1.5,
+     "size": [
+      618,
+      1372
+     ],
+     "level": 1,
+     "kino": {
+      "level": 1,
+      "name": "Standard",
+      "pipeline": true,
+      "scale": 0.8,
+      "msaa": 0,
+      "stages": [
+       "scale",
+       "aa",
+       "sharpen",
+       "bloom",
+       "grade",
+       "vignette",
+       "dither",
+       "contact",
+       "dof"
+      ],
+      "grade": "tv",
+      "size": [
+       494,
+       1098
+      ],
+      "licht": "tag",
+      "bloom": [
+       0.97,
+       0.224
+      ],
+      "dof": {
+       "focus": 4.218368780152927,
+       "k": 0.85,
+       "r": 0.014,
+       "near": 0.5,
+       "far": 0.9
+      },
+      "kontakt": true
+     },
+     "auto": {
+      "on": false,
+      "steps": []
+     },
+     "shadow": {
+      "ext": 7.5,
+      "texel": 0.0146,
+      "karte": 1024
+     }
+    },
+    "boot_s": 5.8,
+    "fehler": []
+   },
+   "quer": {
+    "n": 495,
+    "p50": 20.1,
+    "p95": 25,
+    "p99": 36.2,
+    "fps": 49.4,
+    "calls": 41,
+    "callsMax": 42,
+    "tris": 34675,
+    "tex": 70,
+    "zusatz": {
+     "dpr": 1.5,
+     "size": [
+      1372,
+      618
+     ],
+     "level": 1,
+     "kino": {
+      "level": 1,
+      "name": "Standard",
+      "pipeline": true,
+      "scale": 0.8,
+      "msaa": 0,
+      "stages": [
+       "scale",
+       "aa",
+       "sharpen",
+       "bloom",
+       "grade",
+       "vignette",
+       "dither",
+       "contact",
+       "dof"
+      ],
+      "grade": "tv",
+      "size": [
+       1098,
+       494
+      ],
+      "licht": "tag",
+      "bloom": [
+       0.97,
+       0.224
+      ],
+      "dof": {
+       "focus": 3.116797786033125,
+       "k": 0.85,
+       "r": 0.014,
+       "near": 0.5,
+       "far": 0.9
+      },
+      "kontakt": true
+     },
+     "auto": {
+      "on": false,
+      "steps": []
+     },
+     "shadow": {
+      "ext": 15.5,
+      "texel": 0.0303,
+      "karte": 1024
+     }
+    },
+    "boot_s": 6.4,
+    "fehler": []
+   }
+  }
+ },
+ "ladegroesse": {
+  "dateien": 71,
+  "roh_mb": 6.98,
+  "gzip_mb": 4.82,
+  "extern": [],
+  "groesste_gzip_kb": [
+   [
+    "assets\\hdri\\env_1k.hdr",
+    1331
+   ],
+   [
+    "assets\\tex\\grass_color.jpg",
+    329
+   ],
+   [
+    "assets\\avatars\\Female_Adult_12.glb",
+    325
+   ],
+   [
+    "assets\\tex\\turf_normal.jpg",
+    302
+   ],
+   [
+    "assets\\avatars\\Sports_Male_03.glb",
+    290
+   ],
+   [
+    "assets\\avatars\\Sports_Female_02.glb",
+    286
+   ],
+   [
+    "assets\\avatars\\Male_Adult_10.glb",
+    283
+   ],
+   [
+    "assets\\avatars\\Sports_Male_02.glb",
+    213
+   ],
+   [
+    "assets\\tex\\turf_color.jpg",
+    203
+   ],
+   [
+    "assets\\avatars\\Sports_Male_04.glb",
+    198
+   ]
+  ]
+ }
+}
