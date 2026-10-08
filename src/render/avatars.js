@@ -433,13 +433,15 @@ export class Avatar {
     const kickSeite = pl.kickFoot > 0 ? 'R' : 'L';
     for (const s of ['L', 'R']) {
       const T = this.bones[`Bip01_${s}_Thigh`], C = this.bones[`Bip01_${s}_Calf`], F = this.bones[`Bip01_${s}_Foot`], Z = this.bones[`Bip01_${s}_Toe0`];
-      T.getWorldPosition(IK.a); C.getWorldPosition(IK.b); F.getWorldPosition(IK.c);
+      // Matrizen sind aktuell (updateMatrixWorld vor den Schichten, rotBoneWorld/IK aktualisieren ihre Teilbäume) → direkt
+      // lesen statt getWorldPosition (das rechnet je Aufruf die ganze Elternkette neu: am Handy ~1 ms für 6 Figuren)
+      IK.a.setFromMatrixPosition(T.matrixWorld); IK.b.setFromMatrixPosition(C.matrixWorld); IK.c.setFromMatrixPosition(F.matrixWorld);
       let tx = IK.c.x, ty = IK.c.y, tz = IK.c.z, an = false;
       if (kw > 0 && s === kickSeite) {
         const k = kickZiel(this.kickPunkt, this.kickVon, BALL_R, R.knoechel);
         tx += (k[0] - tx) * kw; ty += (k[1] - ty) * kw; tz += (k[2] - tz) * kw; an = true;
       } else if (aufrecht) {
-        Z.getWorldPosition(IK.z);
+        IK.z.setFromMatrixPosition(Z.matrixWorld);
         const hub = bodenHub(IK.c.y, IK.z.y, R.knoechel - 0.01, R.zeh - 0.01, 0);
         if (hub > 0.002) { ty += hub; an = true; }
       }
