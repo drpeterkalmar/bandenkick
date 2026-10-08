@@ -46,6 +46,8 @@ const isTouch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in win
 const AUTOPILOT = qs.get('autopilot') !== '0';
 // n4 (Audit #8): Figuren außerhalb des Bildes nicht zeichnen und nur jedes 2. Bild animieren; ?cull=0 = wie bisher
 const AV_CULL = qs.get('cull') !== '0';
+// n4 (Audit #5): Fuß-IK (Boden + Ballkontakt), ?ik=0 = aus
+const AV_IK = qs.get('ik') !== '0';
 const SCHATTENKAM = qs.get('schattenkam') !== '0';
 const SCHATTEN2 = qs.get('schatten2') === '1024' ? 1024 : 2048;
 const START = startStufe({ q: qs.has('q') ? qs.get('q') : null, gemerkt: AUTOPILOT && !qs.has('q') ? ladeStufe(localStorage) : null, touch: isTouch, autopilot: AUTOPILOT });
@@ -243,7 +245,7 @@ async function boot() {
   scene.add(marker);
   if (A) {
     for (let team = 0; team < 2; team++) for (let i = 0; i < 3; i++) {
-      const av = new Avatar(A, ROSTER[team][i % ROSTER[team].length], team, { shadows: quality.avatarShadows, cull: AV_CULL, deko: DEKO ? { sunDir, num: BIB_NUMS[team][i], extShadow: true } : null });
+      const av = new Avatar(A, ROSTER[team][i % ROSTER[team].length], team, { shadows: quality.avatarShadows, cull: AV_CULL, ik: AV_IK, deko: DEKO ? { sunDir, num: BIB_NUMS[team][i], extShadow: true } : null });
       figs.push(av); scene.add(av.root);
     }
   } else {
@@ -695,10 +697,12 @@ addEventListener('pointerdown', () => { if (rp.dir && mode === 'play' && rp.dir.
 addEventListener('keydown', (e) => { if (rp.dir && mode === 'play' && e.code !== 'Escape' && rp.dir.real > 0.3) skipReplay(); });
 
 const CULL = { f: new THREE.Frustum(), m: new THREE.Matrix4(), s: new THREE.Sphere(new THREE.Vector3(), 1.5) };
+const BALLPOS = [0, 0, 0]; // n4: Ball (wie gezeichnet) für die Fuß-IK beim Kontakt
 // Menschen zeichnen: Position interpoliert, Pose aus dem Sim-Zustand (Blend nach Tempo, Tormann, Jubel)
 function drawPlayers(dt, a, rf = null) {
   const R = game.match ? game.rules : null, b = rf ? rf.ball : game.ball;
   const n = game.players.length;
+  BALLPOS[0] = ballMesh.position.x; BALLPOS[1] = ballMesh.position.y; BALLPOS[2] = ballMesh.position.z;
   // Figur je Spieler: Mannschaft × Platz (Challenges haben weniger Spieler, Farbe muss passen); Wiederholung: Geister
   const slot = figSlot || (figSlot = []), cnt = [0, 0];
   // n4: Sichtbarkeit je Figur mit der Kamera des letzten Bildes (Kugel 1,5 m um die Hüfte – etwas größer als die Zeichen-Kugel, damit am Bildrand nichts im Halbtakt zuckt); nicht in der Wiederholung
@@ -723,7 +727,7 @@ function drawPlayers(dt, a, rf = null) {
     const ownGoalX = R ? R.goalX(pl.team) : -99;
     const ready = keeper && b.held < 0 && Math.hypot(b.p.x - ownGoalX, b.p.z) < 9 && pl.speed < 2.5 && pl.hand.mode === 'none';
     if (sparen) CULL.s.center.set(x, 1.0 + (pl.jumpY || 0), z);
-    f.update(dt, pl, { x, z, keeper, holding: b.held === pl.id, ready, special, t: rf ? rf.t : game.t, sparen: sparen && !CULL.f.intersectsSphere(CULL.s) });
+    f.update(dt, pl, { x, z, keeper, holding: b.held === pl.id, ready, special, t: rf ? rf.t : game.t, sparen: sparen && !CULL.f.intersectsSphere(CULL.s), ball: BALLPOS });
   }
   if (rf) { marker.visible = false; return; }
   void n;
@@ -859,7 +863,7 @@ Object.assign(G, {
     return { calls: i.render.calls, triangles: i.render.triangles, points: i.render.points, geometries: i.memory.geometries, textures: i.memory.textures, programs: i.programs ? i.programs.length : null,
       dpr: renderer.getPixelRatio(), size: [renderer.domElement.width, renderer.domElement.height], quality, shadows: renderer.shadowMap.enabled,
       auto: grafik ? { on: true, autopilot: grafik.zustand(), steps: grafik.schritte(), startProbe: G.startProbe || null } : { on: autoQ.on, steps: [...autoQ.steps] },
-      shadow: G.schatten || null, figuren: { cull: AV_CULL, gespart: figs.reduce((n, f) => n + (f.gespart || 0), 0) },
+      shadow: G.schatten || null, figuren: { cull: AV_CULL, gespart: figs.reduce((n, f) => n + (f.gespart || 0), 0), ik: AV_IK, ikN: figs.reduce((n, f) => n + (f.ikN || 0), 0), ikMs: +figs.reduce((n, f) => n + (f.ikZeit || 0), 0).toFixed(2) },
       kino: kino ? { ...kino.describe(), licht: kino.licht, bloom: [kino.bloomThreshold, kino.bloomStrength], dof: rp.dof, kontakt: !!kontakt } : null };
   },
   perf() {

@@ -11,6 +11,7 @@ import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 import { AIR_POSE } from '../sim/technique.js';
 import { figureShadowTexture, figureShadowGeometry } from './stimmung.js';
 import { KTX2_AVATARE } from './avatar_ktx2.js';
+import { zweiKnochen, bodenHub, kickGewicht, kickZiel } from './ik.js';
 
 export const TEAM_COLORS = [0xff6a13, 0x1f6fff];   // Leibchen: Orange / Blau (auch farbfehlsichtig gut trennbar)
 export const TEAM_NAMES = ['Orange', 'Blau'];
@@ -20,6 +21,11 @@ const LOCO = ['walk', 'jog', 'run', 'sprint'];
 export const BOUND_R = 1.25; // m: Begrenzungskugel der Figuren um die Hüfte (Node-Test: schlimmste Pose füllt ~84 %)
 const TORSO = new Set(['Bip01_Spine', 'Bip01_Spine1', 'Bip01_Spine2', 'Bip01_L_Clavicle', 'Bip01_R_Clavicle', 'Bip01_Pelvis']);
 const _v = new THREE.Vector3(), _w = new THREE.Vector3(), _s = new THREE.Vector3(), _q = new THREE.Quaternion(), _q2 = new THREE.Quaternion(), _m = new THREE.Matrix4();
+// Fuß-IK (n4): Hilfswerte ohne Neuanlage je Bild
+const IK = { a: new THREE.Vector3(), b: new THREE.Vector3(), c: new THREE.Vector3(), z: new THREE.Vector3(), p: new THREE.Vector3(), s: new THREE.Vector3(),
+  qT: new THREE.Quaternion(), qC: new THREE.Quaternion(), qF: new THREE.Quaternion(), qP: new THREE.Quaternion(), qH: new THREE.Quaternion(), qK: new THREE.Quaternion(),
+  hip: new THREE.Quaternion(), knee: new THREE.Quaternion() };
+const BALL_R = 0.11;
 
 // n4 (Audit #7): KTX2-Texturen, wenn tools/build_ktx2_avatars.mjs sie erzeugt hat (avatar_ktx2.js) und nicht ?ktx=0 –
 // KTX2Loader mit detectSupport (ETC2/ASTC/BC je Gerät), bei Fehlern je Figur Rückfall auf die WebP-Fassung.
@@ -248,6 +254,15 @@ export class Avatar {
     this.setShadows(!!opts.shadows);
     this.sparDt = 0; this.sparN = 0;
     if (this.cull) this.setBounds();
+    // n4 Fuß-IK (Audit #5): Ruhehöhen von Knöchel und Zehen (Sohle auf dem Rasen) einmal messen; ?ik=0 = aus
+    const beine = ['L', 'R'].every((s) => this.bones[`Bip01_${s}_Thigh`] && this.bones[`Bip01_${s}_Calf`] && this.bones[`Bip01_${s}_Foot`] && this.bones[`Bip01_${s}_Toe0`]);
+    this.ik = opts.ik !== false && beine;
+    if (beine) {
+      this.root.updateMatrixWorld(true);
+      const h = (n) => (this.bones[`Bip01_L_${n}`].getWorldPosition(_v).y + this.bones[`Bip01_R_${n}`].getWorldPosition(_w).y) / 2;
+      this.ruhe = { knoechel: h('Foot'), zeh: h('Toe0') };
+    }
+    this.kickPunkt = null; this.ktPrev = 9; this.ikZeit = 0; this.ikN = 0;
   }
 
   // n4 (Audit #8): Begrenzungskugel je Teil-Mesh aus der Ruhepose, auf mindestens BOUND_R Meter (Welt) vergrößert, damit
@@ -335,6 +350,9 @@ export class Avatar {
     const hold = st.holding ? 1 : 0;
     this.holdW = (this.holdW || 0) + (hold - (this.holdW || 0)) * Math.min(1, dt * 8);
     const kt = pl.kickT ?? 9;
+    // n4: Ballkontakt merken (kickT springt auf ~0) → Ziel für die Fuß-IK des Schussbeins
+    if (kt < this.ktPrev - 1e-4 && kt < 0.05 && st.ball) { this.kickPunkt = [st.ball[0], st.ball[1], st.ball[2]]; this.kickVon = [st.x, 0, st.z]; }
+    this.ktPrev = kt;
     // Technik-Pose (Nacht 2b, prozedural bis zu den Mixamo-Clips): Luftball im Anflug, am Boden danach, Kick-Arten
     const tp = techPose(pl, st.t ?? 0);
     this.tpW = (this.tpW || 0) + ((tp ? 1 : 0) - (this.tpW || 0)) * Math.min(1, dt * (tp ? 14 : 5));
@@ -398,6 +416,48 @@ export class Avatar {
         if (this.holdW > 0.01) { this.rotBoneWorld(`Bip01_${s}_Forearm`, 'side', -0.55 * this.holdW); this.rotBoneWorld(`Bip01_${s}_Forearm`, 'up', sg * -0.38 * this.holdW); }
       }
     }
+    if (this.ik) this.fussIK(pl, kt);
+  }
+
+  // n4 Fuß-IK (Audit #5), nur wenn prozedurale Schichten aktiv sind (sonst stehen die Clips von selbst auf dem Boden):
+  //  • Boden: aufrecht (kein Hechtsprung/Grätsche/Luftball/Liegen) dürfen Knöchel und Zehen nicht unter ihre Ruhehöhe –
+  //    Stemmschritt und Rücklage drückten die Füße bisher in den Rasen. Nur anheben, nie herunterziehen.
+  //  • Ballkontakt: das Schussbein (wie die Schwung-Schicht: kickFoot) greift beim Kontakt zum Kontaktpunkt aus der Simulation
+  //    (Ball beim Sprung von kickT auf 0) und blendet in KICK_T = 0,12 s aus – der Fuß trifft den Ball sichtbar.
+  fussIK(pl, kt) {
+    const t0 = typeof performance !== 'undefined' ? performance.now() : 0;
+    const aufrecht = this.dive < 0.2 && !pl.slide && !pl.fall && !(pl.air && pl.air.go);
+    const kw = this.kickPunkt ? kickGewicht(kt) : 0;
+    if (!aufrecht && kw <= 0) return;
+    const R = this.ruhe, yaw = this.root.rotation.y, pol = [Math.sin(yaw), 0, Math.cos(yaw)];
+    const kickSeite = pl.kickFoot > 0 ? 'R' : 'L';
+    for (const s of ['L', 'R']) {
+      const T = this.bones[`Bip01_${s}_Thigh`], C = this.bones[`Bip01_${s}_Calf`], F = this.bones[`Bip01_${s}_Foot`], Z = this.bones[`Bip01_${s}_Toe0`];
+      T.getWorldPosition(IK.a); C.getWorldPosition(IK.b); F.getWorldPosition(IK.c);
+      let tx = IK.c.x, ty = IK.c.y, tz = IK.c.z, an = false;
+      if (kw > 0 && s === kickSeite) {
+        const k = kickZiel(this.kickPunkt, this.kickVon, BALL_R, R.knoechel);
+        tx += (k[0] - tx) * kw; ty += (k[1] - ty) * kw; tz += (k[2] - tz) * kw; an = true;
+      } else if (aufrecht) {
+        Z.getWorldPosition(IK.z);
+        const hub = bodenHub(IK.c.y, IK.z.y, R.knoechel - 0.01, R.zeh - 0.01, 0);
+        if (hub > 0.002) { ty += hub; an = true; }
+      }
+      if (!an) continue;
+      const L = zweiKnochen(IK.a.toArray(), IK.b.toArray(), IK.c.toArray(), [tx, ty, tz], pol);
+      for (const b of [T, C, F]) if (!this.touched.has(b)) this.touched.set(b, b.quaternion.clone());
+      T.matrixWorld.decompose(IK.p, IK.qT, IK.s); C.matrixWorld.decompose(IK.p, IK.qC, IK.s); F.matrixWorld.decompose(IK.p, IK.qF, IK.s);
+      T.parent.matrixWorld.decompose(IK.p, IK.qP, IK.s);
+      IK.qH.fromArray(L.qHuefte); IK.qK.fromArray(L.qKnie);
+      IK.hip.multiplyQuaternions(IK.qH, IK.qT);                        // Oberschenkel neu (Welt)
+      IK.knee.multiplyQuaternions(IK.qH, IK.qK).multiply(IK.qC);        // Unterschenkel neu (Welt)
+      T.quaternion.copy(IK.qP.invert().multiply(IK.hip));
+      C.quaternion.copy(IK.qP.copy(IK.hip).invert().multiply(IK.knee));
+      F.quaternion.copy(IK.qP.copy(IK.knee).invert().multiply(IK.qF));  // Fuß behält seine Welt-Ausrichtung
+      T.updateMatrixWorld(true);
+      this.ikN++;
+    }
+    if (t0) this.ikZeit += performance.now() - t0;
   }
 
   // Knochen um eine Achse im Figuren-Raum drehen (unabhängig von den lokalen Achsen des Biped-Skeletts):

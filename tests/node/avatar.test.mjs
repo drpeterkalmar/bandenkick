@@ -75,5 +75,79 @@ for (let i = 0; i < 60; i++) { av2.update(1 / 60, pl, { x: 0, z: 0, sparen: true
 check('Halbtakt: Laufphase gleich weit wie im Volltakt', Math.abs(av2.phase - av3.phase), 0, 1e-9, '', `Phase ${av3.phase.toFixed(3)}`);
 void ph0;
 
-const ok = report('n4 Figuren (Culling, Halbtakt)', rows, 'avatar');
+// ---- Fuß-IK (Audit #5) an den echten Skeletten ----
+const { kickZiel } = await import('../../src/render/ik.js');
+const tiefe = (av) => { // wie weit Knöchel/Zehen unter ihrer Ruhehöhe liegen (m, > 0 = im Rasen)
+  let t = 0;
+  for (const s of ['L', 'R']) { const k = av.bones[`Bip01_${s}_Foot`].getWorldPosition(new THREE.Vector3()).y, z = av.bones[`Bip01_${s}_Toe0`].getWorldPosition(new THREE.Vector3()).y; t = Math.max(t, av.ruhe.knoechel - k, av.ruhe.zeh - z); }
+  return t;
+};
+const BODEN = { stemmschritt: [spieler({ speed: 5, vx: 5, plant: 1 }), {}], stemm_seitlich: [spieler({ speed: 5, vz: 5, plant: 1 }), {}], torwart_bereit: [spieler(), { keeper: true, ready: true }],
+  vollspann: POSEN.vollspann, innenseite: [spieler({ speed: 2, vx: 2, kickT: 0.2, techT: 0.2, tech: 'innen' }), {}], ball_halten: POSEN.ball_halten };
+let vorher = 0, nachher = 0, wo2 = '';
+for (const name of [...new Set(ROSTER.flat())]) {
+  for (const [pose, [pl, st]] of Object.entries(BODEN)) {
+    const a0 = new Avatar(A, name, 0, { shadows: false, ik: false }), a1 = new Avatar(A, name, 0, { shadows: false });
+    a0.phase = a1.phase = 0;   // Konstruktor würfelt die Phase
+    // über einen Laufzyklus die tiefste Stelle suchen
+    for (let i = 0; i < 50; i++) {
+      a0.update(1 / 60, pl, { x: 0, z: 0, t: 0, ...st }); a1.update(1 / 60, pl, { x: 0, z: 0, t: 0, ...st });
+      a0.root.updateMatrixWorld(true); a1.root.updateMatrixWorld(true);
+      if (i < 10) continue;
+      const t0 = tiefe(a0), t1 = tiefe(a1);
+      if (t0 > vorher) { vorher = t0; wo2 = `${name} ${pose}`; }
+      nachher = Math.max(nachher, t1);
+    }
+  }
+}
+check('Fuß-IK: Füße im Rasen ohne IK (größte Tiefe, Info)', vorher * 100, -Infinity, Infinity, 'cm', wo2);
+check('Fuß-IK: Füße im Rasen mit IK (Toleranz 1 cm + 2 mm Schwelle)', nachher * 100, 0, 1.25, 'cm');
+// Ballkontakt: Spieler läuft in +x, Ball 0,55 m vor ihm; Kontakt im 21. Bild
+{
+  const av = new Avatar(A, 'Sports_Male_03', 0, { shadows: false }), ball = [0.55, 0.11, 0.1];
+  av.phase = 0;
+  const lauf = (kt) => spieler({ speed: 3, vx: 3, kickT: kt, kickFoot: 1, techT: kt, tech: 'vollspann' });
+  for (let i = 0; i < 20; i++) av.update(1 / 60, lauf(9), { x: 0, z: 0, t: 0, ball });
+  const ziel = kickZiel(ball, [0, 0, 0], 0.11, av.ruhe.knoechel);
+  const mitIK = [], ohne = new Avatar(A, 'Sports_Male_03', 0, { shadows: false, ik: false }); const ohneD = [];
+  ohne.phase = 0;
+  for (let i = 0; i < 20; i++) ohne.update(1 / 60, lauf(9), { x: 0, z: 0, t: 0, ball });
+  for (let k = 0; k < 10; k++) {
+    const kt = k / 60;
+    av.update(1 / 60, lauf(kt), { x: 0, z: 0, t: 0, ball }); ohne.update(1 / 60, lauf(kt), { x: 0, z: 0, t: 0, ball });
+    av.root.updateMatrixWorld(true); ohne.root.updateMatrixWorld(true);
+    const p = av.bones.Bip01_R_Foot.getWorldPosition(new THREE.Vector3()), q = ohne.bones.Bip01_R_Foot.getWorldPosition(new THREE.Vector3());
+    mitIK.push(p.distanceTo(new THREE.Vector3(...ziel))); ohneD.push(q.distanceTo(new THREE.Vector3(...ziel)));
+  }
+  // Ziel teils außer Reichweite (Bein dann gestreckt in Richtung Ball) → mindestens 70 % näher als ohne IK
+  check('Ballkontakt: Schussfuß beim Kontakt am Ball (Abstand Knöchel → Ziel)', mitIK[0] * 100, 0, 0.3 * ohneD[0] * 100, 'cm', `ohne IK ${(ohneD[0] * 100).toFixed(1)} cm; nach 0,05 s ${(mitIK[3] * 100).toFixed(1)} / ${(ohneD[3] * 100).toFixed(1)} cm`);
+  // danach zieht nichts mehr zum Ball (nur noch die Boden-Regel, die auch beim Schwung greifen kann)
+  check('Ballkontakt: nach 0,12 s kein Zug mehr zum Ball (Differenz zu ohne IK)', Math.max(Math.abs(mitIK[8] - ohneD[8]), Math.abs(mitIK[9] - ohneD[9])) * 100, 0, 3, 'cm');
+}
+// Ohne prozedurale Schicht (reiner Clip) ändert die IK nichts
+{
+  const a0 = new Avatar(A, 'Sports_Female_02', 0, { shadows: false, ik: false }), a1 = new Avatar(A, 'Sports_Female_02', 0, { shadows: false });
+  a0.phase = a1.phase = 0.3;
+  const pl = spieler({ speed: 4, vx: 4 });
+  for (let i = 0; i < 30; i++) { a0.update(1 / 60, pl, { x: 0, z: 0, t: 0 }); a1.update(1 / 60, pl, { x: 0, z: 0, t: 0 }); }
+  a0.root.updateMatrixWorld(true); a1.root.updateMatrixWorld(true);
+  const d = a0.bones.Bip01_L_Foot.getWorldPosition(new THREE.Vector3()).distanceTo(a1.bones.Bip01_L_Foot.getWorldPosition(new THREE.Vector3()));
+  check('reiner Laufzyklus: IK greift nicht ein', d, 0, 1e-9, 'm', `IK-Läufe ${a1.ikN}`);
+}
+// CPU: 6 Figuren im Stemmschritt (IK an beiden Beinen) gegen ohne IK, je 600 Bilder (Node am Mac, ohne Drosselung)
+{
+  const zeit = (ik) => {
+    const figs = [...new Set(ROSTER.flat())].map((n) => new Avatar(A, n, 0, { shadows: false, ik }));
+    const pl = spieler({ speed: 5, vx: 5, plant: 1 });
+    for (let i = 0; i < 60; i++) for (const f of figs) f.update(1 / 60, pl, { x: 0, z: 0, t: 0 });
+    const t0 = performance.now();
+    for (let i = 0; i < 600; i++) for (const f of figs) f.update(1 / 60, pl, { x: 0, z: 0, t: 0 });
+    return { ms: (performance.now() - t0) / 600, ik: figs.reduce((s, f) => s + f.ikZeit, 0) / 660, n: figs.reduce((s, f) => s + f.ikN, 0) };
+  };
+  zeit(true); zeit(false);
+  const a = zeit(false), b = zeit(true);
+  check('CPU je Bild, 6 Figuren mit Stemmschritt: Mehrzeit durch IK (Node, ungedrosselt)', b.ms - a.ms, -Infinity, 0.25, 'ms', `ohne ${a.ms.toFixed(3)} ms, mit ${b.ms.toFixed(3)} ms, IK selbst ${b.ik.toFixed(3)} ms, ${b.n} Bein-Lösungen; Budget am Handy (CPU ×4): +0,5 ms → hier ≤ 0,125 ms anstreben`);
+}
+
+const ok = report('n4 Figuren (Culling, Halbtakt, Fuß-IK)', rows, 'avatar');
 process.exit(ok ? 0 : 1);
