@@ -28,7 +28,10 @@ export function stufenWerte(level, { dpr = 1, schatten2 = 2048 } = {}) {
 
 // Renderskalen-Bereich [min, max, start] je Stufe: aus dem Kino-Look (wenn er die Stufe mit Render-Target zeichnet), sonst direkt
 export function skalaBereich(level, kino) {
-  if (kino && kino.presets && kino.presets[level] && kino.presets[level].pipeline && (kino.stages ? kino.stages.scale !== false : true)) {
+  const P = kino && kino.presets && kino.presets[level];
+  // Renderskala der ZIEL-Stufe: Preset, außer ?kl=-scale/+scale (kino.overrides) – nicht kino.stages (gilt für die aktuelle Stufe)
+  const scaleAn = P && (kino.overrides && 'scale' in kino.overrides ? kino.overrides.scale : !!(P.stages && P.stages.scale));
+  if (P && P.pipeline && scaleAn && kino.supported !== false) {
     const [st, lo, hi] = kino.scaleRangeOf(level);
     return [lo, hi, st];
   }

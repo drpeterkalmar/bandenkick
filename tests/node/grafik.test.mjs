@@ -48,6 +48,8 @@ yes('Stufenwerte: Schatten ab 1, Menschen-Schatten ab 2, MSAA-Canvas ab 1', !w0.
 yes('Schattenkarte: Stufe 1 = 1024, Stufe 2 = 2048 (wie bisher), ?schatten2=1024 möglich', w1.shadowSize === 1024 && w2.shadowSize === 2048 && w2a.shadowSize === 1024);
 yes('Skalenbereich: Stufe 1 = Kino-Look 0,7–0,85 (Start 0,8), Stufe 0 direkt', skalaBereich(1, kinoFake).join() === '0.7,0.85,0.8' && skalaBereich(0, kinoFake).join() === SKALA_DIREKT[0].join());
 yes('Skalenbereich ohne Kino-Look (?kino=0): Pixeldichte-Faktor', skalaBereich(1, null).join() === SKALA_DIREKT[1].join());
+yes('Skalenbereich der Ziel-Stufe, auch wenn der Kino-Look gerade auf Stufe 0 steht; ?kl=-scale → direkt', skalaBereich(1, { ...kinoFake, stages: { contact: true } }).join() === '0.7,0.85,0.8'
+  && skalaBereich(1, { ...kinoFake, overrides: { scale: false } }).join() === SKALA_DIREKT[1].join());
 
 // ---- Start ----
 yes('Start: ?q= fest, sonst gemerkt, sonst Touch 1 / Desktop 2', startStufe({ q: '0', gemerkt: 2, touch: true }).fest && startStufe({ q: '0' }).stufe === 0
