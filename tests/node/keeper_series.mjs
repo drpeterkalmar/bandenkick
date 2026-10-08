@@ -7,6 +7,7 @@ import { Game, DT } from '../../src/sim/step.js';
 import { EMPTY_INPUT } from '../../src/sim/player.js';
 import { aimAt, spinOf, setKick } from '../../src/sim/kickplan.js';
 import { Rng } from '../../src/sim/rng.js';
+import { pathToFileURL } from 'node:url';
 
 const idle = { ...EMPTY_INPUT, passDown: false, shotDown: false };
 export function keeperSeries(K, n = 120, qs = '', vLo = 14, vHi = 22) {
@@ -39,7 +40,7 @@ export function keeperSeries(K, n = 120, qs = '', vLo = 14, vHi = 22) {
   }
   return c;
 }
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (import.meta.url === pathToFileURL(process.argv[1]).href) { // Windows-tauglich (file:///C:/…)
   const n = +(process.argv[2] || 120), lv = (process.argv[3] || '1,2,3').split(',').map(Number), qs = process.argv[4] || '';
   const vr = (process.env.SPEED || '14-22').split('-').map(Number); // SPEED=30-40: harte Schüsse (Wucht)
   for (const K of lv) { const c = keeperSeries(K, n, qs, vr[0], vr[1]); console.log(`Tormann ${K}: Tore ${c.goal}/${c.n} = ${(100 * c.goal / c.n).toFixed(0)} %, gefangen ${c.catch}, abgewehrt ${c.parry}, sonst ${c.miss} | gehechtet ${c.dive} (davon gehalten ${c.diveSave}), Ball ≥ 0,8 m neben ihm: ${c.wideDive}/${c.wide} gehechtet`); }

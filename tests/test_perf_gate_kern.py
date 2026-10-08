@@ -24,11 +24,11 @@ buf = io.StringIO()
 with contextlib.redirect_stdout(buf): G.vergleich(fa, fb)
 v = buf.getvalue()
 ok('-10.0 %' in v and '+10.0 %' in v and '19.5 → 13.9' in v, 'Vergleich: Δ p95 je Szene und Ladegröße')
-cfg = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'perf_szenen.json')))
+cfg = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'perf_szenen.json'), encoding='utf-8'))
 namen = [s['name'] for s in cfg['szenen']]
 ok(all(n in namen for n in ('menu_s1', 'spiel_s0', 'spiel_s1', 'spiel_s2', 'training_s1', 'replay_s1')), f'Bandenkick-Szenen vollständig (Menü, Spiel Stufe 0/1/2, Training, Replay) ({", ".join(namen)})')
 ok(all(s['query'].startswith('?') and 'nosw' in s['query'] for s in cfg['szenen']), 'alle Szenen ohne Service-Worker (?nosw)')
-ok(all(w not in open(G.__file__).read().lower().replace('stuntbahn-szenen', '') for w in ('bandenkick', 'stuntbahn')), 'Kern ohne Stuntbahn-Spezifika (nur die Szenen-Datei kennt das Spiel)')
+ok(all(w not in open(G.__file__, encoding='utf-8').read().lower().replace('stuntbahn-szenen', '') for w in ('bandenkick', 'stuntbahn')), 'Kern ohne Stuntbahn-Spezifika (nur die Szenen-Datei kennt das Spiel)')
 # Bandenkick (n4): alle JS-Ausdrücke der Szenen-Datei sind gültiges JavaScript (Syntax, ohne Browser per node geprüft)
 import subprocess
 js = [cfg['bereit'], cfg['info'], cfg['zusatz']]

@@ -1,0 +1,523 @@
+{
+ "datum": "2026-10-08T13:56:40",
+ "stand": "vorher",
+ "wurzel": "C:\\Users\\drpet\\dev\\bandenkick_vorher",
+ "git": "8c27fcd",
+ "profil": {
+  "drossel": 4,
+  "dpr": 2.6,
+  "sek": 10,
+  "geraete": "hoch,quer",
+  "gpu": "ANGLE/D3D11 headless (Windows)",
+  "start": "direkt",
+  "vsync": false,
+  "zusatz": ""
+ },
+ "szenen": {
+  "menu_s1": {
+   "hoch": {
+    "n": 809,
+    "p50": 15,
+    "p95": 18.3,
+    "p99": 18.6,
+    "fps": 80.8,
+    "calls": 54,
+    "callsMax": 54,
+    "tris": 78540,
+    "tex": 64,
+    "zusatz": {
+     "dpr": 1.5,
+     "size": [
+      618,
+      1372
+     ],
+     "level": 1,
+     "kino": null,
+     "auto": {
+      "on": false,
+      "steps": []
+     },
+     "shadow": null
+    },
+    "boot_s": 5.4,
+    "fehler": []
+   },
+   "quer": {
+    "n": 804,
+    "p50": 16.7,
+    "p95": 18.3,
+    "p99": 18.6,
+    "fps": 80.2,
+    "calls": 54,
+    "callsMax": 54,
+    "tris": 78562,
+    "tex": 64,
+    "zusatz": {
+     "dpr": 1.5,
+     "size": [
+      1372,
+      618
+     ],
+     "level": 1,
+     "kino": null,
+     "auto": {
+      "on": false,
+      "steps": []
+     },
+     "shadow": null
+    },
+    "boot_s": 5.4,
+    "fehler": []
+   }
+  },
+  "spiel_s0": {
+   "hoch": {
+    "n": 404,
+    "p50": 23.6,
+    "p95": 31.8,
+    "p99": 42.5,
+    "fps": 40.4,
+    "calls": 46,
+    "callsMax": 48,
+    "tris": 68804,
+    "tex": 63,
+    "zusatz": {
+     "dpr": 1,
+     "size": [
+      412,
+      915
+     ],
+     "level": 0,
+     "kino": null,
+     "auto": {
+      "on": false,
+      "steps": []
+     },
+     "shadow": null
+    },
+    "boot_s": 5.0,
+    "fehler": []
+   },
+   "quer": {
+    "n": 406,
+    "p50": 23.9,
+    "p95": 29.6,
+    "p99": 38.9,
+    "fps": 40.5,
+    "calls": 45,
+    "callsMax": 49,
+    "tris": 68597,
+    "tex": 63,
+    "zusatz": {
+     "dpr": 1,
+     "size": [
+      915,
+      412
+     ],
+     "level": 0,
+     "kino": null,
+     "auto": {
+      "on": false,
+      "steps": []
+     },
+     "shadow": null
+    },
+    "boot_s": 5.1,
+    "fehler": []
+   }
+  },
+  "spiel_s1": {
+   "hoch": {
+    "n": 337,
+    "p50": 28.6,
+    "p95": 35.5,
+    "p99": 50.5,
+    "fps": 33.6,
+    "calls": 51,
+    "callsMax": 54,
+    "tris": 72120,
+    "tex": 65,
+    "zusatz": {
+     "dpr": 1.5,
+     "size": [
+      618,
+      1372
+     ],
+     "level": 1,
+     "kino": null,
+     "auto": {
+      "on": false,
+      "steps": []
+     },
+     "shadow": null
+    },
+    "boot_s": 5.5,
+    "fehler": []
+   },
+   "quer": {
+    "n": 339,
+    "p50": 28.4,
+    "p95": 42.5,
+    "p99": 53.5,
+    "fps": 33.7,
+    "calls": 52,
+    "callsMax": 54,
+    "tris": 71856,
+    "tex": 65,
+    "zusatz": {
+     "dpr": 1.5,
+     "size": [
+      1372,
+      618
+     ],
+     "level": 1,
+     "kino": null,
+     "auto": {
+      "on": false,
+      "steps": []
+     },
+     "shadow": null
+    },
+    "boot_s": 5.4,
+    "fehler": []
+   }
+  },
+  "spiel_s2": {
+   "hoch": {
+    "n": 311,
+    "p50": 30.6,
+    "p95": 49.9,
+    "p99": 65.5,
+    "fps": 31,
+    "calls": 72,
+    "callsMax": 75,
+    "tris": 124985,
+    "tex": 64,
+    "zusatz": {
+     "dpr": 2,
+     "size": [
+      824,
+      1830
+     ],
+     "level": 2,
+     "kino": null,
+     "auto": {
+      "on": false,
+      "steps": []
+     },
+     "shadow": null
+    },
+    "boot_s": 6.3,
+    "fehler": []
+   },
+   "quer": {
+    "n": 285,
+    "p50": 33.5,
+    "p95": 51.4,
+    "p99": 52.8,
+    "fps": 28.4,
+    "calls": 73,
+    "callsMax": 76,
+    "tris": 124743,
+    "tex": 64,
+    "zusatz": {
+     "dpr": 2,
+     "size": [
+      1830,
+      824
+     ],
+     "level": 2,
+     "kino": null,
+     "auto": {
+      "on": false,
+      "steps": []
+     },
+     "shadow": null
+    },
+    "boot_s": 5.8,
+    "fehler": []
+   }
+  },
+  "spiel_abend_s1": {
+   "hoch": {
+    "n": 310,
+    "p50": 30.7,
+    "p95": 50,
+    "p99": 63.4,
+    "fps": 30.8,
+    "calls": 52,
+    "callsMax": 55,
+    "tris": 72119,
+    "tex": 67,
+    "zusatz": {
+     "dpr": 1.5,
+     "size": [
+      618,
+      1372
+     ],
+     "level": 1,
+     "kino": null,
+     "auto": {
+      "on": false,
+      "steps": []
+     },
+     "shadow": null
+    },
+    "boot_s": 6.2,
+    "fehler": []
+   },
+   "quer": {
+    "n": 325,
+    "p50": 29.8,
+    "p95": 45.7,
+    "p99": 52.6,
+    "fps": 32.4,
+    "calls": 52,
+    "callsMax": 55,
+    "tris": 71911,
+    "tex": 67,
+    "zusatz": {
+     "dpr": 1.5,
+     "size": [
+      1372,
+      618
+     ],
+     "level": 1,
+     "kino": null,
+     "auto": {
+      "on": false,
+      "steps": []
+     },
+     "shadow": null
+    },
+    "boot_s": 6.1,
+    "fehler": []
+   }
+  },
+  "spiel_auto": {
+   "hoch": {
+    "n": 329,
+    "p50": 28.9,
+    "p95": 44.5,
+    "p99": 61.1,
+    "fps": 32.8,
+    "calls": 52,
+    "callsMax": 53,
+    "tris": 72103,
+    "tex": 65,
+    "zusatz": {
+     "dpr": 1,
+     "size": [
+      412,
+      915
+     ],
+     "level": 1,
+     "kino": null,
+     "auto": {
+      "on": true,
+      "steps": [
+       "dpr 1.25",
+       "dpr 1",
+       "deko einfach"
+      ]
+     },
+     "shadow": null
+    },
+    "boot_s": 5.3,
+    "fehler": []
+   },
+   "quer": {
+    "n": 334,
+    "p50": 28.5,
+    "p95": 45.8,
+    "p99": 62,
+    "fps": 33.3,
+    "calls": 52,
+    "callsMax": 54,
+    "tris": 71900,
+    "tex": 65,
+    "zusatz": {
+     "dpr": 1,
+     "size": [
+      915,
+      412
+     ],
+     "level": 1,
+     "kino": null,
+     "auto": {
+      "on": true,
+      "steps": [
+       "dpr 1.25",
+       "dpr 1",
+       "deko einfach"
+      ]
+     },
+     "shadow": null
+    },
+    "boot_s": 5.6,
+    "fehler": []
+   }
+  },
+  "training_s1": {
+   "hoch": {
+    "n": 537,
+    "p50": 18.5,
+    "p95": 35.1,
+    "p99": 36,
+    "fps": 53.5,
+    "calls": 66,
+    "callsMax": 67,
+    "tris": 31489,
+    "tex": 46,
+    "zusatz": {
+     "dpr": 1.5,
+     "size": [
+      618,
+      1372
+     ],
+     "level": 1,
+     "kino": null,
+     "auto": {
+      "on": false,
+      "steps": []
+     },
+     "shadow": null
+    },
+    "boot_s": 4.4,
+    "fehler": []
+   },
+   "quer": {
+    "n": 559,
+    "p50": 17.5,
+    "p95": 34.7,
+    "p99": 36,
+    "fps": 55.8,
+    "calls": 67,
+    "callsMax": 68,
+    "tris": 31328,
+    "tex": 46,
+    "zusatz": {
+     "dpr": 1.5,
+     "size": [
+      1372,
+      618
+     ],
+     "level": 1,
+     "kino": null,
+     "auto": {
+      "on": false,
+      "steps": []
+     },
+     "shadow": null
+    },
+    "boot_s": 4.5,
+    "fehler": []
+   }
+  },
+  "replay_s1": {
+   "hoch": {
+    "n": 432,
+    "p50": 23,
+    "p95": 26.1,
+    "p99": 27.5,
+    "fps": 43.1,
+    "calls": 52,
+    "callsMax": 53,
+    "tris": 78154,
+    "tex": 64,
+    "zusatz": {
+     "dpr": 1.5,
+     "size": [
+      618,
+      1372
+     ],
+     "level": 1,
+     "kino": null,
+     "auto": {
+      "on": false,
+      "steps": []
+     },
+     "shadow": null
+    },
+    "boot_s": 5.5,
+    "fehler": []
+   },
+   "quer": {
+    "n": 400,
+    "p50": 25,
+    "p95": 28.1,
+    "p99": 29.9,
+    "fps": 39.8,
+    "calls": 52,
+    "callsMax": 53,
+    "tris": 78154,
+    "tex": 64,
+    "zusatz": {
+     "dpr": 1.5,
+     "size": [
+      1372,
+      618
+     ],
+     "level": 1,
+     "kino": null,
+     "auto": {
+      "on": false,
+      "steps": []
+     },
+     "shadow": null
+    },
+    "boot_s": 5.2,
+    "fehler": []
+   }
+  }
+ },
+ "ladegroesse": {
+  "dateien": 60,
+  "roh_mb": 5.97,
+  "gzip_mb": 4.43,
+  "extern": [],
+  "groesste_gzip_kb": [
+   [
+    "assets\\hdri\\env_1k.hdr",
+    1331
+   ],
+   [
+    "assets\\tex\\grass_color.jpg",
+    329
+   ],
+   [
+    "assets\\avatars\\Female_Adult_12.glb",
+    325
+   ],
+   [
+    "assets\\tex\\turf_normal.jpg",
+    302
+   ],
+   [
+    "assets\\avatars\\Sports_Male_03.glb",
+    290
+   ],
+   [
+    "assets\\avatars\\Sports_Female_02.glb",
+    286
+   ],
+   [
+    "assets\\avatars\\Male_Adult_10.glb",
+    283
+   ],
+   [
+    "assets\\avatars\\Sports_Male_02.glb",
+    213
+   ],
+   [
+    "assets\\tex\\turf_color.jpg",
+    203
+   ],
+   [
+    "assets\\avatars\\Sports_Male_04.glb",
+    198
+   ]
+  ]
+ },
+ "hinweis": "training_s1 nachgemessen (erster Lauf: .mjs-MIME-Typ unter Windows), gemessen auf rog17 (RTX 3070 Ti, Windows, ANGLE/D3D11)"
+}

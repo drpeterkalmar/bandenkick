@@ -3,6 +3,7 @@
 // A wie loadAvatarAssets() in src/render/avatars.js (avatars, clips, meta, phase). Canvas-Texturen (Leibchen, Rückennummer)
 // bekommen eine stumme Canvas-Attrappe. Nutzung: const { ladeAvatare } = await import('./avatar_node.mjs');
 import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { NodeIO } from '@gltf-transform/core';
 import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
 import { MeshoptDecoder } from 'meshoptimizer';
@@ -19,7 +20,7 @@ const io = new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies(
 const ROOT = new URL('../../', import.meta.url);
 
 async function ohneTexturen(file) {
-  const doc = await io.read(new URL(file, ROOT).pathname);
+  const doc = await io.read(fileURLToPath(new URL(file, ROOT))) // fileURLToPath: Windows-tauglich;
   const root = doc.getRoot();
   for (const t of root.listTextures()) t.dispose();
   for (const e of root.listExtensionsUsed()) if (/meshopt|webp|basisu/i.test(e.extensionName)) e.dispose();

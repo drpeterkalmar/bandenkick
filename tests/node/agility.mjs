@@ -6,6 +6,7 @@
 // Feld 60 × 40 m (Bande weit weg). Optional mit Ball am Fuß (Ballführung).
 import { makeParams } from '../../src/sim/params.js';
 import { Game, DT } from '../../src/sim/step.js';
+import { pathToFileURL } from 'node:url';
 
 const inp = (o = {}) => ({ mx: 0, mz: 0, sprint: false, pass: false, shootHeld: false, shootRelease: false, cx: 0, cy: 0, ...o });
 
@@ -60,7 +61,7 @@ export function table(P) {
 }
 
 // Direkt aufrufbar: node tests/node/agility.mjs [querystring]
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (import.meta.url === pathToFileURL(process.argv[1]).href) { // Windows-tauglich (file:///C:/…)
   const qs = 'feld=60x40' + (process.argv[2] ? '&' + process.argv[2] : '');
   const P = makeParams(qs);
   const f = (x) => (x < 0 ? '—' : x.toFixed(2));

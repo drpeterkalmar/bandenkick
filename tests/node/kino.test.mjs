@@ -33,6 +33,7 @@ const T1 = lichtLook('tag', 1), A1 = lichtLook('abend', 1), A2 = lichtLook('aben
 check('Tag: Bloom-Schwelle (nur Leuchtendes)', T1.bloomThreshold, 0.97, 1);
 check('Abend: Bloom-Schwelle Stufe 1', A1.bloomThreshold, 0.85, 0.95);
 yes('Tag schwächerer Bloom als Abend', T1.bloomStrength < A1.bloomStrength);
+yes('Tag ohne Bloom (nichts leuchtet), Abend mit', T1.bloom === false && A1.bloom === true && A2.bloom === true);
 yes('Farbkorrektur tv / tvAbend', T1.grade === 'tv' && A1.grade === 'tvAbend' && A2.grade === 'tvAbend' && BK_GRADES.tv && BK_GRADES.tvAbend);
 yes('TV-Look ohne Grün-Bremse, leicht gesättigt', BK_GRADES.tv.green === 0 && BK_GRADES.tv.sat > 1 && BK_GRADES.tv.sat < 1.15);
 

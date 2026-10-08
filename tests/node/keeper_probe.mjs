@@ -7,6 +7,7 @@
 import { makeParams } from '../../src/sim/params.js';
 import { Game } from '../../src/sim/step.js';
 import { keeperLevel } from '../../src/sim/bots.js';
+import { pathToFileURL } from 'node:url';
 
 export function probe(K, n, qs = '', keeperOnly = false, seed0 = 100) {
   const r = { K, shots: 0, goals: 0, goalsAll: 0, catch: 0, parry: 0, dive: 0, rollers: 0, rollerGoals: 0, onTarget: 0, onGoals: 0, games: 0, bySpeed: {} };
@@ -60,7 +61,7 @@ export const fmtProbe = (r) => `Stufe ${r.K}: ${r.goalsAll}/${r.shots} Tore je S
   `Roller ${r.rollerGoals}/${r.rollers}, je Spiel: Schüsse ${(r.shots / r.games).toFixed(1)}, Fangen ${(r.catch / r.games).toFixed(1)}, Abwehr ${(r.parry / r.games).toFixed(1)} (Fingerspitzen ${((r.tip || 0) / r.games).toFixed(1)}), Hechten ${(r.dive / r.games).toFixed(1)} | ` +
   Object.entries(r.bySpeed).sort().map(([k, v]) => `${k} m/s ${v.goals}/${v.n}`).join(', ');
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (import.meta.url === pathToFileURL(process.argv[1]).href) { // Windows-tauglich (file:///C:/…)
   const n = +(process.argv[2] || 20), qs = process.argv[3] || '', lv = (process.argv[4] || '1,2,3').split(',').map(Number);
   for (const K of lv) {
     const r = probe(K, n, qs, !!process.env.KEEPER_ONLY, +(process.env.PROBE_SEED || 100));

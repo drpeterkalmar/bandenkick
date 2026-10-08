@@ -3,6 +3,7 @@
 // Aufruf: node tests/node/botpass_probe.mjs [Spiele] ["qs"]   z. B. "passfix=0"
 import { makeParams } from '../../src/sim/params.js';
 import { Game } from '../../src/sim/step.js';
+import { pathToFileURL } from 'node:url';
 
 export function botPassProbe(qs = '', games = 6, seed0 = 1) {
   const c = { n: 0, ok: 0, inter: 0, other: 0, self: 0, none: 0 };
@@ -26,7 +27,7 @@ export function botPassProbe(qs = '', games = 6, seed0 = 1) {
   return { ...c, okPct: p('ok'), interPct: p('inter'), otherPct: p('other'), selfPct: p('self'), nonePct: p('none') };
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (import.meta.url === pathToFileURL(process.argv[1]).href) { // Windows-tauglich (file:///C:/…)
   const r = botPassProbe(process.argv[3] || '', +(process.argv[2] || 6));
   const f = (v) => v.toFixed(1);
   console.log(`Bot-Pässe ${process.argv[3] || '(Standard)'}: ${r.n} Pässe – kommt an ${f(r.okPct)} %, abgefangen ${f(r.interPct)} %, anderer Mitspieler ${f(r.otherPct)} %, Passgeber selbst ${f(r.selfPct)} %, niemand ${f(r.nonePct)} %`);

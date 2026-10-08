@@ -12,6 +12,9 @@ DESKTOP = dict(viewport={"width": 1280, "height": 720}, device_scale_factor=1)
 DEVICES = {'hoch': PIXEL7_HOCH, 'quer': PIXEL7_QUER, 'desktop': DESKTOP}
 # WebGL headless über die echte GPU (ANGLE/Metal) statt SwiftShader; SwiftShader erzwingen: WEBGL=swiftshader
 GPU_ARGS = ["--use-angle=metal", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist", "--enable-webgl"]
+# Plattform-Weiche (n4, rog17): unter Windows ANGLE über Direct3D 11 statt Metal
+if sys.platform == 'win32': GPU_ARGS[0] = "--use-angle=d3d11"
+GPU_NAME = ('Direct3D', 'D3D11') if sys.platform == 'win32' else ('Metal',)
 SWIFT_ARGS = ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist", "--enable-webgl"]
 ARGS = SWIFT_ARGS if os.environ.get('WEBGL') == 'swiftshader' else GPU_ARGS
 GL_RENDERER = """() => { const gl = document.createElement('canvas').getContext('webgl2'); if (!gl) return 'kein WebGL2';
@@ -28,6 +31,8 @@ AUDIO_HOOK = """(() => { window.__audioCalls = [];
 })();"""
 
 class Quiet(SimpleHTTPRequestHandler):
+    # Windows liest MIME-Typen aus der Registry – .mjs fehlt dort oft (Modul-Import scheitert dann)
+    extensions_map = {**SimpleHTTPRequestHandler.extensions_map, '.js': 'text/javascript', '.mjs': 'text/javascript'}
     def log_message(self, *a): pass
     def end_headers(self):
         self.send_header('Cache-Control', 'no-store')
@@ -73,7 +78,7 @@ class Session:
         self.pg.wait_for_function("window.__game && window.__game.ready && window.__game.frames > 3", timeout=timeout)
         self.boot_s = time.time() - t0
         self.gl = self.ev(GL_RENDERER)
-        if ARGS is GPU_ARGS and 'Metal' not in str(self.gl):
+        if ARGS is GPU_ARGS and not any(n in str(self.gl) for n in GPU_NAME):
             print('WARNUNG WebGL läuft nicht auf der GPU:', self.gl, file=sys.stderr, flush=True)
         errs = self.ev("window.__errors || []")
         if errs: self.errors += ['JSERR ' + e for e in errs]

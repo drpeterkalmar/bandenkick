@@ -7,6 +7,7 @@
 // Aufruf: node tests/node/keeper_hold_probe.mjs [Spiele] ["qs"]   z. B. node tests/node/keeper_hold_probe.mjs 8 "halten=0&rueckpass=1"
 import { makeParams } from '../../src/sim/params.js';
 import { Game } from '../../src/sim/step.js';
+import { pathToFileURL } from 'node:url';
 
 export function holdProbe(qs = '', games = 6, seed0 = 1) {
   const holds = [], kinds = { throw: 0, punt: 0, sixsec: 0 };
@@ -65,7 +66,7 @@ export function holdProbe(qs = '', games = 6, seed0 = 1) {
     kinds, interPct: rel ? inter / rel * 100 : NaN, inter, interGoal, backPass, backCatch, passes, catches, goals, faults };
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (import.meta.url === pathToFileURL(process.argv[1]).href) { // Windows-tauglich (file:///C:/…)
   const n = +(process.argv[2] || 6), qs = process.argv[3] || '';
   const t0 = Date.now();
   const r = holdProbe(qs, n);

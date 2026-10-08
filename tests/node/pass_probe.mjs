@@ -15,6 +15,7 @@ import { Game, DT } from '../../src/sim/step.js';
 import { EMPTY_INPUT } from '../../src/sim/player.js';
 import { Rng } from '../../src/sim/rng.js';
 import { planPass } from '../../src/sim/pass.js';
+import { pathToFileURL } from 'node:url';
 
 const DEG = Math.PI / 180;
 const H = (o = {}) => ({ ...EMPTY_INPUT, mx: 0, mz: 0, passDown: false, shotDown: false, ...o });
@@ -179,7 +180,7 @@ export function table(out) {
   return lines.join('\n');
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (import.meta.url === pathToFileURL(process.argv[1]).href) { // Windows-tauglich (file:///C:/…)
   const n = +(process.argv[2] || 200), qs = process.argv[3] || '';
   const t0 = Date.now();
   const out = runProbe(qs, n);

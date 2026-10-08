@@ -14,7 +14,7 @@ with Server() as srv, sync_playwright() as pw:
         if i: s.new_context(form)
         print(form)
         s.open('?nosw&solo=1&seed=11&q=' + ('2' if form == 'desktop' else '1'))
-        ok('Metal' in str(s.gl), f'WebGL auf der GPU ({s.gl})')
+        ok(any(n in str(s.gl) for n in GPU_NAME), f'WebGL auf der GPU ({s.gl})')
         ok(s.boot_s < 15, f'Boot {s.boot_s:.1f} s')
         s.tap('[data-act="play"]')
         s.frames(3)

@@ -10,6 +10,7 @@ import { Game, DT } from '../../src/sim/step.js';
 import { EMPTY_INPUT } from '../../src/sim/player.js';
 import { Rng } from '../../src/sim/rng.js';
 import { curveTable } from './curve_probe.mjs';
+import { pathToFileURL } from 'node:url';
 
 const idle = { ...EMPTY_INPUT, passDown: false, shotDown: false };
 
@@ -72,7 +73,7 @@ export const fmtSelf = (name, r) => `${name.padEnd(24)} ${r.games} Spiele | Sch�
   `Tore je Schuss ${(100 * r.goals / Math.max(1, r.shots)).toFixed(1)} % | Hechten ${(r.dives / r.games).toFixed(1)} | Paraden ${(r.saves / r.games).toFixed(1)} (im Hechten ${(r.diveSaves / r.games).toFixed(1)}) | ` +
   `max ${(r.vmax * 3.6).toFixed(0)} km/h | draußen ${r.out} | NaN ${r.nan} | Notbremsen ${r.faults}`;
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (import.meta.url === pathToFileURL(process.argv[1]).href) { // Windows-tauglich (file:///C:/…)
   const what = process.argv[2] || 'table', qs = process.argv[3] || '', n = +(process.argv[4] || 4);
   if (what === 'table') {
     console.log(`Schuss (${qs || 'Standard'}): Entfernung | Technik | Abflug m/s | Flugzeit s | Kurve m | Drall U/s | leeres Tor`);

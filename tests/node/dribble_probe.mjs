@@ -6,6 +6,7 @@ import { makeParams } from '../../src/sim/params.js';
 import { Game, DT } from '../../src/sim/step.js';
 import { playChallenge, makeScript } from './scripts.mjs';
 import { EMPTY_INPUT } from '../../src/sim/player.js';
+import { pathToFileURL } from 'node:url';
 
 export function dribbleLosses(qs = '', n = 20, seed0 = 500) {
   const r = { games: 0, minutes: 0, losses: 0, duel: 0, free: 0, keeps: 0, touches: 0, dribbleT: 0, tackles: 0, tackleBall: 0 };
@@ -53,7 +54,7 @@ export function parcours(qs = '', seeds = [1, 2, 3, 4, 5, 6], naive = false, spr
   return out;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (import.meta.url === pathToFileURL(process.argv[1]).href) { // Windows-tauglich (file:///C:/…)
   const n = +(process.argv[2] || 20), qs = process.argv[3] || '';
   for (const naive of [false, true]) {
     const pc = parcours(qs, [1, 2, 3, 4, 5, 6], naive);

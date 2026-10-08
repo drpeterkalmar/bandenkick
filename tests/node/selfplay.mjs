@@ -2,6 +2,7 @@
 // Bots laufen im Kreis, Ball zu lange in der Hand) und zählt Tore, Schüsse, Pässe, Paraden.
 import { makeParams } from '../../src/sim/params.js';
 import { Game, DT } from '../../src/sim/step.js';
+import { pathToFileURL } from 'node:url';
 
 export function playGame(seed, { qs = '', levels = null, maxT = null } = {}) {
   const P = makeParams(qs);
@@ -53,7 +54,7 @@ export function playGame(seed, { qs = '', levels = null, maxT = null } = {}) {
   return st;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (import.meta.url === pathToFileURL(process.argv[1]).href) { // Windows-tauglich (file:///C:/…)
   const n = +(process.argv[2] || 4), qs = process.argv[3] || 'dauer=1';
   const t0 = performance.now();
   let steps = 0;

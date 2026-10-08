@@ -10,6 +10,7 @@ import { planShot } from '../../src/sim/shot.js';
 import { planPass } from '../../src/sim/pass.js';
 import { Ball } from '../../src/sim/ball.js';
 import { setKick } from '../../src/sim/kickplan.js';
+import { pathToFileURL } from 'node:url';
 
 // Flug nachrechnen: Ball ab from mit Plan (dir, speed, el, back, side) bis Torlinie x = gx bzw. Landung
 function fly(g, plan, from, stopX = null) {
@@ -65,7 +66,7 @@ export function crossTable(qs = '') {
   return rows;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (import.meta.url === pathToFileURL(process.argv[1]).href) { // Windows-tauglich (file:///C:/…)
   const qs = process.argv[2] || '';
   console.log(`Schuss (${qs || 'Standard'}): Entfernung | Technik | Abflug m/s | Flugzeit s | Scheitel m | Kurve m | Drall U/s`);
   for (const r of curveTable(qs)) console.log(`  ${r.D} m | ${r.tech} | ${r.speed.toFixed(1)} | ${r.t.toFixed(2)} | ${r.apex.toFixed(2)} | ${r.dev.toFixed(2)} | ${r.spin.toFixed(1)}`);
