@@ -235,7 +235,9 @@ export class Avatar {
     this.setShadows(!!opts.shadows);
   }
 
-  setShadows(on) { for (const m of this.meshes) m.castShadow = on; this.blob.visible = !on && !this.night && !this.extShadow; }
+  setShadows(on) { this.shadowsOn = on; for (const m of this.meshes) m.castShadow = on; this.blob.visible = !on && !this.night && !this.extShadow && !this.contact; }
+  // n4 Kino-Look: Kontaktschatten aller Figuren in einem Draw-Call (kino.js) statt des eigenen runden Flecks
+  setContact(on) { this.contact = !!on; this.setShadows(!!this.shadowsOn); }
   // Deko-Abend: eigene Flutlicht-Schatten (abend.js) statt Fleck/Schattenkarte
   setNight(on, shadows) { this.night = on; this.setShadows(on ? false : shadows); }
 

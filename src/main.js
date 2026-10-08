@@ -21,6 +21,8 @@ import { Sound } from './audio/sound.js';
 import { ReplayRecorder, ReplayDirector, replayCamera } from './sim/replay.js';
 import { ReplayFx } from './render/replayfx.js';
 import { BUILD } from './build.js';
+import { makeKino, kinoLicht, KontaktSchatten } from './render/kino.js';
+import { kinoOptionen, replayDof } from './render/kino_logik.js';
 
 const qs = new URLSearchParams(location.search);
 const P = makeParams(location.search);
@@ -63,6 +65,12 @@ loadMsg.textContent = 'Bandenkick lädt …';
 document.body.append(loadMsg);
 
 const renderer = createRenderer(canvas, quality);
+// n4 Kino-Look (Audit #1): Endbild mit Renderskala + Hochskalieren/Nachschärfen, Bloom, TV-Farbkorrektur, Vignette,
+// Kontaktschatten; Tiefenschärfe nur in der Wiederholung. ?kino=0 = direktes Zeichnen wie bis n3.
+const KO = kinoOptionen(qs);
+const kino = KO.on ? makeKino(renderer, quality.level, KO) : null;
+if (kino) renderer.info.autoReset = false; // mehrere Durchgänge je Bild → Zähler je Bild selbst zurücksetzen
+let kontakt = null;
 const scene = new THREE.Scene();
 const seed = qs.get('seed') || String(Date.now() % 100000);
 // Mensch = Mitte der Mannschaft Orange (stößt an); danach automatischer Wechsel zum ballnächsten Mitspieler
@@ -144,6 +152,12 @@ function lastShotLine() {
   el.textContent = `Letzter Schuss: ${techName(k.tech)} · ${Math.round(k.speed * 3.6)} km/h${q}${k.timing != null ? ` · Timing ${Math.round(k.timing * 100)} %` : ''}`;
 }
 let creditsBack = 'menu';
+// Licht Tag/Abend: Deko (Himmel, Flutlicht …) und n4 Kino-Look (Farbkorrektur, Bloom-Schwelle) und Kontaktschatten
+function setLicht(m) {
+  if (deko) deko.setLicht(m);
+  kinoLicht(kino, m);
+  if (kontakt) kontakt.night = m === 'abend';
+}
 hud.root.addEventListener('click', (e) => {
   const b = e.target.closest('[data-act]');
   if (!b) return;
@@ -160,7 +174,7 @@ hud.root.addEventListener('click', (e) => {
   if (a === 'replay') { replayOn = !replayOn; localStorage.setItem('bk_replay', replayOn ? '1' : '0'); replayLabel(); }
   if (a === 'licht' && deko) {
     lichtPref = { auto: 'tag', tag: 'abend', abend: 'auto' }[lichtPref] || 'auto';
-    localStorage.setItem('bk_licht', lichtPref); deko.setLicht(lichtMode()); lichtLabel();
+    localStorage.setItem('bk_licht', lichtPref); setLicht(lichtMode()); lichtLabel();
   }
   if (a === 'resume') setMode('play');
   if (a === 'credits') { creditsBack = mode; setMode('credits'); }
@@ -233,7 +247,14 @@ async function boot() {
   G.avatars = !!A;
   if (DEKO) {
     deko = new Deko({ scene, renderer, field, sunDir, quality, A, reduceMotion, sun, sky, figs: figs.filter((f) => f.root) });
-    deko.setLicht(lichtMode()); lichtLabel(); G.deko = deko;
+    setLicht(lichtMode()); lichtLabel(); G.deko = deko;
+  }
+  // n4: Kontaktschatten unter Ball und Figuren (ein Draw-Call), ersetzt Ball-Blob und runde Figuren-Flecken
+  if (kino && kino.stages.contact && A) {
+    kontakt = new KontaktSchatten(figs.filter((f) => f.root), P.ballR);
+    kontakt.night = !!(deko && deko.night);
+    scene.add(kontakt.mesh); blob.visible = false;
+    for (const f of figs) if (f.setContact) f.setContact(true);
   }
   gran = new Granulate();
   scene.add(gran.points);
@@ -470,6 +491,7 @@ function frame() {
   if (!G.ready) return;
   // Deko: Menüs und Karten (Szene läuft nur als Hintergrund) mit halber Bildrate – spart Akku und Wärme
   if (DEKO && mode !== 'play' && !rp.dir) { halfRate = !halfRate; if (halfRate) { G.frames++; return; } }
+  if (kino) renderer.info.reset();
   const now = t0 / 1000;
   const dt = Math.min(0.1, now - last); last = now;
   let raw = input.sample(now);
@@ -541,15 +563,20 @@ function frame() {
   else ballMesh.quaternion.set(b.q[1], b.q[2], b.q[3], b.q[0]);
   ballMesh.position.set(bx, by, bz);
   poseBlob(blob, bx, by, bz, P.ballR);
+  if (kontakt) blob.visible = false;
   const tA = performance.now();
   drawPlayers(rf ? rdt * rp.rate : dt, a, rf);
+  if (kontakt) kontakt.update(bx, by, bz);
   perf.av.push(performance.now() - tA); if (perf.av.length > 240) perf.av.shift();
   const pl = me();
   const px = prev.px[pl.id] + (pl.x - prev.px[pl.id]) * a, pz = prev.pz[pl.id] + (pl.z - prev.pz[pl.id]) * a;
   gcam.update(dt, { x: bx, z: bz, vx: b.v.x, vz: b.v.z }, { x: px, z: pz }, mode === 'play' || mode === 'pause' ? 'play' : 'menu');
   field.update(rf ? rf.ball.net : b.net, gcam.cam, !!(rf && rp.dir && rp.dir.cur.cam === 'fan'));
   gran.update(dt);
-  if (deko) deko.update(dt, { inGame: (mode === 'play' || mode === 'pause') && !rf && !gcam.override, hoch: gcam.mode === 'hoch',
+  // n4: Punkt-Größen in Pixeln gelten für den Bildschirm – im verkleinerten Render-Target des Kino-Looks mitskalieren
+  const pxK = kino && kino.pipeline && kino.stages.scale ? kino.renderScale : 1;
+  gran.points.material.size = 0.05 * pxK;
+  if (deko) deko.update(dt, { pxK, inGame: (mode === 'play' || mode === 'pause') && !rf && !gcam.override, hoch: gcam.mode === 'hoch',
     live: mode === 'play' && !rf, paused: mode === 'pause', still: frozen || mode === 'pause', game, cam: gcam.cam, ball: { p: ballMesh.position, v: b.v } });
   hud.tick(dt);
   const touchUI = document.body.classList.contains('touch');
@@ -569,7 +596,8 @@ function frame() {
   let q = null;
   if (gpuExt) { gpuPoll(); q = gl.createQuery(); gl.beginQuery(gpuExt.TIME_ELAPSED_EXT, q); }
   const tR = performance.now();
-  renderer.render(scene, gcam.cam);
+  if (kino) kino.render(scene, gcam.cam, { dt, dof: rf ? rp.dof : null });
+  else renderer.render(scene, gcam.cam);
   perf.rd.push(performance.now() - tR); if (perf.rd.length > 240) perf.rd.shift();
   if (q) { gl.endQuery(gpuExt.TIME_ELAPSED_EXT); gpuQ.push(q); }
   G.frames++;
@@ -586,7 +614,7 @@ const avg = (a) => (a.length ? a.reduce((s, x) => s + x, 0) / a.length : 0);
 // Aufzeichnung je Spieltakt (nur im Spiel), nach einem Tor P.replayDelay s Live-Jubel, dann Wiederholung: die Simulation
 // steht so lange still (sie wird nicht verändert), die Grafik zeigt den aufgezeichneten Zustand mit eigener Kamera.
 // Tippen, Taste oder Knopf überspringt; danach läuft der Jubel weiter und es folgt der Anstoß wie gewohnt.
-const rp = { rec: null, recGame: null, dir: null, wait: -1, goal: null, frame: {}, rate: 1, trail: [], hold: null, held: false, fx: null, label: '', ctx: null };
+const rp = { rec: null, recGame: null, dir: null, wait: -1, goal: null, frame: {}, rate: 1, trail: [], hold: null, held: false, fx: null, label: '', ctx: null, dof: null };
 function recordReplay(evs) {
   if (!game.match || game.challenge || !replayOn) { rp.recGame = null; return; }
   if (rp.recGame !== game || !rp.rec || rp.rec.n !== game.players.length) { rp.rec = new ReplayRecorder(game.players.length); rp.recGame = game; rp.wait = -1; }
@@ -613,7 +641,7 @@ function startReplay() {
   if (deko) deko.replay(true);
 }
 function endReplay() {
-  rp.dir = null; rp.goal = null; rp.held = false;
+  rp.dir = null; rp.goal = null; rp.held = false; rp.dof = null;
   if (deko) deko.replay(false);
   gcam.override = null;
   hud.replayShow(false); hud.replayState(false, 0);
@@ -634,6 +662,7 @@ function replayFrame(dt, raw) {
   const ctx = rp.ctx; ctx.time = D.real; ctx.frac = D.segFrac(); ctx.mode = gcam.mode;
   const cam = replayCamera(D.cur.cam, f, ctx);
   gcam.override = { pos: cam.pos, look: cam.look };
+  rp.dof = replayDof(D.cur.cam, cam.pos, cam.look); // n4: Tiefenschärfe nur im Replay (Zoom, Fan-Cam)
   if (Math.abs(gcam.cam.fov - cam.fov) > 0.01) { gcam.cam.fov = cam.fov; gcam.cam.updateProjectionMatrix(); }
   const c = D.contact, k = c ? t - c.t : -1;
   // Blitz und Druckwelle beim Kontakt, Ballspur danach (je Tempo), Fan-Cam-Abzeichen
@@ -708,7 +737,7 @@ function autoQuality(dt) {
 
 // ---------------- Debug-API für Tests ----------------
 Object.assign(G, {
-  scene, renderer, gcam, inputs: input, sound,
+  scene, renderer, gcam, inputs: input, sound, kino,
   start() { startPlay(); },
   mode: () => mode,
   setMode(m) { G.forceMode = m || null; resize(); },
@@ -726,7 +755,8 @@ Object.assign(G, {
   info() {
     const i = renderer.info;
     return { calls: i.render.calls, triangles: i.render.triangles, points: i.render.points, geometries: i.memory.geometries, textures: i.memory.textures, programs: i.programs ? i.programs.length : null,
-      dpr: renderer.getPixelRatio(), size: [renderer.domElement.width, renderer.domElement.height], quality, shadows: renderer.shadowMap.enabled, auto: { on: autoQ.on, steps: [...autoQ.steps] } };
+      dpr: renderer.getPixelRatio(), size: [renderer.domElement.width, renderer.domElement.height], quality, shadows: renderer.shadowMap.enabled, auto: { on: autoQ.on, steps: [...autoQ.steps] },
+      kino: kino ? { ...kino.describe(), licht: kino.licht, bloom: [kino.bloomThreshold, kino.bloomStrength], dof: rp.dof, kontakt: !!kontakt } : null };
   },
   perf() {
     const p95 = (a) => { if (!a.length) return null; const b = [...a].sort((x, y) => x - y); return b[Math.floor(b.length * 0.95)]; };
