@@ -56,9 +56,13 @@ export const kinoStufe = (level, o) => (o && o.look != null ? o.look : Math.max(
 // Tiefenschärfe in der Tor-Wiederholung: extremer Zoom (Fuß + Ball scharf, Rest weich) und Fan-Cam (Ball scharf,
 // Käfig/Netz davor weich). TV-Kamera ohne. focus = Abstand Kamera → Blickpunkt (die Replay-Kameras zielen auf Fuß/Ball).
 // near/far: Anteil des Fokus-Abstands, ab dem es ganz unscharf ist (vorn/hinten). TODO n4-Heavy: am Bild abstimmen.
-export function replayDof(camKind, pos, look) {
+export function replayDof(camKind, pos, look, ball = null) {
   if (!pos || !look) return null;
-  const focus = Math.hypot(pos[0] - look[0], pos[1] - look[1], pos[2] - look[2]);
+  const d = (q) => Math.hypot(pos[0] - q[0], pos[1] - q[1], pos[2] - q[2]);
+  const dL = d(look), dB = ball ? d(ball) : dL;
+  // n4-Abnahme: im Hochformat liegt der Ball deutlich vor dem Blickpunkt und war unscharf → Fokus auf den Ball (das
+  // Motiv; der Fuß steht beim Kontakt direkt dahinter), ohne Ball wie bisher auf den Blickpunkt
+  const focus = Math.min(dL, dB);
   if (!(focus > 0)) return null;
   if (camKind === 'zoom') return { focus, k: 0.85, r: 0.014, near: 0.5, far: 0.9 };
   if (camKind === 'fan') return { focus, k: 0.6, r: 0.012, near: 0.6, far: 1.2 };

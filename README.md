@@ -317,6 +317,10 @@ python3 tools/fetch_assets.py && python3 tools/make_assets.py   # Assets neu bau
 Browser-Tests laufen headless über die GPU (ANGLE/Metal), nie zwei Browser gleichzeitig.
 
 ## Änderungen
+- **Technik n4 (08.10.)** – „wie FIFA bei flüssiger Webapp-Leistung“: Fernseh-Farben, Kontaktschatten unter Spielern und
+  Ball, Bloom am Flutlicht, Tiefenschärfe in der Tor-Wiederholung, Fuß-IK (Fuß trifft den Ball, keine Füße im Rasen),
+  Schattenkarte folgt dem Bild, Qualitäts-Autopilot auf- und abwärts. p95 je Stufe gleich oder besser, Replay −55 %,
+  Ladegröße +0,11 MB. Bericht und Collagen: [`TECHNIK_BERICHT.md`](TECHNIK_BERICHT.md). A/B: `?kino=0`, `?ik=0`, `?autopilot=0`.
 - **Verschönerung (06.10.)** – Peters Wunsch vom 05.10. („mehr Details und Eye Candy“, ressourcenschonend): Licht und Rasen,
   Anlage mit Herbstbäumen, Flutlichtmasten und Vereinsheim, 22 jubelnde Zuschauer, Konfetti, Ballspur, Rasenfetzen,
   Rückennummern, Abend mit Flutlicht. Bild-Arbeit p95 höchstens +5 %, Stufe 0 gleich, Ladegröße +39 KB. Bericht und Collagen:

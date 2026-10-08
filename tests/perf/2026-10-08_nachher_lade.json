@@ -1,0 +1,127 @@
+{
+ "datum": "2026-10-08T15:57:24",
+ "stand": "nachher_lade",
+ "wurzel": "C:\\Users\\drpet\\dev\\bandenkick",
+ "git": "d9f4d99",
+ "profil": {
+  "drossel": 4,
+  "dpr": 2.6,
+  "sek": 10,
+  "geraete": "hoch",
+  "gpu": "ANGLE/D3D11 headless (Windows)",
+  "start": "direkt",
+  "vsync": false,
+  "zusatz": ""
+ },
+ "szenen": {
+  "menu_s1": {
+   "hoch": {
+    "n": 831,
+    "p50": 16.7,
+    "p95": 17.8,
+    "p99": 18.4,
+    "fps": 83,
+    "calls": 55,
+    "callsMax": 55,
+    "tris": 78560,
+    "tex": 66,
+    "zusatz": {
+     "dpr": 1.5,
+     "size": [
+      618,
+      1372
+     ],
+     "level": 1,
+     "kino": {
+      "level": 1,
+      "name": "Standard",
+      "pipeline": true,
+      "scale": 0.85,
+      "msaa": 0,
+      "stages": [
+       "scale",
+       "aa",
+       "sharpen",
+       "grade",
+       "vignette",
+       "dither",
+       "contact",
+       "dof"
+      ],
+      "grade": "tv",
+      "size": [
+       525,
+       1166
+      ],
+      "licht": "tag",
+      "bloom": [
+       0.97,
+       0.224
+      ],
+      "dof": null,
+      "kontakt": true
+     },
+     "auto": {
+      "on": false,
+      "steps": []
+     },
+     "shadow": {
+      "ext": 15.5,
+      "texel": 0.0303,
+      "karte": 1024
+     }
+    },
+    "boot_s": 3.8,
+    "fehler": []
+   }
+  }
+ },
+ "ladegroesse": {
+  "dateien": 70,
+  "roh_mb": 6.67,
+  "gzip_mb": 4.54,
+  "extern": [],
+  "groesste_gzip_kb": [
+   [
+    "assets\\hdri\\env_1k.hdr",
+    1331
+   ],
+   [
+    "assets\\tex\\grass_color.jpg",
+    329
+   ],
+   [
+    "assets\\avatars\\Female_Adult_12.glb",
+    325
+   ],
+   [
+    "assets\\tex\\turf_normal.jpg",
+    302
+   ],
+   [
+    "assets\\avatars\\Sports_Male_03.glb",
+    290
+   ],
+   [
+    "assets\\avatars\\Male_Adult_10.glb",
+    283
+   ],
+   [
+    "assets\\avatars\\Sports_Male_02.glb",
+    213
+   ],
+   [
+    "assets\\tex\\turf_color.jpg",
+    203
+   ],
+   [
+    "assets\\avatars\\Sports_Male_04.glb",
+    198
+   ],
+   [
+    "assets\\anims\\f.glb",
+    177
+   ]
+  ]
+ }
+}

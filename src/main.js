@@ -687,7 +687,7 @@ function replayFrame(dt, raw) {
   const ctx = rp.ctx; ctx.time = D.real; ctx.frac = D.segFrac(); ctx.mode = gcam.mode;
   const cam = replayCamera(D.cur.cam, f, ctx);
   gcam.override = { pos: cam.pos, look: cam.look };
-  rp.dof = replayDof(D.cur.cam, cam.pos, cam.look); // n4: Tiefenschärfe nur im Replay (Zoom, Fan-Cam)
+  rp.dof = replayDof(D.cur.cam, cam.pos, cam.look, [f.ball.p.x, f.ball.p.y, f.ball.p.z]); // n4: Tiefenschärfe nur im Replay (Zoom, Fan-Cam)
   if (Math.abs(gcam.cam.fov - cam.fov) > 0.01) { gcam.cam.fov = cam.fov; gcam.cam.updateProjectionMatrix(); }
   const c = D.contact, k = c ? t - c.t : -1;
   // Blitz und Druckwelle beim Kontakt, Ballspur danach (je Tempo), Fan-Cam-Abzeichen

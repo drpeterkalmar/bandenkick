@@ -49,6 +49,8 @@ const dz = replayDof('zoom', [0, 0.5, 2], [0, 0.3, 0]), df = replayDof('fan', [1
 yes('Replay: Tiefenschärfe im Zoom und in der Fan-Cam, nicht in der TV-Kamera', !!dz && !!df && replayDof('tv', [0, 6, 14], [0, 0.7, 0]) === null);
 check('Replay-Zoom: Fokus = Abstand Kamera → Blickpunkt', dz.focus, 2.0, 2.02, 'm');
 yes('Fan-Cam weicher als Zoom', df.k < dz.k);
+const db = replayDof('zoom', [0, 0.5, 2], [0, 0.3, 0], [0, 0.11, 1]);
+check('Replay-Zoom: Ball vor dem Blickpunkt → Fokus auf den Ball', db.focus, 1.0, 1.1, 'm');
 
 // ---- Kontaktschatten (Logik) ----
 const K0 = kontaktFigur(0, 0), Kj = kontaktFigur(0.2, 0), Kd = kontaktFigur(0, 1);

@@ -5,6 +5,7 @@ node_modules/
 tests/shots/*
 !tests/shots/final/
 !tests/shots/deko/
+!tests/shots/technik/
 tests/out/
 __pycache__/
 *.pyc

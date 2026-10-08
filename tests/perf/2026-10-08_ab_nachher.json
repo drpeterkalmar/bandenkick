@@ -1,0 +1,491 @@
+{
+ "datum": "2026-10-08T15:21:55",
+ "stand": "ab_nachher",
+ "modus": "ab",
+ "runden": 3,
+ "varianten": [
+  {
+   "name": "vorher",
+   "wurzel": "C:\\Users\\drpet\\dev\\bandenkick_vorher",
+   "zusatz": ""
+  },
+  {
+   "name": "nachher",
+   "wurzel": "C:\\Users\\drpet\\dev\\bandenkick",
+   "zusatz": ""
+  }
+ ],
+ "profil": {
+  "drossel": 4,
+  "dpr": 2.6,
+  "sek": 10,
+  "start": "direkt",
+  "vsync": false
+ },
+ "szenen": {
+  "menu_s1": {
+   "hoch": {
+    "vorher": {
+     "p50": 16.7,
+     "p95": 18.1,
+     "fps": 70.1,
+     "calls": 54,
+     "tris": 78528,
+     "runden_p95": [
+      18,
+      18.1,
+      18.1
+     ],
+     "fehler": []
+    },
+    "nachher": {
+     "p50": 16.7,
+     "p95": 18.1,
+     "fps": 77.1,
+     "calls": 55,
+     "tris": 78562,
+     "runden_p95": [
+      18,
+      18.1,
+      18.1
+     ],
+     "fehler": []
+    }
+   },
+   "quer": {
+    "vorher": {
+     "p50": 16.7,
+     "p95": 18.1,
+     "fps": 70.8,
+     "calls": 54,
+     "tris": 78560,
+     "runden_p95": [
+      18.1,
+      18,
+      18.1
+     ],
+     "fehler": []
+    },
+    "nachher": {
+     "p50": 16.7,
+     "p95": 18,
+     "fps": 74.7,
+     "calls": 55,
+     "tris": 78575,
+     "runden_p95": [
+      18,
+      18,
+      18
+     ],
+     "fehler": []
+    }
+   }
+  },
+  "spiel_s0": {
+   "hoch": {
+    "vorher": {
+     "p50": 14.8,
+     "p95": 33.3,
+     "fps": 61.5,
+     "calls": 46,
+     "tris": 68771,
+     "runden_p95": [
+      33.3,
+      33.2,
+      33.6
+     ],
+     "fehler": []
+    },
+    "nachher": {
+     "p50": 15.2,
+     "p95": 33,
+     "fps": 62.7,
+     "calls": 45,
+     "tris": 66910,
+     "runden_p95": [
+      32.5,
+      33.7,
+      33
+     ],
+     "fehler": []
+    }
+   },
+   "quer": {
+    "vorher": {
+     "p50": 14.6,
+     "p95": 33.3,
+     "fps": 52.7,
+     "calls": 46,
+     "tris": 68578,
+     "runden_p95": [
+      33.7,
+      33.3,
+      33.1
+     ],
+     "fehler": []
+    },
+    "nachher": {
+     "p50": 14,
+     "p95": 32.6,
+     "fps": 66.5,
+     "calls": 43,
+     "tris": 62441,
+     "runden_p95": [
+      32.6,
+      31.8,
+      32.6
+     ],
+     "fehler": []
+    }
+   }
+  },
+  "spiel_s1": {
+   "hoch": {
+    "vorher": {
+     "p50": 18.5,
+     "p95": 34.7,
+     "fps": 53.1,
+     "calls": 52,
+     "tris": 72117,
+     "runden_p95": [
+      34.8,
+      34.7,
+      34.5
+     ],
+     "fehler": []
+    },
+    "nachher": {
+     "p50": 18.4,
+     "p95": 34.7,
+     "fps": 53.1,
+     "calls": 52,
+     "tris": 70466,
+     "runden_p95": [
+      34.3,
+      34.8,
+      34.7
+     ],
+     "fehler": []
+    }
+   },
+   "quer": {
+    "vorher": {
+     "p50": 18.4,
+     "p95": 34.3,
+     "fps": 52,
+     "calls": 52,
+     "tris": 71661,
+     "runden_p95": [
+      33.8,
+      34.7,
+      34.3
+     ],
+     "fehler": []
+    },
+    "nachher": {
+     "p50": 17.2,
+     "p95": 34.1,
+     "fps": 55.8,
+     "calls": 50,
+     "tris": 65549,
+     "runden_p95": [
+      34.1,
+      34.4,
+      33.9
+     ],
+     "fehler": []
+    }
+   }
+  },
+  "spiel_s2": {
+   "hoch": {
+    "vorher": {
+     "p50": 20.4,
+     "p95": 34.3,
+     "fps": 49,
+     "calls": 73,
+     "tris": 125017,
+     "runden_p95": [
+      34.3,
+      34.2,
+      34.5
+     ],
+     "fehler": []
+    },
+    "nachher": {
+     "p50": 22.9,
+     "p95": 32.7,
+     "fps": 42.8,
+     "calls": 73,
+     "tris": 123285,
+     "runden_p95": [
+      34,
+      32.7,
+      32.5
+     ],
+     "fehler": []
+    }
+   },
+   "quer": {
+    "vorher": {
+     "p50": 20.5,
+     "p95": 34.4,
+     "fps": 48.4,
+     "calls": 71,
+     "tris": 124587,
+     "runden_p95": [
+      34.6,
+      34.4,
+      34.4
+     ],
+     "fehler": []
+    },
+    "nachher": {
+     "p50": 22.1,
+     "p95": 33.8,
+     "fps": 45,
+     "calls": 72,
+     "tris": 119429,
+     "runden_p95": [
+      33.2,
+      33.8,
+      34.3
+     ],
+     "fehler": []
+    }
+   }
+  },
+  "spiel_abend_s1": {
+   "hoch": {
+    "vorher": {
+     "p50": 17.4,
+     "p95": 34.4,
+     "fps": 56.3,
+     "calls": 51,
+     "tris": 72117,
+     "runden_p95": [
+      34.4,
+      34.4,
+      34.5
+     ],
+     "fehler": []
+    },
+    "nachher": {
+     "p50": 19.1,
+     "p95": 34.8,
+     "fps": 51.8,
+     "calls": 57,
+     "tris": 71049,
+     "runden_p95": [
+      34.8,
+      34.7,
+      34.9
+     ],
+     "fehler": []
+    }
+   },
+   "quer": {
+    "vorher": {
+     "p50": 18.6,
+     "p95": 34.8,
+     "fps": 50.9,
+     "calls": 52,
+     "tris": 71671,
+     "runden_p95": [
+      34.8,
+      34,
+      35.1
+     ],
+     "fehler": []
+    },
+    "nachher": {
+     "p50": 18.5,
+     "p95": 34.5,
+     "fps": 53.5,
+     "calls": 56,
+     "tris": 66514,
+     "runden_p95": [
+      34.7,
+      34.5,
+      34.4
+     ],
+     "fehler": []
+    }
+   }
+  },
+  "spiel_auto": {
+   "hoch": {
+    "vorher": {
+     "p50": 19.1,
+     "p95": 34.5,
+     "fps": 51.6,
+     "calls": 52,
+     "tris": 72064,
+     "runden_p95": [
+      34.6,
+      34.5,
+      34.5
+     ],
+     "fehler": []
+    },
+    "nachher": {
+     "p50": 20.1,
+     "p95": 34.3,
+     "fps": 38.4,
+     "calls": 49,
+     "tris": 70163,
+     "runden_p95": [
+      34.4,
+      34.3,
+      34.1
+     ],
+     "fehler": []
+    }
+   },
+   "quer": {
+    "vorher": {
+     "p50": 19.5,
+     "p95": 34.8,
+     "fps": 50.4,
+     "calls": 51,
+     "tris": 71586,
+     "runden_p95": [
+      34.8,
+      34.8,
+      34.7
+     ],
+     "fehler": []
+    },
+    "nachher": {
+     "p50": 19.7,
+     "p95": 34.7,
+     "fps": 38.3,
+     "calls": 47,
+     "tris": 65752,
+     "runden_p95": [
+      34.7,
+      35.1,
+      34.6
+     ],
+     "fehler": []
+    }
+   }
+  },
+  "training_s1": {
+   "hoch": {
+    "vorher": {
+     "p50": 11.1,
+     "p95": 13.6,
+     "fps": 89.5,
+     "calls": 66,
+     "tris": 31478,
+     "runden_p95": [
+      14.8,
+      13.5,
+      13.6
+     ],
+     "fehler": []
+    },
+    "nachher": {
+     "p50": 11.1,
+     "p95": 14.5,
+     "fps": 88.6,
+     "calls": 66,
+     "tris": 31371,
+     "runden_p95": [
+      14.5,
+      15,
+      14.2
+     ],
+     "fehler": []
+    }
+   },
+   "quer": {
+    "vorher": {
+     "p50": 11.1,
+     "p95": 13.8,
+     "fps": 89.1,
+     "calls": 67,
+     "tris": 31325,
+     "runden_p95": [
+      13.9,
+      13.7,
+      13.8
+     ],
+     "fehler": []
+    },
+    "nachher": {
+     "p50": 11.1,
+     "p95": 14,
+     "fps": 89.4,
+     "calls": 67,
+     "tris": 31211,
+     "runden_p95": [
+      14.4,
+      14,
+      14
+     ],
+     "fehler": []
+    }
+   }
+  },
+  "replay_s1": {
+   "hoch": {
+    "vorher": {
+     "p50": 15.4,
+     "p95": 32.2,
+     "fps": 64.6,
+     "calls": 52,
+     "tris": 78154,
+     "runden_p95": [
+      33.6,
+      32.2,
+      32
+     ],
+     "fehler": []
+    },
+    "nachher": {
+     "p50": 12,
+     "p95": 14.5,
+     "fps": 83.8,
+     "calls": 35,
+     "tris": 34510,
+     "runden_p95": [
+      14.5,
+      14.3,
+      14.5
+     ],
+     "fehler": []
+    }
+   },
+   "quer": {
+    "vorher": {
+     "p50": 15.5,
+     "p95": 31.6,
+     "fps": 65,
+     "calls": 52,
+     "tris": 78154,
+     "runden_p95": [
+      33.1,
+      18,
+      31.6
+     ],
+     "fehler": []
+    },
+    "nachher": {
+     "p50": 11.2,
+     "p95": 13.8,
+     "fps": 88.8,
+     "calls": 36,
+     "tris": 34670,
+     "runden_p95": [
+      14.9,
+      13.8,
+      13.5
+     ],
+     "fehler": []
+    }
+   }
+  }
+ }
+}
