@@ -26,6 +26,7 @@ import { kinoOptionen, replayDof } from './render/kino_logik.js';
 import { GrafikSteuerung, stufenWerte, skalaBereich, startStufe, startSkala, ladeStufe, merkeStufe } from './render/grafik.js';
 import { geraeteSchluessel, ladeGeraet, merkeGeraet, messeBilder } from './render/kern/startprobe.js';
 import { bildFlaeche, schattenAusschnitt, randPunkte } from './render/schatten.js';
+import { RuckMessung } from './render/ruckmess.js';
 
 const qs = new URLSearchParams(location.search);
 const P = makeParams(location.search);
@@ -48,6 +49,9 @@ const AUTOPILOT = qs.get('autopilot') !== '0';
 const AV_CULL = qs.get('cull') !== '0';
 // n4 (Audit #5): Fuß-IK (Boden + Ballkontakt), ?ik=0 = aus
 const AV_IK = qs.get('ik') !== '0';
+// n5: flüssige Figuren (geglättete Lauf-Gewichte, Sonderbewegungen ohne Gewichtsloch, Blickrichtung zwischen den Takten
+// interpoliert, Schnitt beim Wechsel Spiel ↔ Wiederholung); ?glatt=0 = wie n4
+const GLATT = qs.get('glatt') !== '0';
 const SCHATTENKAM = qs.get('schattenkam') !== '0';
 const SCHATTEN2 = qs.get('schatten2') === '1024' ? 1024 : 2048;
 const START = startStufe({ q: qs.has('q') ? qs.get('q') : null, gemerkt: AUTOPILOT && !qs.has('q') ? ladeStufe(localStorage) : null, touch: isTouch, autopilot: AUTOPILOT });
@@ -250,7 +254,7 @@ async function boot() {
   scene.add(marker);
   if (A) {
     for (let team = 0; team < 2; team++) for (let i = 0; i < 3; i++) {
-      const av = new Avatar(A, ROSTER[team][i % ROSTER[team].length], team, { shadows: quality.avatarShadows, cull: AV_CULL, ik: AV_IK, deko: DEKO ? { sunDir, num: BIB_NUMS[team][i], extShadow: true } : null });
+      const av = new Avatar(A, ROSTER[team][i % ROSTER[team].length], team, { shadows: quality.avatarShadows, cull: AV_CULL, ik: AV_IK, glatt: GLATT, deko: DEKO ? { sunDir, num: BIB_NUMS[team][i], extShadow: true } : null });
       figs.push(av); scene.add(av.root);
     }
   } else {
@@ -285,8 +289,8 @@ async function boot() {
 
 // ---------------- Schleife ----------------
 let acc = 0, last = performance.now() / 1000;
-const prev = { bx: 0, by: 0, bz: 0, px: new Float64Array(8), pz: new Float64Array(8) };
-function resetPrev() { const b = game.ball; prev.bx = b.p.x; prev.by = b.p.y; prev.bz = b.p.z; game.players.forEach((p, i) => { prev.px[i] = p.x; prev.pz[i] = p.z; }); }
+const prev = { bx: 0, by: 0, bz: 0, px: new Float64Array(8), pz: new Float64Array(8), pf: new Float64Array(8) };
+function resetPrev() { const b = game.ball; prev.bx = b.p.x; prev.by = b.p.y; prev.bz = b.p.z; game.players.forEach((p, i) => { prev.px[i] = p.x; prev.pz[i] = p.z; prev.pf[i] = p.face; }); }
 const edgeQ = [], btnLvl = { pass: false, shot: false };
 // Gesten-Folge der Tests je Spieltakt auswerten (nicht je Bild: ein Bild kann 0,1 s Spielzeit umfassen)
 const seqDown = (btn) => { if (!pressSeq) return false; const tt = game.t - pressSeq.t0; return pressSeq.seq.some(([a, b, k]) => k === btn && tt >= a && tt < b); };
@@ -619,6 +623,7 @@ function frame() {
   if (gz) { gz.ende(); if (gpuExt && gz.ms != null && gz.ms !== gpuLast) { gpuLast = gz.ms; gpuMs.push(gz.ms); if (gpuMs.length > 240) gpuMs.shift(); } }
   perf.rd.push(performance.now() - tR); if (perf.rd.length > 240) perf.rd.shift();
   if (q) { gl.endQuery(gpuExt.TIME_ELAPSED_EXT); gpuQ.push(q); }
+  if (G.ruck) G.ruck.bild(t0, rafDt, gcam.cam, figs, rf ? 'r_' + rp.dir.phase : mode === 'play' ? 'live' : mode, rf ? rp.rate : 1, rf ? rf.t : game.t, figSlot || []); // n5: Ruckel-Messung (Tests)
   G.frames++;
   const ft = performance.now() - t0;
   perf.ft.push(ft); if (perf.ft.length > 240) perf.ft.shift();
@@ -634,6 +639,7 @@ function frame() {
   }
 }
 const avg = (a) => (a.length ? a.reduce((s, x) => s + x, 0) / a.length : 0);
+const winkelDiff = (a, b) => { let d = a - b; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; return d; };
 
 // ---------------- Tor-Wiederholung (Nacht 2d) ----------------
 // Aufzeichnung je Spieltakt (nur im Spiel), nach einem Tor P.replayDelay s Live-Jubel, dann Wiederholung: die Simulation
@@ -663,12 +669,14 @@ function startReplay() {
   rp.label = [who, tech ? tech + (c.tech === 'fallrueck' || c.tech === 'seitfall' || c.tech === 'flugkopf' ? '!' : '') : '', c && c.speed ? `${Math.round(c.speed * 3.6)} km/h` : ''].filter(Boolean).join(' · ');
   hud.replayShow(true, rp.label);
   markers && markers.hide();
+  if (GLATT) for (const f of figs) if (f.schnitt) f.schnitt(); // n5: harter Schnitt, nicht aus dem Jubel herüberblenden
   if (deko) deko.replay(true);
 }
 function endReplay() {
   rp.dir = null; rp.goal = null; rp.held = false; rp.dof = null;
   if (deko) deko.replay(false);
   gcam.override = null;
+  if (GLATT) for (const f of figs) if (f.schnitt) f.schnitt();
   hud.replayShow(false); hud.replayState(false, 0);
   if (rp.fx) rp.fx.hide();
   resetPrev(); acc = 0;
@@ -723,6 +731,7 @@ function drawPlayers(dt, a, rf = null) {
     if (f.capsule) { f.capsule.group.visible = vis; } else f.root.visible = vis;
     if (!vis) continue;
     const x = rf ? pl.x : prev.px[pl.id] + (pl.x - prev.px[pl.id]) * a, z = rf ? pl.z : prev.pz[pl.id] + (pl.z - prev.pz[pl.id]) * a;
+    const face = rf || !GLATT ? pl.face : prev.pf[pl.id] + winkelDiff(pl.face, prev.pf[pl.id]) * a; // n5: wie die Lage interpoliert
     if (f.capsule) { posePlayer(f.capsule, pl, x, z); continue; }
     const keeper = rf ? pl.keeper : R ? R.keeper[pl.team] === pl.id && R.phase !== 'end' && R.handsOffTeam !== pl.team : false;
     let special = null;
@@ -734,7 +743,7 @@ function drawPlayers(dt, a, rf = null) {
     const ownGoalX = R ? R.goalX(pl.team) : -99;
     const ready = keeper && b.held < 0 && Math.hypot(b.p.x - ownGoalX, b.p.z) < 9 && pl.speed < 2.5 && pl.hand.mode === 'none';
     if (sparen) CULL.s.center.set(x, 1.0 + (pl.jumpY || 0), z);
-    f.update(dt, pl, { x, z, keeper, holding: b.held === pl.id, ready, special, t: rf ? rf.t : game.t, sparen: sparen && !CULL.f.intersectsSphere(CULL.s), ball: BALLPOS });
+    f.update(dt, pl, { x, z, keeper, holding: b.held === pl.id, ready, special, t: rf ? rf.t : game.t, face, sparen: sparen && !CULL.f.intersectsSphere(CULL.s), ball: BALLPOS });
   }
   if (rf) { marker.visible = false; return; }
   void n;
@@ -909,6 +918,9 @@ Object.assign(G, {
   replay() { const D = rp.dir; return { active: !!D, wait: rp.wait, phase: D ? D.phase : null, frac: D ? D.segFrac() : 0, real: D ? D.real : 0, total: D ? D.realTotal : 0, label: rp.label, held: rp.held, contact: D && D.contact ? { ...D.contact } : null, recCount: rp.rec ? rp.rec.count : 0, segs: D ? D.segs.map((x) => x.name) : [] }; },
   replayHold(phase = null, frac = 0.5) { rp.hold = phase ? { phase, frac } : null; rp.held = false; },
   replaySkip() { skipReplay(); },
+  // n5 Ruckel-Messung (tests/ruckel.py): Aufzeichnung je Bild starten/abholen
+  ruckStart(max = 9000) { G.ruck = new RuckMessung(figs.length, max); },
+  ruckDaten() { const d = G.ruck ? G.ruck.daten() : null; G.ruck = null; return d; },
   // Simulation synchron vorspulen (ohne Grafik), z. B. für Schuss-Tests; o = Eingabe des Menschen
   sim(sec, o = null) {
     const n = Math.round(sec / DT); const ev = [];

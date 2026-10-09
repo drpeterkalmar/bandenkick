@@ -11,7 +11,8 @@ import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 import { AIR_POSE } from '../sim/technique.js';
 import { figureShadowTexture, figureShadowGeometry } from './stimmung.js';
 import { KTX2_AVATARE } from './avatar_ktx2.js';
-import { zweiKnochen, bodenHub, kickGewicht, kickZiel } from './ik.js';
+import { zweiKnochen, bodenHub, kickGewicht, kickZiel, KICK_AN } from './ik.js';
+import { federKrit, federKritVek } from './glatt.js';
 
 export const TEAM_COLORS = [0xff6a13, 0x1f6fff];   // Leibchen: Orange / Blau (auch farbfehlsichtig gut trennbar)
 export const TEAM_NAMES = ['Orange', 'Blau'];
@@ -26,6 +27,22 @@ const IK = { a: new THREE.Vector3(), b: new THREE.Vector3(), c: new THREE.Vector
   qT: new THREE.Quaternion(), qC: new THREE.Quaternion(), qF: new THREE.Quaternion(), qP: new THREE.Quaternion(), qH: new THREE.Quaternion(), qK: new THREE.Quaternion(),
   hip: new THREE.Quaternion(), knee: new THREE.Quaternion() };
 const BALL_R = 0.11;
+// n5 (Peter: „Figurenbewegungen sehr abgehackt“): Lauf-Tempo für die Clip-Gewichte über eine kritisch gedämpfte Feder
+// (Eigenkreisfrequenz W_LAUF 1/s: halber Weg nach ~0,09 s, kein Überschwingen) statt hart aus dem momentanen Tempo
+const W_LAUF = 18;
+const W_DREH = 30;   // Blickrichtung: Feder 1/s (halber Weg ~0,06 s) – Bots kehren die Drehung teils von Takt zu Takt um
+const K_TECH = 20;   // Technik-Pose: Werte folgen dem Ziel mit 1/s (Wechsel Luftball → Schuss → am Boden ohne Sprung)
+const W_IK = 60;     // Fuß-IK beim Ballkontakt: Versatz zum Ball über eine Feder (Dribbel-Kontakte folgen im 0,3-s-Takt)
+const IKZ = [0, 0, 0];
+// Sicherheitsnetz (Inertialisierung): springt ein Knochen (lokale Drehung) in einem Bild weiter als TR_GRENZE rad je 1/60 s
+// bzw. der Körperschwerpunkt (Neigungs-Gruppe) weiter als TR_WEG m, hält die Figur die alte Pose als Versatz und baut ihn mit TR_TAU s ab – egal, welche
+// Schicht gesprungen ist (Clip-Wechsel, Technik, Tormann-Rolle, IK an/aus). Echte schnelle Bewegungen bleiben darunter.
+const TR_KNOCHEN = ['Bip01_Pelvis', 'Bip01_Spine', 'Bip01_Spine2', 'Bip01_Head', 'Bip01_L_Thigh', 'Bip01_L_Calf', 'Bip01_L_Foot', 'Bip01_R_Thigh',
+  'Bip01_R_Calf', 'Bip01_R_Foot', 'Bip01_L_UpperArm', 'Bip01_L_Forearm', 'Bip01_R_UpperArm', 'Bip01_R_Forearm'];
+const TR_GRENZE = 0.4, TR_WEG = 0.06, TR_TAU = 0.05;
+const _qi = new THREE.Quaternion(), _qa = new THREE.Quaternion(), _va = new THREE.Vector3();
+const TECH_WERTE = ['pitch', 'roll', 'drop', 'thigh', 'calf', 'twist', 'thigh2', 'arms', 'nod'];
+const KERN = new Set([...LOCO, 'idle', 'crouch']);
 
 // n4 (Audit #7): KTX2-Texturen, wenn tools/build_ktx2_avatars.mjs sie erzeugt hat (avatar_ktx2.js) und nicht ?ktx=0 –
 // KTX2Loader mit detectSupport (ETC2/ASTC/BC je Gerät), bei Fehlern je Figur Rückfall auf die WebP-Fassung.
@@ -250,6 +267,12 @@ export class Avatar {
     this.special = null; this.specialW = 0; this.specialName = '';
     this.ready = 0; this.lean = 0; this.leanSide = 0; this.dive = 0;
     this.prevFace = 0; this.turnRate = 0;
+    // n5: glatt = geglättete Lauf-Gewichte, je Sonderbewegung eigenes Gewicht, geglättete Stemm-Neigung; ?glatt=0 = wie n4
+    this.glatt = opts.glatt !== false;
+    this.vGl = null; this.vGlV = 0; this.sonderW = {}; this.leanP = 0; this.leanR = 0; this.sofort = false;
+    this.yawGl = null; this.yawV = 0; this.tpGl = null;
+    this.ikOff = { L: [0, 0, 0], R: [0, 0, 0] }; this.ikVel = { L: [0, 0, 0], R: [0, 0, 0] };
+    this.tr = null; this.trN = 0; this.diveSeite = null;
     this.touched = new Map(); // Knochen mit prozeduraler Zusatzdrehung → Mischer-Wert davor
     this.setShadows(!!opts.shadows);
     this.sparDt = 0; this.sparN = 0;
@@ -285,14 +308,25 @@ export class Avatar {
 
   // Figur für den Sim-Zustand stellen. st: {x, z, face, speed, vx, vz, plant, plantX, plantZ, kickT, kickFoot,
   // hand, handT, holding, keeper, ready, cheer, human}
+  // n5: Schnitt (Wiederholung beginnt/endet) – Glättungen springen im nächsten Bild direkt auf den neuen Zustand, statt
+  // aus der alten Szene herüberzublenden (z. B. Jubel-Pose in den Anlauf der Wiederholung)
+  schnitt() { this.sofort = true; this.vGl = null; this.yawGl = null; this.tpGl = null; this.ikNull(); this.tr = null; this.diveSeite = null; this.vGlV = 0; this.sonderW = {}; this.prevFace = null; this.turnRate = 0; this.kickPunkt = null; this.ktPrev = 9; }
+  ikNull() { for (const s of ['L', 'R']) { this.ikOff[s].fill(0); this.ikVel[s].fill(0); } }
   update(dt, pl, st) {
+    let face = st.face ?? pl.face; // n5: zwischen den Spieltakten interpoliert (main.js), sonst Stand des letzten Takts
+    if (this.glatt) {
+      if (this.yawGl === null) { this.yawGl = face; this.yawV = 0; }
+      const ziel = this.yawGl + wrap(face - this.yawGl);
+      const f = federKrit(this.yawGl, this.yawV, ziel, dt, W_DREH); this.yawGl = f[0]; this.yawV = f[1];
+      face = this.yawGl;
+    }
     // n4 (Audit #8): nicht im Bild (st.sparen) → Mischer und prozedurale Schichten nur jedes 2. Bild, die Zeit sammelt sich
     // (Phase, Drehrate und Überblendungen laufen mit der Summe weiter); Lage und Blickrichtung jedes Bild
     if (st.sparen) {
       this.sparDt += dt;
       this.sparN = (this.sparN + 1) % 2;
       if (this.sparN === 1) {
-        this.root.position.set(st.x, pl.jumpY || 0, st.z); this.root.rotation.y = Math.PI / 2 - pl.face;
+        this.root.position.set(st.x, pl.jumpY || 0, st.z); this.root.rotation.y = Math.PI / 2 - face;
         this.gespart = (this.gespart || 0) + 1;
         return;
       }
@@ -304,14 +338,22 @@ export class Avatar {
     for (const [b, q] of this.touched) b.quaternion.copy(q);
     this.touched.clear();
     this.root.position.set(st.x, 0, st.z);
-    this.root.rotation.y = Math.PI / 2 - pl.face;
-    const turn = wrap(pl.face - this.prevFace) / Math.max(dt, 1e-3); this.prevFace = pl.face;
-    this.turnRate += (turn - this.turnRate) * Math.min(1, dt * 8);
+    this.root.rotation.y = Math.PI / 2 - face;
+    const sofort = this.sofort; this.sofort = false;
+    const ds = sofort ? 1 : dt; // Glättungen: nach einem Schnitt sofort am Ziel
+    const turn = this.prevFace === null ? 0 : wrap(face - this.prevFace) / Math.max(dt, 1e-3); this.prevFace = face;
+    this.turnRate += (turn - this.turnRate) * Math.min(1, ds * 8);
     // ---- Lauf-Blend nach Tempo ----
     const v = pl.speed, M = this.meta;
     const sp = { walk: M.walk.speed, jog: M.jog.speed, run: M.run.speed, sprint: M.sprint.speed };
     const w = { idle: 0, walk: 0, jog: 0, run: 0, sprint: 0 };
-    const vEff = Math.max(v, Math.min(1.2, Math.abs(this.turnRate) * 0.35)); // auf der Stelle drehen = Trippeln
+    const vRoh = Math.max(v, Math.min(1.2, Math.abs(this.turnRate) * 0.35)); // auf der Stelle drehen = Trippeln
+    let vEff = vRoh;
+    if (this.glatt) {
+      if (this.vGl === null) { this.vGl = vRoh; this.vGlV = 0; }
+      const f = federKrit(this.vGl, this.vGlV, vRoh, dt, W_LAUF); this.vGl = Math.max(0, f[0]); this.vGlV = f[1];
+      vEff = this.vGl;
+    }
     if (vEff < 0.15) w.idle = 1;
     else if (vEff < sp.walk) { const k = vEff / sp.walk; w.idle = 1 - k; w.walk = k; }
     else if (vEff < sp.jog) { const k = (vEff - sp.walk) / (sp.jog - sp.walk); w.walk = 1 - k; w.jog = k; }
@@ -321,50 +363,74 @@ export class Avatar {
     // Schrittweg je Zyklus (gemessenes Clip-Tempo × Dauer) → Phase so, dass die Füße nicht gleiten
     let cyc = 0, ws = 0;
     for (const c of LOCO) { cyc += w[c] * sp[c] * M[c].duration; ws += w[c]; }
-    if (ws > 0.01) { cyc /= ws; this.phase = (this.phase + vEff * dt / Math.max(0.3, cyc)) % 1; }
+    // Phase mit dem echten Tempo (Füße bleiben am Boden), Schrittlänge aus den (geglätteten) Gewichten
+    if (ws > 0.01) { cyc /= ws; this.phase = (this.phase + vRoh * dt / Math.max(0.3, cyc)) % 1; }
     // Sonderbewegung (Jubel, Klatschen, Warten, Tormann bereit) überblendet alles
     const want = st.special || null;
     if (want !== this.specialName) {
       if (want && this.act[want]) { this.act[want].reset(); this.act[want].setLoop(THREE.LoopRepeat); }
       this.prevSpecial = this.specialName; this.specialName = want;
     }
-    const target = want ? 1 : 0;
-    this.specialW += (target - this.specialW) * Math.min(1, dt * 6);
-    const sw = this.specialW, lw = 1 - sw;
+    let sw;
+    if (this.glatt) {
+      // n5: je Sonderbewegung ein eigenes Gewicht – die alte blendet mit aus, statt sofort auf 0 zu fallen (vorher war die
+      // Summe aller Gewichte beim Ende von Jubel/Klatschen kurz < 1 → Figur zog Richtung Ruhepose)
+      let sum = 0;
+      for (const n of Object.keys(this.act)) {
+        if (KERN.has(n)) continue;
+        const w0 = this.sonderW[n] || 0, ziel = n === want ? 1 : 0;
+        const w1 = w0 + (ziel - w0) * Math.min(1, ds * 6);
+        this.sonderW[n] = !ziel && w1 < 1e-3 ? 0 : w1; sum += this.sonderW[n];
+      }
+      if (sum > 1) { for (const n in this.sonderW) this.sonderW[n] /= sum; sum = 1; }
+      this.specialW = sw = sum;
+    } else {
+      const target = want ? 1 : 0;
+      this.specialW += (target - this.specialW) * Math.min(1, dt * 6);
+      sw = this.specialW;
+    }
+    const lw = 1 - sw;
     for (const c of LOCO) { const a = this.act[c]; a.time = ((this.phase + this.phase0[c]) % 1) * this.clips[c].duration; a.setEffectiveWeight(w[c] * lw); }
     // Tormann-Bereitschaft: etwas in die Hocke (crouch-Clip leicht beigemischt)
-    this.ready += ((st.ready ? 1 : 0) - this.ready) * Math.min(1, dt * 5);
+    this.ready += ((st.ready ? 1 : 0) - this.ready) * Math.min(1, ds * 5);
     this.act.idle.setEffectiveWeight(w.idle * lw * (1 - this.ready * 0.4));
     this.act.crouch.setEffectiveWeight(w.idle * lw * this.ready * 0.4);
     for (const [n, a] of Object.entries(this.act)) {
       if (LOCO.includes(n) || n === 'idle' || n === 'crouch') continue;
-      a.setEffectiveWeight(n === this.specialName ? sw : n === this.prevSpecial ? 0 : 0);
+      a.setEffectiveWeight(this.glatt ? this.sonderW[n] || 0 : n === this.specialName ? sw : 0);
     }
     this.mixer.update(dt);
     // ---- prozedurale Schichten (nach dem Mischer, im Weltraum der Figur) – nur wenn aktiv (spart Matrix-Updates) ----
     // Stemmschritt: Körper lehnt sich gegen die alte Laufrichtung (bis 22°), Hechtsprung: Rolle
     const plantK = Math.min(1, pl.plant || 0);
-    this.lean += (plantK * 0.45 - this.lean) * Math.min(1, dt * 12);
+    this.lean += (plantK * 0.45 - this.lean) * Math.min(1, ds * 12);
     const diveMode = pl.hand && (pl.hand.mode === 'dive' || pl.hand.mode === 'ground');
-    this.dive += ((diveMode ? 1 : 0) - this.dive) * Math.min(1, dt * (diveMode ? 9 : 4));
+    this.dive += ((diveMode ? 1 : 0) - this.dive) * Math.min(1, ds * (diveMode ? 9 : 4));
     const hold = st.holding ? 1 : 0;
-    this.holdW = (this.holdW || 0) + (hold - (this.holdW || 0)) * Math.min(1, dt * 8);
+    this.holdW = (this.holdW || 0) + (hold - (this.holdW || 0)) * Math.min(1, ds * 8);
     const kt = pl.kickT ?? 9;
     // n4: Ballkontakt merken (kickT springt auf ~0) → Ziel für die Fuß-IK des Schussbeins
-    if (kt < this.ktPrev - 1e-4 && kt < 0.05 && st.ball) { this.kickPunkt = [st.ball[0], st.ball[1], st.ball[2]]; this.kickVon = [st.x, 0, st.z]; }
+    if (kt < this.ktPrev - 1e-4 && kt < 0.05 && st.ball && !sofort) { this.kickPunkt = [st.ball[0], st.ball[1], st.ball[2]]; this.kickVon = [st.x, 0, st.z]; }
     this.ktPrev = kt;
     // Technik-Pose (Nacht 2b, prozedural bis zu den Mixamo-Clips): Luftball im Anflug, am Boden danach, Kick-Arten
     const tp = techPose(pl, st.t ?? 0);
-    this.tpW = (this.tpW || 0) + ((tp ? 1 : 0) - (this.tpW || 0)) * Math.min(1, dt * (tp ? 14 : 5));
-    if (tp) this.tp = tp;
+    this.tpW = (this.tpW || 0) + ((tp ? 1 : 0) - (this.tpW || 0)) * Math.min(1, ds * (tp ? 14 : 5));
+    if (tp && this.glatt) {
+      // n5: Ziel-Pose glätten – beim Ballkontakt wechselt z. B. die Luftball-Pose (Bein oben) in die Schuss-Pose (Bein
+      // unten), vorher in einem Bild
+      if (!this.tpGl || ds === 1 || this.tpW < 0.05) this.tpGl = { ...tp };
+      const k = Math.min(1, ds * K_TECH), g = this.tpGl;
+      for (const n of TECH_WERTE) g[n] = (g[n] || 0) + ((tp[n] || 0) - (g[n] || 0)) * k;
+      g.legs = tp.legs; this.tp = g;
+    } else if (tp) this.tp = tp;
     this.root.position.y = pl.jumpY || 0;
-    const proc = plantK > 0.01 || this.lean > 0.01 || this.dive > 0.01 || kt < 0.4 || this.holdW > 0.01 || this.ready > 0.05 || this.tpW > 0.01;
+    const proc = plantK > 0.01 || this.lean > 0.01 || Math.abs(this.leanP) + Math.abs(this.leanR) > 0.01 || this.dive > 0.01 || kt < 0.4 || this.holdW > 0.01 || this.ready > 0.05 || this.tpW > 0.01;
     this.gloves[0].visible = this.gloves[1].visible = !!st.keeper;
     this.ring.visible = !!st.keeper;
     if (st.keeper) this.ring.material.opacity = 0.55 + 0.25 * Math.sin(performance.now() / 180);
     this.blob.scale.setScalar(1 + this.dive * 0.8);
     if (this.shadowYaw !== null) { this.blob.rotation.y = this.shadowYaw - this.root.rotation.y; this.blob.position.y = 0.006 - this.root.position.y; }
-    if (!proc) { this.tilt.rotation.set(0, 0, 0); this.tilt.position.y = 0.95; return; }
+    if (!proc) { this.tilt.rotation.set(0, 0, 0); this.tilt.position.y = 0.95; if (this.glatt) { this.ikNull(); this.traegheit(dt, ds === 1); } return; }
     let roll = 0, pitch = 0;
     if (plantK > 0.01 || this.lean > 0.01) {
       // Neigung: nach hinten gegen die alte Bewegung (Körper-Koordinaten)
@@ -374,13 +440,23 @@ export class Avatar {
       // Oberkörper gegen die (alte) Geschwindigkeit: Füße stemmen vor dem Schwerpunkt (bis 26°)
       pitch = -this.lean * (along / l); roll = -this.lean * (side / l);
     }
+    if (this.glatt) {
+      // n5: Neigung als Vektor glätten – beim Stemmschritt kehrt sich die Bewegung um (Tempo geht durch 0), die Richtung
+      // sprang dann in einem Bild von „nach hinten“ auf „nach vorn“
+      const k = Math.min(1, ds * 12);
+      this.leanP += (pitch - this.leanP) * k; this.leanR += (roll - this.leanR) * k;
+      pitch = this.leanP; roll = this.leanR;
+    }
     if (this.dive > 0.01) {
       const dx = pl.hand.dx, dz = pl.hand.dz;
       const side = -dx * Math.sin(pl.face) + dz * Math.cos(pl.face); // + = links der Blickrichtung
       // Nacht 2d: ausgestreckt – im Flug hebt der Körper im Bogen ab und liegt waagrecht (Rolle bis ~88°), danach flach
       // am Boden; Flugdauer je Hechtsprung (hand.T)
       const h = pl.hand, fl = h.mode === 'dive' ? Math.sin(Math.PI * Math.min(1, h.t / (h.T || 0.38))) : 0;
-      roll = (side >= 0 ? -1 : 1) * (1.25 + 0.28 * fl) * this.dive;
+      // n5: Seite beim Absprung merken – beim Aufstehen dreht der Tormann sich, die Seite kippte dann in einem Bild um
+      let seite = side >= 0 ? -1 : 1;
+      if (this.glatt) { if (this.diveSeite === null || (this.dive < 0.05 && diveMode)) this.diveSeite = seite; seite = this.diveSeite; }
+      roll = seite * (1.25 + 0.28 * fl) * this.dive;
       this.tilt.position.y = 0.95 - 0.55 * this.dive + 0.32 * fl;
     } else this.tilt.position.y = 0.95 - 0.08 * this.lean / 0.45; // im Stemmschritt leicht in die Knie
     // Technik-Pose überblendet Neigung/Absenken
@@ -392,7 +468,24 @@ export class Avatar {
     this.tilt.rotation.set(pitch, 0, roll, 'YXZ');
     this.root.updateMatrixWorld(true);
     const leg = pl.kickFoot > 0 ? 'R' : 'L', other = leg === 'R' ? 'L' : 'R';
-    if (T && tw > 0.01 && T.legs) {
+    if (this.glatt) {
+      // n5: Technik-Beine und Schuss-Schwung mischen statt umschalten – vorher setzte der Schwung schlagartig ein, sobald
+      // die Technik-Pose unter 1 % ausgeblendet war (und verschwand schlagartig, wenn eine Technik einsetzte)
+      const tl = T && T.legs && tw > 0.001 ? tw : 0;
+      if (tl) {
+        this.rotBoneWorld(`Bip01_${leg}_Thigh`, 'side', T.thigh * tl);
+        if (T.calf) this.rotBoneWorld(`Bip01_${leg}_Calf`, 'side', T.calf * tl);
+        if (T.twist) this.rotBoneWorld(`Bip01_${leg}_Thigh`, 'up', T.twist * (leg === 'R' ? 1 : -1) * tl);
+        if (T.thigh2) this.rotBoneWorld(`Bip01_${other}_Thigh`, 'side', T.thigh2 * tl);
+        if (T.arms) for (const sd of ['L', 'R']) this.rotBoneWorld(`Bip01_${sd}_UpperArm`, 'side', -T.arms * tl);
+        if (T.nod) this.rotBoneWorld('Bip01_Head', 'side', T.nod * tl);
+      }
+      if (kt < 0.4 && tl < 0.999) {
+        const k = Math.sin(Math.min(1, kt / 0.4) * Math.PI) * (1 - tl);
+        this.rotBoneWorld(`Bip01_${leg}_Thigh`, 'side', -0.95 * k);
+        this.rotBoneWorld(`Bip01_${leg}_Calf`, 'side', 0.5 * k * (1 - kt / 0.4));
+      }
+    } else if (T && tw > 0.01 && T.legs) {
       // Beine/Arme der Technik (Schussbein hoch, Hacke nach hinten, Arme zum Ausgleich)
       this.rotBoneWorld(`Bip01_${leg}_Thigh`, 'side', T.thigh * tw);
       if (T.calf) this.rotBoneWorld(`Bip01_${leg}_Calf`, 'side', T.calf * tw);
@@ -416,7 +509,35 @@ export class Avatar {
         if (this.holdW > 0.01) { this.rotBoneWorld(`Bip01_${s}_Forearm`, 'side', -0.55 * this.holdW); this.rotBoneWorld(`Bip01_${s}_Forearm`, 'up', sg * -0.38 * this.holdW); }
       }
     }
-    if (this.ik) this.fussIK(pl, kt);
+    if (this.ik) this.fussIK(pl, kt, dt);
+    if (this.glatt) this.traegheit(dt, ds === 1);
+  }
+
+  // n5 Sicherheitsnetz (siehe TR_GRENZE): Eingang = fertige Pose dieses Bildes, Ausgang = Pose mit abklingendem Versatz
+  traegheit(dt, neu) {
+    const ziele = this._trZiele || (this._trZiele = [...TR_KNOCHEN.map((n) => this.bones[n]).filter(Boolean), this.tilt]);
+    if (!this.tr || neu) {
+      this.tr = ziele.map((b) => ({ ein: b.quaternion.clone(), aus: b.quaternion.clone(), off: new THREE.Quaternion(), pEin: b.position.clone(), pOff: new THREE.Vector3() }));
+      return;
+    }
+    const grenze = TR_GRENZE * Math.max(1, dt * 60), weg = TR_WEG * Math.max(1, dt * 60), abkl = Math.exp(-dt / TR_TAU);
+    for (let i = 0; i < ziele.length; i++) {
+      const b = ziele[i], z = this.tr[i];
+      const sprung = z.ein.angleTo(b.quaternion) > grenze;
+      const pSprung = b === this.tilt && z.pEin.distanceTo(b.position) > weg; // Höhe/Absenken des Körpers (Hechtsprung, Technik)
+      z.ein.copy(b.quaternion);
+      if (sprung) { z.off.copy(z.aus).multiply(_qi.copy(b.quaternion).invert()); this.trN++; } // Versatz = alte Ausgabe relativ zur neuen Pose
+      if (pSprung) { z.pOff.add(_va.copy(z.pEin).sub(b.position)); this.trN++; }
+      z.pEin.copy(b.position);
+      z.off.slerp(_qa.identity(), 1 - abkl); z.pOff.multiplyScalar(abkl);
+      const aktiv = z.off.w < 0.99999 || z.pOff.lengthSq() > 1e-8;
+      if (aktiv && b !== this.tilt && !this.touched.has(b)) this.touched.set(b, b.quaternion.clone());
+      if (aktiv) {
+        b.quaternion.premultiply(z.off);
+        if (b === this.tilt) b.position.add(z.pOff);
+      }
+      z.aus.copy(b.quaternion);
+    }
   }
 
   // n4 Fuß-IK (Audit #5), nur wenn prozedurale Schichten aktiv sind (sonst stehen die Clips von selbst auf dem Boden):
@@ -424,11 +545,12 @@ export class Avatar {
   //    Stemmschritt und Rücklage drückten die Füße bisher in den Rasen. Nur anheben, nie herunterziehen.
   //  • Ballkontakt: das Schussbein (wie die Schwung-Schicht: kickFoot) greift beim Kontakt zum Kontaktpunkt aus der Simulation
   //    (Ball beim Sprung von kickT auf 0) und blendet in KICK_T = 0,12 s aus – der Fuß trifft den Ball sichtbar.
-  fussIK(pl, kt) {
+  fussIK(pl, kt, dt = 1 / 60) {
     const t0 = typeof performance !== 'undefined' ? performance.now() : 0;
     const aufrecht = this.dive < 0.2 && !pl.slide && !pl.fall && !(pl.air && pl.air.go);
-    const kw = this.kickPunkt ? kickGewicht(kt) : 0;
-    if (!aufrecht && kw <= 0) return;
+    const kw = this.kickPunkt ? kickGewicht(kt, this.glatt ? KICK_AN : 0) : 0;
+    const rest = this.glatt && (Math.abs(this.ikOff.L[0]) + Math.abs(this.ikOff.L[1]) + Math.abs(this.ikOff.L[2]) + Math.abs(this.ikOff.R[0]) + Math.abs(this.ikOff.R[1]) + Math.abs(this.ikOff.R[2]) > 0.002);
+    if (!aufrecht && kw <= 0 && !rest) return;
     const R = this.ruhe, yaw = this.root.rotation.y, pol = [Math.sin(yaw), 0, Math.cos(yaw)];
     const kickSeite = pl.kickFoot > 0 ? 'R' : 'L';
     for (const s of ['L', 'R']) {
@@ -437,10 +559,20 @@ export class Avatar {
       // lesen statt getWorldPosition (das rechnet je Aufruf die ganze Elternkette neu: am Handy ~1 ms für 6 Figuren)
       IK.a.setFromMatrixPosition(T.matrixWorld); IK.b.setFromMatrixPosition(C.matrixWorld); IK.c.setFromMatrixPosition(F.matrixWorld);
       let tx = IK.c.x, ty = IK.c.y, tz = IK.c.z, an = false;
-      if (kw > 0 && s === kickSeite) {
+      const kick = kw > 0 && s === kickSeite;
+      if (this.glatt) {
+        // n5: Versatz zum Ball folgt einer Feder – bei Dribbel-Kontakten im 0,3-s-Takt und weit entferntem Ball sprang
+        // der Fuß sonst in 1–2 Bildern bis 1 m
+        if (kick) { const k = kickZiel(this.kickPunkt, this.kickVon, BALL_R, R.knoechel); IKZ[0] = (k[0] - tx) * kw; IKZ[1] = (k[1] - ty) * kw; IKZ[2] = (k[2] - tz) * kw; }
+        else IKZ[0] = IKZ[1] = IKZ[2] = 0;
+        const o = this.ikOff[s];
+        federKritVek(o, this.ikVel[s], IKZ, dt, W_IK);
+        if (Math.abs(o[0]) + Math.abs(o[1]) + Math.abs(o[2]) > 0.001) { tx += o[0]; ty += o[1]; tz += o[2]; an = true; }
+      } else if (kick) {
         const k = kickZiel(this.kickPunkt, this.kickVon, BALL_R, R.knoechel);
         tx += (k[0] - tx) * kw; ty += (k[1] - ty) * kw; tz += (k[2] - tz) * kw; an = true;
-      } else if (aufrecht) {
+      }
+      if (aufrecht && !kick && !(this.glatt && an && ty > IK.c.y + 0.02)) {
         IK.z.setFromMatrixPosition(Z.matrixWorld);
         const hub = bodenHub(IK.c.y, IK.z.y, R.knoechel - 0.01, R.zeh - 0.01, 0);
         if (hub > 0.002) { ty += hub; an = true; }

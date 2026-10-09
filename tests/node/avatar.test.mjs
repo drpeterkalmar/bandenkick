@@ -102,27 +102,37 @@ for (const name of [...new Set(ROSTER.flat())]) {
 }
 check('Fuß-IK: Füße im Rasen ohne IK (größte Tiefe, Info)', vorher * 100, -Infinity, Infinity, 'cm', wo2);
 check('Fuß-IK: Füße im Rasen mit IK (Toleranz 1 cm + 2 mm Schwelle)', nachher * 100, 0, 1.25, 'cm');
-// Ballkontakt: Spieler läuft in +x, Ball 0,55 m vor ihm; Kontakt im 21. Bild
-{
-  const av = new Avatar(A, 'Sports_Male_03', 0, { shadows: false }), ball = [0.55, 0.11, 0.1];
+// Ballkontakt: Spieler läuft in +x, Ball 0,55 m vor ihm; Kontakt im 21. Bild. n5: mit Glättung (Standard) greift der Fuß
+// in ~0,1 s weich zum Ball statt im Kontaktbild hinzuspringen; ?glatt=0 = n4 (sofort am Ball)
+for (const glatt of [false, true]) {
+  const av = new Avatar(A, 'Sports_Male_03', 0, { shadows: false, glatt }), ball = [0.55, 0.11, 0.1];
   av.phase = 0;
   const lauf = (kt) => spieler({ speed: 3, vx: 3, kickT: kt, kickFoot: 1, techT: kt, tech: 'vollspann' });
   for (let i = 0; i < 20; i++) av.update(1 / 60, lauf(9), { x: 0, z: 0, t: 0, ball });
   const ziel = kickZiel(ball, [0, 0, 0], 0.11, av.ruhe.knoechel);
-  const mitIK = [], ohne = new Avatar(A, 'Sports_Male_03', 0, { shadows: false, ik: false }); const ohneD = [];
+  const mitIK = [], ohne = new Avatar(A, 'Sports_Male_03', 0, { shadows: false, ik: false, glatt }); const ohneD = [], lage = [], lageO = [];
   ohne.phase = 0;
   for (let i = 0; i < 20; i++) ohne.update(1 / 60, lauf(9), { x: 0, z: 0, t: 0, ball });
-  for (let k = 0; k < 10; k++) {
+  for (let k = 0; k < 30; k++) {
     const kt = k / 60;
     av.update(1 / 60, lauf(kt), { x: 0, z: 0, t: 0, ball }); ohne.update(1 / 60, lauf(kt), { x: 0, z: 0, t: 0, ball });
     av.root.updateMatrixWorld(true); ohne.root.updateMatrixWorld(true);
     const p = av.bones.Bip01_R_Foot.getWorldPosition(new THREE.Vector3()), q = ohne.bones.Bip01_R_Foot.getWorldPosition(new THREE.Vector3());
-    mitIK.push(p.distanceTo(new THREE.Vector3(...ziel))); ohneD.push(q.distanceTo(new THREE.Vector3(...ziel)));
+    mitIK.push(p.distanceTo(new THREE.Vector3(...ziel))); ohneD.push(q.distanceTo(new THREE.Vector3(...ziel))); lage.push(p); lageO.push(q);
   }
-  // Ziel teils außer Reichweite (Bein dann gestreckt in Richtung Ball) → mindestens 70 % näher als ohne IK
-  check('Ballkontakt: Schussfuß beim Kontakt am Ball (Abstand Knöchel → Ziel)', mitIK[0] * 100, 0, 0.3 * ohneD[0] * 100, 'cm', `ohne IK ${(ohneD[0] * 100).toFixed(1)} cm; nach 0,05 s ${(mitIK[3] * 100).toFixed(1)} / ${(ohneD[3] * 100).toFixed(1)} cm`);
-  // danach zieht nichts mehr zum Ball (nur noch die Boden-Regel, die auch beim Schwung greifen kann)
-  check('Ballkontakt: nach 0,12 s kein Zug mehr zum Ball (Differenz zu ohne IK)', Math.max(Math.abs(mitIK[8] - ohneD[8]), Math.abs(mitIK[9] - ohneD[9])) * 100, 0, 3, 'cm');
+  // größter Ruck des Fußes (zweite Differenz je Bild) mit IK minus ohne IK
+  const ruckMax = (L) => Math.max(...L.slice(1, -1).map((p, i) => new THREE.Vector3().copy(L[i + 2]).addScaledVector(p, -2).add(L[i]).length()));
+  const tag = glatt ? '' : ' (?glatt=0)';
+  if (!glatt) {
+    // Ziel teils außer Reichweite (Bein dann gestreckt in Richtung Ball) → mindestens 70 % näher als ohne IK
+    check('Ballkontakt' + tag + ': Schussfuß beim Kontakt am Ball (Abstand Knöchel → Ziel)', mitIK[0] * 100, 0, 0.3 * ohneD[0] * 100, 'cm', `ohne IK ${(ohneD[0] * 100).toFixed(1)} cm; nach 0,05 s ${(mitIK[3] * 100).toFixed(1)} / ${(ohneD[3] * 100).toFixed(1)} cm`);
+    check('Ballkontakt' + tag + ': nach 0,12 s kein Zug mehr zum Ball (Differenz zu ohne IK)', Math.max(Math.abs(mitIK[8] - ohneD[8]), Math.abs(mitIK[9] - ohneD[9])) * 100, 0, 3, 'cm');
+  } else {
+    const best = Math.min(...mitIK.slice(0, 9)), iB = mitIK.indexOf(best);
+    check('Ballkontakt' + tag + ': Schussfuß greift in ≤ 0,15 s zum Ball (nächster Abstand Knöchel → Ziel)', best * 100, 0, 0.5 * ohneD[iB] * 100, 'cm', `nach ${(iB / 60).toFixed(3)} s, ohne IK dort ${(ohneD[iB] * 100).toFixed(1)} cm`);
+    check('Ballkontakt' + tag + ': nach 0,4 s kein Zug mehr zum Ball (Differenz zu ohne IK)', Math.max(...[24, 25, 26, 27, 28, 29].map((k) => Math.abs(mitIK[k] - ohneD[k]))) * 100, 0, 3, 'cm');
+    check('Ballkontakt' + tag + ': kein Sprung – Fuß-Ruck mit IK höchstens 4 cm/Bild² über ohne IK', (ruckMax(lage) - ruckMax(lageO)) * 100, -Infinity, 4, 'cm', `mit ${(ruckMax(lage) * 100).toFixed(1)}, ohne ${(ruckMax(lageO) * 100).toFixed(1)}`);
+  }
 }
 // Ohne prozedurale Schicht (reiner Clip) ändert die IK nichts
 {

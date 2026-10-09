@@ -1,0 +1,471 @@
+{
+ "gruppen": {
+  "live": {
+   "bilder": 2770,
+   "sek": 46.26,
+   "bild_ms_p50": 16.6,
+   "bild_ms_p95": 17.8,
+   "figur_bilder": 9761,
+   "haenger": 3,
+   "sichtbar_gespart": 5850,
+   "pose_ruck_p50": 0.48,
+   "pose_ruck_p99": 15.385,
+   "pose_ruck_max": 155.82,
+   "pose_spruenge": 695,
+   "pose_spruenge_je_min": 256.3,
+   "grosse_spruenge": 288,
+   "dreh_spruenge": 671,
+   "gewicht_unter_1": 664,
+   "gewicht_min": 0.098,
+   "cam_lage_p50": 0.033,
+   "cam_lage_p99": 5.849,
+   "cam_lage_max": 46.55,
+   "cam_lage_ausreisser": 174,
+   "cam_blick_p99": 0.0,
+   "cam_blick_max": 0.0,
+   "cam_blick_ausreisser": 0,
+   "cam_ruck_summe": 1032.7,
+   "schnitte": 3,
+   "fov_spruenge": 3,
+   "tempo_spruenge": 3,
+   "ursachen": {
+    "sonst": 223,
+    "stemmschritt": 150,
+    "technik": 116,
+    "schuss": 88,
+    "sonderbewegung": 63,
+    "tempo": 55
+   }
+  },
+  "replay": {
+   "bilder": 1119,
+   "sek": 18.72,
+   "bild_ms_p50": 16.7,
+   "bild_ms_p95": 17.8,
+   "figur_bilder": 2829,
+   "haenger": 1,
+   "sichtbar_gespart": 1798,
+   "pose_ruck_p50": 0.009,
+   "pose_ruck_p99": 4.881,
+   "pose_ruck_max": 101.6,
+   "pose_spruenge": 68,
+   "pose_spruenge_je_min": 86.5,
+   "grosse_spruenge": 16,
+   "dreh_spruenge": 35,
+   "gewicht_unter_1": 665,
+   "gewicht_min": 0.104,
+   "cam_lage_p50": 0.011,
+   "cam_lage_p99": 4.796,
+   "cam_lage_max": 44.2,
+   "cam_lage_ausreisser": 17,
+   "cam_blick_p99": 0.126,
+   "cam_blick_max": 0.67,
+   "cam_blick_ausreisser": 4,
+   "cam_ruck_summe": 283.1,
+   "schnitte": 9,
+   "fov_spruenge": 9,
+   "tempo_spruenge": 6,
+   "ursachen": {
+    "sonderbewegung": 20,
+    "technik": 17,
+    "sonst": 14,
+    "schuss": 13,
+    "stemmschritt": 4
+   }
+  },
+  "r_aufbau": {
+   "bilder": 393,
+   "sek": 6.55,
+   "bild_ms_p50": 16.7,
+   "bild_ms_p95": 17.8,
+   "figur_bilder": 1293,
+   "haenger": 0,
+   "sichtbar_gespart": 791,
+   "pose_ruck_p50": 0.019,
+   "pose_ruck_p99": 6.853,
+   "pose_ruck_max": 47.33,
+   "pose_spruenge": 47,
+   "pose_spruenge_je_min": 130.9,
+   "grosse_spruenge": 10,
+   "dreh_spruenge": 32,
+   "gewicht_unter_1": 665,
+   "gewicht_min": 0.104,
+   "cam_lage_p50": 0.022,
+   "cam_lage_p99": 14.959,
+   "cam_lage_max": 44.2,
+   "cam_lage_ausreisser": 14,
+   "cam_blick_p99": 0.128,
+   "cam_blick_max": 0.25,
+   "cam_blick_ausreisser": 0,
+   "cam_ruck_summe": 193.4,
+   "schnitte": 3,
+   "fov_spruenge": 3,
+   "tempo_spruenge": 0,
+   "ursachen": {
+    "sonderbewegung": 19,
+    "sonst": 14,
+    "technik": 7,
+    "stemmschritt": 4,
+    "schuss": 3
+   }
+  },
+  "r_kontakt": {
+   "bilder": 312,
+   "sek": 5.27,
+   "bild_ms_p50": 16.65,
+   "bild_ms_p95": 17.8,
+   "figur_bilder": 280,
+   "haenger": 1,
+   "sichtbar_gespart": 22,
+   "pose_ruck_p50": 0.129,
+   "pose_ruck_p99": 45.203,
+   "pose_ruck_max": 101.6,
+   "pose_spruenge": 11,
+   "pose_spruenge_je_min": 141.4,
+   "grosse_spruenge": 6,
+   "dreh_spruenge": 3,
+   "gewicht_unter_1": 0,
+   "gewicht_min": 1.0,
+   "cam_lage_p50": 0.029,
+   "cam_lage_p99": 0.448,
+   "cam_lage_max": 7.66,
+   "cam_lage_ausreisser": 3,
+   "cam_blick_p99": 0.007,
+   "cam_blick_max": 0.12,
+   "cam_blick_ausreisser": 0,
+   "cam_ruck_summe": 36.2,
+   "schnitte": 3,
+   "fov_spruenge": 3,
+   "tempo_spruenge": 3,
+   "ursachen": {
+    "schuss": 10,
+    "technik": 1
+   }
+  },
+  "r_fancam": {
+   "bilder": 414,
+   "sek": 6.9,
+   "bild_ms_p50": 16.6,
+   "bild_ms_p95": 17.7,
+   "figur_bilder": 1256,
+   "haenger": 0,
+   "sichtbar_gespart": 985,
+   "pose_ruck_p50": 0.0,
+   "pose_ruck_p99": 1.02,
+   "pose_ruck_max": 5.01,
+   "pose_spruenge": 10,
+   "pose_spruenge_je_min": 28.7,
+   "grosse_spruenge": 0,
+   "dreh_spruenge": 0,
+   "gewicht_unter_1": 0,
+   "gewicht_min": 1.0,
+   "cam_lage_p50": 0.009,
+   "cam_lage_p99": 0.019,
+   "cam_lage_max": 0.02,
+   "cam_lage_ausreisser": 0,
+   "cam_blick_p99": 0.228,
+   "cam_blick_max": 0.67,
+   "cam_blick_ausreisser": 4,
+   "cam_ruck_summe": 53.6,
+   "schnitte": 3,
+   "fov_spruenge": 3,
+   "tempo_spruenge": 3,
+   "ursachen": {
+    "technik": 9,
+    "sonderbewegung": 1
+   }
+  }
+ },
+ "schlimm_figur": [
+  {
+   "i": 534,
+   "ab": "live",
+   "fig": 4,
+   "cm": 155.82,
+   "spielT": 9.133,
+   "ursache": "schuss"
+  },
+  {
+   "i": 569,
+   "ab": "live",
+   "fig": 0,
+   "cm": 154.47,
+   "spielT": 9.75,
+   "ursache": "sonst"
+  },
+  {
+   "i": 535,
+   "ab": "live",
+   "fig": 4,
+   "cm": 152.72,
+   "spielT": 9.15,
+   "ursache": "schuss"
+  },
+  {
+   "i": 568,
+   "ab": "live",
+   "fig": 0,
+   "cm": 146.55,
+   "spielT": 9.733,
+   "ursache": "sonst"
+  },
+  {
+   "i": 250,
+   "ab": "live",
+   "fig": 4,
+   "cm": 105.75,
+   "spielT": 4.4,
+   "ursache": "schuss"
+  },
+  {
+   "i": 2236,
+   "ab": "live",
+   "fig": 1,
+   "cm": 105.42,
+   "spielT": 31.792,
+   "ursache": "schuss"
+  },
+  {
+   "i": 2504,
+   "ab": "r_kontakt",
+   "fig": 1,
+   "cm": 101.6,
+   "spielT": 31.815,
+   "ursache": "schuss"
+  },
+  {
+   "i": 2505,
+   "ab": "r_kontakt",
+   "fig": 1,
+   "cm": 99.72,
+   "spielT": 31.818,
+   "ursache": "schuss"
+  },
+  {
+   "i": 509,
+   "ab": "live",
+   "fig": 4,
+   "cm": 91.61,
+   "spielT": 8.717,
+   "ursache": "schuss"
+  },
+  {
+   "i": 2237,
+   "ab": "live",
+   "fig": 1,
+   "cm": 89.63,
+   "spielT": 31.817,
+   "ursache": "schuss"
+  },
+  {
+   "i": 880,
+   "ab": "live",
+   "fig": 2,
+   "cm": 87.91,
+   "spielT": 14.933,
+   "ursache": "schuss"
+  },
+  {
+   "i": 249,
+   "ab": "live",
+   "fig": 4,
+   "cm": 86.67,
+   "spielT": 4.383,
+   "ursache": "schuss"
+  },
+  {
+   "i": 879,
+   "ab": "live",
+   "fig": 2,
+   "cm": 86.6,
+   "spielT": 14.917,
+   "ursache": "schuss"
+  },
+  {
+   "i": 110,
+   "ab": "live",
+   "fig": 1,
+   "cm": 84.28,
+   "spielT": 2.067,
+   "ursache": "schuss"
+  },
+  {
+   "i": 841,
+   "ab": "live",
+   "fig": 4,
+   "cm": 84.24,
+   "spielT": 14.283,
+   "ursache": "schuss"
+  },
+  {
+   "i": 3180,
+   "ab": "live",
+   "fig": 1,
+   "cm": 79.72,
+   "spielT": 40.975,
+   "ursache": "schuss"
+  },
+  {
+   "i": 508,
+   "ab": "live",
+   "fig": 4,
+   "cm": 78.07,
+   "spielT": 8.7,
+   "ursache": "schuss"
+  },
+  {
+   "i": 519,
+   "ab": "live",
+   "fig": 4,
+   "cm": 77.66,
+   "spielT": 8.883,
+   "ursache": "schuss"
+  },
+  {
+   "i": 840,
+   "ab": "live",
+   "fig": 4,
+   "cm": 76.33,
+   "spielT": 14.267,
+   "ursache": "schuss"
+  },
+  {
+   "i": 35,
+   "ab": "live",
+   "fig": 2,
+   "cm": 75.13,
+   "spielT": 0.817,
+   "ursache": "schuss"
+  }
+ ],
+ "schlimm_kamera": [],
+ "schwellen": {
+  "huelle": {
+   "Bip01_Pelvis": [
+    0.6,
+    0.4
+   ],
+   "Bip01_L_Foot": [
+    1.0,
+    1.8
+   ],
+   "Bip01_R_Foot": [
+    1.0,
+    1.8
+   ],
+   "Bip01_L_Hand": [
+    0.6,
+    1.0
+   ],
+   "Bip01_R_Hand": [
+    0.6,
+    1.0
+   ],
+   "Bip01_Head": [
+    0.6,
+    0.45
+   ]
+  },
+  "reserve": 1.25,
+  "dreh_grad": 1.5,
+  "cam_cm": 1.0,
+  "cam_grad": 0.25
+ },
+ "meta": {
+  "name": "vorher",
+  "form": "quer",
+  "query": "?nosw&seed=3&q=2&nohelp&play&startprobe=0",
+  "drossel": 1,
+  "tore": [
+   {
+    "active": true,
+    "wait": -1,
+    "phase": "aufbau",
+    "frac": 0.007818181812763475,
+    "real": 0.01719999998807964,
+    "total": 5.83888888888883,
+    "label": "Orange 2 (du) · Vollspann · 113 km/h",
+    "held": false,
+    "contact": {
+     "t": 23.59166666666597,
+     "x": 3.936776734936844,
+     "y": 0.112,
+     "z": -0.6459383568686158,
+     "dx": 30.76036453247423,
+     "dz": 5.153681278227118,
+     "speed": 31.494744379363894,
+     "tech": "vollspann",
+     "player": 1,
+     "type": "kick"
+    },
+    "recCount": 960,
+    "segs": [
+     "aufbau",
+     "kontakt",
+     "fancam"
+    ],
+    "szene": "querpass"
+   },
+   {
+    "active": true,
+    "wait": -1,
+    "phase": "aufbau",
+    "frac": 0.008090909096325889,
+    "real": 0.01780000001191695,
+    "total": 6.561111111111023,
+    "label": "Orange 2 (du) · Dropkick · 96 km/h",
+    "held": false,
+    "contact": {
+     "t": 31.80833333333217,
+     "x": 3.9639130168821115,
+     "y": 0.1961992768173867,
+     "z": 7.201542678907545,
+     "dx": 17.662075042726418,
+     "dz": -17.918544769287784,
+     "speed": 26.592913231035926,
+     "tech": "dropkick",
+     "player": 1,
+     "type": "air"
+    },
+    "recCount": 960,
+    "segs": [
+     "aufbau",
+     "kontakt",
+     "fancam"
+    ],
+    "szene": "bande"
+   },
+   {
+    "active": true,
+    "wait": -1,
+    "phase": "aufbau",
+    "frac": 0.007727272727274087,
+    "real": 0.017000000000003013,
+    "total": 6.33888888888881,
+    "label": "Orange 2 (du) · Vollspann · 115 km/h",
+    "held": false,
+    "contact": {
+     "t": 42.5166666666649,
+     "x": 0.07093888487962195,
+     "y": 0.112,
+     "z": -1.788200454567781,
+     "dx": 31.578130722049032,
+     "dz": 2.6372296810143574,
+     "speed": 31.84677016691674,
+     "tech": "vollspann",
+     "player": 1,
+     "type": "kick"
+    },
+    "recCount": 960,
+    "segs": [
+     "aufbau",
+     "kontakt",
+     "fancam"
+    ],
+    "szene": "steilpass"
+   }
+  ],
+  "gl": "ANGLE (NVIDIA, NVIDIA GeForce RTX 3070 Ti Laptop GPU (0x000024A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+  "fehler": []
+ }
+}

@@ -61,7 +61,14 @@ export function bodenHub(knoechelY, zehY, ruheKnoechel, ruheZeh, boden = 0) {
 }
 // Schuss: Gewicht des Ballkontakts nach dem Kick (kt = Zeit seit Kontakt in s): voll beim Kontakt, nach KICK_T weg
 export const KICK_T = 0.12;
-export function kickGewicht(kt) { return kt >= 0 && kt < KICK_T ? 0.85 * (1 - kt / KICK_T) ** 1.5 : 0; }
+// n5: an > 0 = der Fuß greift in `an` s zum Ball (weich ein, weich aus) statt im Kontaktbild voll hinzuspringen (bis 1,5 m
+// Ruck in einem Bild gemessen); an = 0 = wie n4
+export const KICK_AN = 0.04, KICK_T_GLATT = 0.16;
+const ss = (u) => (u <= 0 ? 0 : u >= 1 ? 1 : u * u * (3 - 2 * u));
+export function kickGewicht(kt, an = 0) {
+  if (an > 0) return kt >= 0 && kt < KICK_T_GLATT ? 0.85 * (kt < an ? ss(kt / an) : 1 - ss((kt - an) / (KICK_T_GLATT - an))) : 0;
+  return kt >= 0 && kt < KICK_T ? 0.85 * (1 - kt / KICK_T) ** 1.5 : 0;
+}
 // Knöchel-Ziel beim Ballkontakt: hinter dem Ball (Spann trifft), aus Richtung Spieler → Ball, nicht unter Ruhehöhe
 export function kickZiel(ball, spieler, r, ruheKnoechel) {
   let dx = ball[0] - spieler[0], dz = ball[2] - spieler[2];
