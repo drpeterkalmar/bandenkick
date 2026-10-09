@@ -257,7 +257,7 @@ async function boot() {
   scene.add(marker);
   if (A) {
     for (let team = 0; team < 2; team++) for (let i = 0; i < 3; i++) {
-      const av = new Avatar(A, ROSTER[team][i % ROSTER[team].length], team, { shadows: quality.avatarShadows, cull: AV_CULL, ik: AV_IK, glatt: GLATT, traeg: qs.get('traeg') !== '0', deko: DEKO ? { sunDir, num: BIB_NUMS[team][i], extShadow: true } : null });
+      const av = new Avatar(A, ROSTER[team][i % ROSTER[team].length], team, { shadows: quality.avatarShadows, cull: AV_CULL, ik: AV_IK, glatt: GLATT, traeg: qs.get('traeg') === '1' /* n5: Sicherheitsnetz nur auf Wunsch (Bildrate) */, deko: DEKO ? { sunDir, num: BIB_NUMS[team][i], extShadow: true } : null });
       figs.push(av); scene.add(av.root);
     }
   } else {

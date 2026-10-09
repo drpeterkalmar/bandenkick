@@ -37,7 +37,7 @@ const ABLAEUFE = {
   stemmschritt: (i) => { const vx = 5 - i * 0.12; return [spieler({ speed: Math.abs(vx), vx, plant: i > 5 && i < 80 ? 1 : 0 }), {}]; },
 };
 const erg = {};
-for (const [glatt, traeg] of [[false, true], [true, false], [true, true]]) {
+for (const [glatt, traeg] of [[false, true], [true, true], [true, false]]) { // n4, n5 mit Sicherheitsnetz (?traeg=1), n5 wie im Spiel
   let wsMin = 9, gross = 0, maxR = 0, staerke = 0; const je = {};
   for (const name of ['Sports_Male_02', 'Sports_Female_02']) {
     for (const [ab, fn] of Object.entries(ABLAEUFE)) {
@@ -51,10 +51,10 @@ for (const [glatt, traeg] of [[false, true], [true, false], [true, true]]) {
       gross += g; je[ab] = (je[ab] || 0) + g;
     }
   }
-  erg[!glatt ? 'alt' : traeg ? 'neu' : 'ohneNetz'] = { wsMin, gross, maxR, je, staerke };
+  erg[!glatt ? 'alt' : traeg ? 'mitNetz' : 'neu'] = { wsMin, gross, maxR, je, staerke };
 }
-const { alt, neu, ohneNetz } = erg;
-check('Figuren n5 ohne Sicherheitsnetz: große Pose-Sprünge (Info)', ohneNetz.gross, -Infinity, Infinity, '', Object.entries(ohneNetz.je).map(([k, v]) => `${k} ${v}`).join(', ') + `; größter Ruck ${ohneNetz.maxR.toFixed(1)} cm`);
+const { alt, neu, mitNetz } = erg;
+check('Figuren n5 mit Sicherheitsnetz (?traeg=1): Stärke der großen Sprünge (Info)', mitNetz.staerke, -Infinity, Infinity, 'cm', Object.entries(mitNetz.je).map(([k, v]) => `${k} ${v}`).join(', ') + `; größter Sprung ${mitNetz.maxR.toFixed(1)} cm`);
 check('Figuren n4 (?glatt=0): kleinste Summe der Clip-Gewichte (Info)', alt.wsMin, -Infinity, Infinity, '', 'unter 1 = Figur zieht Richtung Ruhepose');
 check('Figuren: Summe der Clip-Gewichte bleibt 1 (kleinste)', neu.wsMin, 0.999, 1.001);
 check('Figuren n4: große Pose-Sprünge (Spitze über der Lauf-Hülle und > 8 cm/Bild²) in 7 Abläufen × 2 Figuren (Info)', alt.gross, -Infinity, Infinity, '', Object.entries(alt.je).map(([k, v]) => `${k} ${v}`).join(', '));

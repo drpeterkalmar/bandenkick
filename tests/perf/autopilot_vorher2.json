@@ -1,0 +1,174 @@
+{
+ "hoch": {
+  "bilder": 2339,
+  "fps": 52.0,
+  "p50": 16.7,
+  "p95": 33.3,
+  "p99": 33.4,
+  "autopilot_vorher": {
+   "skala": 0.85,
+   "bereich": [
+    0.7,
+    0.85
+   ],
+   "stufen": {
+    "deko": 1,
+    "menschenschatten": 1,
+    "stufe": 1
+   },
+   "fps": 60,
+   "arbeit": null,
+   "cpu": null,
+   "gpu": null,
+   "engpass": null,
+   "gedeckelt": false,
+   "gesperrtBis": 0,
+   "aenderungen": 0,
+   "t": 1.4,
+   "level": 1,
+   "deko": true,
+   "menschenschatten": true
+  },
+  "autopilot_nachher": {
+   "skala": 1,
+   "bereich": [
+    0.75,
+    1
+   ],
+   "stufen": {
+    "deko": 0,
+    "menschenschatten": 0,
+    "stufe": 0
+   },
+   "fps": 60.5,
+   "arbeit": 12.76,
+   "cpu": 12.76,
+   "gpu": 1.94,
+   "engpass": "cpu",
+   "gedeckelt": false,
+   "gesperrtBis": 0,
+   "aenderungen": 3,
+   "t": 44.3,
+   "level": 0,
+   "deko": false,
+   "menschenschatten": false
+  },
+  "log": [
+   {
+    "t": 2.5,
+    "was": "deko",
+    "richtung": -1,
+    "skala": 0.85,
+    "fps": 7.8,
+    "arbeit": 125.95
+   },
+   {
+    "t": 4.03,
+    "was": "menschenschatten",
+    "richtung": -1,
+    "skala": 0.85,
+    "fps": 40.9,
+    "arbeit": 22.74
+   },
+   {
+    "t": 5.56,
+    "was": "stufe",
+    "richtung": -1,
+    "skala": 1,
+    "fps": 47.8,
+    "arbeit": 19.99
+   }
+  ],
+  "schritte": [
+   "deko − (Skala 0.85, 7.8 fps)",
+   "menschenschatten − (Skala 0.85, 40.9 fps)",
+   "stufe − (Skala 1, 47.8 fps)"
+  ]
+ },
+ "quer": {
+  "bilder": 2396,
+  "fps": 53.2,
+  "p50": 16.7,
+  "p95": 33.2,
+  "p99": 33.4,
+  "autopilot_vorher": {
+   "skala": 0.85,
+   "bereich": [
+    0.7,
+    0.85
+   ],
+   "stufen": {
+    "deko": 1,
+    "menschenschatten": 1,
+    "stufe": 1
+   },
+   "fps": 60,
+   "arbeit": null,
+   "cpu": null,
+   "gpu": null,
+   "engpass": null,
+   "gedeckelt": false,
+   "gesperrtBis": 0,
+   "aenderungen": 0,
+   "t": 1.4,
+   "level": 1,
+   "deko": true,
+   "menschenschatten": true
+  },
+  "autopilot_nachher": {
+   "skala": 1,
+   "bereich": [
+    0.75,
+    1
+   ],
+   "stufen": {
+    "deko": 0,
+    "menschenschatten": 0,
+    "stufe": 0
+   },
+   "fps": 60.3,
+   "arbeit": 11.27,
+   "cpu": 11.27,
+   "gpu": 1.87,
+   "engpass": "cpu",
+   "gedeckelt": false,
+   "gesperrtBis": 0,
+   "aenderungen": 3,
+   "t": 44.2,
+   "level": 0,
+   "deko": false,
+   "menschenschatten": false
+  },
+  "log": [
+   {
+    "t": 2.51,
+    "was": "deko",
+    "richtung": -1,
+    "skala": 0.85,
+    "fps": 7.9,
+    "arbeit": 123
+   },
+   {
+    "t": 4.05,
+    "was": "menschenschatten",
+    "richtung": -1,
+    "skala": 0.85,
+    "fps": 44.3,
+    "arbeit": 21
+   },
+   {
+    "t": 5.63,
+    "was": "stufe",
+    "richtung": -1,
+    "skala": 1,
+    "fps": 45.9,
+    "arbeit": 20.51
+   }
+  ],
+  "schritte": [
+   "deko − (Skala 0.85, 7.9 fps)",
+   "menschenschatten − (Skala 0.85, 44.3 fps)",
+   "stufe − (Skala 1, 45.9 fps)"
+  ]
+ }
+}

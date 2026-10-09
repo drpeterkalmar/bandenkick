@@ -31,11 +31,12 @@ const BALL_R = 0.11;
 // (Eigenkreisfrequenz W_LAUF 1/s: halber Weg nach ~0,055 s, kein Überschwingen; länger ließe die Füße rutschen) statt hart aus dem momentanen Tempo
 const W_LAUF = 30;
 const W_DREH = 30;   // Blickrichtung: Feder 1/s (halber Weg ~0,06 s) – Bots kehren die Drehung teils von Takt zu Takt um
-const K_TECH = 20;   // Technik-Pose: Werte folgen dem Ziel mit 1/s (Wechsel Luftball → Schuss → am Boden ohne Sprung)
+const W_TECH = 25;   // Technik-Pose: Werte folgen dem Ziel über eine Feder 1/s (Wechsel Luftball → Schuss → am Boden ohne Sprung)
 const W_IK = 30;     // Fuß-IK beim Ballkontakt: Versatz zum Ball über eine Feder (Dribbel-Kontakte folgen im 0,3-s-Takt) …
-const IK_MAX = 0.3;  // … und höchstens 0,3 m weit: weiter in 2–3 Bildern zum Ball zu greifen ist selbst ein Sprung
+const IK_MAX = 0.35; // … und höchstens 0,35 m weit: weiter in 2–3 Bildern zum Ball zu greifen ist selbst ein Sprung
 const IKZ = [0, 0, 0];
-// Sicherheitsnetz (Inertialisierung): springt ein Knochen (lokale Drehung) in einem Bild weiter als TR_GRENZE rad je 1/60 s
+// Sicherheitsnetz (Inertialisierung, n5 im Spiel aus – kostet am Handy-Profil ~1 fps quer, ?traeg=1 schaltet es zu; Node-
+// Tests nutzen es weiter): springt ein Knochen (lokale Drehung) in einem Bild weiter als TR_GRENZE rad je 1/60 s
 // bzw. der Körperschwerpunkt (Neigungs-Gruppe) weiter als TR_WEG m, hält die Figur die alte Pose als Versatz und baut ihn mit TR_TAU s ab – egal, welche
 // Schicht gesprungen ist (Technik, Tormann-Rolle, IK an/aus). Echte schnelle Bewegungen bleiben darunter. Läuft nur in Bildern
 // mit prozeduralen Schichten und im ersten Bild danach (reine Clips sind durch die geglätteten Gewichte schon stetig).
@@ -282,6 +283,7 @@ export class Avatar {
     // n5: Listen und Knochen einmal ablegen statt je Bild (Object.entries, Namen per Zeichenkette zusammensetzen)
     this.actListe = Object.entries(this.act).filter(([n]) => !LOCO.includes(n) && n !== 'idle' && n !== 'crouch');
     this.bein = Object.fromEntries(['L', 'R'].map((sd) => [sd, ['Thigh', 'Calf', 'Foot', 'Toe0'].map((k) => this.bones[`Bip01_${sd}_${k}`])]));
+    this.knochenWurzel = this.glatt ? Object.values(this.bones).find((b) => !b.parent || !b.parent.isBone) || null : null;
     this.procN = 0; this.bildN = 0; // Anteil der Bilder mit prozeduralen Schichten (teuer: Matrix-Update des Skeletts)
     this.touched = new Map(); // Knochen mit prozeduraler Zusatzdrehung → Mischer-Wert davor
     this.setShadows(!!opts.shadows);
@@ -432,9 +434,9 @@ export class Avatar {
     if (tp && this.glatt) {
       // n5: Ziel-Pose glätten – beim Ballkontakt wechselt z. B. die Luftball-Pose (Bein oben) in die Schuss-Pose (Bein
       // unten), vorher in einem Bild
-      if (!this.tpGl || ds === 1 || this.tpW < 0.05) this.tpGl = { ...tp };
-      const k = Math.min(1, ds * K_TECH), g = this.tpGl;
-      for (const n of TECH_WERTE) g[n] = (g[n] || 0) + ((tp[n] || 0) - (g[n] || 0)) * k;
+      if (!this.tpGl || ds === 1 || this.tpW < 0.05) { this.tpGl = { ...tp }; this.tpV = {}; this.techBein = pl.kickFoot > 0 ? 'R' : 'L'; }
+      const g = this.tpGl, gv = this.tpV;
+      for (const n of TECH_WERTE) { const f = federKrit(g[n] || 0, gv[n] || 0, tp[n] || 0, dt, W_TECH); g[n] = f[0]; gv[n] = f[1]; }
       g.legs = tp.legs; this.tp = g;
     } else if (tp) this.tp = tp;
     this.root.position.y = pl.jumpY || 0;
@@ -482,8 +484,15 @@ export class Avatar {
       this.tilt.position.y = this.tilt.position.y * (1 - tw) + (0.95 + T.drop) * tw;
     }
     this.tilt.rotation.set(pitch, 0, roll, 'YXZ');
-    this.root.updateMatrixWorld(true);
-    const leg = pl.kickFoot > 0 ? 'R' : 'L', other = leg === 'R' ? 'L' : 'R';
+    // n5: nur Kette root → tilt → model und den Knochenbaum aktualisieren – die Meshes (Körper, Leibchen, Handschuhe,
+    // Schatten) braucht hier niemand, das erledigt das Zeichnen ohnehin (spart je Bild mit Zusatzschichten die Hälfte)
+    if (this.knochenWurzel) {
+      this.root.updateWorldMatrix(false, false); this.tilt.updateWorldMatrix(false, false); this.model.updateWorldMatrix(false, false);
+      for (let p = this.knochenWurzel.parent; p && p !== this.model; p = p.parent) p.updateWorldMatrix(false, false);
+      this.knochenWurzel.updateMatrixWorld(true);
+    } else this.root.updateMatrixWorld(true);
+    // n5: solange eine Technik-Pose läuft, bleibt ihr Bein (die Sim wechselt das Schussbein teils erst im Kontakt-Takt)
+    const leg = this.glatt && this.techBein && this.tpW > 0.05 ? this.techBein : pl.kickFoot > 0 ? 'R' : 'L', other = leg === 'R' ? 'L' : 'R';
     if (this.glatt) {
       // n5: Technik-Beine und Schuss-Schwung mischen statt umschalten – vorher setzte der Schwung schlagartig ein, sobald
       // die Technik-Pose unter 1 % ausgeblendet war (und verschwand schlagartig, wenn eine Technik einsetzte)
@@ -593,7 +602,7 @@ export class Avatar {
     const rest = this.glatt && (this.ikOff.L[0] || this.ikOff.L[1] || this.ikOff.L[2] || this.ikOff.R[0] || this.ikOff.R[1] || this.ikOff.R[2]);
     if (!aufrecht && kw <= 0 && !rest) return;
     const R = this.ruhe, yaw = this.root.rotation.y, pol = [Math.sin(yaw), 0, Math.cos(yaw)];
-    const kickSeite = (this.vorKick ? this.kickFussVor : pl.kickFoot) > 0 ? 'R' : 'L';
+    const kickSeite = this.vorKick ? (this.kickFussVor > 0 ? 'R' : 'L') : this.glatt && this.techBein && this.tpW > 0.05 ? this.techBein : pl.kickFoot > 0 ? 'R' : 'L';
     for (const s of ['L', 'R']) {
       const [T, C, F, Z] = this.bein[s];
       // Matrizen sind aktuell (updateMatrixWorld vor den Schichten, rotBoneWorld/IK aktualisieren ihre Teilbäume) → direkt
