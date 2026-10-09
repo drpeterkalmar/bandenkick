@@ -42,10 +42,12 @@ const IKZ = [0, 0, 0];
 // Nur Beine (+ Neigungs-Gruppe): dort entstehen die großen Sprünge (Schuss, Technik, IK); Rumpf und Arme folgen ohnehin
 // geglätteten Schichten – das halbiert die Kosten des Netzes (am Handy ~0,15 ms je Bild für 6 Figuren gespart)
 const TR_KNOCHEN = ['Bip01_L_Thigh', 'Bip01_L_Calf', 'Bip01_L_Foot', 'Bip01_R_Thigh', 'Bip01_R_Calf', 'Bip01_R_Foot'];
-const TR_GRENZE = 0.25, TR_WEG = 0.06, TR_TAU = 0.05;
+const TR_GRENZE = 0.45, TR_WEG = 0.08, TR_TAU = 0.04;
 const _qi = new THREE.Quaternion(), _qa = new THREE.Quaternion(), _va = new THREE.Vector3();
 const TECH_WERTE = ['pitch', 'roll', 'drop', 'thigh', 'calf', 'twist', 'thigh2', 'arms', 'nod'];
 const KERN = new Set([...LOCO, 'idle', 'crouch']);
+// Knochennamen je Seite (statt je Bild per Zeichenkette zusammengesetzt)
+const BN = Object.fromEntries(['L', 'R'].map((sd) => [sd, Object.fromEntries(['Thigh', 'Calf', 'Foot', 'UpperArm', 'Forearm'].map((k) => [k, `Bip01_${sd}_${k}`]))]));
 
 // n4 (Audit #7): KTX2-Texturen, wenn tools/build_ktx2_avatars.mjs sie erzeugt hat (avatar_ktx2.js) und nicht ?ktx=0 –
 // KTX2Loader mit detectSupport (ETC2/ASTC/BC je Gerät), bei Fehlern je Figur Rückfall auf die WebP-Fassung.
@@ -275,8 +277,11 @@ export class Avatar {
     this.vGl = null; this.vGlV = 0; this.sonderW = {}; this.leanP = 0; this.leanR = 0; this.sofort = false;
     this.yawGl = null; this.yawV = 0; this.tpGl = null;
     this.ikOff = { L: [0, 0, 0], R: [0, 0, 0] }; this.ikVel = { L: [0, 0, 0], R: [0, 0, 0] };
-    this.tr = null; this.trN = 0; this.trAn = 0; this.diveSeite = null; this.kickVor = null; this.vorKick = false; this.traeg = opts.traeg !== false;
+    this.tr = null; this.trNeu = true; this.trN = 0; this.trAn = 0; this.diveSeite = null; this.kickVor = null; this.vorKick = false; this.traeg = opts.traeg !== false;
     this.sonderNamen = Object.keys(this.act).filter((n) => !KERN.has(n));
+    // n5: Listen und Knochen einmal ablegen statt je Bild (Object.entries, Namen per Zeichenkette zusammensetzen)
+    this.actListe = Object.entries(this.act).filter(([n]) => !LOCO.includes(n) && n !== 'idle' && n !== 'crouch');
+    this.bein = Object.fromEntries(['L', 'R'].map((sd) => [sd, ['Thigh', 'Calf', 'Foot', 'Toe0'].map((k) => this.bones[`Bip01_${sd}_${k}`])]));
     this.procN = 0; this.bildN = 0; // Anteil der Bilder mit prozeduralen Schichten (teuer: Matrix-Update des Skeletts)
     this.touched = new Map(); // Knochen mit prozeduraler Zusatzdrehung → Mischer-Wert davor
     this.setShadows(!!opts.shadows);
@@ -315,7 +320,7 @@ export class Avatar {
   // hand, handT, holding, keeper, ready, cheer, human}
   // n5: Schnitt (Wiederholung beginnt/endet) – Glättungen springen im nächsten Bild direkt auf den neuen Zustand, statt
   // aus der alten Szene herüberzublenden (z. B. Jubel-Pose in den Anlauf der Wiederholung)
-  schnitt() { this.vorKick = false; this.kickVor = null; this.sofort = true; this.vGl = null; this.yawGl = null; this.tpGl = null; this.ikNull(); this.tr = null; this.diveSeite = null; this.vGlV = 0; this.sonderW = {}; this.prevFace = null; this.turnRate = 0; this.kickPunkt = null; this.ktPrev = 9; }
+  schnitt() { this.vorKick = false; this.kickVor = null; this.sofort = true; this.vGl = null; this.yawGl = null; this.tpGl = null; this.ikNull(); this.trNeu = true; this.diveSeite = null; this.vGlV = 0; this.sonderW = {}; this.prevFace = null; this.turnRate = 0; this.kickPunkt = null; this.ktPrev = 9; }
   ikNull() { for (const s of ['L', 'R']) { this.ikOff[s].fill(0); this.ikVel[s].fill(0); } }
   update(dt, pl, st) {
     let face = st.face ?? pl.face; // n5: zwischen den Spieltakten interpoliert (main.js), sonst Stand des letzten Takts
@@ -399,8 +404,7 @@ export class Avatar {
     this.ready += ((st.ready ? 1 : 0) - this.ready) * Math.min(1, ds * 5);
     this.act.idle.setEffectiveWeight(w.idle * lw * (1 - this.ready * 0.4));
     this.act.crouch.setEffectiveWeight(w.idle * lw * this.ready * 0.4);
-    for (const [n, a] of Object.entries(this.act)) {
-      if (LOCO.includes(n) || n === 'idle' || n === 'crouch') continue;
+    for (const [n, a] of this.actListe) {
       a.setEffectiveWeight(this.glatt ? this.sonderW[n] || 0 : n === this.specialName ? sw : 0);
     }
     this.mixer.update(dt);
@@ -441,7 +445,7 @@ export class Avatar {
     this.blob.scale.setScalar(1 + this.dive * 0.8);
     if (this.shadowYaw !== null) { this.blob.rotation.y = this.shadowYaw - this.root.rotation.y; this.blob.position.y = 0.006 - this.root.position.y; }
     this.procN += proc ? 1 : 0; this.bildN++;
-    if (!proc) { this.tilt.rotation.set(0, 0, 0); this.tilt.position.y = 0.95; if (this.glatt) { this.ikNull(); if (this.traeg && this.procVor) this.traegheit(dt, ds === 1); else { this.tr = null; this.trAn = 0; } } this.procVor = false; return; }
+    if (!proc) { this.tilt.rotation.set(0, 0, 0); this.tilt.position.y = 0.95; if (this.glatt) { this.ikNull(); if (this.traeg && this.procVor) this.traegheit(dt, ds === 1); else { this.trNeu = true; this.trAn = 0; } } this.procVor = false; return; }
     this.procVor = true;
     let roll = 0, pitch = 0;
     if (plantK > 0.01 || this.lean > 0.01) {
@@ -485,11 +489,11 @@ export class Avatar {
       // die Technik-Pose unter 1 % ausgeblendet war (und verschwand schlagartig, wenn eine Technik einsetzte)
       const tl = T && T.legs && tw > 0.01 ? tw : 0;
       if (tl) {
-        this.rotBoneWorld(`Bip01_${leg}_Thigh`, 'side', T.thigh * tl);
-        if (T.calf) this.rotBoneWorld(`Bip01_${leg}_Calf`, 'side', T.calf * tl);
-        if (T.twist) this.rotBoneWorld(`Bip01_${leg}_Thigh`, 'up', T.twist * (leg === 'R' ? 1 : -1) * tl);
-        if (T.thigh2) this.rotBoneWorld(`Bip01_${other}_Thigh`, 'side', T.thigh2 * tl);
-        if (T.arms) for (const sd of ['L', 'R']) this.rotBoneWorld(`Bip01_${sd}_UpperArm`, 'side', -T.arms * tl);
+        this.rotBoneWorld(BN[leg].Thigh, 'side', T.thigh * tl);
+        if (T.calf) this.rotBoneWorld(BN[leg].Calf, 'side', T.calf * tl);
+        if (T.twist) this.rotBoneWorld(BN[leg].Thigh, 'up', T.twist * (leg === 'R' ? 1 : -1) * tl);
+        if (T.thigh2) this.rotBoneWorld(BN[other].Thigh, 'side', T.thigh2 * tl);
+        if (T.arms) for (const sd of ['L', 'R']) this.rotBoneWorld(BN[sd].UpperArm, 'side', -T.arms * tl);
         if (T.nod) this.rotBoneWorld('Bip01_Head', 'side', T.nod * tl);
       }
       // Schwung geglättet: beim Dribbeln setzt der nächste Kontakt ein, bevor der alte Schwung zu Ende ist (Bein schnappte zurück)
@@ -497,31 +501,31 @@ export class Avatar {
       const kk = Math.min(1, ds * 30);
       this.schwung = (this.schwung || 0) + (kZiel - (this.schwung || 0)) * kk; this.schwungC = (this.schwungC || 0) + (cZiel - (this.schwungC || 0)) * kk;
       if (this.schwung > 0.01) {
-        this.rotBoneWorld(`Bip01_${leg}_Thigh`, 'side', -0.95 * this.schwung);
-        this.rotBoneWorld(`Bip01_${leg}_Calf`, 'side', 0.5 * this.schwungC);
+        this.rotBoneWorld(BN[leg].Thigh, 'side', -0.95 * this.schwung);
+        this.rotBoneWorld(BN[leg].Calf, 'side', 0.5 * this.schwungC);
       }
     } else if (T && tw > 0.01 && T.legs) {
       // Beine/Arme der Technik (Schussbein hoch, Hacke nach hinten, Arme zum Ausgleich)
-      this.rotBoneWorld(`Bip01_${leg}_Thigh`, 'side', T.thigh * tw);
-      if (T.calf) this.rotBoneWorld(`Bip01_${leg}_Calf`, 'side', T.calf * tw);
-      if (T.twist) this.rotBoneWorld(`Bip01_${leg}_Thigh`, 'up', T.twist * (leg === 'R' ? 1 : -1) * tw);
-      if (T.thigh2) this.rotBoneWorld(`Bip01_${other}_Thigh`, 'side', T.thigh2 * tw);
-      if (T.arms) for (const sd of ['L', 'R']) this.rotBoneWorld(`Bip01_${sd}_UpperArm`, 'side', -T.arms * tw);
+      this.rotBoneWorld(BN[leg].Thigh, 'side', T.thigh * tw);
+      if (T.calf) this.rotBoneWorld(BN[leg].Calf, 'side', T.calf * tw);
+      if (T.twist) this.rotBoneWorld(BN[leg].Thigh, 'up', T.twist * (leg === 'R' ? 1 : -1) * tw);
+      if (T.thigh2) this.rotBoneWorld(BN[other].Thigh, 'side', T.thigh2 * tw);
+      if (T.arms) for (const sd of ['L', 'R']) this.rotBoneWorld(BN[sd].UpperArm, 'side', -T.arms * tw);
       if (T.nod) this.rotBoneWorld('Bip01_Head', 'side', T.nod * tw);
     } else if (kt < 0.4) {
       // Schuss/Pass: Schussbein schwingt nach vorn
       const k = Math.sin(Math.min(1, kt / 0.4) * Math.PI);
-      this.rotBoneWorld(`Bip01_${leg}_Thigh`, 'side', -0.95 * k);
-      this.rotBoneWorld(`Bip01_${leg}_Calf`, 'side', 0.5 * k * (1 - kt / 0.4));
+      this.rotBoneWorld(BN[leg].Thigh, 'side', -0.95 * k);
+      this.rotBoneWorld(BN[leg].Calf, 'side', 0.5 * k * (1 - kt / 0.4));
     }
     // Arme: Ball halten (vor der Brust), Hechtsprung (gestreckt über dem Kopf), bereit (leicht geöffnet)
     if (this.holdW > 0.01 || this.dive > 0.01 || this.ready > 0.05) {
       for (const s of ['L', 'R']) {
         const sg = s === 'L' ? 1 : -1;
         const up = this.dive * 2.4 + this.holdW * 0.72 + this.ready * 0.45 * (1 - this.dive);
-        this.rotBoneWorld(`Bip01_${s}_UpperArm`, 'side', -up);
-        this.rotBoneWorld(`Bip01_${s}_UpperArm`, 'fwd', sg * (this.holdW * 0.12 + this.ready * 0.35));
-        if (this.holdW > 0.01) { this.rotBoneWorld(`Bip01_${s}_Forearm`, 'side', -0.55 * this.holdW); this.rotBoneWorld(`Bip01_${s}_Forearm`, 'up', sg * -0.38 * this.holdW); }
+        this.rotBoneWorld(BN[s].UpperArm, 'side', -up);
+        this.rotBoneWorld(BN[s].UpperArm, 'fwd', sg * (this.holdW * 0.12 + this.ready * 0.35));
+        if (this.holdW > 0.01) { this.rotBoneWorld(BN[s].Forearm, 'side', -0.55 * this.holdW); this.rotBoneWorld(BN[s].Forearm, 'up', sg * -0.38 * this.holdW); }
       }
     }
     if (this.ik) this.fussIK(pl, kt, dt);
@@ -531,8 +535,14 @@ export class Avatar {
   // n5 Sicherheitsnetz (siehe TR_GRENZE): Eingang = fertige Pose dieses Bildes, Ausgang = Pose mit abklingendem Versatz
   traegheit(dt, neu) {
     const ziele = this._trZiele || (this._trZiele = [...TR_KNOCHEN.map((n) => this.bones[n]).filter(Boolean), this.tilt]);
-    if (!this.tr || neu) {
-      this.tr = ziele.map((b) => ({ ein: b.quaternion.clone(), aus: b.quaternion.clone(), ausV: b.quaternion.clone(), off: new THREE.Quaternion(), an: false, pEin: b.position.clone(), pOff: new THREE.Vector3(), pAus: b.position.clone(), pAusV: b.position.clone() }));
+    if (!this.tr) this.tr = ziele.map(() => ({ ein: new THREE.Quaternion(), aus: new THREE.Quaternion(), ausV: new THREE.Quaternion(), off: new THREE.Quaternion(), an: false, pEin: new THREE.Vector3(), pOff: new THREE.Vector3(), pAus: new THREE.Vector3(), pAusV: new THREE.Vector3() }));
+    if (this.trNeu || neu) { // (wieder) aufsetzen ohne Neuanlage: alles auf die jetzige Pose
+      for (let i = 0; i < ziele.length; i++) {
+        const b = ziele[i], z = this.tr[i];
+        z.ein.copy(b.quaternion); z.aus.copy(b.quaternion); z.ausV.copy(b.quaternion); z.off.identity(); z.an = false;
+        z.pEin.copy(b.position); z.pAus.copy(b.position); z.pAusV.copy(b.position); z.pOff.set(0, 0, 0);
+      }
+      this.trNeu = false; this.trAn = 0;
       return;
     }
     // Sprung, wenn der Winkel zur letzten Eingabe > Grenze: |q·q'| < cos(Grenze/2) (ohne acos)
@@ -552,7 +562,7 @@ export class Avatar {
       if (tilt) z.pEin.copy(b.position);
       if (z.an) {
         z.off.slerp(_qa.identity(), 1 - abkl); z.pOff.multiplyScalar(abkl);
-        if (z.off.w > 0.99999 && z.pOff.lengthSq() < 1e-8) { z.off.identity(); z.pOff.set(0, 0, 0); z.an = false; }
+        if (z.off.w > 0.99995 && z.pOff.lengthSq() < 1e-6) { z.off.identity(); z.pOff.set(0, 0, 0); z.an = false; }
         else {
           if (!tilt && !this.touched.has(b)) this.touched.set(b, q.clone());
           q.premultiply(z.off);
@@ -573,7 +583,7 @@ export class Avatar {
   //  • Ballkontakt: das Schussbein (wie die Schwung-Schicht: kickFoot) greift beim Kontakt zum Kontaktpunkt aus der Simulation
   //    (Ball beim Sprung von kickT auf 0) und blendet in KICK_T = 0,12 s aus – der Fuß trifft den Ball sichtbar.
   fussIK(pl, kt, dt = 1 / 60) {
-    const t0 = typeof performance !== 'undefined' ? performance.now() : 0;
+    const t0 = Avatar.ikMessen ? performance.now() : 0; // Zeitmessung nur in Tests (performance.now kostet am Handy)
     const aufrecht = this.dive < 0.2 && !pl.slide && !pl.fall && !(pl.air && pl.air.go);
     // Gewicht: vor dem Kontakt (nur Wiederholung) weich ein, danach vom vollen Gewicht weich aus; sonst Kontakt-Kurve
     const ein = (u) => (u <= 0 ? 0 : u >= 1 ? 1 : u * u * (3 - 2 * u));
@@ -585,7 +595,7 @@ export class Avatar {
     const R = this.ruhe, yaw = this.root.rotation.y, pol = [Math.sin(yaw), 0, Math.cos(yaw)];
     const kickSeite = (this.kickVor !== null ? this.kickFussVor : pl.kickFoot) > 0 ? 'R' : 'L';
     for (const s of ['L', 'R']) {
-      const T = this.bones[`Bip01_${s}_Thigh`], C = this.bones[`Bip01_${s}_Calf`], F = this.bones[`Bip01_${s}_Foot`], Z = this.bones[`Bip01_${s}_Toe0`];
+      const [T, C, F, Z] = this.bein[s];
       // Matrizen sind aktuell (updateMatrixWorld vor den Schichten, rotBoneWorld/IK aktualisieren ihre Teilbäume) → direkt
       // lesen statt getWorldPosition (das rechnet je Aufruf die ganze Elternkette neu: am Handy ~1 ms für 6 Figuren)
       IK.a.setFromMatrixPosition(T.matrixWorld); IK.b.setFromMatrixPosition(C.matrixWorld); IK.c.setFromMatrixPosition(F.matrixWorld);
@@ -697,5 +707,7 @@ function techPose(pl, t) {
   return null;
 }
 
+// IK-Zeit messen (info().figuren.ikMs, Node-Test): in Node immer, im Browser nur mit ?debug (main.js)
+Avatar.ikMessen = typeof window === 'undefined';
 function wrap(a) { while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI; return a; }
 void _m;

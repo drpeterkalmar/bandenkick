@@ -160,7 +160,7 @@ def auswerten(d):
             'cam_ruck_summe': round(float(cam_r[mc].sum() + 10 * ang[mc].sum()), 1) if mc.any() else 0,
             'schnitte': int((schnitt & m).sum()),
             'fov_spruenge': int(((np.abs(np.diff(fov, prepend=fov[0])) > 3) & m).sum()),
-            'tempo_spruenge': int(((np.abs(np.diff(rate, prepend=rate[0])) > 0.1) & m).sum()),
+            'tempo_spruenge': int(((np.abs(np.diff(rate, prepend=rate[0])) / np.maximum(1, dtt * 60) > 0.15) & m).sum()),  # je 1/60 s
         }
         erg[gname] = e
     # schlimmste Stellen (für Kontaktabzüge): Bild-Index, Abschnitt, Figur, Wert

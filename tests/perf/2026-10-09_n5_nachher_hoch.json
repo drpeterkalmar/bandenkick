@@ -1,0 +1,117 @@
+{
+ "datum": "2026-10-09T13:46:16",
+ "stand": "n5_nachher_hoch",
+ "modus": "ab",
+ "runden": 3,
+ "varianten": [
+  {
+   "name": "vorher",
+   "wurzel": "C:\\Users\\drpet\\dev\\bk_vorher",
+   "zusatz": ""
+  },
+  {
+   "name": "nachher",
+   "wurzel": "C:\\Users\\drpet\\dev\\bandenkick",
+   "zusatz": ""
+  }
+ ],
+ "profil": {
+  "drossel": 4,
+  "dpr": 2.6,
+  "sek": 10,
+  "start": "direkt",
+  "vsync": false
+ },
+ "szenen": {
+  "spiel_s1": {
+   "hoch": {
+    "vorher": {
+     "p50": 20.5,
+     "p95": 34.6,
+     "fps": 48.3,
+     "calls": 51,
+     "tris": 70374,
+     "runden_p95": [
+      30.3,
+      34.8,
+      34.6
+     ],
+     "fehler": []
+    },
+    "nachher": {
+     "p50": 21.2,
+     "p95": 34.4,
+     "fps": 45.9,
+     "calls": 51,
+     "tris": 70119,
+     "runden_p95": [
+      30,
+      35.4,
+      34.4
+     ],
+     "fehler": []
+    }
+   }
+  },
+  "spiel_auto": {
+   "hoch": {
+    "vorher": {
+     "p50": 20.5,
+     "p95": 34.5,
+     "fps": 37.2,
+     "calls": 50,
+     "tris": 70399,
+     "runden_p95": [
+      34.5,
+      34.4,
+      34.5
+     ],
+     "fehler": []
+    },
+    "nachher": {
+     "p50": 20.5,
+     "p95": 34.6,
+     "fps": 36.9,
+     "calls": 49,
+     "tris": 70026,
+     "runden_p95": [
+      34.1,
+      34.6,
+      34.7
+     ],
+     "fehler": []
+    }
+   }
+  },
+  "replay_s1": {
+   "hoch": {
+    "vorher": {
+     "p50": 12.9,
+     "p95": 15.4,
+     "fps": 77,
+     "calls": 35,
+     "tris": 34510,
+     "runden_p95": [
+      14.8,
+      16.3,
+      15.4
+     ],
+     "fehler": []
+    },
+    "nachher": {
+     "p50": 12.6,
+     "p95": 15.4,
+     "fps": 77.9,
+     "calls": 35,
+     "tris": 34510,
+     "runden_p95": [
+      15,
+      15.6,
+      15.4
+     ],
+     "fehler": []
+    }
+   }
+  }
+ }
+}

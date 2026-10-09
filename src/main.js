@@ -65,6 +65,7 @@ if (isTouch) document.body.classList.add('touch');
 if (DEKO) document.body.classList.add('deko');
 if (P.treffpunkt) document.body.classList.add('treffpunkt');
 if (qs.has('debug')) document.body.classList.add('debug');
+Avatar.ikMessen = qs.has('debug'); // n5: IK-Zeitmessung nur im Debug (kostet je Bild)
 const urlSolo = qs.has('solo') || qs.get('modus') === 'training';
 let solo = urlSolo;
 document.body.classList.toggle('solo', solo);
