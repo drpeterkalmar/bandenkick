@@ -339,12 +339,12 @@ export class Avatar {
       this.sparN = (this.sparN + 1) % 2;
       if (this.sparN === 1) {
         this.root.position.set(st.x, pl.jumpY || 0, st.z); this.root.rotation.y = Math.PI / 2 - face;
-        this.gespart = (this.gespart || 0) + 1;
+        this.gespart = (this.gespart || 0) + 1; this.gespartBild = true;
         return;
       }
       dt = this.sparDt;
     }
-    this.sparDt = 0;
+    this.sparDt = 0; this.gespartBild = false;
     // Prozedurale Drehungen vom letzten Bild zurücknehmen: der Mischer schreibt einen Knochen nur, wenn sich sein
     // Animationswert ändert – bei statischen Spuren würde sich die Zusatzdrehung sonst Bild für Bild aufaddieren.
     for (const [b, q] of this.touched) b.quaternion.copy(q);

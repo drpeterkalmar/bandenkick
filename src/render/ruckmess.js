@@ -34,7 +34,7 @@ export class RuckMessung {
       const r = f.root;
       _s.center.set(r.position.x, r.position.y + 1, r.position.z);
       B[q] = _fr.intersectsSphere(_s) ? 1 : 0;
-      B[q + 1] = f.sparN === 1 ? 1 : 0;
+      B[q + 1] = f.gespartBild ? 1 : 0; // in diesem Bild nicht neu gestellt (n4-Sparen außerhalb des Bildes)
       B[q + 2] = r.position.x; B[q + 3] = r.position.y; B[q + 4] = r.position.z; B[q + 5] = r.rotation.y;
       let ws = 0; for (const a of Object.values(f.act)) ws += a.getEffectiveWeight();
       B[q + 6] = ws;

@@ -54,6 +54,7 @@ const AV_IK = qs.get('ik') !== '0';
 const GLATT = qs.get('glatt') !== '0';
 // n5: Wiederholung als TV-Regie (Tempo-Rampen, geglättete Kamera, keine Mini-Abschnitte); ?rcam=alt = wie Nacht 2d
 const RCAM_ALT = qs.get('rcam') === 'alt';
+const VORGRIFF = qs.get('vorgriff') !== '0'; // n5: Fuß greift in der Wiederholung schon vor dem Kontakt zum Ball
 const SCHATTENKAM = qs.get('schattenkam') !== '0';
 const SCHATTEN2 = qs.get('schatten2') === '1024' ? 1024 : 2048;
 const START = startStufe({ q: qs.has('q') ? qs.get('q') : null, gemerkt: AUTOPILOT && !qs.has('q') ? ladeStufe(localStorage) : null, touch: isTouch, autopilot: AUTOPILOT });
@@ -750,7 +751,7 @@ function drawPlayers(dt, a, rf = null) {
     const ready = keeper && b.held < 0 && Math.hypot(b.p.x - ownGoalX, b.p.z) < 9 && pl.speed < 2.5 && pl.hand.mode === 'none';
     if (sparen) CULL.s.center.set(x, 1.0 + (pl.jumpY || 0), z);
     // n5: Wiederholung – nächster Ballkontakt dieses Spielers (≤ 0,12 s), damit der Fuß schon vorher zum Ball greift
-    const kickBald = rf && GLATT && rp.rec ? rp.rec.naechsterKick(pl.id, rf.t, 0.12, KICKBALD[i] || (KICKBALD[i] = {})) : null;
+    const kickBald = rf && GLATT && VORGRIFF && rp.rec ? rp.rec.naechsterKick(pl.id, rf.t, 0.12, KICKBALD[i] || (KICKBALD[i] = {})) : null;
     if (kickBald) kickBald.rate = rp.rate;
     f.update(dt, pl, { x, z, keeper, holding: b.held === pl.id, ready, special, t: rf ? rf.t : game.t, face, kickBald, sparen: sparen && !CULL.f.intersectsSphere(CULL.s), ball: BALLPOS });
   }
