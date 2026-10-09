@@ -185,9 +185,10 @@ export function findContact(rec, goal) {
 // Ablauf. opts: {aufbau: s Echtzeit vor dem Kontakt, maxReal: s gesamt}
 export const REPLAY_SHOTS = { kontaktRate: 0.2, kontaktVor: 0.15, kontaktNach: 0.2, fanRate: 0.3, fanVor: 0.3, fanNach: 0.5, aufbau: 2.2, maxReal: 7.0 };
 // n5 Regie: Rampen in Spielzeit-s (abbremsen vor dem Zeitlupen-Abschnitt, beschleunigen danach), kürzester Flug-Abschnitt
-// (kürzer → direkt in die Fan-Cam statt zwei Schnitten in 0,2 s), Glättungsfenster des Balls (±s Spielzeit) und Feder (1/s)
+// (kürzer → direkt in die Fan-Cam statt zwei Schnitten in 0,2 s), Glättungsfenster des Balls (±s Spielzeit; Zoom ohne: am
+// Kontakt muss der Ball noch am Fuß im Bild sein, nicht schon dort, wo er gleich hinfliegt) und Feder (1/s)
 // je Kamera
-export const REGIE = { rampeLangsam: 0.15, rampeSchnell: 0.12, flugMin: 0.45, ballFenster: { tv: 0.7, zoom: 0.08, fan: 0.4 }, feder: { tv: 3, zoom: 5, fan: 4 } };
+export const REGIE = { rampeLangsam: 0.15, rampeSchnell: 0.12, flugMin: 0.45, ballFenster: { tv: 0.7, zoom: 0, fan: 0.4 }, feder: { tv: 2.5, zoom: 7, fan: 4 } };
 const ss = (u) => (u <= 0 ? 0 : u >= 1 ? 1 : u * u * (3 - 2 * u));
 export class ReplayDirector {
   constructor(rec, goal, opts = {}) {
