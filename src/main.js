@@ -18,7 +18,7 @@ import { GameCamera } from './render/camera.js';
 import { Input } from './input/input.js';
 import { buildHud } from './ui/hud.js';
 import { Sound } from './audio/sound.js';
-import { ReplayRecorder, ReplayDirector, replayCamera } from './sim/replay.js';
+import { ReplayRecorder, ReplayDirector, ReplayKamera } from './sim/replay.js';
 import { ReplayFx } from './render/replayfx.js';
 import { BUILD } from './build.js';
 import { makeKino, kinoLicht, kinoStufeSetzen, KontaktSchatten } from './render/kino.js';
@@ -52,6 +52,8 @@ const AV_IK = qs.get('ik') !== '0';
 // n5: flüssige Figuren (geglättete Lauf-Gewichte, Sonderbewegungen ohne Gewichtsloch, Blickrichtung zwischen den Takten
 // interpoliert, Schnitt beim Wechsel Spiel ↔ Wiederholung); ?glatt=0 = wie n4
 const GLATT = qs.get('glatt') !== '0';
+// n5: Wiederholung als TV-Regie (Tempo-Rampen, geglättete Kamera, keine Mini-Abschnitte); ?rcam=alt = wie Nacht 2d
+const RCAM_ALT = qs.get('rcam') === 'alt';
 const SCHATTENKAM = qs.get('schattenkam') !== '0';
 const SCHATTEN2 = qs.get('schatten2') === '1024' ? 1024 : 2048;
 const START = startStufe({ q: qs.has('q') ? qs.get('q') : null, gemerkt: AUTOPILOT && !qs.has('q') ? ladeStufe(localStorage) : null, touch: isTouch, autopilot: AUTOPILOT });
@@ -654,7 +656,8 @@ function recordReplay(evs) {
 function startReplay() {
   rp.wait = -1;
   if (!rp.rec || !rp.goal || rp.recGame !== game || mode !== 'play') return;
-  const D = new ReplayDirector(rp.rec, rp.goal);
+  const D = new ReplayDirector(rp.rec, rp.goal, { regie: !RCAM_ALT });
+  rp.kam = new ReplayKamera(rp.rec, !RCAM_ALT);
   if (D.done) return;
   rp.dir = D; rp.held = false;
   const c = D.contact, g = rp.goal;
@@ -686,14 +689,15 @@ function skipReplay() { if (rp.dir) { rp.dir.skip(); } }
 function replayFrame(dt, raw) {
   const D = rp.dir;
   if (raw && (raw.passDown || raw.shotDown) && D.real > 0.3) D.skip();
-  const s0 = D.cur;
-  rp.rate = D.done ? 1 : s0.rate;
+  const s0 = D.cur, tVor = D.t;
   const t = D.update(dt);
+  // Abspieltempo dieses Bildes (Figuren laufen mit): n5 tatsächlich vergangene Spielzeit je Echtzeit (Rampen)
+  rp.rate = D.done ? 1 : RCAM_ALT ? s0.rate : dt > 0 ? (t - tVor) / dt : D.rateAt(t);
   if (rp.hold && !D.done && D.phase === rp.hold.phase && D.segFrac() >= rp.hold.frac) { rp.held = true; }
   if (D.done) { endReplay(); return null; }
   const f = rp.rec.frameAt(t, rp.frame, P);
   const ctx = rp.ctx; ctx.time = D.real; ctx.frac = D.segFrac(); ctx.mode = gcam.mode;
-  const cam = replayCamera(D.cur.cam, f, ctx);
+  const cam = rp.kam.bild(D.cur.cam, f, ctx, dt, rp.rate);
   gcam.override = { pos: cam.pos, look: cam.look };
   rp.dof = replayDof(D.cur.cam, cam.pos, cam.look, [f.ball.p.x, f.ball.p.y, f.ball.p.z]); // n4: Tiefenschärfe nur im Replay (Zoom, Fan-Cam)
   if (Math.abs(gcam.cam.fov - cam.fov) > 0.01) { gcam.cam.fov = cam.fov; gcam.cam.updateProjectionMatrix(); }

@@ -32,14 +32,15 @@ const BALL_R = 0.11;
 const W_LAUF = 18;
 const W_DREH = 30;   // Blickrichtung: Feder 1/s (halber Weg ~0,06 s) – Bots kehren die Drehung teils von Takt zu Takt um
 const K_TECH = 20;   // Technik-Pose: Werte folgen dem Ziel mit 1/s (Wechsel Luftball → Schuss → am Boden ohne Sprung)
-const W_IK = 60;     // Fuß-IK beim Ballkontakt: Versatz zum Ball über eine Feder (Dribbel-Kontakte folgen im 0,3-s-Takt)
+const W_IK = 25;     // Fuß-IK beim Ballkontakt: Versatz zum Ball über eine Feder (Dribbel-Kontakte folgen im 0,3-s-Takt) …
+const IK_MAX = 0.3;  // … und höchstens 0,3 m weit: weiter in 2–3 Bildern zum Ball zu greifen ist selbst ein Sprung
 const IKZ = [0, 0, 0];
 // Sicherheitsnetz (Inertialisierung): springt ein Knochen (lokale Drehung) in einem Bild weiter als TR_GRENZE rad je 1/60 s
 // bzw. der Körperschwerpunkt (Neigungs-Gruppe) weiter als TR_WEG m, hält die Figur die alte Pose als Versatz und baut ihn mit TR_TAU s ab – egal, welche
 // Schicht gesprungen ist (Clip-Wechsel, Technik, Tormann-Rolle, IK an/aus). Echte schnelle Bewegungen bleiben darunter.
 const TR_KNOCHEN = ['Bip01_Pelvis', 'Bip01_Spine', 'Bip01_Spine2', 'Bip01_Head', 'Bip01_L_Thigh', 'Bip01_L_Calf', 'Bip01_L_Foot', 'Bip01_R_Thigh',
   'Bip01_R_Calf', 'Bip01_R_Foot', 'Bip01_L_UpperArm', 'Bip01_L_Forearm', 'Bip01_R_UpperArm', 'Bip01_R_Forearm'];
-const TR_GRENZE = 0.4, TR_WEG = 0.06, TR_TAU = 0.05;
+const TR_GRENZE = 0.25, TR_GRENZE_ARM = 0.5, TR_WEG = 0.06, TR_TAU = 0.05;
 const _qi = new THREE.Quaternion(), _qa = new THREE.Quaternion(), _va = new THREE.Vector3();
 const TECH_WERTE = ['pitch', 'roll', 'drop', 'thigh', 'calf', 'twist', 'thigh2', 'arms', 'nod'];
 const KERN = new Set([...LOCO, 'idle', 'crouch']);
@@ -272,7 +273,7 @@ export class Avatar {
     this.vGl = null; this.vGlV = 0; this.sonderW = {}; this.leanP = 0; this.leanR = 0; this.sofort = false;
     this.yawGl = null; this.yawV = 0; this.tpGl = null;
     this.ikOff = { L: [0, 0, 0], R: [0, 0, 0] }; this.ikVel = { L: [0, 0, 0], R: [0, 0, 0] };
-    this.tr = null; this.trN = 0; this.diveSeite = null;
+    this.tr = null; this.trN = 0; this.diveSeite = null; this.traeg = opts.traeg !== false;
     this.touched = new Map(); // Knochen mit prozeduraler Zusatzdrehung → Mischer-Wert davor
     this.setShadows(!!opts.shadows);
     this.sparDt = 0; this.sparN = 0;
@@ -363,8 +364,8 @@ export class Avatar {
     // Schrittweg je Zyklus (gemessenes Clip-Tempo × Dauer) → Phase so, dass die Füße nicht gleiten
     let cyc = 0, ws = 0;
     for (const c of LOCO) { cyc += w[c] * sp[c] * M[c].duration; ws += w[c]; }
-    // Phase mit dem echten Tempo (Füße bleiben am Boden), Schrittlänge aus den (geglätteten) Gewichten
-    if (ws > 0.01) { cyc /= ws; this.phase = (this.phase + vRoh * dt / Math.max(0.3, cyc)) % 1; }
+    // Phase mit demselben (geglätteten) Tempo wie die Schrittlänge – mit dem rohen Tempo zappelten die Beine beim Antritt
+    if (ws > 0.01) { cyc /= ws; this.phase = (this.phase + vEff * dt / Math.max(0.3, cyc)) % 1; }
     // Sonderbewegung (Jubel, Klatschen, Warten, Tormann bereit) überblendet alles
     const want = st.special || null;
     if (want !== this.specialName) {
@@ -424,13 +425,13 @@ export class Avatar {
       g.legs = tp.legs; this.tp = g;
     } else if (tp) this.tp = tp;
     this.root.position.y = pl.jumpY || 0;
-    const proc = plantK > 0.01 || this.lean > 0.01 || Math.abs(this.leanP) + Math.abs(this.leanR) > 0.01 || this.dive > 0.01 || kt < 0.4 || this.holdW > 0.01 || this.ready > 0.05 || this.tpW > 0.01;
+    const proc = plantK > 0.01 || this.lean > 0.01 || (this.schwung || 0) > 1e-3 || Math.abs(this.leanP) + Math.abs(this.leanR) > 0.01 || this.dive > 0.01 || kt < 0.4 || this.holdW > 0.01 || this.ready > 0.05 || this.tpW > 0.01;
     this.gloves[0].visible = this.gloves[1].visible = !!st.keeper;
     this.ring.visible = !!st.keeper;
     if (st.keeper) this.ring.material.opacity = 0.55 + 0.25 * Math.sin(performance.now() / 180);
     this.blob.scale.setScalar(1 + this.dive * 0.8);
     if (this.shadowYaw !== null) { this.blob.rotation.y = this.shadowYaw - this.root.rotation.y; this.blob.position.y = 0.006 - this.root.position.y; }
-    if (!proc) { this.tilt.rotation.set(0, 0, 0); this.tilt.position.y = 0.95; if (this.glatt) { this.ikNull(); this.traegheit(dt, ds === 1); } return; }
+    if (!proc) { this.tilt.rotation.set(0, 0, 0); this.tilt.position.y = 0.95; if (this.glatt) { this.ikNull(); if (this.traeg) this.traegheit(dt, ds === 1); } return; }
     let roll = 0, pitch = 0;
     if (plantK > 0.01 || this.lean > 0.01) {
       // Neigung: nach hinten gegen die alte Bewegung (Körper-Koordinaten)
@@ -480,10 +481,13 @@ export class Avatar {
         if (T.arms) for (const sd of ['L', 'R']) this.rotBoneWorld(`Bip01_${sd}_UpperArm`, 'side', -T.arms * tl);
         if (T.nod) this.rotBoneWorld('Bip01_Head', 'side', T.nod * tl);
       }
-      if (kt < 0.4 && tl < 0.999) {
-        const k = Math.sin(Math.min(1, kt / 0.4) * Math.PI) * (1 - tl);
-        this.rotBoneWorld(`Bip01_${leg}_Thigh`, 'side', -0.95 * k);
-        this.rotBoneWorld(`Bip01_${leg}_Calf`, 'side', 0.5 * k * (1 - kt / 0.4));
+      // Schwung geglättet: beim Dribbeln setzt der nächste Kontakt ein, bevor der alte Schwung zu Ende ist (Bein schnappte zurück)
+      const kZiel = kt < 0.4 ? Math.sin(Math.min(1, kt / 0.4) * Math.PI) * (1 - tl) : 0, cZiel = kt < 0.4 ? kZiel * (1 - kt / 0.4) : 0;
+      const kk = Math.min(1, ds * 30);
+      this.schwung = (this.schwung || 0) + (kZiel - (this.schwung || 0)) * kk; this.schwungC = (this.schwungC || 0) + (cZiel - (this.schwungC || 0)) * kk;
+      if (this.schwung > 1e-3) {
+        this.rotBoneWorld(`Bip01_${leg}_Thigh`, 'side', -0.95 * this.schwung);
+        this.rotBoneWorld(`Bip01_${leg}_Calf`, 'side', 0.5 * this.schwungC);
       }
     } else if (T && tw > 0.01 && T.legs) {
       // Beine/Arme der Technik (Schussbein hoch, Hacke nach hinten, Arme zum Ausgleich)
@@ -510,24 +514,26 @@ export class Avatar {
       }
     }
     if (this.ik) this.fussIK(pl, kt, dt);
-    if (this.glatt) this.traegheit(dt, ds === 1);
+    if (this.glatt && this.traeg) this.traegheit(dt, ds === 1);
   }
 
   // n5 Sicherheitsnetz (siehe TR_GRENZE): Eingang = fertige Pose dieses Bildes, Ausgang = Pose mit abklingendem Versatz
   traegheit(dt, neu) {
     const ziele = this._trZiele || (this._trZiele = [...TR_KNOCHEN.map((n) => this.bones[n]).filter(Boolean), this.tilt]);
     if (!this.tr || neu) {
-      this.tr = ziele.map((b) => ({ ein: b.quaternion.clone(), aus: b.quaternion.clone(), off: new THREE.Quaternion(), pEin: b.position.clone(), pOff: new THREE.Vector3() }));
+      this.tr = ziele.map((b) => ({ ein: b.quaternion.clone(), aus: b.quaternion.clone(), ausV: b.quaternion.clone(), off: new THREE.Quaternion(), pEin: b.position.clone(), pOff: new THREE.Vector3(), pAus: b.position.clone(), pAusV: b.position.clone() }));
       return;
     }
-    const grenze = TR_GRENZE * Math.max(1, dt * 60), weg = TR_WEG * Math.max(1, dt * 60), abkl = Math.exp(-dt / TR_TAU);
+    const f60 = Math.max(1, dt * 60), grenze = TR_GRENZE * f60, grenzeArm = TR_GRENZE_ARM * f60, weg = TR_WEG * f60, abkl = Math.exp(-dt / TR_TAU);
     for (let i = 0; i < ziele.length; i++) {
       const b = ziele[i], z = this.tr[i];
-      const sprung = z.ein.angleTo(b.quaternion) > grenze;
+      const sprung = z.ein.angleTo(b.quaternion) > (i >= 10 && i < 14 ? grenzeArm : grenze); // Arme schwingen im Sprint schneller
       const pSprung = b === this.tilt && z.pEin.distanceTo(b.position) > weg; // Höhe/Absenken des Körpers (Hechtsprung, Technik)
       z.ein.copy(b.quaternion);
-      if (sprung) { z.off.copy(z.aus).multiply(_qi.copy(b.quaternion).invert()); this.trN++; } // Versatz = alte Ausgabe relativ zur neuen Pose
-      if (pSprung) { z.pOff.add(_va.copy(z.pEin).sub(b.position)); this.trN++; }
+      // Versatz = die alte Bewegung ein Bild weitergeführt (Ausgabe + letzte Änderung) relativ zur neuen Pose – so bleibt die
+      // Geschwindigkeit stetig, die Figur hält nicht kurz an
+      if (sprung) { _qa.copy(z.aus).multiply(_qi.copy(z.ausV).invert()).multiply(z.aus); z.off.copy(_qa).multiply(_qi.copy(b.quaternion).invert()); this.trN++; }
+      if (pSprung) { z.pOff.copy(z.pAus).multiplyScalar(2).sub(z.pAusV).sub(b.position); this.trN++; }
       z.pEin.copy(b.position);
       z.off.slerp(_qa.identity(), 1 - abkl); z.pOff.multiplyScalar(abkl);
       const aktiv = z.off.w < 0.99999 || z.pOff.lengthSq() > 1e-8;
@@ -536,7 +542,7 @@ export class Avatar {
         b.quaternion.premultiply(z.off);
         if (b === this.tilt) b.position.add(z.pOff);
       }
-      z.aus.copy(b.quaternion);
+      z.ausV.copy(z.aus); z.aus.copy(b.quaternion); z.pAusV.copy(z.pAus); z.pAus.copy(b.position);
     }
   }
 
@@ -563,8 +569,11 @@ export class Avatar {
       if (this.glatt) {
         // n5: Versatz zum Ball folgt einer Feder – bei Dribbel-Kontakten im 0,3-s-Takt und weit entferntem Ball sprang
         // der Fuß sonst in 1–2 Bildern bis 1 m
-        if (kick) { const k = kickZiel(this.kickPunkt, this.kickVon, BALL_R, R.knoechel); IKZ[0] = (k[0] - tx) * kw; IKZ[1] = (k[1] - ty) * kw; IKZ[2] = (k[2] - tz) * kw; }
-        else IKZ[0] = IKZ[1] = IKZ[2] = 0;
+        if (kick) {
+          const k = kickZiel(this.kickPunkt, this.kickVon, BALL_R, R.knoechel);
+          IKZ[0] = (k[0] - tx) * kw; IKZ[1] = (k[1] - ty) * kw; IKZ[2] = (k[2] - tz) * kw;
+          const l = Math.hypot(IKZ[0], IKZ[1], IKZ[2]); if (l > IK_MAX) { IKZ[0] *= IK_MAX / l; IKZ[1] *= IK_MAX / l; IKZ[2] *= IK_MAX / l; }
+        } else IKZ[0] = IKZ[1] = IKZ[2] = 0;
         const o = this.ikOff[s];
         federKritVek(o, this.ikVel[s], IKZ, dt, W_IK);
         if (Math.abs(o[0]) + Math.abs(o[1]) + Math.abs(o[2]) > 0.001) { tx += o[0]; ty += o[1]; tz += o[2]; an = true; }

@@ -7,6 +7,10 @@
 //    Aufbau (Echtzeit, TV-Kamera) → Ballkontakt (Zeitlupe 0,2 ×, extremer Zoom auf Fuß und Ball, Blitz und Druckwelle)
 //    → Flug (Echtzeit) → Torbereich als Fan-Cam hinter dem Tor (Zeitlupe) → zurück zum Jubel. Tippen überspringt.
 //  - Kameras als reine Rechnung (Position, Blickpunkt, Öffnungswinkel), die Grafik setzt sie nur um.
+//  - n5 TV-Regie (Peter: „replays sehr janky“): Tempo-Rampen statt Tempo-Sprüngen, kein Mini-Abschnitt „Flug“, Kamera
+//    folgt einem vorausschauend geglätteten Ball (die Aufzeichnung liegt komplett vor) und einer kritisch gedämpften Feder;
+//    Schnitte nur beim Kamerawechsel. opts.regie = false (?rcam=alt) = Ablauf wie Nacht 2d.
+import { federKritVek } from '../render/glatt.js';
 
 export const REC_SECS = 8;      // s Ringpuffer
 export const REC_HZ = 120;      // je Spieltakt (DT = 1/120 s)
@@ -121,6 +125,21 @@ export class ReplayRecorder {
     }
     return out;
   }
+  // n5: Ballmitte zur Spielzeit t, geglättet über ±halb s (Gauß, 9 Stützstellen) – auch nach vorn, die Zukunft liegt vor
+  ballGlatt(t, halb, out) {
+    out = out || { x: 0, y: 0, z: 0 };
+    const B = this.buf, n = halb > 0 ? 9 : 1;
+    let sx = 0, sy = 0, sz = 0, sw = 0;
+    for (let k = 0; k < n; k++) {
+      const u = n > 1 ? (k / (n - 1)) * 2 - 1 : 0, w = Math.exp(-u * u * 2);
+      const L = this.locate(t + u * halb);
+      if (!L) return out;
+      const o = L.i0 * this.stride, o1 = L.i1 * this.stride, a = L.a;
+      sx += w * (B[o + 1] + (B[o1 + 1] - B[o + 1]) * a); sy += w * (B[o + 2] + (B[o1 + 2] - B[o + 2]) * a); sz += w * (B[o + 3] + (B[o1 + 3] - B[o + 3]) * a); sw += w;
+    }
+    out.x = sx / sw; out.y = sy / sw; out.z = sz / sw;
+    return out;
+  }
   // Ballbahn der letzten `back` s bis t (für die Ballspur), höchstens n Punkte
   trail(t, back, n, out = []) {
     out.length = 0;
@@ -152,10 +171,15 @@ export function findContact(rec, goal) {
 
 // Ablauf. opts: {aufbau: s Echtzeit vor dem Kontakt, maxReal: s gesamt}
 export const REPLAY_SHOTS = { kontaktRate: 0.2, kontaktVor: 0.15, kontaktNach: 0.2, fanRate: 0.3, fanVor: 0.3, fanNach: 0.5, aufbau: 2.2, maxReal: 7.0 };
+// n5 Regie: Rampen in Spielzeit-s (abbremsen vor dem Zeitlupen-Abschnitt, beschleunigen danach), kürzester Flug-Abschnitt
+// (kürzer → direkt in die Fan-Cam statt zwei Schnitten in 0,2 s), Glättungsfenster des Balls (±s Spielzeit) und Feder (1/s)
+// je Kamera
+export const REGIE = { rampeLangsam: 0.15, rampeSchnell: 0.12, flugMin: 0.45, ballFenster: { tv: 0.7, zoom: 0.08, fan: 0.4 }, feder: { tv: 3, zoom: 5, fan: 4 } };
+const ss = (u) => (u <= 0 ? 0 : u >= 1 ? 1 : u * u * (3 - 2 * u));
 export class ReplayDirector {
   constructor(rec, goal, opts = {}) {
     const S = { ...REPLAY_SHOTS, ...opts };
-    this.rec = rec; this.goal = goal; this.S = S;
+    this.rec = rec; this.goal = goal; this.S = S; this.regie = opts.regie !== false;
     const e = findContact(rec, goal);
     // Kontakt mit Schussrichtung aus der Aufzeichnung (Luftball-Ereignisse haben keine Richtung)
     let c = null;
@@ -167,19 +191,46 @@ export class ReplayDirector {
     this.contact = c;
     const tg = goal.t, tc = c ? c.t : tg - 0.5;
     const k0 = Math.max(rec.tFirst, tc - S.kontaktVor), k1 = Math.min(tg, tc + S.kontaktNach);
-    const f0 = Math.max(k1, tg - S.fanVor), f1 = Math.min(rec.tLast, tg + S.fanNach);
+    let f0 = Math.max(k1, tg - S.fanVor);
+    const f1 = Math.min(rec.tLast, tg + S.fanNach);
+    if (this.regie && f0 - k1 < REGIE.flugMin) f0 = k1; // n5: zu kurzer Flug → gleich in die Fan-Cam
     // Aufbau so lang, dass alles in maxReal passt
     const fixed = (k1 - k0) / S.kontaktRate + (f0 - k1) + (f1 - f0) / S.fanRate;
     const aufbau = Math.max(0.8, Math.min(S.aufbau, S.maxReal - fixed));
-    const a0 = Math.max(rec.tFirst, k0 - aufbau);
+    let a0 = Math.max(rec.tFirst, k0 - aufbau);
     this.segs = [
       { name: 'aufbau', t0: a0, t1: k0, rate: 1, cam: 'tv' },
       { name: 'kontakt', t0: k0, t1: k1, rate: S.kontaktRate, cam: 'zoom' },
       { name: 'flug', t0: k1, t1: f0, rate: 1, cam: 'tv' },
       { name: 'fancam', t0: f0, t1: f1, rate: S.fanRate, cam: 'fan' },
     ].filter((s) => s.t1 - s.t0 > 1e-3);
+    this.realTotal = this.dauer();
+    if (this.regie && this.segs.length && this.segs[0].name === 'aufbau' && this.realTotal > S.maxReal) {
+      // Rampen kosten etwas Echtzeit → Aufbau entsprechend kürzen (Echtzeit-Tempo 1)
+      this.segs[0].t0 = Math.min(this.segs[0].t1 - 0.3, this.segs[0].t0 + (this.realTotal - S.maxReal));
+      this.realTotal = this.dauer();
+    }
     this.seg = 0; this.t = this.segs.length ? this.segs[0].t0 : tg; this.real = 0; this.done = !this.segs.length; this.skipped = false;
-    this.realTotal = this.segs.reduce((a, s) => a + (s.t1 - s.t0) / s.rate, 0);
+    void a0;
+  }
+  // Abspieltempo zur Spielzeit t. n5 Regie: stetig – vor einem langsameren Abschnitt abbremsen, nach einem langsameren
+  // beschleunigen (Rampen REGIE.rampeLangsam/-Schnell, weich), die Zeitlupen-Abschnitte selbst bleiben ganz langsam
+  rateAt(t) {
+    const S = this.segs; if (!S.length) return 1;
+    let i = 0; while (i < S.length - 1 && t >= S[i].t1) i++;
+    const s = S[i]; let r = s.rate;
+    if (!this.regie) return r;
+    const nx = S[i + 1], pv = S[i - 1];
+    if (nx && nx.rate < s.rate) { const w = Math.min(REGIE.rampeLangsam, s.t1 - s.t0), u = (t - (s.t1 - w)) / w; if (u > 0) r = Math.min(r, s.rate + (nx.rate - s.rate) * ss(u)); }
+    if (pv && pv.rate < s.rate) { const w = Math.min(REGIE.rampeSchnell, s.t1 - s.t0), u = (t - s.t0) / w; if (u < 1) r = Math.min(r, pv.rate + (s.rate - pv.rate) * ss(u)); }
+    return r;
+  }
+  dauer() {
+    if (!this.segs.length) return 0;
+    if (!this.regie) return this.segs.reduce((a, s) => a + (s.t1 - s.t0) / s.rate, 0);
+    const t0 = this.segs[0].t0, t1 = this.segs[this.segs.length - 1].t1, h = 1 / 600;
+    let real = 0; for (let t = t0; t < t1; t += h) real += Math.min(h, t1 - t) / this.rateAt(t + h / 2);
+    return real;
   }
   get phase() { return this.done ? 'ende' : this.segs[this.seg].name; }
   get cur() { return this.segs[Math.min(this.seg, this.segs.length - 1)]; }
@@ -188,6 +239,18 @@ export class ReplayDirector {
     if (this.done) return this.t;
     this.real += dt;
     let rem = dt;
+    if (this.regie) {
+      // n5: Tempo stetig (rateAt), in kleinen Schritten integriert
+      while (rem > 1e-9 && !this.done) {
+        const h = Math.min(rem, 1 / 240); rem -= h;
+        this.t += h * this.rateAt(this.t);
+        while (!this.done && this.t >= this.segs[this.seg].t1 - 1e-9) {
+          this.seg++;
+          if (this.seg >= this.segs.length) { this.done = true; this.t = this.segs[this.segs.length - 1].t1; }
+        }
+      }
+      return this.t;
+    }
     while (rem > 0 && !this.done) {
       const s = this.segs[this.seg], need = (s.t1 - this.t) / s.rate;
       if (rem < need) { this.t += rem * s.rate; rem = 0; }
@@ -240,4 +303,35 @@ export function replayCamera(kind, f, ctx) {
     return { pos: [gx + goal.side * 3.5, 7.5, clamp(b.z * 0.4, -3, 3)], look: [b.x, 0.6, b.z * 0.8], fov: 58 };
   }
   return { pos: [clamp(b.x * 0.85, -cage.hx, cage.hx), 6.2, cage.hz + 8.5], look: [b.x, 0.7, b.z * 0.6], fov: 32 };
+}
+
+// n5 Kamera-Regie: Kamera der Abschnitte (replayCamera) mit vorausschauend geglättetem Ball (REGIE.ballFenster) und einer
+// kritisch gedämpften Feder auf Lage und Blickpunkt (REGIE.feder) – nur ein Kamerawechsel ist ein harter Schnitt. Die Feder
+// läuft einem gleichmäßig bewegten Ziel um 2/w s hinterher; deshalb bekommt sie den Ball um genau diese Zeit (× Tempo)
+// vorgezogen – die Aufzeichnung kennt die Zukunft, die Kamera hat dann keinen Nachlauf.
+// regie = false: Kamera hängt wie in Nacht 2d jedes Bild direkt am Ball.
+export class ReplayKamera {
+  constructor(rec, regie = true) {
+    this.rec = rec; this.regie = regie; this.kind = null; this.schnitte = 0;
+    this.pos = [0, 0, 0]; this.vp = [0, 0, 0]; this.look = [0, 0, 0]; this.vl = [0, 0, 0];
+    this._b = { x: 0, y: 0, z: 0 }; this._f = { t: 0, ball: { p: this._b, v: null } };
+  }
+  bild(kind, f, ctx, dt, rate = 1) {
+    let src = f;
+    if (this.regie) {
+      const vor = (2 / (REGIE.feder[kind] || 8)) * rate;
+      this.rec.ballGlatt(f.t + vor, REGIE.ballFenster[kind] || 0, this._b);
+      this._f.t = f.t; this._f.ball.v = f.ball.v; src = this._f;
+    }
+    const c = replayCamera(kind, src, ctx);
+    const schnitt = kind !== this.kind;
+    if (schnitt) { this.kind = kind; this.schnitte++; }
+    if (!this.regie || schnitt) {
+      for (let i = 0; i < 3; i++) { this.pos[i] = c.pos[i]; this.look[i] = c.look[i]; this.vp[i] = this.vl[i] = 0; }
+    } else if (dt > 0) {
+      const w = REGIE.feder[kind] || 8;
+      federKritVek(this.pos, this.vp, c.pos, dt, w); federKritVek(this.look, this.vl, c.look, dt, w);
+    }
+    return { pos: this.pos, look: this.look, fov: c.fov, schnitt };
+  }
 }
