@@ -256,7 +256,7 @@ async function boot() {
   scene.add(marker);
   if (A) {
     for (let team = 0; team < 2; team++) for (let i = 0; i < 3; i++) {
-      const av = new Avatar(A, ROSTER[team][i % ROSTER[team].length], team, { shadows: quality.avatarShadows, cull: AV_CULL, ik: AV_IK, glatt: GLATT, deko: DEKO ? { sunDir, num: BIB_NUMS[team][i], extShadow: true } : null });
+      const av = new Avatar(A, ROSTER[team][i % ROSTER[team].length], team, { shadows: quality.avatarShadows, cull: AV_CULL, ik: AV_IK, glatt: GLATT, traeg: qs.get('traeg') !== '0', deko: DEKO ? { sunDir, num: BIB_NUMS[team][i], extShadow: true } : null });
       figs.push(av); scene.add(av.root);
     }
   } else {
@@ -717,6 +717,7 @@ addEventListener('keydown', (e) => { if (rp.dir && mode === 'play' && e.code !==
 
 const CULL = { f: new THREE.Frustum(), m: new THREE.Matrix4(), s: new THREE.Sphere(new THREE.Vector3(), 1.5) };
 const BALLPOS = [0, 0, 0]; // n4: Ball (wie gezeichnet) für die Fuß-IK beim Kontakt
+const KICKBALD = [];
 // Menschen zeichnen: Position interpoliert, Pose aus dem Sim-Zustand (Blend nach Tempo, Tormann, Jubel)
 function drawPlayers(dt, a, rf = null) {
   const R = game.match ? game.rules : null, b = rf ? rf.ball : game.ball;
@@ -747,7 +748,9 @@ function drawPlayers(dt, a, rf = null) {
     const ownGoalX = R ? R.goalX(pl.team) : -99;
     const ready = keeper && b.held < 0 && Math.hypot(b.p.x - ownGoalX, b.p.z) < 9 && pl.speed < 2.5 && pl.hand.mode === 'none';
     if (sparen) CULL.s.center.set(x, 1.0 + (pl.jumpY || 0), z);
-    f.update(dt, pl, { x, z, keeper, holding: b.held === pl.id, ready, special, t: rf ? rf.t : game.t, face, sparen: sparen && !CULL.f.intersectsSphere(CULL.s), ball: BALLPOS });
+    // n5: Wiederholung – nächster Ballkontakt dieses Spielers (≤ 0,12 s), damit der Fuß schon vorher zum Ball greift
+    const kickBald = rf && GLATT && rp.rec ? rp.rec.naechsterKick(pl.id, rf.t, 0.12, KICKBALD[i] || (KICKBALD[i] = {})) : null;
+    f.update(dt, pl, { x, z, keeper, holding: b.held === pl.id, ready, special, t: rf ? rf.t : game.t, face, kickBald, sparen: sparen && !CULL.f.intersectsSphere(CULL.s), ball: BALLPOS });
   }
   if (rf) { marker.visible = false; return; }
   void n;
@@ -883,7 +886,7 @@ Object.assign(G, {
     return { calls: i.render.calls, triangles: i.render.triangles, points: i.render.points, geometries: i.memory.geometries, textures: i.memory.textures, programs: i.programs ? i.programs.length : null,
       dpr: renderer.getPixelRatio(), size: [renderer.domElement.width, renderer.domElement.height], quality, shadows: renderer.shadowMap.enabled,
       auto: grafik ? { on: true, autopilot: grafik.zustand(), steps: grafik.schritte(), log: grafik.log.slice(-20), startProbe: G.startProbe || null } : { on: autoQ.on, steps: [...autoQ.steps] },
-      shadow: G.schatten || null, figuren: { cull: AV_CULL, gespart: figs.reduce((n, f) => n + (f.gespart || 0), 0), ik: AV_IK, ikN: figs.reduce((n, f) => n + (f.ikN || 0), 0), ikMs: +figs.reduce((n, f) => n + (f.ikZeit || 0), 0).toFixed(2) },
+      shadow: G.schatten || null, figuren: { cull: AV_CULL, gespart: figs.reduce((n, f) => n + (f.gespart || 0), 0), ik: AV_IK, ikN: figs.reduce((n, f) => n + (f.ikN || 0), 0), ikMs: +figs.reduce((n, f) => n + (f.ikZeit || 0), 0).toFixed(2), proc: +(figs.reduce((n, f) => n + (f.procN || 0), 0) / Math.max(1, figs.reduce((n, f) => n + (f.bildN || 0), 0))).toFixed(3), traeg: figs.reduce((n, f) => n + (f.trN || 0), 0) },
       kino: kino ? { ...kino.describe(), licht: kino.licht, bloom: [kino.bloomThreshold, kino.bloomStrength], dof: rp.dof, kontakt: !!kontakt } : null };
   },
   perf() {

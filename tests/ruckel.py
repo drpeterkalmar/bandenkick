@@ -84,6 +84,7 @@ def auswerten(d):
     aus = aus | np.roll(aus, -1) | np.roll(aus, 1)
     pose_r = np.zeros((n, nfig)); dreh_r = np.zeros((n, nfig)); gilt = np.zeros((n, nfig), bool); wsum = np.ones((n, nfig))
     sprung = np.zeros((n, nfig), bool); dsprung = np.zeros((n, nfig), bool); gross = np.zeros((n, nfig), bool)
+    gleit = [[] for _ in range(n)]  # Fußgleiten: Weltgeschwindigkeit (cm/s) aufgesetzter Füße je Bild
     for f in range(nfig):
         q = K + f * NF
         vis = B[:, q] > 0.5; gesp = B[:, q + 1] > 0.5
@@ -105,6 +106,15 @@ def auswerten(d):
             rb = np.maximum(rb, r)
             bone_sp |= (ueber > 1) & spitzen(r, 0, UMFELD_K)  # … und eine Spitze gegenüber dem Umfeld (Clip-eigene Bewegung ist stetig)
         pose_r[:, f] = rb; sprung[:, f] = bone_sp & g; gross[:, f] = sprung[:, f] & (rb > GROSS_CM)
+        # Fußgleiten: Fuß in Welt = Figur + Drehung(Figuren-Raum); aufgesetzt = Knöchel ≤ tiefster Stand + 2,5 cm, Figur läuft
+        c, sn = np.cos(-B[:, q + 5]), np.sin(-B[:, q + 5])
+        for kf in (1, 2):
+            lx, ly, lz = (B[:, q + 7 + 3 * kf + a] for a in range(3))
+            wx = B[:, q + 2] + lx * c - lz * sn; wz = B[:, q + 4] + lx * sn + lz * c
+            boden = ly <= np.percentile(ly[g], 2) + 0.025 if g.any() else np.zeros(n, bool)
+            vf = np.zeros(n); vf[1:] = np.hypot(np.diff(wx), np.diff(wz)) / np.maximum(np.diff(t), 1e-3) * 100
+            ok = boden & np.roll(boden, 1) & g & (np.abs(B[:, q + 7 + 3 * nk + 3]) > 0.5) & (B[:, 10] > 0.99)
+            for i in np.nonzero(ok)[0]: gleit[i].append(vf[i])
         yaw = np.unwrap(B[:, q + 5]) * 180 / math.pi
         dr = zweite_ableitung(t, yaw[:, None]); dreh_r[:, f] = dr; dsprung[:, f] = spitzen(dr, DREH_GRAD) & g
     # Kamera
@@ -135,6 +145,8 @@ def auswerten(d):
             'pose_spruenge': int(sprung[mf].sum()),
             'pose_spruenge_je_min': round(float(sprung[mf].sum()) / max(1e-6, mf.sum() / 60 / 60), 1),
             'grosse_spruenge': int(gross[mf].sum()),
+            'fussgleiten_cm_s': round(float(np.mean([v for i in np.nonzero(m)[0] for v in gleit[i]])), 1) if any(gleit[i] for i in np.nonzero(m)[0]) else None,
+            'fussgleiten_p90': round(float(np.percentile([v for i in np.nonzero(m)[0] for v in gleit[i]], 90)), 1) if any(gleit[i] for i in np.nonzero(m)[0]) else None,
             'dreh_spruenge': int(dsprung[mf].sum()),
             'gewicht_unter_1': int(((wsum < 0.98) & m[:, None]).sum()),
             'gewicht_min': round(float(wsum[m].min()), 3),
@@ -170,10 +182,10 @@ def auswerten(d):
 
 
 def tabelle(name, erg):
-    zeilen = [f'### {name}', '| Abschnitt | Bilder | ms p50/p95 | Pose-Ruck p50/p99/max (cm) | Pose-Sprünge (/min) · groß | Dreh-Spr. | Gewicht<1 (min) | Kamera Lage p99/max (cm) · Ausr. | Blick p99/max (°) · Ausr. | Kamera-Ruck Σ | Schnitte/FOV/Tempo |',
-              '|---|---|---|---|---|---|---|---|---|---|---|']
+    zeilen = [f'### {name}', '| Abschnitt | Bilder | ms p50/p95 | Pose-Ruck p50/p99/max (cm) | Pose-Sprünge (/min) · groß | Fußgleiten Ø/p90 (cm/s) | Dreh-Spr. | Gewicht<1 (min) | Kamera Lage p99/max (cm) · Ausr. | Blick p99/max (°) · Ausr. | Kamera-Ruck Σ | Schnitte/FOV/Tempo |',
+              '|---|---|---|---|---|---|---|---|---|---|---|---|']
     for g, e in erg['gruppen'].items():
-        zeilen.append(f"| {g} | {e['bilder']} | {e['bild_ms_p50']}/{e['bild_ms_p95']} | {e['pose_ruck_p50']}/{e['pose_ruck_p99']}/{e['pose_ruck_max']} | {e['pose_spruenge']} ({e['pose_spruenge_je_min']}) · {e['grosse_spruenge']} | {e['dreh_spruenge']} | {e['gewicht_unter_1']} ({e['gewicht_min']}) | {e['cam_lage_p99']}/{e['cam_lage_max']} · {e['cam_lage_ausreisser']} | {e['cam_blick_p99']}/{e['cam_blick_max']} · {e['cam_blick_ausreisser']} | {e['cam_ruck_summe']} | {e['schnitte']}/{e['fov_spruenge']}/{e['tempo_spruenge']} |")
+        zeilen.append(f"| {g} | {e['bilder']} | {e['bild_ms_p50']}/{e['bild_ms_p95']} | {e['pose_ruck_p50']}/{e['pose_ruck_p99']}/{e['pose_ruck_max']} | {e['pose_spruenge']} ({e['pose_spruenge_je_min']}) · {e['grosse_spruenge']} | {e['fussgleiten_cm_s']}/{e['fussgleiten_p90']} | {e['dreh_spruenge']} | {e['gewicht_unter_1']} ({e['gewicht_min']}) | {e['cam_lage_p99']}/{e['cam_lage_max']} · {e['cam_lage_ausreisser']} | {e['cam_blick_p99']}/{e['cam_blick_max']} · {e['cam_blick_ausreisser']} | {e['cam_ruck_summe']} | {e['schnitte']}/{e['fov_spruenge']}/{e['tempo_spruenge']} |")
     return '\n'.join(zeilen)
 
 
@@ -261,7 +273,7 @@ def main():
         for g in A['gruppen']:
             if g not in B['gruppen']: continue
             ea, eb = A['gruppen'][g], B['gruppen'][g]
-            print(g, ' '.join(f"{k}: {ea[k]}→{eb[k]}" for k in ('pose_spruenge', 'grosse_spruenge', 'dreh_spruenge', 'gewicht_unter_1', 'cam_lage_ausreisser', 'cam_blick_ausreisser', 'cam_ruck_summe', 'pose_ruck_p99')))
+            print(g, ' '.join(f"{k}: {ea[k]}→{eb[k]}" for k in ('pose_spruenge', 'grosse_spruenge', 'fussgleiten_cm_s', 'dreh_spruenge', 'gewicht_unter_1', 'cam_lage_ausreisser', 'cam_blick_ausreisser', 'cam_ruck_summe', 'pose_ruck_p99')))
         return
     if a.roh:
         d = json.load(open(a.roh, encoding='utf-8'))

@@ -125,6 +125,19 @@ export class ReplayRecorder {
     }
     return out;
   }
+  // n5: nächster Ballkontakt (Schuss/Pass/Luftball) eines Spielers in (t, t + fenster] mit Schussbein aus dem Takt danach –
+  // die Wiederholung kennt die Zukunft, der Fuß darf schon vor dem Kontakt zum Ball greifen
+  naechsterKick(player, t, fenster, out) {
+    for (const e of this.events) {
+      if ((e.type !== 'kick' && e.type !== 'air') || e.player !== player || e.t < t - 1e-6 || e.t > t + fenster) continue;
+      const L = this.locate(e.t + 1.5 / REC_HZ);
+      out = out || {};
+      out.dt = e.t - t; out.x = e.x; out.y = e.y; out.z = e.z;
+      out.fuss = L ? this.buf[L.i1 * this.stride + HF + player * NPF + 7] : 1;
+      return out;
+    }
+    return null;
+  }
   // n5: Ballmitte zur Spielzeit t, geglättet über ±halb s (Gauß, 9 Stützstellen) – auch nach vorn, die Zukunft liegt vor
   ballGlatt(t, halb, out) {
     out = out || { x: 0, y: 0, z: 0 };

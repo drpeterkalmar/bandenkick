@@ -63,7 +63,7 @@ export function bodenHub(knoechelY, zehY, ruheKnoechel, ruheZeh, boden = 0) {
 export const KICK_T = 0.12;
 // n5: an > 0 = der Fuß greift in `an` s zum Ball (weich ein, weich aus) statt im Kontaktbild voll hinzuspringen (bis 1,5 m
 // Ruck in einem Bild gemessen); an = 0 = wie n4
-export const KICK_AN = 0.04, KICK_T_GLATT = 0.2;
+export const KICK_AN = 0.04, KICK_T_GLATT = 0.15;
 const ss = (u) => (u <= 0 ? 0 : u >= 1 ? 1 : u * u * (3 - 2 * u));
 export function kickGewicht(kt, an = 0) {
   if (an > 0) return kt >= 0 && kt < KICK_T_GLATT ? 0.85 * (kt < an ? ss(kt / an) : 1 - ss((kt - an) / (KICK_T_GLATT - an))) : 0;
