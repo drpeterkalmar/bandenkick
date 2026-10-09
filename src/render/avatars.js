@@ -28,8 +28,8 @@ const IK = { a: new THREE.Vector3(), b: new THREE.Vector3(), c: new THREE.Vector
   hip: new THREE.Quaternion(), knee: new THREE.Quaternion() };
 const BALL_R = 0.11;
 // n5 (Peter: „Figurenbewegungen sehr abgehackt“): Lauf-Tempo für die Clip-Gewichte über eine kritisch gedämpfte Feder
-// (Eigenkreisfrequenz W_LAUF 1/s: halber Weg nach ~0,09 s, kein Überschwingen) statt hart aus dem momentanen Tempo
-const W_LAUF = 18;
+// (Eigenkreisfrequenz W_LAUF 1/s: halber Weg nach ~0,055 s, kein Überschwingen; länger ließe die Füße rutschen) statt hart aus dem momentanen Tempo
+const W_LAUF = 30;
 const W_DREH = 30;   // Blickrichtung: Feder 1/s (halber Weg ~0,06 s) – Bots kehren die Drehung teils von Takt zu Takt um
 const K_TECH = 20;   // Technik-Pose: Werte folgen dem Ziel mit 1/s (Wechsel Luftball → Schuss → am Boden ohne Sprung)
 const W_IK = 30;     // Fuß-IK beim Ballkontakt: Versatz zum Ball über eine Feder (Dribbel-Kontakte folgen im 0,3-s-Takt) …
@@ -356,7 +356,7 @@ export class Avatar {
     // ---- Lauf-Blend nach Tempo ----
     const v = pl.speed, M = this.meta;
     const sp = { walk: M.walk.speed, jog: M.jog.speed, run: M.run.speed, sprint: M.sprint.speed };
-    const w = { idle: 0, walk: 0, jog: 0, run: 0, sprint: 0 };
+    const w = laufGewichte(0, sp, this._w || (this._w = {}));
     const vRoh = Math.max(v, Math.min(1.2, Math.abs(this.turnRate) * 0.35)); // auf der Stelle drehen = Trippeln
     let vEff = vRoh;
     if (this.glatt) {
@@ -364,17 +364,13 @@ export class Avatar {
       const f = federKrit(this.vGl, this.vGlV, vRoh, dt, W_LAUF); this.vGl = Math.max(0, f[0]); this.vGlV = f[1];
       vEff = this.vGl;
     }
-    if (vEff < 0.15) w.idle = 1;
-    else if (vEff < sp.walk) { const k = vEff / sp.walk; w.idle = 1 - k; w.walk = k; }
-    else if (vEff < sp.jog) { const k = (vEff - sp.walk) / (sp.jog - sp.walk); w.walk = 1 - k; w.jog = k; }
-    else if (vEff < sp.run) { const k = (vEff - sp.jog) / (sp.run - sp.jog); w.jog = 1 - k; w.run = k; }
-    else if (vEff < sp.sprint) { const k = (vEff - sp.run) / (sp.sprint - sp.run); w.run = 1 - k; w.sprint = k; }
-    else w.sprint = 1;
-    // Schrittweg je Zyklus (gemessenes Clip-Tempo × Dauer) → Phase so, dass die Füße nicht gleiten
+    laufGewichte(vEff, sp, w);
+    // Schrittweg je Zyklus (gemessenes Clip-Tempo × Dauer) → Phase so, dass die Füße nicht gleiten. n5: Phase wie n4 aus dem
+    // echten Tempo und der Schrittlänge dazu (Füße bleiben stehen), nur die Pose-Gewichte sind geglättet
+    const wP = vEff === vRoh ? w : laufGewichte(vRoh, sp, this._wP || (this._wP = {}));
     let cyc = 0, ws = 0;
-    for (const c of LOCO) { cyc += w[c] * sp[c] * M[c].duration; ws += w[c]; }
-    // Phase mit demselben (geglätteten) Tempo wie die Schrittlänge – mit dem rohen Tempo zappelten die Beine beim Antritt
-    if (ws > 0.01) { cyc /= ws; this.phase = (this.phase + vEff * dt / Math.max(0.3, cyc)) % 1; }
+    for (const c of LOCO) { cyc += wP[c] * sp[c] * M[c].duration; ws += wP[c]; }
+    if (ws > 0.01) { cyc /= ws; this.phase = (this.phase + vRoh * dt / Math.max(0.3, cyc)) % 1; }
     // Sonderbewegung (Jubel, Klatschen, Warten, Tormann bereit) überblendet alles
     const want = st.special || null;
     if (want !== this.specialName) {
@@ -422,9 +418,13 @@ export class Avatar {
     // schon vorher hin; danach klingt die IK vom vollen Gewicht aus (this.vorKick)
     const kb = this.glatt ? st.kickBald : null;
     this.kickVor = kb ? kb.dt : null;
-    if (kb) { this.kickPunkt = [kb.x, kb.y, kb.z]; this.kickVon = [st.x, 0, st.z]; this.kickFussVor = kb.fuss; this.vorKick = true; }
-    else if (kt < this.ktPrev - 1e-4 && kt < 0.05 && st.ball && !sofort && !this.vorKick) { this.kickPunkt = [st.ball[0], st.ball[1], st.ball[2]]; this.kickVon = [st.x, 0, st.z]; }
-    if (this.vorKick && !kb && kt > 0.2) this.vorKick = false;
+    if (kb) {
+      this.kickPunkt = [kb.x, kb.y, kb.z]; this.kickVon = [st.x, 0, st.z]; this.kickFussVor = kb.fuss; this.vorKick = true;
+      this.kontaktT = (st.t ?? 0) + kb.dt; this.kickWeit = !(kb.rate < 0.5); // Echtzeit: Reichweite begrenzt wie im Spiel
+    } else if (kt < this.ktPrev - 1e-4 && kt < 0.05 && st.ball && !sofort && !this.vorKick) { this.kickPunkt = [st.ball[0], st.ball[1], st.ball[2]]; this.kickVon = [st.x, 0, st.z]; }
+    // nach dem Kontakt zählt die Zeit ab dem Kontakt-Ereignis (der aufgezeichnete Schuss-Takt kann einen Takt daneben liegen)
+    this.seitKontakt = this.vorKick && !kb ? (st.t ?? 0) - this.kontaktT : -1;
+    if (this.vorKick && !kb && this.seitKontakt > 0.2) this.vorKick = false;
     this.ktPrev = kt;
     // Technik-Pose (Nacht 2b, prozedural bis zu den Mixamo-Clips): Luftball im Anflug, am Boden danach, Kick-Arten
     const tp = techPose(pl, st.t ?? 0);
@@ -438,7 +438,7 @@ export class Avatar {
       g.legs = tp.legs; this.tp = g;
     } else if (tp) this.tp = tp;
     this.root.position.y = pl.jumpY || 0;
-    const proc = plantK > 0.01 || this.lean > 0.01 || this.trAn > 0 || this.kickVor !== null || (this.schwung || 0) > 0.01 || Math.abs(this.leanP) + Math.abs(this.leanR) > 0.01 || this.dive > 0.01 || kt < 0.4 || this.holdW > 0.01 || this.ready > 0.05 || this.tpW > 0.01;
+    const proc = plantK > 0.01 || this.lean > 0.01 || this.trAn > 0 || this.kickVor !== null || this.vorKick || (this.schwung || 0) > 0.01 || Math.abs(this.leanP) + Math.abs(this.leanR) > 0.01 || this.dive > 0.01 || kt < 0.4 || this.holdW > 0.01 || this.ready > 0.05 || this.tpW > 0.01;
     this.gloves[0].visible = this.gloves[1].visible = !!st.keeper;
     this.ring.visible = !!st.keeper;
     if (st.keeper) this.ring.material.opacity = 0.55 + 0.25 * Math.sin(performance.now() / 180);
@@ -588,12 +588,12 @@ export class Avatar {
     // Gewicht: vor dem Kontakt (nur Wiederholung) weich ein, danach vom vollen Gewicht weich aus; sonst Kontakt-Kurve
     const ein = (u) => (u <= 0 ? 0 : u >= 1 ? 1 : u * u * (3 - 2 * u));
     const kw = !this.kickPunkt ? 0 : this.kickVor !== null ? 0.85 * ein(1 - this.kickVor / 0.12)
-      : this.vorKick ? (kt >= 0 && kt < 0.15 ? 0.85 * (1 - ein(kt / 0.15)) : 0) : kickGewicht(kt, this.glatt ? KICK_AN : 0);
+      : this.vorKick ? (this.seitKontakt < 0.15 ? 0.85 * (1 - ein(Math.max(0, this.seitKontakt) / 0.15)) : 0) : kickGewicht(kt, this.glatt ? KICK_AN : 0);
     const vorher = this.kickVor !== null || this.vorKick; // Ziel bewegt sich schon stetig → ohne Feder (die liefe hinterher)
     const rest = this.glatt && (this.ikOff.L[0] || this.ikOff.L[1] || this.ikOff.L[2] || this.ikOff.R[0] || this.ikOff.R[1] || this.ikOff.R[2]);
     if (!aufrecht && kw <= 0 && !rest) return;
     const R = this.ruhe, yaw = this.root.rotation.y, pol = [Math.sin(yaw), 0, Math.cos(yaw)];
-    const kickSeite = (this.kickVor !== null ? this.kickFussVor : pl.kickFoot) > 0 ? 'R' : 'L';
+    const kickSeite = (this.vorKick ? this.kickFussVor : pl.kickFoot) > 0 ? 'R' : 'L';
     for (const s of ['L', 'R']) {
       const [T, C, F, Z] = this.bein[s];
       // Matrizen sind aktuell (updateMatrixWorld vor den Schichten, rotBoneWorld/IK aktualisieren ihre Teilbäume) → direkt
@@ -607,7 +607,7 @@ export class Avatar {
         if (kick) {
           const k = kickZiel(this.kickPunkt, this.kickVon, BALL_R, R.knoechel);
           IKZ[0] = (k[0] - tx) * kw; IKZ[1] = (k[1] - ty) * kw; IKZ[2] = (k[2] - tz) * kw;
-          const l = Math.hypot(IKZ[0], IKZ[1], IKZ[2]); if (l > IK_MAX && !vorher) { IKZ[0] *= IK_MAX / l; IKZ[1] *= IK_MAX / l; IKZ[2] *= IK_MAX / l; }
+          const l = Math.hypot(IKZ[0], IKZ[1], IKZ[2]); if (l > IK_MAX && !(vorher && !this.kickWeit)) { IKZ[0] *= IK_MAX / l; IKZ[1] *= IK_MAX / l; IKZ[2] *= IK_MAX / l; }
         } else IKZ[0] = IKZ[1] = IKZ[2] = 0;
         const o = this.ikOff[s], ov = this.ikVel[s];
         if (vorher) { o[0] = IKZ[0]; o[1] = IKZ[1]; o[2] = IKZ[2]; ov.fill(0); }
@@ -709,5 +709,16 @@ function techPose(pl, t) {
 
 // IK-Zeit messen (info().figuren.ikMs, Node-Test): in Node immer, im Browser nur mit ?debug (main.js)
 Avatar.ikMessen = typeof window === 'undefined';
+// Gewichte der Lauf-Clips nach Tempo (idle → walk → jog → run → sprint, je zwei Nachbarn linear)
+function laufGewichte(v, sp, w) {
+  w.idle = w.walk = w.jog = w.run = w.sprint = 0;
+  if (v < 0.15) w.idle = 1;
+  else if (v < sp.walk) { const k = v / sp.walk; w.idle = 1 - k; w.walk = k; }
+  else if (v < sp.jog) { const k = (v - sp.walk) / (sp.jog - sp.walk); w.walk = 1 - k; w.jog = k; }
+  else if (v < sp.run) { const k = (v - sp.jog) / (sp.run - sp.jog); w.jog = 1 - k; w.run = k; }
+  else if (v < sp.sprint) { const k = (v - sp.run) / (sp.sprint - sp.run); w.run = 1 - k; w.sprint = k; }
+  else w.sprint = 1;
+  return w;
+}
 function wrap(a) { while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI; return a; }
 void _m;

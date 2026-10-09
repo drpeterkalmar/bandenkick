@@ -751,6 +751,7 @@ function drawPlayers(dt, a, rf = null) {
     if (sparen) CULL.s.center.set(x, 1.0 + (pl.jumpY || 0), z);
     // n5: Wiederholung – nächster Ballkontakt dieses Spielers (≤ 0,12 s), damit der Fuß schon vorher zum Ball greift
     const kickBald = rf && GLATT && rp.rec ? rp.rec.naechsterKick(pl.id, rf.t, 0.12, KICKBALD[i] || (KICKBALD[i] = {})) : null;
+    if (kickBald) kickBald.rate = rp.rate;
     f.update(dt, pl, { x, z, keeper, holding: b.held === pl.id, ready, special, t: rf ? rf.t : game.t, face, kickBald, sparen: sparen && !CULL.f.intersectsSphere(CULL.s), ball: BALLPOS });
   }
   if (rf) { marker.visible = false; return; }
