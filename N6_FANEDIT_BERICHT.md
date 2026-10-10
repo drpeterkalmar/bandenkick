@@ -4,7 +4,7 @@ Peters Wünsche (09.10.2026): „Mit Fan-Cam meinte ich eigentlich so ein überd
 Zooms usw.“ und „Bei Torschüssen oder Zweikämpfen schnelle Zoom-ins auf die Szene mit Effekten und Speed-Ramps … oder
 Bullet-Time!“. Stand vorher: n5 (Version 0.3.0, ae34b43). Gearbeitet und gemessen auf **rog17 (RTX 3070 Ti, Windows 11,
 Chromium headless über ANGLE/D3D11, stumm `--mute-audio`)**; Handy-Profil = Pixel 7 (DPR 2,625) mit CPU-Drosselung ×4.
-Version **0.4.0**, alles live (Etappen E1–E15 einzeln gelandet). Bandenkick bleibt **lautlos** (Ton-Wächter: 0 Audio-Objekte).
+Version **0.4.0**, alles live (Etappen E1–E17 einzeln gelandet). Bandenkick bleibt **lautlos** (Ton-Wächter: 0 Audio-Objekte).
 
 ## Kurz für Peter
 
@@ -44,6 +44,9 @@ Ablauf in Schlägen (1 Schlag = 0,469 s; jede Einstellung beginnt genau auf eine
 | 11–13 | Jubel frontal | Schütze steht wieder, Arme hoch (V), dreht sich zur Kamera | Flash 3, Name „MIKA #7“, 🔥, Gag-Untertitel |
 | 13–15 | Jubel nah | Faust ballen/küssen (je Tor), Fahrt heran | Titel („GOAT 🐐“, „MVP 👑“ …), ⚡, Abblende, „↻ Clip nochmal“ |
 
+**Vorlage B** (je Tor zufällig statt A, 14 Schläge = 6,6 s): Vorgriff, Anlauf, Kontakt wie oben, dann sofort derselbe Schuss
+×3 mit km/h-Zähler (Schlag 4–7), hinter dem Tor, Einschlag genau auf Schlag 8, Standbild, Jubel (Schlag 10–14).
+
 Abwechslung je Tor: Hook-Spruch (WARTE AB / SCHAU GENAU / GLEICH… / OHNE WORTE / ACHTUNG), Akzentfarbe, Emoji-Satz, zweites
 Jubelwort, Titel, Gag, Jubelbewegung, Reihenfolge der Winkel, Layout/Einflug-Animation A (Stempel) oder B (seitlich gleitend,
 GOLAZO! unten).
@@ -68,7 +71,7 @@ GOLAZO! unten).
 | Collagen | `tests/shots/fanedit/hoch_seed*.jpg`, `quer_seed*.jpg`, `clip_seed*.jpg`, `hoch_sanft_seed8.jpg` |
 
 **Bewertung „wirkt das wie ein überdrehter TikTok-Fan-Edit?“** (unabhängiger Prüfer, Bildfolgen à 16 Standbilder, 15 Runden mit
-Nachbesserung dazwischen): Start Ø ≈ 5,7 (5–6/10) → Ø ≈ 7 → **zuletzt Ø ≈ 7,5–7,65: 5–6 der 10 Clips 8/10, die übrigen 7/10**
+Nachbesserung dazwischen, 16 Runden): Start Ø ≈ 5,7 (5–6/10) → Ø ≈ 7 → **zuletzt Ø ≈ 7,5–7,65: 4–6 der 10 Clips 8/10, die übrigen 7–7,5**
 (bestes Einzelergebnis 8,5). **Das Ziel ≥ 8/10 für jeden Clip ist nicht erreicht.** Der Prüfer betont selbst, dass Standbilder
 Bewegung, Schnittrhythmus und Flashes nicht zeigen. Restkritik: einzelne ×1–×3-Winkel ohne Ball oder mit kleinem Schützen,
 der Ablauf (Schlagraster, Reihenfolge der Abschnitte) ist bei jedem Tor gleich, die beiden Jubel-Einstellungen ähneln sich,

@@ -53,7 +53,7 @@ for (const seed of [3, 7, 11, 19, 23, 31, 37, 41]) {
   if (!goal) continue;
   n++;
   const h0 = hash(g);
-  const D = new FanEdit(rec, goal, { seed });
+  const D = new FanEdit(rec, goal, { seed, ablauf: n % 2 }); // beide Ablauf-Vorlagen (A/B) abwechselnd
   techs[D.tech] = (techs[D.tech] || 0) + 1;
   lenMin = Math.min(lenMin, D.realTotal); lenMax = Math.max(lenMax, D.realTotal);
   // Raster: jede Einstellung beginnt auf einem ganzen Schlag
@@ -85,7 +85,7 @@ for (const seed of [3, 7, 11, 19, 23, 31, 37, 41]) {
   for (let rr = 0; rr <= D.realTotal; rr += 0.001) { const w = D.fx(rr).white > 0.001; if (w && on < 0) on = rr; if (!w && on >= 0) { flashes.push(rr - on); on = -1; } }
   flashMaxN = Math.max(flashMaxN, flashes.length); flashMaxMs = Math.max(flashMaxMs, ...flashes.map((x) => x * 1000), 0);
   if (flashes.length <= FLASH_MAX && flashes.every((x) => x < 0.12)) flashOk++;
-  const Ds = new FanEdit(rec, goal, { seed, reduce: true });
+  const Ds = new FanEdit(rec, goal, { seed, reduce: true, ablauf: n % 2 });
   let sanft = true; for (let rr = 0; rr <= Ds.realTotal; rr += 0.002) { const fx = Ds.fx(rr); if (fx.flash || fx.ca > 0 || fx.white > 0.25) sanft = false; }
   if (sanft) sanftOk++;
   // Kameras: alle Einstellungen, hoch/quer/9:16; Ball am Kontakt (Schlag 3) im Bild

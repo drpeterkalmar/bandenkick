@@ -186,10 +186,11 @@ export function buildHud(root, canvas) {
       case 'kmhStempel': slam(F.kmh, I.kmh >= 60 ? `${I.kmh}<small>KM/H</small>` : I.dist >= 6 ? `${I.dist.toFixed(1).replace('.', ',')} M<small>DISTANZ</small>` : `10/10<small>SCHWIERIGKEIT</small>`, 'stempel'); ed.kmh = null; break;
       case 'warte': slam(F.big, I.hook || 'WARTE AB 👀', 'warte', 16, (I.hook || 'WARTE AB 👀').length); break;
       case 'zurueck': slam(F.big, '⏪ ZURÜCK', 'warte', 14, 10); break;
-      case 'golazo': weg(F.kmh); slam(F.big, I.own ? 'EIGEN-<br>TOR!' : 'GOLAZO!', 'golazo', 32, I.own ? 6 : 7); break;
+      case 'golazo': weg(F.kmh); weg(F.stamp); slam(F.big, I.own ? 'EIGEN-<br>TOR!' : 'GOLAZO!', 'golazo', 32, I.own ? 6 : 7); break;
       case 'golazo2': slam(F.stamp, I.wort || 'TOOOR!', 'wort', 15, (I.wort || 'TOOOR!').length); break;
       case 'kontur': weg(F.big); weg(F.stamp); break;
       case 'leer': weg(F.big); break;
+      case 'leer2': weg(F.stamp); weg(F.kmh); break;
       case 'x1': case 'x2': case 'x3': weg(F.big); slam(F.stamp, '×' + e.text[1]); break;
       case 'name': weg(F.stamp); slam(F.name, `${I.name}<small>${I.team}</small>`, '', document.body.classList.contains('quer') && !I.hoch ? 14 : 22, I.name.length); break;
       case 'gag': slam(F.gag, I.gag); break;

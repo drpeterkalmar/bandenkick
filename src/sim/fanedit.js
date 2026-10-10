@@ -129,11 +129,28 @@ function einschlag(rec, tg) {
 
 // Ablauf in Schlägen. b0/b1 = Einstellung von Schlag b0 bis b1 (Schnitt auf b0), keys = Stützpunkte [Sekunden ab b0,
 // Spielzeit], cam = Kamera, whip = Wischschwenk in diese Einstellung, glow = Ball leuchtet (nach dem Kontakt)
-function plan(tc, ti, tEnd, tFirst, tg, jub, winkel) {
+function plan(tc, ti, tEnd, tFirst, tg, jub, winkel, ablauf = 0) {
   const B = BEAT, F = Math.max(0.12, ti - tc), cl = (t) => clamp(t, tFirst, tEnd);
   // Jubel: nach dem Tor stehen alle ≈ 1,2 s still (Jubelpose), danach laufen sie zum Anstoß → Fenster bis 1,15 s nach dem Tor
   const jubel1 = cl(jub ? jub[1] : Math.min(tEnd - 0.02, tg + 1.15)), jubel0 = cl(jub ? jub[0] : Math.min(jubel1 - 0.3, Math.max(ti + 0.25, jubel1 - 1.0)));
   const W = winkel || ['drohne', 'hinten', 'ecke'];
+  const vorgriff = { name: 'vorgriff', cam: 'netz', b0: 0, b1: 1, keys: [[0, cl(ti - 0.03)], [B, cl(ti + 0.02)]] };
+  const anlauf = { name: 'anlauf', cam: 'tief', b0: 1, b1: 2, whip: -1, keys: [[0, cl(tc - 0.6)], [B - 0.15, cl(tc - 0.16)], [B, cl(tc - 0.12)]] };
+  const kontakt = { name: 'kontakt', cam: 'makro', b0: 2, b1: 4, keys: [[0, cl(tc - 0.1)], [0.2, cl(tc - 0.016)], [B, tc], [B + 0.27, cl(tc + 0.012)], [2 * B, cl(tc + Math.min(0.2, F * 0.4))]] };
+  if (ablauf === 1) {
+    // Vorlage B (14 Schläge): nach dem Kontakt sofort derselbe Schuss ×3, dann Netz, Einschlag genau auf Schlag 8, Standbild,
+    // zwei Jubel-Einstellungen
+    return [vorgriff, anlauf, kontakt,
+      { name: 'winkel1', cam: W[0], b0: 4, b1: 5, whip: 1, keys: [[0, cl(tc - 0.12)], [B, cl(ti + 0.03)]] },
+      { name: 'winkel2', cam: W[1], b0: 5, b1: 6, whip: -1, keys: [[0, cl(tc - 0.12)], [B, cl(ti + 0.03)]] },
+      { name: 'winkel3', cam: W[2], b0: 6, b1: 7, whip: 1, keys: [[0, cl(tc - 0.12)], [B, cl(ti + 0.03)]] },
+      { name: 'netz', cam: 'netz', b0: 7, b1: 8, keys: [[0, cl(ti - Math.min(0.22, F * 0.6))], [B, cl(ti - 0.012)]] },
+      { name: 'einschlag', cam: 'pfosten', b0: 8, b1: 9, keys: [[0, cl(ti - 0.012)], [0.12, ti], [B, cl(ti + 0.2)]] },
+      { name: 'standbild', cam: 'weit', b0: 9, b1: 10, freeze: 1, keys: [[0, ti], [B, ti]] },
+      { name: 'jubel', cam: 'jubel', b0: 10, b1: 12, keys: [[0, jubel0], [2 * B, (jubel0 + jubel1) / 2]] },
+      { name: 'jubel2', cam: 'jubel2', b0: 12, b1: 14, whip: -1, keys: [[0, (jubel0 + jubel1) / 2], [2 * B, jubel1]] },
+    ];
+  }
   return [
     // Hook: ein Schlag Vorgriff auf den Einschlag (fast Standbild), dann zurück zum Anlauf
     { name: 'vorgriff', cam: 'netz', b0: 0, b1: 1, keys: [[0, cl(ti - 0.03)], [B, cl(ti + 0.02)]] },
@@ -157,7 +174,23 @@ function plan(tc, ti, tEnd, tFirst, tg, jub, winkel) {
 
 // Effekt-Ereignisse je Schlag. flash: Weiß-Flash (Drop), punch: Zoom-Punch (Stärke), shake: Wackler, ca: RGB-Versatz,
 // text: Einblendung (vom HUD gezeichnet)
-function fahrplan() {
+function fahrplan(ablauf = 0) {
+  if (ablauf === 1) return [
+    { b: 0, text: 'pov', punch: 0.6, ca: 0.5 }, { b: 0, text: 'warte' },
+    { b: 1, punch: 0.6, ca: 0.4, text: 'zurueck' }, { b: 1.5, punch: 0.3 }, { b: 2, punch: 0.6, ca: 0.4, text: 'leer' },
+    { b: 3, flash: 1, punch: 1, ca: 1, shake: 0.35, text: 'technik', emoji: '😱' },
+    { b: 4, punch: 0.7, ca: 0.4, text: 'x1', lines: 1 }, { b: 4.02, text: 'kmh' },
+    { b: 5, punch: 0.7, ca: 0.35, text: 'x2', lines: 1 }, { b: 5.6, text: 'kmhStempel' },
+    { b: 6, punch: 0.7, ca: 0.35, text: 'x3', lines: 1 },
+    { b: 7, punch: 0.4, text: 'leer2' },
+    { b: 8, flash: 1, punch: 1, ca: 1, shake: 1, text: 'golazo', emoji: '💥' },
+    { b: 8.5, punch: 0.5, text: 'golazo2' },
+    { b: 9, punch: 0.3, text: 'kontur' },
+    { b: 10, flash: 1, punch: 1, ca: 0.8, shake: 0.5, text: 'name', emoji: '🔥' },
+    { b: 11, punch: 0.35, shake: 0.25 }, { b: 11.5, text: 'gag' },
+    { b: 12, punch: 0.8, shake: 0.4, ca: 0.45, emoji: '⚡', text: 'titel' },
+    { b: 13, punch: 0.35, shake: 0.25, text: 'ende' },
+  ];
   return [
     { b: 0, text: 'pov', punch: 0.6, ca: 0.5 }, { b: 0, text: 'warte' },
     { b: 1, punch: 0.6, ca: 0.4, text: 'zurueck' }, { b: 1.5, punch: 0.3 }, { b: 2, punch: 0.6, ca: 0.4, text: 'leer' },
@@ -208,8 +241,10 @@ export class FanEdit {
     // (Drohne nur noch im Querformat-Mix selten: von oben ist der Ball zu klein → Seitenlinie tief statt dessen)
     const WK = [['tief', 'hinten', 'gegen'], ['hinten', 'tief', 'gegen'], ['gegen', 'tief', 'hinten'], ['tief', 'gegen', 'hinten']][seed % 4];
     this.jubelClip = seed % 2 ? 'cheer' : 'cheer2'; this.jubelVersatz = seed % 2 ? 1.8 : 0.8; // Faust ballen / Faust küssen
-    this.shots = plan(tc, ti, tLast, tFirst, tg, jub, WK).map((s) => ({ ...s, t0: s.b0 * BEAT, t1: s.b1 * BEAT, k: monoKurve(s.keys) }));
-    this.events = fahrplan().map((x) => ({ ...x, t: x.b * BEAT }));
+    // zwei Ablauf-Vorlagen (A: Torwart-Sicht/Netz/Standbild vor ×3, B: ×3 gleich nach dem Kontakt), je Tor gewählt
+    this.ablauf = opts.ablauf ?? (seed >> 6) % 2;
+    this.shots = plan(tc, ti, tLast, tFirst, tg, jub, WK, this.ablauf).map((s) => ({ ...s, t0: s.b0 * BEAT, t1: s.b1 * BEAT, k: monoKurve(s.keys) }));
+    this.events = fahrplan(this.ablauf).map((x) => ({ ...x, t: x.b * BEAT }));
     // Flashes: höchstens FLASH_MAX, im reduzierten Modus nur sanftes Aufhellen
     let nf = 0; for (const x of this.events) if (x.flash && ++nf > FLASH_MAX) x.flash = 0;
     this.realTotal = this.shots[this.shots.length - 1].t1;

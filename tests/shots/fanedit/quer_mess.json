@@ -7,78 +7,79 @@
    "tech": "VOLLEY",
    "kmh": 112,
    "tor_t": 96.8000000000231,
-   "bilder": 411,
+   "bilder": 412,
    "cuts": [
     {
      "schlag": 1,
-     "abw_ms": 15.15,
-     "bild_ms": 16.5,
-     "abw_bild": 0.918
+     "abw_ms": 14.95,
+     "bild_ms": 16.8,
+     "abw_bild": 0.89
     },
     {
      "schlag": 2,
-     "abw_ms": 12.5,
-     "bild_ms": 16.3,
-     "abw_bild": 0.767
+     "abw_ms": 12.8,
+     "bild_ms": 16.4,
+     "abw_bild": 0.78
     },
     {
      "schlag": 4,
-     "abw_ms": 8.8,
-     "bild_ms": 18.2,
-     "abw_bild": 0.484
+     "abw_ms": 9.9,
+     "bild_ms": 18.1,
+     "abw_bild": 0.547
     },
     {
      "schlag": 5,
-     "abw_ms": 6.05,
-     "bild_ms": 16.7,
-     "abw_bild": 0.362
+     "abw_ms": 7.15,
+     "bild_ms": 16.1,
+     "abw_bild": 0.444
     },
     {
      "schlag": 6,
-     "abw_ms": 4.1,
+     "abw_ms": 3.8,
      "bild_ms": 16.7,
-     "abw_bild": 0.246
+     "abw_bild": 0.228
     },
     {
      "schlag": 7,
-     "abw_ms": 2.95,
-     "bild_ms": 17.5,
-     "abw_bild": 0.169
+     "abw_ms": 2.85,
+     "bild_ms": 17.1,
+     "abw_bild": 0.167
     },
     {
      "schlag": 8,
-     "abw_ms": 16.0,
-     "bild_ms": 16.9,
-     "abw_bild": 0.947
+     "abw_ms": 0.0,
+     "bild_ms": 16.3,
+     "abw_bild": 0.0
     },
     {
      "schlag": 9,
-     "abw_ms": 13.75,
-     "bild_ms": 16.4,
-     "abw_bild": 0.838
+     "abw_ms": 14.65,
+     "bild_ms": 16.5,
+     "abw_bild": 0.888
     },
     {
      "schlag": 10,
-     "abw_ms": 13.1,
+     "abw_ms": 12.5,
      "bild_ms": 16.9,
-     "abw_bild": 0.775
+     "abw_bild": 0.74
     },
     {
      "schlag": 11,
-     "abw_ms": 9.55,
-     "bild_ms": 15.4,
-     "abw_bild": 0.62
+     "abw_ms": 10.15,
+     "bild_ms": 15.5,
+     "abw_bild": 0.655
     },
     {
      "schlag": 13,
-     "abw_ms": 6.75,
-     "bild_ms": 18.1,
-     "abw_bild": 0.373
+     "abw_ms": 6.25,
+     "bild_ms": 17.1,
+     "abw_bild": 0.365
     }
    ],
-   "max_abw_bild": 0.947,
+   "max_abw_bild": 0.89,
    "bild_ms_p50": 16.600000023841858,
-   "bild_ms_p95": 18.100000023841858,
+   "bild_ms_p95": 18.099999964237213,
+   "ablauf": "A",
    "collage": "tests/shots/fanedit/quer_seed8.jpg"
   },
   {
@@ -90,74 +91,75 @@
    "cuts": [
     {
      "schlag": 1,
-     "abw_ms": 14.85,
+     "abw_ms": 15.45,
      "bild_ms": 16.4,
-     "abw_bild": 0.905
+     "abw_bild": 0.942
     },
     {
      "schlag": 2,
-     "abw_ms": 11.7,
-     "bild_ms": 16.2,
-     "abw_bild": 0.722
+     "abw_ms": 12.6,
+     "bild_ms": 16.8,
+     "abw_bild": 0.75
     },
     {
      "schlag": 4,
-     "abw_ms": 9.1,
+     "abw_ms": 9.3,
      "bild_ms": 16.9,
-     "abw_bild": 0.538
+     "abw_bild": 0.55
     },
     {
      "schlag": 5,
-     "abw_ms": 6.25,
-     "bild_ms": 17.3,
-     "abw_bild": 0.361
+     "abw_ms": 6.35,
+     "bild_ms": 15.7,
+     "abw_bild": 0.404
     },
     {
      "schlag": 6,
-     "abw_ms": 3.4,
-     "bild_ms": 15.5,
-     "abw_bild": 0.219
+     "abw_ms": 4.1,
+     "bild_ms": 16.1,
+     "abw_bild": 0.255
     },
     {
      "schlag": 7,
-     "abw_ms": 2.25,
-     "bild_ms": 16.8,
-     "abw_bild": 0.134
+     "abw_ms": 2.35,
+     "bild_ms": 16.3,
+     "abw_bild": 0.144
     },
     {
      "schlag": 8,
-     "abw_ms": 0.1,
-     "bild_ms": 16.5,
-     "abw_bild": 0.006
+     "abw_ms": 0.9,
+     "bild_ms": 16.9,
+     "abw_bild": 0.053
     },
     {
      "schlag": 9,
-     "abw_ms": 14.45,
-     "bild_ms": 16.2,
-     "abw_bild": 0.892
+     "abw_ms": 14.35,
+     "bild_ms": 16.1,
+     "abw_bild": 0.891
     },
     {
      "schlag": 10,
-     "abw_ms": 13.1,
-     "bild_ms": 18.2,
-     "abw_bild": 0.72
+     "abw_ms": 12.9,
+     "bild_ms": 16.3,
+     "abw_bild": 0.791
     },
     {
      "schlag": 11,
-     "abw_ms": 9.85,
-     "bild_ms": 17.1,
-     "abw_bild": 0.576
+     "abw_ms": 11.15,
+     "bild_ms": 17.7,
+     "abw_bild": 0.63
     },
     {
      "schlag": 13,
-     "abw_ms": 5.25,
-     "bild_ms": 16.0,
-     "abw_bild": 0.328
+     "abw_ms": 6.65,
+     "bild_ms": 16.9,
+     "abw_bild": 0.393
     }
    ],
-   "max_abw_bild": 0.905,
-   "bild_ms_p50": 16.600000023841858,
+   "max_abw_bild": 0.942,
+   "bild_ms_p50": 16.69999998807907,
    "bild_ms_p95": 17.80000001192093,
+   "ablauf": "A",
    "collage": "tests/shots/fanedit/quer_seed11.jpg"
   },
   {
@@ -165,37 +167,37 @@
    "tech": "DROPKICK",
    "kmh": 83,
    "tor_t": 33.86666666666539,
-   "bilder": 421,
+   "bilder": 392,
    "cuts": [
     {
      "schlag": 1,
-     "abw_ms": 13.95,
-     "bild_ms": 16.6,
-     "abw_bild": 0.84
+     "abw_ms": 14.15,
+     "bild_ms": 16.2,
+     "abw_bild": 0.873
     },
     {
      "schlag": 2,
      "abw_ms": 12.2,
-     "bild_ms": 15.5,
-     "abw_bild": 0.787
+     "bild_ms": 16.6,
+     "abw_bild": 0.735
     },
     {
      "schlag": 4,
      "abw_ms": 8.3,
-     "bild_ms": 16.1,
-     "abw_bild": 0.516
+     "bild_ms": 16.6,
+     "abw_bild": 0.5
     },
     {
      "schlag": 5,
-     "abw_ms": 6.55,
-     "bild_ms": 17.8,
-     "abw_bild": 0.368
+     "abw_ms": 6.15,
+     "bild_ms": 16.3,
+     "abw_bild": 0.377
     },
     {
      "schlag": 6,
      "abw_ms": 3.9,
-     "bild_ms": 17.1,
-     "abw_bild": 0.228
+     "bild_ms": 17.2,
+     "abw_bild": 0.227
     },
     {
      "schlag": 7,
@@ -205,38 +207,33 @@
     },
     {
      "schlag": 8,
-     "abw_ms": 15.8,
-     "bild_ms": 16.8,
-     "abw_bild": 0.94
+     "abw_ms": 0.3,
+     "bild_ms": 17.8,
+     "abw_bild": 0.017
     },
     {
      "schlag": 9,
-     "abw_ms": 13.65,
-     "bild_ms": 16.0,
-     "abw_bild": 0.853
+     "abw_ms": 14.55,
+     "bild_ms": 17.3,
+     "abw_bild": 0.841
     },
     {
      "schlag": 10,
-     "abw_ms": 11.6,
+     "abw_ms": 11.9,
      "bild_ms": 16.0,
-     "abw_bild": 0.725
+     "abw_bild": 0.744
     },
     {
-     "schlag": 11,
-     "abw_ms": 9.15,
-     "bild_ms": 16.0,
-     "abw_bild": 0.572
-    },
-    {
-     "schlag": 13,
-     "abw_ms": 5.75,
-     "bild_ms": 16.9,
-     "abw_bild": 0.34
+     "schlag": 12,
+     "abw_ms": 8.3,
+     "bild_ms": 17.4,
+     "abw_bild": 0.477
     }
    ],
-   "max_abw_bild": 0.94,
-   "bild_ms_p50": 16.600000023841858,
-   "bild_ms_p95": 17.899999976158142,
+   "max_abw_bild": 0.873,
+   "bild_ms_p50": 16.69999998807907,
+   "bild_ms_p95": 18.0,
+   "ablauf": "B",
    "collage": "tests/shots/fanedit/quer_seed30.jpg"
   }
  ],

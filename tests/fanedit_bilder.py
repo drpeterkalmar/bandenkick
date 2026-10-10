@@ -17,6 +17,7 @@ SEEDS = [int(x) for x in args[1].split(',')] if len(args) > 1 else [1, 2, 4, 8, 
 SANFT = '--sanft' in sys.argv
 B = 60 / 128
 SCHLAEGE = [0.5, 1.5, 2.5, 3.25, 3.7, 4.4, 5.4, 6.22, 6.7, 7.5, 8.5, 9.5, 10.5, 11.5, 12.7, 14.4]
+SCHLAEGE_B = [0.5, 1.5, 2.5, 3.25, 3.7, 4.5, 5.5, 6.5, 7.5, 8.22, 8.7, 9.5, 10.5, 11.5, 12.5, 13.6]  # Vorlage B (14 Schläge)
 
 
 def collage(name, bilder, titel):
@@ -67,10 +68,12 @@ def main():
                     'tor_t': r['t'], 'bilder': len(d), 'cuts': cuts, 'max_abw_bild': max([c['abw_bild'] for c in cuts] or [0]),
                     'bild_ms_p50': ft[len(ft) // 2] if ft else None, 'bild_ms_p95': ft[int(len(ft) * 0.95)] if ft else None}
             # 2) derselbe Clip noch einmal, angehalten in festen Schritten
-            s.ev(f"__game.editHalt({SCHLAEGE[0] * B})")
+            SL = SCHLAEGE_B if info.get('edit') and info['edit'].get('ablauf') == 1 else SCHLAEGE
+            clip['ablauf'] = 'B' if SL is SCHLAEGE_B else 'A'
+            s.ev(f"__game.editHalt({SL[0] * B})")
             s.ev("__game.clipNochmal()")
             bilder = []
-            for j, sb in enumerate(SCHLAEGE):
+            for j, sb in enumerate(SL):
                 s.ev(f"__game.editHalt({sb * B})")
                 try: s.pg.wait_for_function("(() => { const r = __game.replay(); return r.active && r.held; })()", timeout=15000)
                 except Exception: print('  nicht erreicht', seed, sb); continue
@@ -82,7 +85,7 @@ def main():
             s.ev("__game.editHalt(null)")
             s.pg.wait_for_function("!__game.replay().active", timeout=30000)
             if bilder:
-                clip['collage'] = os.path.relpath(collage(f'{FORM}{"_sanft" if SANFT else ""}_seed{seed}', bilder, f"Fan-Edit seed {seed} · {clip['tech']} · {clip['kmh']} km/h · {FORM}{' · Blitze reduziert' if SANFT else ''}"), ROOT).replace(os.sep, '/')
+                clip['collage'] = os.path.relpath(collage(f'{FORM}{"_sanft" if SANFT else ""}_seed{seed}', bilder, f"Fan-Edit seed {seed} · Ablauf {clip['ablauf']} · {clip['tech']} · {clip['kmh']} km/h · {FORM}{' · Blitze reduziert' if SANFT else ''}"), ROOT).replace(os.sep, '/')
             mess['clips'].append(clip)
             print(json.dumps({k: v for k, v in clip.items() if k != 'cuts'}), flush=True)
         mess['fehler'] = s.errors + s.ev("window.__errors || []")

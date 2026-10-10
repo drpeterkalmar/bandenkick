@@ -1228,7 +1228,7 @@ Object.assign(G, {
   freezeWhen(src) { G.freezeFn = new Function('g', 'return (' + src + ')'); },
   cam(pos, look) { gcam.override = pos ? { pos, look } : null; },
   // Tor-Wiederholung (Tests/Fotos): Zustand, sofort starten (letztes Tor), anhalten in Abschnitt/Anteil, überspringen
-  replay() { const D = rp.dir; return { art: replayArt, edit: D && D.edit ? { i: D.i, beat: +D.beat.toFixed(3), schnitte: D.schnitte, cam: D.cur.cam, tech: D.tech, kmh: D.kmh, schuetze: D.schuetze, tc: D.tc, ti: D.ti, t: D.t } : null, active: !!D, wait: rp.wait, phase: D ? D.phase : null, frac: D ? D.segFrac() : 0, real: D ? D.real : 0, total: D ? D.realTotal : 0, label: rp.label, held: rp.held, contact: D && D.contact ? { ...D.contact } : null, recCount: rp.rec ? rp.rec.count : 0, segs: D ? D.segs.map((x) => x.name) : [] }; },
+  replay() { const D = rp.dir; return { art: replayArt, edit: D && D.edit ? { i: D.i, beat: +D.beat.toFixed(3), schnitte: D.schnitte, cam: D.cur.cam, ablauf: D.ablauf, tech: D.tech, kmh: D.kmh, schuetze: D.schuetze, tc: D.tc, ti: D.ti, t: D.t } : null, active: !!D, wait: rp.wait, phase: D ? D.phase : null, frac: D ? D.segFrac() : 0, real: D ? D.real : 0, total: D ? D.realTotal : 0, label: rp.label, held: rp.held, contact: D && D.contact ? { ...D.contact } : null, recCount: rp.rec ? rp.rec.count : 0, segs: D ? D.segs.map((x) => x.name) : [] }; },
   replayHold(phase = null, frac = 0.5) { rp.hold = phase ? { phase, frac } : null; rp.held = false; },
   replaySkip() { skipReplay(); },
   // n6: Art der Wiederholung setzen ('edit' | 'klassisch' | 'aus'), Fan-Edit-Messung (je Bild Clip-Zeit, Einstellung,
