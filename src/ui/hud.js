@@ -137,7 +137,10 @@ export function buildHud(root, canvas) {
     for (let i = 0; i < 56; i++) { const a = i / 56 * Math.PI * 2 + (i % 3) * 0.03; g.lineWidth = i % 2 ? 3.5 : 7; g.beginPath(); g.moveTo(256 + Math.cos(a) * 90, 256 + Math.sin(a) * 90); g.lineTo(256 + Math.cos(a) * 362, 256 + Math.sin(a) * 362); g.stroke(); }
     const u = `url(${c.toDataURL('image/png')})`; fe.querySelector('.fe-lines').style.backgroundImage = u; amEl.children[1].style.backgroundImage = u;
   } catch (_) { /* ohne Speed-Lines */ }
-  root.append(amEl, top, banner, charge, hold, touch, dbg, start, menu, credits, train, hint, result, help, replay, clipAgain);
+  // Malstile des Clips (Verlauf-Spotlight, leuchtende Kontur, Text mit Kontur) einmal unsichtbar malen: der Rasterer übersetzt
+  // dafür beim ersten Mal eigene Shader (im ersten Clip ≈ 150 ms)
+  const warm = h('div', 'fe-warm', '<i class="w1"></i><i class="w2"></i><b>GOLAZO! 10/10</b>');
+  root.append(amEl, top, banner, charge, hold, touch, dbg, start, menu, credits, train, hint, result, help, replay, clipAgain, warm);
 
   const howto = (touchUI) => touchUI
     ? `<li><b>Stick links:</b> laufen · ganz außen oder Knopf = Sprint · <b>⇄</b> Spieler wechseln (sonst automatisch)</li>

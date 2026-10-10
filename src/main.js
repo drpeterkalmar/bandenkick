@@ -739,7 +739,9 @@ function frame() {
   // im echten Render-Weg zeichnen (unsichtbar übermalt) – sonst wartet das erste Clip-Bild ≈ 170 ms auf den Shader
   if (!fxWarm && G.ready && rp.fx) {
     fxWarm = true;
-    const an = [rp.fx.trail, rp.fx.ring, ...rp.fx.glows].filter((o) => !o.visible);
+    // (dazu die Deko-Effekte, die erst beim ersten harten Schuss/Tor erscheinen: Konfetti, Rutschspuren, Blitzlichter)
+    const deko = ['konfetti', 'rutschspuren', 'blitzlichter'].map((n) => scene.getObjectByName(n)).filter(Boolean);
+    const an = [rp.fx.trail, rp.fx.ring, ...rp.fx.glows, ...deko].filter((o) => !o.visible);
     for (const o of an) o.visible = true;
     try { if (kino) kino.render(scene, gcam.cam, { dt: 0 }); else renderer.render(scene, gcam.cam); } catch (_) { /* nur Vorwärmen */ }
     for (const o of an) o.visible = false;

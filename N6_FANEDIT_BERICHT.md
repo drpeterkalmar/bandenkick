@@ -4,7 +4,7 @@ Peters Wünsche (09.10.2026): „Mit Fan-Cam meinte ich eigentlich so ein überd
 Zooms usw.“ und „Bei Torschüssen oder Zweikämpfen schnelle Zoom-ins auf die Szene mit Effekten und Speed-Ramps … oder
 Bullet-Time!“. Stand vorher: n5 (Version 0.3.0, ae34b43). Gearbeitet und gemessen auf **rog17 (RTX 3070 Ti, Windows 11,
 Chromium headless über ANGLE/D3D11, stumm `--mute-audio`)**; Handy-Profil = Pixel 7 (DPR 2,625) mit CPU-Drosselung ×4.
-Version **0.4.0**, alles live (Etappen E1–E12 einzeln gelandet). Bandenkick bleibt **lautlos** (Ton-Wächter: 0 Audio-Objekte).
+Version **0.4.0**, alles live (Etappen E1–E13 einzeln gelandet). Bandenkick bleibt **lautlos** (Ton-Wächter: 0 Audio-Objekte).
 
 ## Kurz für Peter
 
@@ -125,7 +125,11 @@ Bullet-Time an beliebiger Stelle hat keinen „Helden“ (in den Testbildern erz
   nicht mehr. Per JS-Profil gefunden und behoben: erzwungenes Layout beim Neustart der Text-Animationen (−100 ms), Shader
   der erst im Clip sichtbaren Effekte (Ballspur, Druckwelle, Leuchten: 170 → 70 ms, jetzt einmal beim Start vorgezeichnet),
   Farb-Emojis rastern (150 ms → weg), Shader-Varianten erst beim Tor übersetzen (bis > 1 s, jetzt im Ladebildschirm).
-  Rest: ≈ 70 ms Warten auf einen Shader beim ersten Benutzen und das erste Aufbauen des Overlays.
+  Danach (E13) per Programm-Vergleich gefunden: die Endbild-Varianten wurden für das falsche Ziel vorgewärmt (Bildschirm = sRGB-
+  Variante; im ersten Action-Moment 130 → 0 ms Shader-Warten), die Deko-Effekte (Konfetti, Rutschspuren, Blitzlichter) wurden
+  erst beim ersten harten Schuss übersetzt (jetzt beim Start), Chromes Rasterer übersetzte beim ersten Standbild Verlauf/
+  Weichschatten (146 ms → weg, Stile beim Laden unsichtbar vorgemalt). **Erster Clip jetzt: schlechtestes 0,5-s-Fenster 28 fps
+  (vorher 13,6) unter Last**; Rest ≈ 190 ms beim allerersten Clip-Bild (Layout ≈ 100 ms + Skript ≈ 115 ms unter ×4-Drosselung).
 - Unabhängig von n6 gefunden: In jedem Bot-Spiel stockt bei Spielzeit ≈ 28 s ein Bild 1,0–1,6 s – auch mit `?replay=0&action=0`
   (Gegenprobe), also älter. Ursache nicht untersucht (für den Mac).
 - Hinweis zur Messung: zwei gedrosselte Browser gleichzeitig verfälschen die Zahlen stark (anfangs passiert) – alle Werte
@@ -141,7 +145,8 @@ Bullet-Time an beliebiger Stelle hat keinen „Helden“ (in den Testbildern erz
 1. Bewertungsziel ≥ 8/10 nicht erreicht (Fan-Edit Ø ≈ 7–7,75, Action-Momente 4–7). Nächste Hebel: Winkel nach
    Sichtbarkeit des Schützen wählen (statt fester Liste), mehr Abwechslung im Ablauf je Tor, Action-Momente bei Schüssen
    früher auslösen bzw. den Rückblick verlängern, Farbsäume an hellen Linien dämpfen.
-2. Start-Hänger im ersten Clip (≈ 0,3 s) und der ältere 1–1,6-s-Hänger bei Spielzeit 28 s.
+2. Start-Hänger beim allerersten Clip-Bild (≈ 0,19 s unter ×4-Drosselung: Layout des Overlays + Skript) und der ältere
+   1–1,6-s-Hänger bei Spielzeit 28 s (auch ohne n6).
 3. „Tor des Spiels“ als Clip am Spielende (optional im Auftrag) – nicht umgesetzt; der Ringpuffer müsste dafür den besten
    Clip je Spiel sichern (≈ 1 MB).
 4. Tunnel als Auslöser für Action-Momente fehlt (kein Ereignis in der Simulation).

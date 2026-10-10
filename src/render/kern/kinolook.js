@@ -742,14 +742,15 @@ export class KinoLook {
     const mats = [];
     for (const o of liste) {
       const dof = this.stages.dof && o.dof ? o.dof : null;
-      mats.push(this.mat('comp', this.compDefs(o, 0, sc, null, false, dof, 1), COMP_FS));
-      if (dof) mats.push(this.mat('dof', { TAPS: 1 }, DOF_FS));
+      mats.push([this.mat('comp', this.compDefs(o, 0, sc, null, false, dof, 1), COMP_FS), null]);
+      if (dof) mats.push([this.mat('dof', { TAPS: 1 }, DOF_FS), 'rt']);
     }
-    // wirklich zeichnen (in ein 4×4-Ziel): ANGLE/D3D übersetzt manche Programme erst beim ersten Zeichnen
+    // wirklich zeichnen (ANGLE/D3D übersetzt manche Programme erst beim ersten Zeichnen) – und zwar auf dasselbe Ziel wie
+    // später: das Endbild auf den Bildschirm (sRGB-Variante; das nächste Bild übermalt es), Tiefenschärfe in ein Ziel
     if (!this.warmRT) this.warmRT = new THREE.WebGLRenderTarget(4, 4, rtOpts());
     let n = 0;
     const alt = this.r.getRenderTarget();
-    for (const m of mats) { if (this._warm.has(m)) continue; this._warm.add(m); this.pass(m, this.warmRT); n++; }
+    for (const [m, ziel] of mats) { if (this._warm.has(m)) continue; this._warm.add(m); this.pass(m, ziel ? this.warmRT : null); n++; }
     this.r.setRenderTarget(alt);
     return n;
   }
