@@ -54,7 +54,7 @@ export function bewerte(e, game) {
     const bullet = BULLET_TECH.has(e.tech) || (kreuzeck && (e.tech === 'volley' || kmh >= 105));
     // Fokus zwischen Schütze und Ball, Kamera quer zur Schussrichtung (Schütze von der Seite)
     const pl = P[e.player], fx = pl ? e.x * 0.6 + pl.x * 0.4 : e.x, fz = pl ? e.z * 0.6 + pl.z * 0.4 : e.z, dl = Math.hypot(e.dx || 0, e.dz || 0) || 1;
-    return { w: clamp(w, 0, 1), art: bullet ? 'bullet' : 'ramp', fokus: [fx, Math.max(0.6, (e.y || 0) * 0.5 + 0.5), fz], ...(pl ? { dir: [-Math.sin(pl.face), Math.cos(pl.face)], vor: [Math.cos(pl.face), Math.sin(pl.face)] } : { dir: [-(e.dz || 0) / dl, (e.dx || 1) / dl], vor: [(e.dx || 1) / dl, (e.dz || 0) / dl] }), spieler: e.player, grund: kreuzeck ? 'kreuzeck' : e.tech || 'schuss' };
+    return { w: clamp(w, 0, 1), art: bullet ? 'bullet' : 'ramp', kontakt: { x: e.x, y: e.y || 0.11, z: e.z, dx: e.dx || 1, dz: e.dz || 0, t: game.t }, fokus: [fx, Math.max(0.6, (e.y || 0) * 0.5 + 0.5), fz], ...(pl ? { dir: [-Math.sin(pl.face), Math.cos(pl.face)], vor: [Math.cos(pl.face), Math.sin(pl.face)] } : { dir: [-(e.dz || 0) / dl, (e.dx || 1) / dl], vor: [(e.dx || 1) / dl, (e.dz || 0) / dl] }), spieler: e.player, grund: kreuzeck ? 'kreuzeck' : e.tech || 'schuss' };
   }
   if (e.type === 'post' && (e.speed || 0) > 10) return { w: 0.72, art: 'ramp', fokus: [game.ball.p.x, game.ball.p.y, game.ball.p.z], spieler: -1, grund: 'pfosten' };
   if (e.type === 'parry' && (e.speed || 0) > 14) {

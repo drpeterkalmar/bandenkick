@@ -494,9 +494,19 @@ function slowScale(dt) {
   const bb = am.rf ? am.rf.ball.p : game.ball.p;
   // Bildmitte zwischen Oberkörper des Schützen und Ball (läuft mit, auch im Rückblick)
   const sp = M.spieler >= 0 && !M.nah ? (am.rf ? am.rf.players[M.spieler] : game.players[M.spieler]) : null;
-  const fp = sp ? [(sp.x + bb.x) / 2, 0.8, (sp.z + bb.z) / 2] : M.fokus;
-  gcam.fokus = { p: fp, k: v.punch, dir: M.dir, vor: M.vor, nah: M.nah, drift: v.drift, ball: [bb.x, bb.y, bb.z] };
-  gcam.zoom = (gcam.mode === 'hoch' ? 0.6 : 1) * v.punch; // quer: enger (mehr Tele)
+  const nachK = M.kontakt && (am.rf ? am.rf.t : game.t) > M.kontakt.t, ws = nachK ? 0.6 : 0.5; // nach dem Kontakt: Schütze bleibt im Bild
+  const fp = sp ? [sp.x * ws + bb.x * (1 - ws), 0.8, sp.z * ws + bb.z * (1 - ws)] : M.fokus;
+  gcam.fokus = { mitte: !!sp, p: fp, k: v.punch, dir: M.dir, vor: M.vor, nah: M.nah, drift: v.drift, ball: [bb.x, bb.y, bb.z] };
+  gcam.zoom = (gcam.mode === 'hoch' ? -0.6 : 1) * v.punch; // quer: enger (mehr Tele), hoch: weit (Schütze und Ball bleiben im Bild)
+  // Wucht: Druckwelle am Kontakt, Kometenschweif und Leuchten am Ball (Effekte der Wiederholung, live)
+  if (rp.fx && M.kontakt) {
+    const tNow = am.rf ? am.rf.t : game.t, k = tNow - M.kontakt.t, B0 = am.rf ? am.rf.ball.p : game.ball.p;
+    rp.fx.setRing(M.kontakt, k);
+    const komet = k > 0 && k < 0.6 && rp.rec && rp.recGame === game;
+    rp.fx.setTrailFarbe([1.0, 0.5, 0.12]);
+    rp.fx.setTrail(komet ? rp.rec.trail(Math.min(tNow, rp.rec.tLast), Math.min(0.3, k), 20, rp.trail) : null, gcam.cam, komet ? 1 : 0, 0.2);
+    rp.fx.setGlow(0, k > -0.05 ? [B0.x, B0.y, B0.z] : null, 0.75, 0.8);
+  }
   if (v.shake > gcam.shake) gcam.shake = v.shake;
   if (v.orbit >= 0) {
     // Bullet-Time: Halbkreis um den Moment (Start: Richtung der Spielkamera), Blick auf den Fokus
@@ -523,6 +533,7 @@ function bulletBahn(M) {
 }
 function amEnde() {
   am.rf = null; am.tR = null;
+  if (rp.fx && !rp.dir) rp.fx.hide();
   am.an = false; am.v = null; gcam.fokus = null; gcam.zoom = 0;
   if (am.orbit) { am.orbit = null; gcam.override = null; gcam.setAspect(gcam.cam.aspect, G.forceMode); }
   if (kino && am.gradeVor) { kino.grade = am.gradeVor; am.gradeVor = null; }

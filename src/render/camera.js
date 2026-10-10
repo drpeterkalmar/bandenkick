@@ -113,7 +113,7 @@ export class GameCamera {
       c.position.x += (zx - c.position.x) * k; c.position.y += (zy - c.position.y) * k; c.position.z += (zz - c.position.z) * k;
       // Hochformat: Szene etwas nach oben links (unten rechts liegen die Knöpfe)
       // Blick zwischen Szene und Ball (der Ball bleibt im Bild); Torwart: ganze Figur (Kopf nicht anschneiden)
-      const hy = this.mode === 'hoch' && !F.nah ? -0.35 : 0, hs = this.mode === 'hoch' ? 0.4 : 0, bw = F.ball && !F.nah ? 0.55 : 0;
+      const hy = this.mode === 'hoch' && !F.nah ? -0.35 : 0, hs = this.mode === 'hoch' ? 0.4 : 0, bw = F.ball && !F.nah && !F.mitte ? 0.55 : 0;
       const px = p[0] + (F.ball ? (F.ball[0] - p[0]) * bw : 0), pz = p[2] + (F.ball ? (F.ball[2] - p[2]) * bw : 0);
       l[0] += (px - rz * hs - l[0]) * k; l[1] += (p[1] + hy - l[1]) * k; l[2] += (pz + rx * hs - l[2]) * k;
     }
