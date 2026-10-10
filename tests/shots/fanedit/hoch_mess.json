@@ -7,66 +7,66 @@
    "tech": "VOLLSPANN",
    "kmh": 91,
    "tor_t": 6.600000000000118,
-   "bilder": 403,
+   "bilder": 404,
    "cuts": [
     {
      "schlag": 2,
-     "abw_ms": 13.8,
-     "bild_ms": 18.5,
-     "abw_bild": 0.746
+     "abw_ms": 12.9,
+     "bild_ms": 17.4,
+     "abw_bild": 0.741
     },
     {
      "schlag": 4,
-     "abw_ms": 8.4,
-     "bild_ms": 16.6,
-     "abw_bild": 0.506
+     "abw_ms": 9.3,
+     "bild_ms": 17.1,
+     "abw_bild": 0.544
     },
     {
      "schlag": 5,
-     "abw_ms": 6.45,
-     "bild_ms": 17.0,
-     "abw_bild": 0.379
+     "abw_ms": 6.95,
+     "bild_ms": 17.7,
+     "abw_bild": 0.393
     },
     {
      "schlag": 7,
      "abw_ms": 1.95,
-     "bild_ms": 16.0,
-     "abw_bild": 0.122
+     "bild_ms": 17.0,
+     "abw_bild": 0.115
     },
     {
      "schlag": 8,
-     "abw_ms": 12.2,
-     "bild_ms": 16.4,
-     "abw_bild": 0.744
+     "abw_ms": 15.5,
+     "bild_ms": 17.6,
+     "abw_bild": 0.881
     },
     {
      "schlag": 9,
-     "abw_ms": 10.25,
-     "bild_ms": 16.3,
-     "abw_bild": 0.629
+     "abw_ms": 13.05,
+     "bild_ms": 17.3,
+     "abw_bild": 0.754
     },
     {
      "schlag": 10,
-     "abw_ms": 8.4,
-     "bild_ms": 17.3,
-     "abw_bild": 0.486
+     "abw_ms": 10.1,
+     "bild_ms": 16.5,
+     "abw_bild": 0.612
     },
     {
      "schlag": 11,
-     "abw_ms": 5.95,
-     "bild_ms": 16.7,
-     "abw_bild": 0.356
+     "abw_ms": 9.35,
+     "bild_ms": 17.1,
+     "abw_bild": 0.547
     },
     {
      "schlag": 13,
-     "abw_ms": 2.45,
-     "bild_ms": 17.2,
-     "abw_bild": 0.142
+     "abw_ms": 4.25,
+     "bild_ms": 16.9,
+     "abw_bild": 0.251
     }
    ],
-   "max_abw_bild": 0.746,
-   "bild_ms_p50": 16.600000023841858,
-   "bild_ms_p95": 18.0,
+   "max_abw_bild": 0.881,
+   "bild_ms_p50": 16.69999998807907,
+   "bild_ms_p95": 18,
    "collage": "tests/shots/fanedit/hoch_seed1.jpg"
   },
   {
@@ -74,65 +74,65 @@
    "tech": "BANANE",
    "kmh": 86,
    "tor_t": 12.166666666666616,
-   "bilder": 420,
+   "bilder": 421,
    "cuts": [
     {
      "schlag": 2,
-     "abw_ms": 12.2,
-     "bild_ms": 16.8,
-     "abw_bild": 0.726
+     "abw_ms": 12.8,
+     "bild_ms": 18.4,
+     "abw_bild": 0.696
     },
     {
      "schlag": 4,
-     "abw_ms": 8.4,
-     "bild_ms": 17.1,
-     "abw_bild": 0.491
+     "abw_ms": 7.3,
+     "bild_ms": 15.4,
+     "abw_bild": 0.474
     },
     {
      "schlag": 5,
-     "abw_ms": 7.15,
-     "bild_ms": 17.2,
-     "abw_bild": 0.416
+     "abw_ms": 5.85,
+     "bild_ms": 16.7,
+     "abw_bild": 0.35
     },
     {
      "schlag": 7,
-     "abw_ms": 1.95,
-     "bild_ms": 15.7,
-     "abw_bild": 0.124
+     "abw_ms": 0.95,
+     "bild_ms": 16.0,
+     "abw_bild": 0.059
     },
     {
      "schlag": 8,
-     "abw_ms": 0.0,
-     "bild_ms": 16.5,
-     "abw_bild": 0.0
+     "abw_ms": 16.3,
+     "bild_ms": 17.1,
+     "abw_bild": 0.953
     },
     {
      "schlag": 9,
-     "abw_ms": 14.55,
-     "bild_ms": 16.5,
-     "abw_bild": 0.882
+     "abw_ms": 13.45,
+     "bild_ms": 16.2,
+     "abw_bild": 0.83
     },
     {
      "schlag": 10,
-     "abw_ms": 12.0,
-     "bild_ms": 16.4,
-     "abw_bild": 0.732
+     "abw_ms": 11.4,
+     "bild_ms": 16.0,
+     "abw_bild": 0.713
     },
     {
      "schlag": 11,
-     "abw_ms": 11.25,
-     "bild_ms": 17.8,
-     "abw_bild": 0.632
+     "abw_ms": 9.75,
+     "bild_ms": 16.9,
+     "abw_bild": 0.577
     },
     {
      "schlag": 13,
-     "abw_ms": 5.85,
-     "bild_ms": 15.6,
-     "abw_bild": 0.375
+     "abw_ms": 5.15,
+     "bild_ms": 16.5,
+     "abw_bild": 0.312
     }
    ],
-   "max_abw_bild": 0.882,
-   "bild_ms_p50": 16.600000023841858,
+   "max_abw_bild": 0.953,
+   "bild_ms_p50": 16.69999998807907,
    "bild_ms_p95": 17.80000001192093,
    "collage": "tests/shots/fanedit/hoch_seed2.jpg"
   },
@@ -141,66 +141,66 @@
    "tech": "AUSSENRIST-|BANANE",
    "kmh": 99,
    "tor_t": 24.29999999999926,
-   "bilder": 421,
+   "bilder": 419,
    "cuts": [
     {
      "schlag": 2,
-     "abw_ms": 13.0,
-     "bild_ms": 16.4,
-     "abw_bild": 0.793
+     "abw_ms": 11.7,
+     "bild_ms": 16.1,
+     "abw_bild": 0.727
     },
     {
      "schlag": 4,
-     "abw_ms": 8.5,
-     "bild_ms": 17.0,
-     "abw_bild": 0.5
+     "abw_ms": 8.6,
+     "bild_ms": 17.1,
+     "abw_bild": 0.503
     },
     {
      "schlag": 5,
-     "abw_ms": 6.75,
-     "bild_ms": 17.6,
-     "abw_bild": 0.384
+     "abw_ms": 6.15,
+     "bild_ms": 17.2,
+     "abw_bild": 0.358
     },
     {
      "schlag": 7,
-     "abw_ms": 3.55,
-     "bild_ms": 17.1,
-     "abw_bild": 0.208
+     "abw_ms": 1.45,
+     "bild_ms": 16.8,
+     "abw_bild": 0.086
     },
     {
      "schlag": 8,
-     "abw_ms": 16.8,
-     "bild_ms": 17.3,
-     "abw_bild": 0.971
+     "abw_ms": 16.0,
+     "bild_ms": 16.3,
+     "abw_bild": 0.982
     },
     {
      "schlag": 9,
-     "abw_ms": 15.05,
-     "bild_ms": 16.8,
-     "abw_bild": 0.896
+     "abw_ms": 13.55,
+     "bild_ms": 15.1,
+     "abw_bild": 0.897
     },
     {
      "schlag": 10,
-     "abw_ms": 12.4,
-     "bild_ms": 17.2,
-     "abw_bild": 0.721
+     "abw_ms": 12.8,
+     "bild_ms": 18.1,
+     "abw_bild": 0.707
     },
     {
      "schlag": 11,
-     "abw_ms": 10.45,
-     "bild_ms": 16.8,
-     "abw_bild": 0.622
+     "abw_ms": 9.25,
+     "bild_ms": 15.1,
+     "abw_bild": 0.613
     },
     {
      "schlag": 13,
-     "abw_ms": 5.75,
-     "bild_ms": 15.7,
-     "abw_bild": 0.366
+     "abw_ms": 6.65,
+     "bild_ms": 16.4,
+     "abw_bild": 0.405
     }
    ],
-   "max_abw_bild": 0.971,
-   "bild_ms_p50": 16.600000023841858,
-   "bild_ms_p95": 17.899999976158142,
+   "max_abw_bild": 0.982,
+   "bild_ms_p50": 16.69999998807907,
+   "bild_ms_p95": 17.900000035762787,
    "collage": "tests/shots/fanedit/hoch_seed4.jpg"
   },
   {
@@ -212,60 +212,60 @@
    "cuts": [
     {
      "schlag": 2,
-     "abw_ms": 11.7,
-     "bild_ms": 16.6,
-     "abw_bild": 0.705
+     "abw_ms": 12.9,
+     "bild_ms": 17.2,
+     "abw_bild": 0.75
     },
     {
      "schlag": 4,
-     "abw_ms": 7.2,
-     "bild_ms": 15.8,
-     "abw_bild": 0.456
+     "abw_ms": 8.3,
+     "bild_ms": 16.8,
+     "abw_bild": 0.494
     },
     {
      "schlag": 5,
-     "abw_ms": 4.95,
-     "bild_ms": 16.2,
-     "abw_bild": 0.306
+     "abw_ms": 6.35,
+     "bild_ms": 16.7,
+     "abw_bild": 0.38
     },
     {
      "schlag": 7,
-     "abw_ms": 1.65,
-     "bild_ms": 16.2,
-     "abw_bild": 0.102
+     "abw_ms": 1.55,
+     "bild_ms": 14.8,
+     "abw_bild": 0.105
     },
     {
      "schlag": 8,
      "abw_ms": 0.5,
-     "bild_ms": 17.7,
-     "abw_bild": 0.028
+     "bild_ms": 16.5,
+     "abw_bild": 0.03
     },
     {
      "schlag": 9,
-     "abw_ms": 13.45,
-     "bild_ms": 16.5,
-     "abw_bild": 0.815
+     "abw_ms": 14.15,
+     "bild_ms": 15.5,
+     "abw_bild": 0.913
     },
     {
      "schlag": 10,
-     "abw_ms": 11.3,
-     "bild_ms": 16.3,
-     "abw_bild": 0.693
+     "abw_ms": 12.4,
+     "bild_ms": 15.7,
+     "abw_bild": 0.79
     },
     {
      "schlag": 11,
-     "abw_ms": 10.45,
-     "bild_ms": 17.8,
-     "abw_bild": 0.587
+     "abw_ms": 10.75,
+     "bild_ms": 17.5,
+     "abw_bild": 0.614
     },
     {
      "schlag": 13,
-     "abw_ms": 6.05,
-     "bild_ms": 17.5,
-     "abw_bild": 0.346
+     "abw_ms": 6.55,
+     "bild_ms": 17.0,
+     "abw_bild": 0.385
     }
    ],
-   "max_abw_bild": 0.815,
+   "max_abw_bild": 0.913,
    "bild_ms_p50": 16.600000023841858,
    "bild_ms_p95": 17.900000035762787,
    "collage": "tests/shots/fanedit/hoch_seed8.jpg"
@@ -275,66 +275,66 @@
    "tech": "FALLRÜCK-|ZIEHER",
    "kmh": 48,
    "tor_t": 11.083333333333345,
-   "bilder": 420,
+   "bilder": 421,
    "cuts": [
     {
      "schlag": 2,
-     "abw_ms": 11.7,
-     "bild_ms": 15.7,
-     "abw_bild": 0.745
+     "abw_ms": 13.3,
+     "bild_ms": 17.0,
+     "abw_bild": 0.782
     },
     {
      "schlag": 4,
-     "abw_ms": 7.8,
-     "bild_ms": 16.3,
-     "abw_bild": 0.479
+     "abw_ms": 8.6,
+     "bild_ms": 16.6,
+     "abw_bild": 0.518
     },
     {
      "schlag": 5,
-     "abw_ms": 6.25,
-     "bild_ms": 16.2,
-     "abw_bild": 0.386
+     "abw_ms": 6.45,
+     "bild_ms": 16.5,
+     "abw_bild": 0.391
     },
     {
      "schlag": 7,
-     "abw_ms": 1.55,
-     "bild_ms": 16.7,
-     "abw_bild": 0.093
+     "abw_ms": 2.45,
+     "bild_ms": 16.4,
+     "abw_bild": 0.149
     },
     {
      "schlag": 8,
-     "abw_ms": 0.4,
-     "bild_ms": 17.7,
-     "abw_bild": 0.023
+     "abw_ms": 0.6,
+     "bild_ms": 17.0,
+     "abw_bild": 0.035
     },
     {
      "schlag": 9,
-     "abw_ms": 14.15,
-     "bild_ms": 16.1,
-     "abw_bild": 0.879
+     "abw_ms": 15.95,
+     "bild_ms": 17.2,
+     "abw_bild": 0.927
     },
     {
      "schlag": 10,
      "abw_ms": 12.8,
-     "bild_ms": 16.9,
-     "abw_bild": 0.757
+     "bild_ms": 16.7,
+     "abw_bild": 0.766
     },
     {
      "schlag": 11,
-     "abw_ms": 10.75,
-     "bild_ms": 17.3,
-     "abw_bild": 0.621
+     "abw_ms": 10.95,
+     "bild_ms": 16.5,
+     "abw_bild": 0.664
     },
     {
      "schlag": 13,
-     "abw_ms": 5.55,
-     "bild_ms": 15.7,
-     "abw_bild": 0.354
+     "abw_ms": 7.45,
+     "bild_ms": 17.8,
+     "abw_bild": 0.419
     }
    ],
-   "max_abw_bild": 0.879,
+   "max_abw_bild": 0.927,
    "bild_ms_p50": 16.69999998807907,
-   "bild_ms_p95": 17.900000035762787,
+   "bild_ms_p95": 17.69999998807907,
    "collage": "tests/shots/fanedit/hoch_seed11.jpg"
   },
   {
@@ -346,62 +346,62 @@
    "cuts": [
     {
      "schlag": 2,
-     "abw_ms": 12.6,
-     "bild_ms": 17.1,
-     "abw_bild": 0.737
+     "abw_ms": 13.5,
+     "bild_ms": 17.9,
+     "abw_bild": 0.754
     },
     {
      "schlag": 4,
-     "abw_ms": 7.9,
-     "bild_ms": 17.1,
-     "abw_bild": 0.462
+     "abw_ms": 9.0,
+     "bild_ms": 18.0,
+     "abw_bild": 0.5
     },
     {
      "schlag": 5,
-     "abw_ms": 6.05,
-     "bild_ms": 17.0,
-     "abw_bild": 0.356
+     "abw_ms": 6.35,
+     "bild_ms": 16.9,
+     "abw_bild": 0.376
     },
     {
      "schlag": 7,
-     "abw_ms": 1.55,
-     "bild_ms": 15.5,
-     "abw_bild": 0.1
+     "abw_ms": 1.95,
+     "bild_ms": 17.1,
+     "abw_bild": 0.114
     },
     {
      "schlag": 8,
-     "abw_ms": 16.2,
-     "bild_ms": 16.5,
-     "abw_bild": 0.982
+     "abw_ms": 16.4,
+     "bild_ms": 16.6,
+     "abw_bild": 0.988
     },
     {
      "schlag": 9,
-     "abw_ms": 14.85,
-     "bild_ms": 18.0,
-     "abw_bild": 0.825
+     "abw_ms": 13.95,
+     "bild_ms": 15.5,
+     "abw_bild": 0.9
     },
     {
      "schlag": 10,
-     "abw_ms": 12.3,
-     "bild_ms": 16.8,
+     "abw_ms": 13.1,
+     "bild_ms": 17.9,
      "abw_bild": 0.732
     },
     {
      "schlag": 11,
-     "abw_ms": 10.35,
-     "bild_ms": 16.2,
-     "abw_bild": 0.639
+     "abw_ms": 10.05,
+     "bild_ms": 16.6,
+     "abw_bild": 0.605
     },
     {
      "schlag": 13,
      "abw_ms": 6.45,
-     "bild_ms": 17.8,
-     "abw_bild": 0.362
+     "bild_ms": 15.9,
+     "abw_bild": 0.406
     }
    ],
-   "max_abw_bild": 0.982,
-   "bild_ms_p50": 16.600000023841858,
-   "bild_ms_p95": 17.80000001192093,
+   "max_abw_bild": 0.988,
+   "bild_ms_p50": 16.69999998807907,
+   "bild_ms_p95": 17.899999976158142,
    "collage": "tests/shots/fanedit/hoch_seed30.jpg"
   },
   {
@@ -409,66 +409,66 @@
    "tech": "FLUG-|KOPFBALL",
    "kmh": 40,
    "tor_t": 32.608333333332126,
-   "bilder": 420,
+   "bilder": 421,
    "cuts": [
     {
      "schlag": 2,
-     "abw_ms": 8.9,
-     "bild_ms": 16.4,
-     "abw_bild": 0.543
+     "abw_ms": 11.5,
+     "bild_ms": 16.5,
+     "abw_bild": 0.697
     },
     {
      "schlag": 4,
-     "abw_ms": 6.1,
-     "bild_ms": 18.2,
-     "abw_bild": 0.335
+     "abw_ms": 8.0,
+     "bild_ms": 16.0,
+     "abw_bild": 0.5
     },
     {
      "schlag": 5,
-     "abw_ms": 2.75,
-     "bild_ms": 16.6,
-     "abw_bild": 0.166
+     "abw_ms": 5.05,
+     "bild_ms": 16.0,
+     "abw_bild": 0.316
     },
     {
      "schlag": 7,
-     "abw_ms": 15.25,
-     "bild_ms": 16.4,
-     "abw_bild": 0.93
+     "abw_ms": 2.35,
+     "bild_ms": 17.2,
+     "abw_bild": 0.137
     },
     {
      "schlag": 8,
-     "abw_ms": 12.6,
-     "bild_ms": 15.3,
-     "abw_bild": 0.824
+     "abw_ms": 16.1,
+     "bild_ms": 16.2,
+     "abw_bild": 0.994
     },
     {
      "schlag": 9,
-     "abw_ms": 10.85,
-     "bild_ms": 15.9,
-     "abw_bild": 0.682
+     "abw_ms": 13.25,
+     "bild_ms": 16.5,
+     "abw_bild": 0.803
     },
     {
      "schlag": 10,
-     "abw_ms": 9.1,
-     "bild_ms": 16.9,
-     "abw_bild": 0.538
+     "abw_ms": 12.4,
+     "bild_ms": 17.3,
+     "abw_bild": 0.717
     },
     {
      "schlag": 11,
-     "abw_ms": 7.15,
-     "bild_ms": 17.5,
-     "abw_bild": 0.409
+     "abw_ms": 9.55,
+     "bild_ms": 16.5,
+     "abw_bild": 0.579
     },
     {
      "schlag": 13,
-     "abw_ms": 2.95,
-     "bild_ms": 16.2,
-     "abw_bild": 0.182
+     "abw_ms": 4.95,
+     "bild_ms": 16.5,
+     "abw_bild": 0.3
     }
    ],
-   "max_abw_bild": 0.93,
-   "bild_ms_p50": 16.600000023841858,
-   "bild_ms_p95": 18.0,
+   "max_abw_bild": 0.994,
+   "bild_ms_p50": 16.69999998807907,
+   "bild_ms_p95": 17.80000001192093,
    "collage": "tests/shots/fanedit/hoch_seed57.jpg"
   }
  ],

@@ -217,9 +217,12 @@ body.cliphoch .fe-frame { inset: auto; top: 0; left: 50%; height: 100%; aspect-r
   70% { transform: translateY(var(--dy, 0)) scale(1.07) rotate(-2deg); }
   100% { transform: translateY(var(--dy, 0)) scale(1) rotate(var(--rot, -3deg)); opacity: 1; }
 }
-.fe-pov { top: 9%; font: 900 clamp(15px, 5.4cqmin, 34px)/1.25 system-ui, "Segoe UI", sans-serif !important; -webkit-text-stroke: .16em #000 !important;
+.fe-pov { top: 9%; font: 900 clamp(11px, 5.2cqmin, 34px)/1.2 system-ui, "Segoe UI", sans-serif !important; -webkit-text-stroke: .16em #000 !important;
   white-space: normal !important; width: 86%; letter-spacing: .01em; }
-.fe-frame > .fe-pov.go { animation: fepov .3s ease-out both; }
+.fe-frame > .fe-pov.go { animation: none; }
+.fe-pov span { display: inline-block; animation: fewort .22s cubic-bezier(.2, 1.6, .35, 1) both; }
+.fe-pov span.hl { color: #ffe600; }
+@keyframes fewort { 0% { transform: scale(1.8); opacity: 0; } 100% { transform: none; opacity: 1; } }
 @keyframes fepov { 0% { transform: translateY(-30%); opacity: 0; } 100% { transform: none; opacity: 1; } }
 .fe-big { top: 66%; font-size: 21cqmin; letter-spacing: .02em; line-height: .95; }
 .fe-big.tech { color: #ffe600; }

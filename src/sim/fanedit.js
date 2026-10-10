@@ -103,8 +103,8 @@ function plan(tc, ti, tEnd, tFirst, tg, jub, winkel) {
 // text: Einblendung (vom HUD gezeichnet)
 function fahrplan() {
   return [
-    { b: 0, text: 'pov' }, { b: 0, punch: 0.25 },
-    { b: 1, punch: 0.25 }, { b: 2, punch: 0.45 },
+    { b: 0, text: 'pov', punch: 0.6, ca: 0.5 },
+    { b: 1, punch: 0.5, ca: 0.3 }, { b: 1.5, punch: 0.3 }, { b: 2, punch: 0.6, ca: 0.4 },
     { b: 3, flash: 1, punch: 1, ca: 1, shake: 0.35, text: 'technik', emoji: '😱' },
     { b: 4, punch: 0.6, ca: 0.4, text: 'kmh', lines: 1 },
     { b: 5, punch: 0.35, text: 'kmhStempel' },
@@ -160,6 +160,8 @@ export class FanEdit {
     this.gag = EDIT_GAG[(seed >> 3) % EDIT_GAG.length];
     this.tech = c ? EDIT_TECH[c.tech] || (c.type === 'air' ? 'VOLLEY' : 'KNALLER') : 'ABSTAUBER';
     this.kmh = c ? Math.round((c.speed || 0) * 3.6) : 0;
+    // langsame Schüsse (Kopfball, Lupfer): statt km/h die Entfernung zum Tor hochzählen
+    this.dist = c && opts.cage ? Math.hypot(goal.side * opts.cage.hx - c.x, c.z) : 0;
     this.real = 0; this.i = 0; this.done = false; this.skipped = false; this.schnitte = 0;
     this.t = this.shots[0].k.at(0);
   }
@@ -210,6 +212,7 @@ export class FanEdit {
     if (s.whip && u < 0.12) { o.whip = 1 - ss(u / 0.12); o.whipDir = s.whip; }
     else if (nx && nx.whip && rest < 0.07) { o.whip = ss(1 - rest / 0.07) * 0.8; o.whipDir = -nx.whip; }
     if (s.cam === 'keeper' || s.name.startsWith('winkel')) o.lines = 0.8 * (1 - ss((u - s.t1 + s.t0 + 0.25) / 0.25));
+    if (s.name === 'anlauf') o.lines = Math.max(o.lines, 0.9 * (1 - ss(u / 0.35))); // Einstieg: Speed-Lines-Stoß
     if (s.freeze) { o.freeze = 1; o.lines = 0; }
     const t = s.k.at(u);
     o.glow = t >= this.tc - 0.01 && t <= this.ti + 0.35 ? 1 : 0;
@@ -254,7 +257,7 @@ export function freieSicht(rec, ts, z, a0, D, ohne = -1) {
 // keys = Stützpunkte der Jubel-Einstellung [[s, Spielzeit], …], D = Kamera-Abstand
 // a0 = gewünschte Richtung relativ zur Blickrichtung des Schützen (jubel2: seitlich)
 export function jubelRichtung(rec, k, keys, D, a0 = 0, cage = null) {
-  const t0 = keys[0][1], t1 = keys[keys.length - 1][1], ts = [t0, (t0 + t1) / 2, t1];
+  const t0 = keys[0][1], t1 = keys[keys.length - 1][1], ts = [t0, t0 * 0.75 + t1 * 0.25, (t0 + t1) / 2, t0 * 0.25 + t1 * 0.75, t1];
   const S = rec.spielerGlatt(k, (t0 + t1) / 2, 0.3), fr = {};
   let best = S.face + a0, bestFrei = -1;
   for (const d of [0, 1, -1, 2, -2, 3, -3, 4]) {
@@ -273,7 +276,7 @@ export function jubelRichtung(rec, k, keys, D, a0 = 0, cage = null) {
         frei = Math.min(frei, Math.hypot(q.x - sp.x - vx * u, q.z - sp.z - vz * u));
       }
     }
-    if (frei >= 0.75) return a;
+    if (frei >= 0.9) return a;
     if (frei > bestFrei) { bestFrei = frei; best = a; }
   }
   return best;
@@ -292,8 +295,8 @@ export function editCamera(kind, f, ctx) {
   const I = ctx.impact || [gx + sx * 0.5, 0.8, 0];
   if (kind === 'tief') {
     // Seitenlinie tief: Kamera knapp über dem Rasen quer zum Anlauf, langsame Fahrt mit
-    const D = hoch ? 6.2 : 5.2, px = c.x + nx * D - ux * (1.4 - fr * 0.8), pz = c.z + nz * D - uz * (1.4 - fr * 0.8);
-    return { pos: [px, 0.42, pz], look: [b.x * 0.75 + c.x * 0.25, 0.55, b.z * 0.75 + c.z * 0.25], fov: hoch ? 50 : 34 };
+    const D = (hoch ? 5.0 : 4.2) - 1.2 * ss(fr), px = c.x + nx * D - ux * (1.4 - fr * 0.8), pz = c.z + nz * D - uz * (1.4 - fr * 0.8);
+    return { pos: [px, 0.42, pz], look: [b.x * 0.75 + c.x * 0.25, 0.6, b.z * 0.75 + c.z * 0.25], fov: hoch ? 50 : 34 };
   }
   if (kind === 'makro') {
     // Extreme Nahaufnahme Fuß/Ball: Blick fest auf den Kontaktpunkt, langsame Fahrt heran (Ball am Kontakt sicher im Bild)
@@ -335,12 +338,12 @@ export function editCamera(kind, f, ctx) {
     const mx = (c.x + I[0]) / 4 + b.x / 2, mz = (c.z + I[2]) / 4 + b.z / 2, a = 0.45 * (fr - 0.5);
     let ox = hoch ? -ux : nx, oz = hoch ? -uz : nz; // hoch: Schuss läuft im Bild nach oben, quer: quer durchs Bild
     const ca = Math.cos(a), sa = Math.sin(a), rx = ox * ca - oz * sa, rz = ox * sa + oz * ca; ox = rx; oz = rz;
-    return { pos: [mx + ox * 1.3, hoch ? 7.5 : 6.5, mz + oz * 1.3], look: [mx, 0, mz], fov: hoch ? 60 : 50 };
+    return { pos: [mx + ox * 1.2, hoch ? 6.0 : 5.2, mz + oz * 1.2], look: [mx, 0, mz], fov: hoch ? 56 : 46 };
   }
   if (kind === 'hinten') {
     // hinter dem Schützen, Blick über die Schulter aufs Tor
     // (über Kopfhöhe, damit Mitspieler hinter dem Schützen nicht das Bild verdecken)
-    return { pos: [c.x - ux * 3.0 + nx * 0.7, 2.35, c.z - uz * 3.0 + nz * 0.7], look: [gx * 0.45 + b.x * 0.55, 0.7, I[2] * 0.5 + b.z * 0.5], fov: hoch ? 58 : 42 };
+    return { pos: [c.x - ux * 2.5 + nx * 0.6, 2.0, c.z - uz * 2.5 + nz * 0.6], look: [gx * 0.35 + b.x * 0.65, 0.6, I[2] * 0.4 + b.z * 0.6], fov: hoch ? 56 : 40 };
   }
   if (kind === 'ecke') {
     // Torecke tief: neben dem Pfosten, der Ball kommt auf die Kamera zu und schlägt daneben ein

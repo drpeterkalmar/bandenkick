@@ -33,7 +33,7 @@ export const BK_GRADES = {
   // n4-Abnahme: Kontrast 0,18 machte den Abend am Handy zu dunkel (Rasen/Figuren absaufen) → 0,08 und etwas mehr Gain
   tvAbend: { wb: [0.98, 0.995, 1.03], lift: [0.006, 0.008, 0.014], gamma: [0.97, 0.97, 0.96], gain: [1.05, 1.05, 1.07], shadow: [-0.006, 0, 0.018], high: [0.006, 0.006, 0], split: 1, sat: 1.05, vib: 0.1, contrast: 0.08, green: 0 },
   // n6 Fan-Edit: kräftiges Teal/Orange (Schatten türkis, Lichter orange), satt und hart wie ein Handy-Edit
-  edit: { wb: [1.06, 0.99, 0.94], lift: [0.0, 0.016, 0.03], gamma: [0.98, 0.98, 0.96], gain: [1.12, 1.03, 0.95], shadow: [-0.06, 0.02, 0.09], high: [0.13, 0.04, -0.09], split: 1.8, sat: 1.42, vib: 0.26, contrast: 0.48, green: 0.8 },
+  edit: { wb: [1.02, 1.0, 0.99], lift: [-0.02, -0.004, 0.012], gamma: [1.02, 1.0, 0.98], gain: [1.12, 1.04, 0.99], shadow: [-0.075, 0.025, 0.12], high: [0.11, 0.035, -0.08], split: 1.8, sat: 1.45, vib: 0.26, contrast: 0.5, green: 0.3 },
 };
 
 // Licht → Farbkorrektur und Bloom. Bloom soll nur Leuchtendes treffen (Flutlicht-Strahler, Fenster, Handschuhe der

@@ -721,7 +721,7 @@ const ED_NAHFADE = new Set(['keeper', 'netz', 'ecke']); // Kameras am Netz: Netz
 const ED_KNOCHEN = ['Bip01_Head', 'Bip01_Pelvis', 'Bip01_L_Hand', 'Bip01_R_Hand', 'Bip01_L_Foot', 'Bip01_R_Foot'];
 function startEdit(D0 = null) {
   const g = rp.goal;
-  const D = D0 || new FanEdit(rp.rec, g, { reduce: blitzeSanft, seed: Math.round(g.t * 997) + game.score[0] * 7 + game.score[1] * 13 });
+  const D = D0 || new FanEdit(rp.rec, g, { reduce: blitzeSanft, cage: game.cage, seed: Math.round(g.t * 997) + game.score[0] * 7 + game.score[1] * 13 });
   if (D.done) return;
   rp.dir = D; rp.held = false; rp.kam = null;
   const c = D.contact;
@@ -739,7 +739,7 @@ function startEdit(D0 = null) {
   const name = sc ? (sc.id === game.human ? 'DU' : EDIT_NAMEN[sc.team][idx] || 'NR. ' + BIB_NUMS[sc.team][idx]) : TEAM_NAMES[g.team].toUpperCase();
   rp.edit = { hochClip, name };
   rp.letzterEdit = { D, goal: g, recGame: game };
-  hud.editStart({ events: D.events, total: D.realTotal, seed: D.seed, pov: D.pov, tech: D.tech, kmh: D.kmh || Math.round((g.speed || 0) * 3.6),
+  hud.editStart({ events: D.events, total: D.realTotal, seed: D.seed, dist: D.dist, pov: D.pov, tech: D.tech, kmh: D.kmh || Math.round((g.speed || 0) * 3.6),
     name: sc ? `${name} #${BIB_NUMS[sc.team][idx]}` : name, team: TEAM_NAMES[sc ? sc.team : g.team].toUpperCase(), gag: D.gag, own: !!g.own,
     hoch: hochClip, reduce: blitzeSanft, cssFlash: !(kino && kino.pipeline) });
   hud.replayShow(true, '');
@@ -907,15 +907,18 @@ function drawPlayers(dt, a, rf = null) {
     const face = rf || !GLATT ? pl.face : prev.pf[pl.id] + winkelDiff(pl.face, prev.pf[pl.id]) * a; // n5: wie die Lage interpoliert
     if (f.capsule) { posePlayer(f.capsule, pl, x, z); continue; }
     const keeper = rf ? pl.keeper : R ? R.keeper[pl.team] === pl.id && R.phase !== 'end' && R.handsOffTeam !== pl.team : false;
-    let special = null, specialZeit = null;
+    let special = null, specialZeit = null, armeHoch = 0;
     if (R && !rf) {
       if (R.phase === 'goal' && pl.speed < 0.8) special = R.scoredTeam === pl.team ? ((R.goals.length ? R.goals[R.goals.length - 1].scorer : game.lastTouch) === pl.id ? 'cheer' : 'clap') : 'wait';
       else if (R.phase === 'end' && pl.speed < 0.8) special = R.winner < 0 ? 'clap' : R.winner === pl.team ? 'cheer2' : 'wait';
       else if (R.phase === 'halftime' && pl.speed < 0.8) special = 'wait';
     } else if (rf && rp.dir && rp.dir.edit && rf.t > rp.dir.goal.t + 0.15 && pl.speed < (pl.id === rp.dir.schuetze ? 2.5 : 1.2)) {
       // n6 Fan-Edit: im Jubel jubelt der Schütze, die Mitspieler klatschen (wie live nach dem Tor)
-      special = pl.id === rp.dir.schuetze ? (G.jubelClip || rp.dir.jubelClip) : pl.team === rp.dir.goal.team ? 'clap' : 'wait';
+      // erste Jubel-Einstellung: Arme hoch (V), zweite: Faust ballen/küssen
+      const v = pl.id === rp.dir.schuetze && rp.dir.cur.cam !== 'jubel2';
+      special = pl.id === rp.dir.schuetze ? (v ? 'wait' : G.jubelClip || rp.dir.jubelClip) : pl.team === rp.dir.goal.team ? 'clap' : 'wait';
       specialZeit = rf.t - rp.dir.goal.t + (G.jubelVersatz ?? rp.dir.jubelVersatz);
+      if (v) armeHoch = 0.9 + 0.1 * Math.sin(rp.dir.real * Math.PI * 2 / 0.46875);
     }
     const ownGoalX = R ? R.goalX(pl.team) : -99;
     const ready = keeper && b.held < 0 && Math.hypot(b.p.x - ownGoalX, b.p.z) < 9 && pl.speed < 2.5 && pl.hand.mode === 'none';
@@ -923,7 +926,7 @@ function drawPlayers(dt, a, rf = null) {
     // n5: Wiederholung – nächster Ballkontakt dieses Spielers (≤ 0,12 s), damit der Fuß schon vorher zum Ball greift
     const kickBald = rf && GLATT && VORGRIFF && rp.rec ? rp.rec.naechsterKick(pl.id, rf.t, 0.12, KICKBALD[i] || (KICKBALD[i] = {})) : null;
     if (kickBald) kickBald.rate = rp.rate;
-    f.update(dt, pl, { x, z, keeper, holding: b.held === pl.id, ready, special, specialZeit, t: rf ? rf.t : game.t, face, kickBald, sparen: sparen && !CULL.f.intersectsSphere(CULL.s), ball: BALLPOS });
+    f.update(dt, pl, { x, z, keeper, holding: b.held === pl.id, ready, special, specialZeit, armeHoch, t: rf ? rf.t : game.t, face, kickBald, sparen: sparen && !CULL.f.intersectsSphere(CULL.s), ball: BALLPOS });
   }
   if (rf) { marker.visible = false; return; }
   void n;

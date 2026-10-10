@@ -7,67 +7,201 @@
    "tech": "VOLLEY",
    "kmh": 112,
    "tor_t": 96.8000000000231,
-   "bilder": 407,
+   "bilder": 405,
    "cuts": [
     {
      "schlag": 2,
-     "abw_ms": 11.5,
-     "bild_ms": 17.0,
-     "abw_bild": 0.676
+     "abw_ms": 12.0,
+     "bild_ms": 16.4,
+     "abw_bild": 0.732
     },
     {
      "schlag": 4,
-     "abw_ms": 8.3,
-     "bild_ms": 17.7,
-     "abw_bild": 0.469
+     "abw_ms": 8.0,
+     "bild_ms": 15.8,
+     "abw_bild": 0.506
     },
     {
      "schlag": 5,
-     "abw_ms": 5.45,
-     "bild_ms": 16.2,
-     "abw_bild": 0.336
+     "abw_ms": 6.45,
+     "bild_ms": 16.8,
+     "abw_bild": 0.384
     },
     {
      "schlag": 7,
-     "abw_ms": 1.75,
-     "bild_ms": 16.4,
-     "abw_bild": 0.107
+     "abw_ms": 2.25,
+     "bild_ms": 16.9,
+     "abw_bild": 0.133
     },
     {
      "schlag": 8,
-     "abw_ms": 6.3,
-     "bild_ms": 16.9,
-     "abw_bild": 0.373
+     "abw_ms": 9.8,
+     "bild_ms": 15.3,
+     "abw_bild": 0.641
     },
     {
      "schlag": 9,
-     "abw_ms": 3.75,
-     "bild_ms": 16.9,
-     "abw_bild": 0.222
+     "abw_ms": 7.65,
+     "bild_ms": 15.8,
+     "abw_bild": 0.484
     },
     {
      "schlag": 10,
-     "abw_ms": 2.2,
-     "bild_ms": 17.2,
-     "abw_bild": 0.128
+     "abw_ms": 5.4,
+     "bild_ms": 16.2,
+     "abw_bild": 0.333
     },
     {
      "schlag": 11,
-     "abw_ms": 16.75,
-     "bild_ms": 17.6,
-     "abw_bild": 0.952
+     "abw_ms": 3.65,
+     "bild_ms": 15.7,
+     "abw_bild": 0.232
     },
     {
      "schlag": 13,
-     "abw_ms": 12.15,
-     "bild_ms": 15.6,
-     "abw_bild": 0.779
+     "abw_ms": 16.75,
+     "bild_ms": 17.1,
+     "abw_bild": 0.98
     }
    ],
-   "max_abw_bild": 0.952,
-   "bild_ms_p50": 16.600000023841858,
-   "bild_ms_p95": 18.0,
+   "max_abw_bild": 0.98,
+   "bild_ms_p50": 16.69999998807907,
+   "bild_ms_p95": 17.900000035762787,
    "collage": "tests/shots/fanedit/quer_seed8.jpg"
+  },
+  {
+   "seed": 11,
+   "tech": "FALLRÜCK-|ZIEHER",
+   "kmh": 48,
+   "tor_t": 11.083333333333345,
+   "bilder": 421,
+   "cuts": [
+    {
+     "schlag": 2,
+     "abw_ms": 12.4,
+     "bild_ms": 17.7,
+     "abw_bild": 0.701
+    },
+    {
+     "schlag": 4,
+     "abw_ms": 8.2,
+     "bild_ms": 17.3,
+     "abw_bild": 0.474
+    },
+    {
+     "schlag": 5,
+     "abw_ms": 6.45,
+     "bild_ms": 17.4,
+     "abw_bild": 0.371
+    },
+    {
+     "schlag": 7,
+     "abw_ms": 2.15,
+     "bild_ms": 17.0,
+     "abw_bild": 0.126
+    },
+    {
+     "schlag": 8,
+     "abw_ms": 0.6,
+     "bild_ms": 17.8,
+     "abw_bild": 0.034
+    },
+    {
+     "schlag": 9,
+     "abw_ms": 13.75,
+     "bild_ms": 15.8,
+     "abw_bild": 0.87
+    },
+    {
+     "schlag": 10,
+     "abw_ms": 11.7,
+     "bild_ms": 16.2,
+     "abw_bild": 0.722
+    },
+    {
+     "schlag": 11,
+     "abw_ms": 9.25,
+     "bild_ms": 16.1,
+     "abw_bild": 0.575
+    },
+    {
+     "schlag": 13,
+     "abw_ms": 5.65,
+     "bild_ms": 16.6,
+     "abw_bild": 0.34
+    }
+   ],
+   "max_abw_bild": 0.87,
+   "bild_ms_p50": 16.69999998807907,
+   "bild_ms_p95": 17.80000001192093,
+   "collage": "tests/shots/fanedit/quer_seed11.jpg"
+  },
+  {
+   "seed": 30,
+   "tech": "DROPKICK",
+   "kmh": 83,
+   "tor_t": 33.86666666666539,
+   "bilder": 419,
+   "cuts": [
+    {
+     "schlag": 2,
+     "abw_ms": 12.3,
+     "bild_ms": 16.4,
+     "abw_bild": 0.75
+    },
+    {
+     "schlag": 4,
+     "abw_ms": 8.2,
+     "bild_ms": 15.4,
+     "abw_bild": 0.532
+    },
+    {
+     "schlag": 5,
+     "abw_ms": 5.75,
+     "bild_ms": 16.2,
+     "abw_bild": 0.355
+    },
+    {
+     "schlag": 7,
+     "abw_ms": 2.05,
+     "bild_ms": 17.1,
+     "abw_bild": 0.12
+    },
+    {
+     "schlag": 8,
+     "abw_ms": 0.7,
+     "bild_ms": 18.0,
+     "abw_bild": 0.039
+    },
+    {
+     "schlag": 9,
+     "abw_ms": 14.65,
+     "bild_ms": 16.8,
+     "abw_bild": 0.872
+    },
+    {
+     "schlag": 10,
+     "abw_ms": 11.7,
+     "bild_ms": 15.1,
+     "abw_bild": 0.775
+    },
+    {
+     "schlag": 11,
+     "abw_ms": 10.25,
+     "bild_ms": 17.2,
+     "abw_bild": 0.596
+    },
+    {
+     "schlag": 13,
+     "abw_ms": 5.35,
+     "bild_ms": 16.2,
+     "abw_bild": 0.33
+    }
+   ],
+   "max_abw_bild": 0.872,
+   "bild_ms_p50": 16.69999998807907,
+   "bild_ms_p95": 17.899999976158142,
+   "collage": "tests/shots/fanedit/quer_seed30.jpg"
   }
  ],
  "fehler": [],

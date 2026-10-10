@@ -165,10 +165,14 @@ export function buildHud(root, canvas) {
   const feTrigger = (e, I) => {
     if (e.emoji) { const im = emojiBild(e.emoji); slam(F.emoji, im ? `<i><img src="${im}" alt=""></i>`.repeat(3) : `<i>${e.emoji}</i>`.repeat(3)); }
     switch (e.text) {
-      case 'pov': slam(F.pov, I.pov); break;
+      case 'pov': { // Wort für Wort, das letzte Wort gelb
+        const w = I.pov.split(' ');
+        slam(F.pov, w.map((x, i) => `<span style="animation-delay:${(i * 0.06).toFixed(2)}s"${i === w.length - 1 ? ' class="hl"' : ''}>${x}</span>`).join(' '));
+        break;
+      }
       case 'technik': { const z = I.tech.split('|'); slam(F.big, z.join('<br>'), 'tech', 21, Math.max(...z.map((x) => x.length))); break; }
-      case 'kmh': ed.kmh = { t0: e.t, v: I.kmh }; weg(F.big); F.kmh.className = 'fe-kmh an'; break;
-      case 'kmhStempel': slam(F.kmh, `${I.kmh}<small>KM/H</small>`, 'stempel'); ed.kmh = null; break;
+      case 'kmh': ed.kmh = { t0: e.t, v: I.kmh < 60 && I.dist ? I.dist : I.kmh, m: I.kmh < 60 && I.dist }; weg(F.big); F.kmh.className = 'fe-kmh an'; break;
+      case 'kmhStempel': slam(F.kmh, I.kmh < 60 && I.dist ? `${I.dist.toFixed(1).replace('.', ',')} M<small>DISTANZ</small>` : `${I.kmh}<small>KM/H</small>`, 'stempel'); ed.kmh = null; break;
       case 'golazo': weg(F.kmh); slam(F.big, I.own ? 'EIGEN-<br>TOR!' : 'GOLAZO!', 'golazo', 32, I.own ? 6 : 7); break;
       case 'kontur': weg(F.big); break;
       case 'x1': case 'x2': case 'x3': weg(F.big); slam(F.stamp, '×' + e.text[1]); break;
@@ -198,7 +202,7 @@ export function buildHud(root, canvas) {
       if (r < ed.last) { ed.next = 0; ed.z = (I.seed || 7) % 2147483646 + 1; for (const k of ['big', 'kmh', 'stamp', 'name', 'gag', 'emoji', 'pov']) weg(F[k]); F.again.classList.remove('on'); } // nochmal
       ed.last = r;
       while (ed.next < I.events.length && I.events[ed.next].t <= r) feTrigger(I.events[ed.next++], I);
-      if (ed.kmh) { const u = Math.min(1, (r - ed.kmh.t0) / 0.42); F.kmh.innerHTML = `${Math.round(ed.kmh.v * (1 - (1 - u) ** 3))}<small>KM/H</small>`; }
+      if (ed.kmh) { const u = Math.min(1, (r - ed.kmh.t0) / 0.42), v = ed.kmh.v * (1 - (1 - u) ** 3); F.kmh.innerHTML = ed.kmh.m ? `${v.toFixed(1).replace('.', ',')} M<small>DISTANZ</small>` : `${Math.round(v)}<small>KM/H</small>`; }
       ed.lw = (ed.lw + 37) % 360;
       setz(F.lines, 'opacity', (fx.lines * (I.reduce ? 0.45 : 1)).toFixed(2));
       if (fx.lines > 0.01) setz(F.lines, 'transform', `rotate(${I.reduce ? 0 : ed.lw}deg) scale(1.6)`);

@@ -442,7 +442,7 @@ export class Avatar {
       g.legs = tp.legs; this.tp = g;
     } else if (tp) this.tp = tp;
     this.root.position.y = pl.jumpY || 0;
-    const proc = plantK > 0.01 || this.lean > 0.01 || this.trAn > 0 || this.kickVor !== null || this.vorKick || (this.schwung || 0) > 0.01 || Math.abs(this.leanP) + Math.abs(this.leanR) > 0.01 || this.dive > 0.01 || kt < 0.4 || this.holdW > 0.01 || this.ready > 0.05 || this.tpW > 0.01;
+    const proc = plantK > 0.01 || this.lean > 0.01 || this.trAn > 0 || this.kickVor !== null || this.vorKick || (this.schwung || 0) > 0.01 || Math.abs(this.leanP) + Math.abs(this.leanR) > 0.01 || this.dive > 0.01 || kt < 0.4 || this.holdW > 0.01 || this.ready > 0.05 || this.tpW > 0.01 || (st.armeHoch || 0) > 0.01; // n6: Jubel-Arme brauchen die prozeduralen Schichten
     this.gloves[0].visible = this.gloves[1].visible = !!st.keeper;
     this.ring.visible = !!st.keeper;
     if (st.keeper) this.ring.material.opacity = 0.55 + 0.25 * Math.sin(performance.now() / 180);
@@ -539,6 +539,9 @@ export class Avatar {
         if (this.holdW > 0.01) { this.rotBoneWorld(BN[s].Forearm, 'side', -0.55 * this.holdW); this.rotBoneWorld(BN[s].Forearm, 'up', sg * -0.38 * this.holdW); }
       }
     }
+    // n6 Fan-Edit: Jubel mit hochgerissenen Armen (V über dem Kopf), st.armeHoch 0…1
+    const ah = st.armeHoch || 0;
+    if (ah > 0.01) for (const s of ['L', 'R']) { const sg = s === 'L' ? 1 : -1; this.rotBoneWorld(BN[s].UpperArm, 'side', -2.55 * ah); this.rotBoneWorld(BN[s].UpperArm, 'fwd', sg * 0.5 * ah); this.rotBoneWorld(BN[s].Forearm, 'side', -0.25 * ah); }
     if (this.ik) this.fussIK(pl, kt, dt);
     if (this.glatt && this.traeg) this.traegheit(dt, ds === 1);
   }
