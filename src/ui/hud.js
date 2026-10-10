@@ -130,7 +130,7 @@ export function buildHud(root, canvas) {
       g.fillText(ch, 72, 80); return c.toDataURL('image/png');
     } catch (_) { return ''; }
   })());
-  for (const ch of ['🔥', '⚡', '💥', '😱', '🐐']) emojiBild(ch);
+  for (const ch of ['🔥', '⚡', '💥', '😱', '🐐', '🥶', '💣', '👑', '🚀', '🤯', '⚽', '💯', '😳', '✨']) emojiBild(ch);
   try {
     const c = document.createElement('canvas'); c.width = c.height = 512; const g = c.getContext('2d');
     const gr = g.createRadialGradient(256, 256, 60, 256, 256, 256); gr.addColorStop(0, 'rgba(255,255,255,0)'); gr.addColorStop(0.45, 'rgba(255,255,255,.55)'); gr.addColorStop(1, 'rgba(255,255,255,1)');
@@ -184,7 +184,7 @@ export function buildHud(root, canvas) {
       // langsame Schüsse: Entfernung (ab 6 m) oder Schwierigkeit 10/10 statt km/h
       case 'kmh': ed.kmh = { t0: e.t, art: I.kmh >= 60 ? 'kmh' : I.dist >= 6 ? 'm' : 'sw', v: I.kmh >= 60 ? I.kmh : I.dist >= 6 ? I.dist : 10 }; weg(F.big); F.kmh.className = 'fe-kmh an'; break;
       case 'kmhStempel': slam(F.kmh, I.kmh >= 60 ? `${I.kmh}<small>KM/H</small>` : I.dist >= 6 ? `${I.dist.toFixed(1).replace('.', ',')} M<small>DISTANZ</small>` : `10/10<small>SCHWIERIGKEIT</small>`, 'stempel'); ed.kmh = null; break;
-      case 'warte': slam(F.big, 'WARTE AB 👀', 'warte', 16, 11); break;
+      case 'warte': slam(F.big, I.hook || 'WARTE AB 👀', 'warte', 16, (I.hook || 'WARTE AB 👀').length); break;
       case 'zurueck': slam(F.big, '⏪ ZURÜCK', 'warte', 14, 10); break;
       case 'golazo': weg(F.kmh); slam(F.big, I.own ? 'EIGEN-<br>TOR!' : 'GOLAZO!', 'golazo', 32, I.own ? 6 : 7); break;
       case 'golazo2': slam(F.stamp, I.wort || 'TOOOR!', 'wort', 15, (I.wort || 'TOOOR!').length); break;
@@ -193,6 +193,7 @@ export function buildHud(root, canvas) {
       case 'x1': case 'x2': case 'x3': weg(F.big); slam(F.stamp, '×' + e.text[1]); break;
       case 'name': weg(F.stamp); slam(F.name, `${I.name}<small>${I.team}</small>`, '', document.body.classList.contains('quer') && !I.hoch ? 14 : 22, I.name.length); break;
       case 'gag': slam(F.gag, I.gag); break;
+      case 'titel': if (I.titel) slam(F.stamp, I.titel, 'wort titel', 17, I.titel.length); break;
       case 'ende': F.again.classList.add('on'); break;
     }
   };
@@ -211,6 +212,8 @@ export function buildHud(root, canvas) {
     // schon beim Tor (Live-Jubel): Overlay unsichtbar aufbauen, damit der erste Clip-Schlag nicht stockt
     editVorbereiten(on) { document.body.classList.toggle('fevor', !!on); replay.classList.toggle('edit', !!on || !!ed.info); },
     editStart(info) {
+      fe.style.setProperty('--akzent', info.farbe || '#ffe600'); // Akzentfarbe je Clip (Technik, GOLAZO!, Stempel)
+      fe.classList.toggle('vb', info.variante === 1); // Variante B: GOLAZO! unten, Texte gleiten seitlich ein
       document.body.classList.remove('fevor');
       ed.info = info; ed.next = 0; ed.last = -1; ed.kmh = null; ed.z = (info.seed || 7) % 2147483646 + 1;
       replay.classList.add('edit'); replay.classList.toggle('reduce', !!info.reduce);
@@ -244,7 +247,7 @@ export function buildHud(root, canvas) {
         F.ring.classList.toggle('unten', obenEng && !untenEng); F.ring.classList.toggle('innen', obenEng && untenEng);
         // Spotlight: alles außer dem Schützen abdunkeln (Standbild → einmal gemalt)
         setz(F.spot, 'display', 'block');
-        setz(F.spot, 'background', `radial-gradient(ellipse ${(w * 0.62).toFixed(0)}px ${(hh * 0.62).toFixed(0)}px at ${x}px ${y}px, rgba(0,0,0,0) 78%, rgba(0,0,0,.42) 100%)`);
+        setz(F.spot, 'background', `radial-gradient(ellipse ${(w * 0.62).toFixed(0)}px ${(hh * 0.62).toFixed(0)}px at ${x}px ${y}px, rgba(0,0,0,0) 78%, rgba(0,0,0,.3) 100%)`);
         if (F.ring.firstChild.textContent !== '⬇ ' + I.name) F.ring.firstChild.textContent = '⬇ ' + I.name;
       } else { setz(F.ring, 'display', 'none'); setz(F.spot, 'display', 'none'); }
     },

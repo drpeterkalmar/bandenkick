@@ -19,7 +19,7 @@ import { Input } from './input/input.js';
 import { buildHud } from './ui/hud.js';
 import { Sound } from './audio/sound.js';
 import { ReplayRecorder, ReplayDirector, ReplayKamera } from './sim/replay.js';
-import { FanEdit, editCamera, editCameraFx, jubelRichtung, EDIT_DELAY } from './sim/fanedit.js';
+import { FanEdit, editCamera, editCameraFx, jubelRichtung, waehleWinkel, EDIT_DELAY } from './sim/fanedit.js';
 import { ActionRegie } from './sim/action.js';
 import { ReplayFx } from './render/replayfx.js';
 import { BUILD } from './build.js';
@@ -833,6 +833,11 @@ function startEdit(D0 = null) {
   const sc = D.schuetze >= 0 ? game.players[D.schuetze] : null;
   const idx = sc ? game.players.filter((p) => p.team === sc.team).indexOf(sc) : 0;
   const name = sc ? (sc.id === game.human ? 'DU' : EDIT_NAMEN[sc.team][idx] || 'NR. ' + BIB_NUMS[sc.team][idx]) : TEAM_NAMES[g.team].toUpperCase();
+  // ×1–×3: die drei Winkel mit Ball im Bild und großem, unverdecktem Schützen (einmal je Clip gerechnet)
+  if (!D0 || !D.winkelGewaehlt) {
+    const W = waehleWinkel(D, rp.rec, rp.ctx, hochJ ? (hochClip ? 9 / 16 : innerWidth / innerHeight) : innerWidth / innerHeight);
+    if (W) { D.shots.filter((s) => s.name.startsWith('winkel')).forEach((s, i) => { s.cam = W.winkel[i]; }); D.winkelGewaehlt = true; G.winkelWert = W.wert; }
+  }
   rp.edit = { hochClip, name };
   rp.letzterEdit = { D, goal: g, recGame: game };
   // n6 „Tor des Spiels“: bestes Tor des Spiels (Tempo + Technik) mit eigener Kopie der Aufzeichnung merken (≈ 1 MB)
@@ -844,7 +849,7 @@ function startEdit(D0 = null) {
       rp.besterClip = { rec: kopie, goal: g, wert, game };
     }
   }
-  hud.editStart({ events: D.events, total: D.realTotal, seed: D.seed, dist: D.dist, wort: D.wort, pov: D.pov, tech: D.tech, kmh: D.kmh || Math.round((g.speed || 0) * 3.6),
+  hud.editStart({ events: D.events, total: D.realTotal, seed: D.seed, dist: D.dist, wort: D.wort, hook: D.hook, farbe: D.farbe, titel: D.titel, variante: D.variante, pov: D.pov, tech: D.tech, kmh: D.kmh || Math.round((g.speed || 0) * 3.6),
     name: sc ? `${name} #${BIB_NUMS[sc.team][idx]}` : name, team: TEAM_NAMES[sc ? sc.team : g.team].toUpperCase(), gag: D.gag, own: !!g.own,
     hoch: hochClip, reduce: blitzeSanft, cssFlash: !(kino && kino.pipeline) });
   hud.replayShow(true, '');
@@ -899,7 +904,7 @@ function editFrame(dt, raw) {
   const bp = [f.ball.p.x, f.ball.p.y, f.ball.p.z];
   rp.dof = s.cam === 'makro' ? replayDof('zoom', cam.pos, cam.look, bp) : s.cam === 'netz' || s.cam === 'pfosten' ? replayDof('fan', cam.pos, cam.look, bp) : s.cam === 'jubel' || s.cam === 'jubel2' ? replayDof('fan', cam.pos, cam.look, null) : null;
   rp.kinoFx = { white: fx.white, whip: fx.whip > 0.01 ? { len: 0.08 * fx.whip, ang: 0 } : null,
-    edit: { ca: 1.4 * fx.ca, grain: blitzeSanft ? 0.035 : fx.grain, zoom: 0.07 * fx.punch, mono: 0.35 * fx.freeze } };
+    edit: { ca: 1.4 * fx.ca, grain: blitzeSanft ? 0.035 : fx.grain, zoom: 0.07 * fx.punch, mono: 0.2 * fx.freeze } };
   const c = D.contact, k = c ? t - c.t : -1;
   if (rp.fx) {
     // Druckwelle am Kontakt, Kometenschweif vom Kontakt bis kurz nach dem Einschlag, Leuchten um den Ball

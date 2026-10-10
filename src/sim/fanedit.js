@@ -33,6 +33,57 @@ export const EDIT_POV = [
   'Niemand: … Absolut niemand: … Er:', 'Physiklehrer hassen diesen Trick', 'POV: Hallenkick um 22 Uhr',
 ];
 export const EDIT_WORT = ['UNHALTBAR!', 'WAHNSINN!', 'BRUTAL!', 'WELTKLASSE!', 'KRANK!', 'TOOOR!'];
+// Abwechslung je Clip: Hook-Spruch und Akzentfarbe (Technik/GOLAZO)
+export const EDIT_HOOK = ['WARTE AB 👀', 'SCHAU GENAU 👀', 'GLEICH… 😳', 'OHNE WORTE 😶', 'ACHTUNG 🚨'];
+export const EDIT_FARBE = ['#ffe600', '#20e3ff', '#ff2e88', '#7dff6a'];
+// je Tor: Emoji-Satz (ersetzt 😱 💥 🔥 ⚡ an Kontakt, Einschlag, Jubel, Jubel 2) und Titel im zweiten Jubel
+export const EDIT_EMOJI = [['😱', '💥', '🔥', '⚡'], ['🥶', '💣', '👑', '🚀'], ['🤯', '⚽', '🔥', '💯'], ['😳', '💥', '🐐', '✨']];
+export const EDIT_TITEL = ['GOAT 🐐', 'MVP 👑', 'LEGENDE', 'KING 👑', 'MASCHINE 🤖', 'CHEF 😎'];
+
+// Winkel für „derselbe Schuss ×3“ nach Sichtbarkeit wählen: je Kandidat über die Einstellung Ball im Bild, Schütze groß
+// und unverdeckt (Punkte an 6 Zeitpunkten), die drei besten in wechselnder Reihenfolge. ctx wie editCamera, asp =
+// Seitenverhältnis des Bildausschnitts.
+export function waehleWinkel(D, rec, ctx, asp, kandidaten = ['tief', 'hinten', 'gegen', 'ecke']) { // (Drohne: Figuren zu klein)
+  const s0 = D.shots.find((s) => s.name === 'winkel1');
+  if (!s0) return null;
+  const proj = (cam, p) => {
+    const f = cam.look.map((v, i) => v - cam.pos[i]), fl = Math.hypot(...f) || 1, F = f.map((v) => v / fl);
+    let R = [-F[2], 0, F[0]]; const rl = Math.hypot(...R) || 1; R = R.map((v) => v / rl);
+    const U = [R[1] * F[2] - R[2] * F[1], R[2] * F[0] - R[0] * F[2], R[0] * F[1] - R[1] * F[0]];
+    const d = p.map((v, i) => v - cam.pos[i]), z = d[0] * F[0] + d[1] * F[1] + d[2] * F[2];
+    if (z <= 0.1) return null;
+    const th = Math.tan(cam.fov * Math.PI / 360);
+    return [(d[0] * R[0] + d[1] * R[1] + d[2] * R[2]) / z / (th * asp), (d[0] * U[0] + d[1] * U[1] + d[2] * U[2]) / z / th, z];
+  };
+  const fr = {}, wert = {};
+  for (const k of kandidaten) {
+    let w = 0;
+    for (let i = 0; i < 6; i++) {
+      const u = (s0.t1 - s0.t0) * (i + 0.5) / 6, t = s0.k.at(u), f = rec.frameAt(t, fr);
+      if (!f) continue;
+      const c = { ...ctx, u, dur: s0.t1 - s0.t0, ball: rec.ballGlatt(t, 0.06), schuetze: D.schuetze >= 0 ? rec.spielerGlatt(D.schuetze, t, 0.08) : null };
+      const cam = editCamera(k, f, c), b = proj(cam, [f.ball.p.x, f.ball.p.y, f.ball.p.z]);
+      if (b && Math.abs(b[0]) < 0.85 && Math.abs(b[1]) < 0.85) w += 1.6; else w -= 0.4; // Ball im Bild zählt am meisten
+      if (D.schuetze >= 0) {
+        const S = f.players[D.schuetze], fuss = proj(cam, [S.x, 0.05, S.z]), kopf = proj(cam, [S.x, 1.75, S.z]);
+        if (fuss && kopf && Math.abs(kopf[0]) < 1 && Math.abs(fuss[0]) < 1 && kopf[1] < 1.05 && fuss[1] > -1.05) {
+          w += Math.min(1.2, Math.abs(kopf[1] - fuss[1]) * 1.3); // Schütze groß im Bild
+          // verdeckt? anderer Spieler nah an der Sichtlinie vor ihm
+          const L = Math.hypot(S.x - cam.pos[0], S.z - cam.pos[2]) || 1, lx = (S.x - cam.pos[0]) / L, lz = (S.z - cam.pos[2]) / L;
+          for (let j = 0; j < f.players.length; j++) {
+            if (j === D.schuetze) continue;
+            const q = f.players[j], qx = q.x - cam.pos[0], qz = q.z - cam.pos[2], uu = qx * lx + qz * lz;
+            if (uu > 0.4 && uu < L - 0.3 && Math.abs(qx * lz - qz * lx) < 0.45) { w -= 0.8; break; }
+          }
+        }
+      }
+    }
+    wert[k] = w;
+  }
+  const best = kandidaten.slice().sort((a, b) => wert[b] - wert[a]).slice(0, 3);
+  const r = D.seed % 3; // Reihenfolge je Tor
+  return { winkel: [best[r % 3], best[(r + 1) % 3], best[(r + 2) % 3]], wert };
+}
 export const EDIT_GAG = [
   'Torwart.exe reagiert nicht', 'Netz braucht jetzt Urlaub', 'Lieferung zugestellt 📦', 'Das war Steuerhinterziehung für Torhüter',
   'Bro hat das Netz gefrühstückt', 'Kein VAR kann das retten', 'Erklär das mal deiner Oma', 'Mama, ich bin im Fernsehen',
@@ -121,7 +172,7 @@ function fahrplan() {
     { b: 10, punch: 0.7, ca: 0.35, text: 'x3', lines: 1 },
     { b: 11, flash: 1, punch: 1, ca: 0.8, shake: 0.5, text: 'name', emoji: '🔥' },
     { b: 12, punch: 0.35, shake: 0.25 }, { b: 12.5, text: 'gag' },
-    { b: 13, punch: 0.8, shake: 0.4, ca: 0.45, emoji: '⚡' },
+    { b: 13, punch: 0.8, shake: 0.4, ca: 0.45, emoji: '⚡', text: 'titel' },
     { b: 14, punch: 0.35, shake: 0.25, text: 'ende' },
   ];
 }
@@ -164,6 +215,10 @@ export class FanEdit {
     this.realTotal = this.shots[this.shots.length - 1].t1;
     this.segs = this.shots.map((s) => ({ name: s.name, cam: s.cam, t0: s.keys[0][1], t1: s.keys[s.keys.length - 1][1], rate: 1 }));
     this.pov = EDIT_POV[seed % EDIT_POV.length];
+    this.hook = EDIT_HOOK[(seed >> 1) % EDIT_HOOK.length]; this.farbe = EDIT_FARBE[(seed >> 4) % EDIT_FARBE.length];
+    this.titel = EDIT_TITEL[(seed >> 5) % EDIT_TITEL.length]; this.variante = (seed >> 2) % 2; // Layout/Animation A/B
+    const em = EDIT_EMOJI[(seed >> 3) % EDIT_EMOJI.length], alt = ['😱', '💥', '🔥', '⚡'];
+    for (const ev of this.events) if (ev.emoji) ev.emoji = em[alt.indexOf(ev.emoji)] || ev.emoji;
     this.wort = EDIT_WORT[(seed >> 2) % EDIT_WORT.length]; // zweites Jubelwort nach GOLAZO!
     this.gag = EDIT_GAG[(seed >> 3) % EDIT_GAG.length];
     this.tech = c ? EDIT_TECH[c.tech] || (c.type === 'air' ? 'VOLLEY' : 'KNALLER') : 'ABSTAUBER';
@@ -338,8 +393,8 @@ export function editCamera(kind, f, ctx) {
     // Standbild: Nahaufnahme des Schützen im Moment des Einschlags (Kontur und Spotlight zeichnet das HUD)
     const S = ctx.schuetze || { x: c.x, z: c.z };
     if (ctx.freezeDir != null) {
-      const D = (hoch ? 3.0 : 2.8) - 0.5 * ss(fr), a = ctx.freezeDir, ky = clamp(ctx.kopfY ?? 1.7, 0.3, 1.9);
-      return { pos: [S.x + Math.cos(a) * D, Math.max(0.9, ky * 0.8), S.z + Math.sin(a) * D], look: [S.x, Math.max(0.35, ky * 0.55), S.z], fov: hoch ? 54 : 42 };
+      const D = (hoch ? 3.0 : 2.3) - 0.5 * ss(fr), a = ctx.freezeDir, ky = clamp(ctx.kopfY ?? 1.7, 0.3, 1.9);
+      return { pos: [S.x + Math.cos(a) * D, Math.max(0.9, ky * 0.8), S.z + Math.sin(a) * D], look: [S.x, Math.max(0.35, ky * 0.55), S.z], fov: hoch ? 54 : 36 };
     }
     const mx = (S.x + I[0]) / 2, mz = (S.z + I[2]) / 2, L = Math.hypot(I[0] - S.x, I[2] - S.z) || 1;
     if (hoch) {
