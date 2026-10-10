@@ -16,7 +16,8 @@ Version **0.4.0**, alles live (Etappen E1–E13 einzeln gelandet). Bandenkick bl
   Teal/Orange, Filmkorn, Speed-Lines, Emojis, Bildunterschrift-Gag, Fortschrittsbalken, „@bandenkick #golazo“.
 - **Pause-Menü:** „Tor-Wiederholung: Fan-Edit / Klassisch / Aus“ (Klassisch = die ruhige Wiederholung aus n5), „Blitze
   reduzieren“, „Clip im Hochformat“ (9:16-Ausschnitt auch auf Querformat), „🎬 Action-Momente: Aus / Selten / Oft“.
-  Tippen überspringt den Clip, „↻ Clip nochmal“ startet ihn neu (auch noch 3 s nach dem Clip).
+  Tippen überspringt den Clip, „↻ Clip nochmal“ startet ihn neu (auch noch 3 s nach dem Clip). Nach dem Abpfiff erscheint
+  **„🏆 Tor des Spiels“**: der Fan-Edit des besten Tors (Tempo + Technik) aus einer gemerkten Kopie der Aufzeichnung.
 - **Live im Spiel – Action-Momente** (ersetzen die alte Luftball-Zeitlupe): bei harten Schüssen/Volley/Fallrückzieher,
   Hechtsprüngen, Paraden, Pfostentreffern, Grätschen, Kopfball-Duellen zoomt die Kamera tief an die Szene, zeigt die letzten
   Zehntel in Zeitlupe (Rückblick: Anlauf, Ausholen, Kontakt mit Druckwelle, leuchtender Ball, Kometenschweif), dann kurz
@@ -130,8 +131,10 @@ Bullet-Time an beliebiger Stelle hat keinen „Helden“ (in den Testbildern erz
   erst beim ersten harten Schuss übersetzt (jetzt beim Start), Chromes Rasterer übersetzte beim ersten Standbild Verlauf/
   Weichschatten (146 ms → weg, Stile beim Laden unsichtbar vorgemalt). **Erster Clip jetzt: schlechtestes 0,5-s-Fenster 28 fps
   (vorher 13,6) unter Last**; Rest ≈ 190 ms beim allerersten Clip-Bild (Layout ≈ 100 ms + Skript ≈ 115 ms unter ×4-Drosselung).
-- Unabhängig von n6 gefunden: In jedem Bot-Spiel stockt bei Spielzeit ≈ 28 s ein Bild 1,0–1,6 s – auch mit `?replay=0&action=0`
-  (Gegenprobe), also älter. Ursache nicht untersucht (für den Mac).
+- Unabhängig von n6 gefunden: Im Bot-Spiel (Seed 7) stockt bei Spielzeit ≈ 28 s ein Bild 1,0–1,6 s – auch mit
+  `?replay=0&action=0` (Gegenprobe), also älter. JS-Profil: Ball-Physik (`aero` 0,7 s, `substep` 0,3 s, `integrateOrientation`,
+  `clOf`, `netForces` in `src/sim/ball.js`) – vermutlich sehr viele Unterschritte, wenn der Ball im Netz hängt. Simulation,
+  nicht Teil dieses Auftrags (für den Mac).
 - Hinweis zur Messung: zwei gedrosselte Browser gleichzeitig verfälschen die Zahlen stark (anfangs passiert) – alle Werte
   oben sind nacheinander gemessen.
 
@@ -147,8 +150,8 @@ Bullet-Time an beliebiger Stelle hat keinen „Helden“ (in den Testbildern erz
    früher auslösen bzw. den Rückblick verlängern, Farbsäume an hellen Linien dämpfen.
 2. Start-Hänger beim allerersten Clip-Bild (≈ 0,19 s unter ×4-Drosselung: Layout des Overlays + Skript) und der ältere
    1–1,6-s-Hänger bei Spielzeit 28 s (auch ohne n6).
-3. „Tor des Spiels“ als Clip am Spielende (optional im Auftrag) – nicht umgesetzt; der Ringpuffer müsste dafür den besten
-   Clip je Spiel sichern (≈ 1 MB).
+3. „Tor des Spiels“ ist umgesetzt (E14, `tests/tordesspiels.py`: Bot-Spiel bis zum Abpfiff, Knopf sichtbar, Clip läuft,
+   0 Fehler); gemerkt wird nur ein Tor je Spiel (≈ 1 MB Kopie), nur aus gezeigten Fan-Edits (nicht bei „Klassisch“/„Aus“).
 4. Tunnel als Auslöser für Action-Momente fehlt (kein Ereignis in der Simulation).
 5. Nicht am echten Handy geprüft (nur Profil auf rog17); perf_gate gegen ae34b43 nicht gelaufen (eigene A/B-Messung
    Klassisch ↔ Fan-Edit stattdessen).

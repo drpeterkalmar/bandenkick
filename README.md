@@ -312,6 +312,7 @@ python3 tests/fanedit_bilder.py hoch 1,2,4,8,11,30,57   # n6 Bildfolgen je Tor (
 python3 tests/fanedit_perf.py hoch --q 1                # n6 Bildrate im Clip am Handy-Profil (CPU ×4), Fan-Edit gegen Klassisch
 python3 tests/action_bilder.py hoch 3                   # n6 Action-Momente: Bildfolgen, Bullet-Time, Eingabe während der Zeitlupe
 python3 tests/action_perf.py hoch                       # n6 Bildrate in Action-Momenten am Handy-Profil
+python3 tests/tordesspiels.py                           # n6 „Tor des Spiels“ nach dem Abpfiff
 python3 tests/shots5.py final       # Fotos Nacht 2d: sechs Luftball-Techniken im Kontakt (Spiel- und Seitenkamera), Hechtsprung, Wiederholung (FORMS=hoch)
 python3 tests/shots4.py final   # Fotos Nacht 2c: Auto-Torwart hechtet, Grätsche, Flanke, großes Feld (hoch/quer)
 python3 tests/shots3.py final   # Fotos Nacht 2b: Aufladering, Training, Torwand, Fallrückzieher, Kopfball, Ergebnis
@@ -335,7 +336,7 @@ Browser-Tests laufen headless über die GPU (ANGLE/Metal), nie zwei Browser glei
   überdrehter TikTok-Fan-Edit (≈ 7 s, Schnitte auf einem stummen 128-BPM-Takt, Vorgriff „WARTE AB 👀“, Zeitlupe am Kontakt,
   derselbe Schuss aus drei Winkeln, Standbild mit Kontur, Jubel, große Texte, km/h-Zähler, Emojis, Teal/Orange) – Hochformat
   zuerst, „Clip im Hochformat“ auch auf Querformat, „Clip nochmal“, „Blitze reduzieren“; die ruhige Wiederholung bleibt als
-  „Klassisch“. Live im Spiel: **Action-Momente** (Zoom-Punch, Speed-Ramp mit Rückblick, Bullet-Time) bei harten Schüssen,
+  „Klassisch“; nach dem Abpfiff „🏆 Tor des Spiels“. Live im Spiel: **Action-Momente** (Zoom-Punch, Speed-Ramp mit Rückblick, Bullet-Time) bei harten Schüssen,
   Hechtsprüngen, Paraden, Grätschen – Aus/Selten/Oft. Bericht: [`N6_FANEDIT_BERICHT.md`](N6_FANEDIT_BERICHT.md).
 - **n5 flüssig (09.10., 0.3.0)** – weiche Figuren und ruckelfreie Wiederholung ([`FLUESSIG_BERICHT.md`](FLUESSIG_BERICHT.md)).
 - **Technik n4 (08.10.)** – „wie FIFA bei flüssiger Webapp-Leistung“: Fernseh-Farben, Kontaktschatten unter Spielern und

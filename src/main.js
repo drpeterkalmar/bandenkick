@@ -221,6 +221,7 @@ hud.root.addEventListener('click', (e) => {
   if (a === 'blitze') { blitzeSanft = !blitzeSanft; localStorage.setItem('bk_blitze', blitzeSanft ? '1' : '0'); blitzLabel(); }
   if (a === 'cliphoch') { clipHoch = !clipHoch; localStorage.setItem('bk_cliphoch', clipHoch ? '1' : '0'); clipLabel(); }
   if (a === 'clipnochmal') clipNochmal();
+  if (a === 'tordesspiels') torDesSpiels();
   if (a === 'licht' && deko) {
     lichtPref = { auto: 'tag', tag: 'abend', abend: 'auto' }[lichtPref] || 'auto';
     localStorage.setItem('bk_licht', lichtPref); setLicht(lichtMode()); lichtLabel();
@@ -242,6 +243,7 @@ function setSolo(s) {
 }
 function startPlay(fresh = false) {
   if (rp.dir) endReplay();
+  document.body.classList.remove('tordesspiels');
   rp.wait = -1; hud.editVorbereiten(false);
   if (fresh || game.match === solo) { game = newGame(); resetPrev(); }
   setMode('play');
@@ -430,6 +432,7 @@ function handleEvents(ev) {
     } else if (e.type === 'golden') {
       hud.flash('Golden Goal', 'Das nächste Tor entscheidet', 2.5);
     } else if (e.type === 'end') {
+      if (rp.besterClip && rp.besterClip.game === game) document.body.classList.add('tordesspiels'); // n6: „Tor des Spiels“ ansehen
       hud.flash('Abpfiff', e.winner < 0 ? `Unentschieden ${e.score[0]} : ${e.score[1]}` : `${TEAM_NAMES[e.winner]} gewinnt ${e.score[0]} : ${e.score[1]}`, 6);
     } else if (e.type === 'tackle' && e.phase === 'hit' && e.human) {
       hud.flash('Grätsche!', e.result === 'ball' ? 'Ball erobert' : 'Ball frei', 0.9);
@@ -832,6 +835,15 @@ function startEdit(D0 = null) {
   const name = sc ? (sc.id === game.human ? 'DU' : EDIT_NAMEN[sc.team][idx] || 'NR. ' + BIB_NUMS[sc.team][idx]) : TEAM_NAMES[g.team].toUpperCase();
   rp.edit = { hochClip, name };
   rp.letzterEdit = { D, goal: g, recGame: game };
+  // n6 „Tor des Spiels“: bestes Tor des Spiels (Tempo + Technik) mit eigener Kopie der Aufzeichnung merken (≈ 1 MB)
+  if (!rp.recSicher) {
+    const wert = (D.kmh || 0) + ({ fallrueck: 60, seitfall: 50, flugkopf: 45, volley: 35, dropkick: 25, innenrist: 20, aussenrist: 25, ferse: 30 }[c && c.tech] || 0);
+    const B = rp.besterClip;
+    if (!B || B.game !== game || wert > B.wert) {
+      const r = rp.rec, kopie = Object.assign(Object.create(Object.getPrototypeOf(r)), r, { buf: r.buf.slice(), tAbs: r.tAbs.slice(), events: r.events.map((x) => ({ ...x })) });
+      rp.besterClip = { rec: kopie, goal: g, wert, game };
+    }
+  }
   hud.editStart({ events: D.events, total: D.realTotal, seed: D.seed, dist: D.dist, wort: D.wort, pov: D.pov, tech: D.tech, kmh: D.kmh || Math.round((g.speed || 0) * 3.6),
     name: sc ? `${name} #${BIB_NUMS[sc.team][idx]}` : name, team: TEAM_NAMES[sc ? sc.team : g.team].toUpperCase(), gag: D.gag, own: !!g.own,
     hoch: hochClip, reduce: blitzeSanft, cssFlash: !(kino && kino.pipeline) });
@@ -841,12 +853,25 @@ function startEdit(D0 = null) {
   if (deko) deko.replay(true);
   if (kino && kino.grade !== 'edit') { rp.gradeVor = kino.grade; kino.grade = 'edit'; }
 }
+// n6 „Tor des Spiels“ nach dem Abpfiff: der gemerkte Clip aus seiner eigenen Aufzeichnung
+function torDesSpiels() {
+  const B = rp.besterClip;
+  if (!B || B.game !== game || rp.dir || mode !== 'play') return;
+  rp.recSicher = rp.rec; rp.rec = B.rec; rp.goal = B.goal;
+  const D = new FanEdit(B.rec, B.goal, { reduce: blitzeSanft, cage: game.cage, seed: Math.round(B.goal.t * 997) + 5 });
+  D.pov = '🏆 TOR DES SPIELS';
+  startEdit(D);
+  if (!rp.dir) { rp.rec = rp.recSicher; rp.recSicher = null; }
+}
 // „Clip nochmal“: läuft der Clip, von vorn; kurz danach den letzten Clip neu starten (solange die Aufzeichnung reicht)
 function clipNochmal() {
   if (rp.dir && rp.dir.edit) { rp.dir.nochmal(); return; }
   const L = rp.letzterEdit;
-  if (!L || rp.dir || mode !== 'play' || L.recGame !== game || !rp.rec || rp.rec.tFirst > L.D.shots[0].keys[0][1]) return;
+  if (!L || rp.dir || mode !== 'play' || L.recGame !== game || !rp.rec) return;
+  if (L.D.rec !== rp.rec) { rp.recSicher = rp.rec; rp.rec = L.D.rec; } // („Tor des Spiels“ hat eine eigene Aufzeichnung)
+  else if (rp.rec.tFirst > L.D.shots[0].keys[0][1]) return;
   L.D.nochmal(); rp.goal = L.goal; startEdit(L.D);
+  if (!rp.dir && rp.recSicher) { rp.rec = rp.recSicher; rp.recSicher = null; }
 }
 // Ein Bild des Fan-Edits: Clip-Zeit weiter, Spielzeit über die Tempo-Kurve der Einstellung, Kamera mit Effekten
 function editFrame(dt, raw) {
@@ -921,6 +946,7 @@ function editNachFiguren() {
 function endReplay() {
   const warEdit = !!(rp.dir && rp.dir.edit);
   rp.dir = null; rp.goal = null; rp.held = false; rp.dof = null; rp.kinoFx = null;
+  if (rp.recSicher) { rp.rec = rp.recSicher; rp.recSicher = null; } // nach „Tor des Spiels“: laufende Aufzeichnung zurück
   if (warEdit) { hud.editEnd(3); rp.edit = null; if (kino && rp.gradeVor) { kino.grade = rp.gradeVor; rp.gradeVor = null; } }
   if (deko) deko.replay(false);
   gcam.override = null;
@@ -959,7 +985,7 @@ function replayFrame(dt, raw) {
   return f;
 }
 addEventListener('pointerdown', (e) => {
-  if (e.target && e.target.closest && e.target.closest('[data-act="clipnochmal"]')) return; // n6: „Clip nochmal“ statt überspringen
+  if (e.target && e.target.closest && e.target.closest('[data-act="clipnochmal"], [data-act="tordesspiels"]')) return; // n6: Knopf statt überspringen
   if (rp.dir && mode === 'play' && rp.dir.real > 0.3) skipReplay();
 }, true);
 addEventListener('keydown', (e) => { if (rp.dir && mode === 'play' && e.code !== 'Escape' && rp.dir.real > 0.3) skipReplay(); });
@@ -1134,6 +1160,7 @@ Object.assign(G, {
   newGame(opts = {}) {
     if (opts.solo !== undefined) setSolo(opts.solo);
     game = opts.bots ? new Game(P, opts.seed ?? seed, { match: true, human: -1, botLevels: opts.botLevels || [2, 2] }) : newGame();
+    document.body.classList.remove('tordesspiels');
     resetPrev(); setMode('play'); if (!game.match) game.kickoff();
   },
   // n6: Simulation synchron bis zum Ereignis typ (mit Aufzeichnung für die Wiederholung), höchstens maxSec Spielzeit
@@ -1205,6 +1232,8 @@ Object.assign(G, {
   editMessStart() { G.editMess = []; },
   editMessDaten() { const d = G.editMess; G.editMess = null; return d; },
   clipNochmal() { clipNochmal(); },
+  torDesSpiels() { torDesSpiels(); return !!(rp.dir && rp.dir.edit); },
+  besterClip() { const B = rp.besterClip; return B ? { wert: B.wert, t: B.goal.t, scorer: B.goal.scorer, sichtbar: document.body.classList.contains('tordesspiels') } : null; },
   // n6 Action-Momente (Tests): Zustand/Zähler, Stufe, Zufall festlegen, Moment bei Echtzeit r anhalten
   aktion() { const m = aktion.moment; return { stufe: aktion.stufe, zahl: aktion.zahl, log: aktion.log.slice(-30), aktiv: !!m, art: m ? m.art : null, grund: m ? m.grund : null, real: m ? m.real : 0, v: am.v ? { ...am.v } : null }; },
   aktionStufe(s) { if (ACTION_STUFEN.includes(s)) { actionStufe = s; aktion.stufe = s; slowLabel(); } return actionStufe; },

@@ -26,22 +26,22 @@
   }
  ],
  "im_moment": {
-  "n": 136,
-  "p50": 16.7,
-  "p95": 50,
-  "max": 150.1,
-  "fps_mittel": 37.4,
-  "fps_schlechtestes_0_5s": 18.0,
-  "anteil_ueber_33ms": 0.147
- },
- "sonst": {
-  "n": 3967,
+  "n": 148,
   "p50": 16.7,
   "p95": 33.4,
-  "max": 1466.6,
-  "fps_mittel": 46.0,
-  "fps_schlechtestes_0_5s": 0.7,
-  "anteil_ueber_33ms": 0.059
+  "max": 83.3,
+  "fps_mittel": 41.3,
+  "fps_schlechtestes_0_5s": 28.0,
+  "anteil_ueber_33ms": 0.095
+ },
+ "sonst": {
+  "n": 3986,
+  "p50": 16.7,
+  "p95": 33.4,
+  "max": 1549.9,
+  "fps_mittel": 46.2,
+  "fps_schlechtestes_0_5s": 0.6,
+  "anteil_ueber_33ms": 0.057
  },
  "fehler": [],
  "ton": []

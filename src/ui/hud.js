@@ -116,6 +116,7 @@ export function buildHud(root, canvas) {
     '<div class="fe-prog"><i></i></div><i class="fe-fade"></i><button class="fe-again" data-act="clipnochmal">↻ Clip nochmal</button></div>');
   replay.append(fe);
   const clipAgain = h('button', 'clipagain', '↻ Clip nochmal'); clipAgain.dataset.act = 'clipnochmal'; // kurz nach dem Clip im Spiel
+  const tds = h('button', 'tds', '🏆 Tor des Spiels'); tds.dataset.act = 'tordesspiels'; // nach dem Abpfiff
   // n6 Action-Momente live: Vignette, Speed-Lines, Blitz (ohne Kino-Look) – Steuerung bleibt sichtbar und bedienbar
   const amEl = h('div', 'am', '<i class="am-vig"></i><i class="am-lines"></i><i class="am-flash"></i>');
   const AM = { vig: amEl.children[0], lines: amEl.children[1], flash: amEl.children[2], st: {} };
@@ -140,7 +141,7 @@ export function buildHud(root, canvas) {
   // Malstile des Clips (Verlauf-Spotlight, leuchtende Kontur, Text mit Kontur) einmal unsichtbar malen: der Rasterer übersetzt
   // dafür beim ersten Mal eigene Shader (im ersten Clip ≈ 150 ms)
   const warm = h('div', 'fe-warm', '<i class="w1"></i><i class="w2"></i><b>GOLAZO! 10/10</b>');
-  root.append(amEl, top, banner, charge, hold, touch, dbg, start, menu, credits, train, hint, result, help, replay, clipAgain, warm);
+  root.append(amEl, top, banner, charge, hold, touch, dbg, start, menu, credits, train, hint, result, help, replay, clipAgain, tds, warm);
 
   const howto = (touchUI) => touchUI
     ? `<li><b>Stick links:</b> laufen · ganz außen oder Knopf = Sprint · <b>⇄</b> Spieler wechseln (sonst automatisch)</li>

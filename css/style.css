@@ -287,6 +287,9 @@ body.aktion #touch { opacity: .4; transition: opacity .15s; } /* Knöpfe gedimmt
 .fe-again { position: absolute; right: 4%; top: 18%; }
 .fe-again.on { display: block; }
 .clipagain { position: absolute; right: 12px; top: 64px; z-index: 5; }
+.tds { display: none; position: absolute; left: 50%; top: 64px; translate: -50% 0; z-index: 5; pointer-events: auto; border: 0; border-radius: 999px;
+  background: #ffe600; color: #111; font: 900 16px/1 system-ui, "Segoe UI", sans-serif; padding: 12px 18px; box-shadow: 0 4px 16px rgba(0,0,0,.45); cursor: pointer; }
+body.tordesspiels[data-mode="play"]:not(.replaying) .tds { display: block; }
 body.clipnochmal[data-mode="play"]:not(.replaying) .clipagain { display: block; }
 /* Querformat: Name unter den Schützen, nicht über seinen Körper */
 body.quer:not(.cliphoch) .fe-name { top: 73%; }
