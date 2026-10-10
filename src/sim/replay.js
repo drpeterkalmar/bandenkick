@@ -12,7 +12,7 @@
 //    Schnitte nur beim Kamerawechsel. opts.regie = false (?rcam=alt) = Ablauf wie Nacht 2d.
 import { federKritVek } from '../render/glatt.js';
 
-export const REC_SECS = 8;      // s Ringpuffer
+export const REC_SECS = 10;     // s Ringpuffer (n6: 10 statt 8 – der Fan-Edit braucht Anlauf und Jubel)
 export const REC_HZ = 120;      // je Spieltakt (DT = 1/120 s)
 const TECHS = ['', 'volley', 'dropkick', 'seitfall', 'fallrueck', 'kopf', 'flugkopf', 'vollspann', 'innenrist', 'aussenrist',
   'innen', 'aussen', 'ferse', 'chip', 'brust', 'oberschenkel', 'graetsche', 'stolpern', 'heber'];
@@ -151,6 +151,22 @@ export class ReplayRecorder {
       sx += w * (B[o + 1] + (B[o1 + 1] - B[o + 1]) * a); sy += w * (B[o + 2] + (B[o1 + 2] - B[o + 2]) * a); sz += w * (B[o + 3] + (B[o1 + 3] - B[o + 3]) * a); sw += w;
     }
     out.x = sx / sw; out.y = sy / sw; out.z = sz / sw;
+    return out;
+  }
+  // n6: Lage und Blick eines Spielers zur Spielzeit t, geglättet über ±halb s (wie ballGlatt; Kamera auf den Schützen)
+  spielerGlatt(k, t, halb, out) {
+    out = out || { x: 0, z: 0, face: 0 };
+    const B = this.buf, n = halb > 0 ? 7 : 1;
+    let sx = 0, sz = 0, cx = 0, cz = 0, sw = 0;
+    for (let j = 0; j < n; j++) {
+      const u = n > 1 ? (j / (n - 1)) * 2 - 1 : 0, w = Math.exp(-u * u * 2);
+      const L = this.locate(t + u * halb);
+      if (!L) return out;
+      const q = L.i0 * this.stride + HF + k * NPF, q1 = L.i1 * this.stride + HF + k * NPF, a = L.a;
+      sx += w * (B[q] + (B[q1] - B[q]) * a); sz += w * (B[q + 1] + (B[q1 + 1] - B[q + 1]) * a);
+      cx += w * Math.cos(B[q + 2]); cz += w * Math.sin(B[q + 2]); sw += w;
+    }
+    out.x = sx / sw; out.z = sz / sw; out.face = Math.atan2(cz, cx);
     return out;
   }
   // Ballbahn der letzten `back` s bis t (für die Ballspur), höchstens n Punkte

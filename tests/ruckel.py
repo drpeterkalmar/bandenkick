@@ -232,7 +232,7 @@ def lauf(a):
     from util import Server, Session, sync_playwright, ARGS
     import deko_scenes as S
     if '--mute-audio' not in ARGS: ARGS.append('--mute-audio')
-    q = '?nosw&seed=3&q=2&nohelp&play&startprobe=0' + a.query
+    q = '?nosw&seed=3&q=2&nohelp&play&startprobe=0&edit=0' + a.query  # n6: misst die klassische Wiederholung
     with Server() as srv, sync_playwright() as pw:
         s = Session(pw, srv.base, a.form)
         S.open_ready(s, q)

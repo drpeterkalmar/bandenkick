@@ -1,0 +1,130 @@
+{
+ "form": "hoch",
+ "sanft": false,
+ "clips": [
+  {
+   "seed": 57,
+   "tech": "FLUGKOPFBALL",
+   "kmh": 40,
+   "tor_t": 32.608333333332126,
+   "bilder": 401,
+   "cuts": [
+    {
+     "schlag": 2,
+     "abw_ms": 12.9,
+     "bild_ms": 16.6,
+     "abw_bild": 0.777
+    },
+    {
+     "schlag": 4,
+     "abw_ms": 7.8,
+     "bild_ms": 70.2,
+     "abw_bild": 0.111
+    },
+    {
+     "schlag": 5,
+     "abw_ms": 1.35,
+     "bild_ms": 16.9,
+     "abw_bild": 0.08
+    },
+    {
+     "schlag": 7,
+     "abw_ms": 14.85,
+     "bild_ms": 16.9,
+     "abw_bild": 0.879
+    },
+    {
+     "schlag": 8,
+     "abw_ms": 12.5,
+     "bild_ms": 17.4,
+     "abw_bild": 0.718
+    },
+    {
+     "schlag": 9,
+     "abw_ms": 11.15,
+     "bild_ms": 17.7,
+     "abw_bild": 0.63
+    },
+    {
+     "schlag": 10,
+     "abw_ms": 9.2,
+     "bild_ms": 17.8,
+     "abw_bild": 0.517
+    },
+    {
+     "schlag": 11,
+     "abw_ms": 5.45,
+     "bild_ms": 15.1,
+     "abw_bild": 0.361
+    }
+   ],
+   "max_abw_bild": 0.879,
+   "bild_ms_p50": 16.69999998807907,
+   "bild_ms_p95": 18.099999964237213,
+   "collage": "tests/shots/fanedit/hoch_seed57.jpg"
+  },
+  {
+   "seed": 30,
+   "tech": "DROPKICK",
+   "kmh": 83,
+   "tor_t": 33.86666666666539,
+   "bilder": 421,
+   "cuts": [
+    {
+     "schlag": 2,
+     "abw_ms": 11.7,
+     "bild_ms": 16.2,
+     "abw_bild": 0.722
+    },
+    {
+     "schlag": 4,
+     "abw_ms": 8.5,
+     "bild_ms": 17.7,
+     "abw_bild": 0.48
+    },
+    {
+     "schlag": 5,
+     "abw_ms": 6.35,
+     "bild_ms": 17.3,
+     "abw_bild": 0.367
+    },
+    {
+     "schlag": 7,
+     "abw_ms": 1.45,
+     "bild_ms": 17.1,
+     "abw_bild": 0.085
+    },
+    {
+     "schlag": 8,
+     "abw_ms": 16.0,
+     "bild_ms": 16.9,
+     "abw_bild": 0.947
+    },
+    {
+     "schlag": 9,
+     "abw_ms": 13.65,
+     "bild_ms": 16.5,
+     "abw_bild": 0.827
+    },
+    {
+     "schlag": 10,
+     "abw_ms": 11.4,
+     "bild_ms": 16.1,
+     "abw_bild": 0.708
+    },
+    {
+     "schlag": 11,
+     "abw_ms": 9.95,
+     "bild_ms": 17.2,
+     "abw_bild": 0.578
+    }
+   ],
+   "max_abw_bild": 0.947,
+   "bild_ms_p50": 16.69999998807907,
+   "bild_ms_p95": 17.600000023841858,
+   "collage": "tests/shots/fanedit/hoch_seed30.jpg"
+  }
+ ],
+ "fehler": [],
+ "ton": []
+}

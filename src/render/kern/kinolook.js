@@ -8,6 +8,7 @@
 //   kino.render(scene, camera, { dt, sunDir, run, speed, boost, car, cut, heat, overlay, time, dof, shutter, flash, white, whip });   // zeichnet auf den Bildschirm
 //     flash = { k 0…1, col } Lichtblitz (n27, Feuerwerk), white 0…1 Weißblitz, whip = { len, ang } Reißschwenk-Unschärfe
 //     dof = { focus (m), k 0…1 } Tiefenschärfe auf das Auto (n18, Kino-Replay); shutter = Belichtung × (Zeitlupe)
+//     edit = { ca, grain, zoom, mono } Fan-Edit (Bandenkick n6): RGB-Versatz, Filmkorn, Zoom-Unschärfe zur Mitte, Entsättigung
 //   kino.setLevel(0|1|2)   0 = Einfach (direkt, wie bisher), 1 = Standard, 2 = Kino
 //   kino.stages            einzelne Stufen an/aus (siehe STAGES), kino.describe() für Tests/Bericht
 //   kino.adapt(fps)        dynamische Auflösung (von der Qualitäts-Automatik aufgerufen)
@@ -251,7 +252,7 @@ const COMP_FS = `
   uniform vec3 uSunScr; uniform float uFlare;
   uniform vec4 uHaze0, uHaze1; uniform vec2 uHazeR; uniform float uHazeK;
   uniform vec3 uWB, uLift, uGamma, uGain, uShTint, uHiTint; uniform float uSplit, uSat, uVib, uContrast, uGreen;
-  uniform vec4 uFx; uniform vec3 uFlashCol;
+  uniform vec4 uFx; uniform vec3 uFlashCol; uniform vec4 uEdit;
   varying vec2 vUv;
   ${COMMON}
   ${BLUR_CORE}
@@ -361,6 +362,14 @@ const COMP_FS = `
       for ( int i = 0; i < 12; i++ ) a += texture2D( tColor, uv + wd * ( float( i ) / 11.0 - 0.5 ) ).rgb;
       col = mix( col, a / 12.0, smoothstep( 0.0, 0.01, uFx.z ) ); }
   #endif
+  #ifdef EDIT
+    // Fan-Edit (Bandenkick n6): Zoom-Unschärfe zur Bildmitte (Zoom-Punch), RGB-Versatz zum Rand hin (Spitzen)
+    if ( uEdit.z > 0.001 ) { vec2 dc = ( uv - 0.5 ) * uEdit.z; vec3 a = col;
+      for ( int i = 1; i < 8; i++ ) a += texture2D( tColor, uv - dc * ( float( i ) / 7.0 ) ).rgb;
+      col = a / 8.0; }
+    if ( uEdit.x > 0.001 ) { vec2 dc = ( uv - 0.5 ) * uEdit.x * 0.035;
+      col.r = mix( col.r, texture2D( tColor, uv + dc ).r, 0.9 ); col.b = mix( col.b, texture2D( tColor, uv - dc ).b, 0.9 ); }
+  #endif
   #ifdef BLUR_FULL
     if ( uBlurOn > 0.5 ) { vec4 b = kBlur( tColor, tDepth, uv, d, car, uRes ); col = mix( col, b.rgb, b.a ); }
   #endif
@@ -403,6 +412,10 @@ const COMP_FS = `
     col += uFlashCol * uFx.x * ( 0.3 + 0.7 * kLuma( col ) );
   #ifdef GRADE
     col = kGrade( col );
+  #endif
+  #ifdef EDIT
+    col = mix( col, vec3( kLuma( col ) ) * vec3( 0.92, 0.97, 1.06 ), uEdit.w );   // Standbild: entsättigt, kühl
+    col += ( fract( sin( dot( gl_FragCoord.xy + fract( uTime * 3.7 ) * 113.0, vec2( 12.9898, 78.233 ) ) ) * 43758.5453 ) - 0.5 ) * uEdit.y;   // Filmkorn
   #endif
   #ifdef VIGNETTE
     { vec2 c = vUv - 0.5; col *= 1.0 - uVig * smoothstep( 0.3, 0.85, length( c * vec2( 1.0, uRes.y / uRes.x ) * 1.25 ) ); }
@@ -466,7 +479,7 @@ export class KinoLook {
       uBoxMin: V3(-1.1, -0.6, -2.5), uBoxMax: V3(1.1, 1.4, 2.5),
       uCarOn: F(0), uScale: F(0), uMaxLen: F(0.03), uRadial: F(0), uNear: F(0.25), uFar: F(8000),
       uRadius: F(1), uFadeFar: F(160), uTh: F(0.8), uSky: F(0.08), uK: F(1), uGreen: F(0),
-      uFx: { value: new THREE.Vector4() }, uFlashCol: V3(1, 0.9, 0.7),
+      uFx: { value: new THREE.Vector4() }, uFlashCol: V3(1, 0.9, 0.7), uEdit: { value: new THREE.Vector4() },
     };
     this.mats = new Map();
     this.rt = null; this.aoRT = null; this.blurRT = null; this.bloomRT = []; this.dofRT = null;
@@ -685,6 +698,7 @@ export class KinoLook {
     U.uFx.value.set(o.flash ? o.flash.k : 0, o.white || 0, o.whip ? o.whip.len : 0, o.whip ? o.whip.ang : 0);
     if (o.flash && o.flash.col) U.uFlashCol.value.fromArray(o.flash.col);
     const defs = {};
+    if (o.edit) { U.uEdit.value.set(o.edit.ca || 0, o.edit.grain || 0, o.edit.zoom || 0, o.edit.mono || 0); defs.EDIT = 1; }
     if (o.whip && o.whip.len > 0.002) defs.WHIP = 1;
     if (st.aa && sc < 0.999 || st.aa && this.msaa() === 0) defs.AA = 1;
     if (st.sharpen) defs.SHARP = 1;

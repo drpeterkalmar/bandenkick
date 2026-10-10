@@ -1,0 +1,69 @@
+{
+ "form": "clip",
+ "sanft": false,
+ "clips": [
+  {
+   "seed": 4,
+   "tech": "AUSSENRIST-BANANE",
+   "kmh": 99,
+   "tor_t": 24.29999999999926,
+   "bilder": 401,
+   "cuts": [
+    {
+     "schlag": 2,
+     "abw_ms": 12.0,
+     "bild_ms": 17.0,
+     "abw_bild": 0.706
+    },
+    {
+     "schlag": 4,
+     "abw_ms": 24.7,
+     "bild_ms": 82.5,
+     "abw_bild": 0.299
+    },
+    {
+     "schlag": 5,
+     "abw_ms": 5.95,
+     "bild_ms": 15.2,
+     "abw_bild": 0.391
+    },
+    {
+     "schlag": 7,
+     "abw_ms": 1.55,
+     "bild_ms": 16.8,
+     "abw_bild": 0.092
+    },
+    {
+     "schlag": 8,
+     "abw_ms": 2.7,
+     "bild_ms": 17.0,
+     "abw_bild": 0.159
+    },
+    {
+     "schlag": 9,
+     "abw_ms": 0.25,
+     "bild_ms": 16.8,
+     "abw_bild": 0.015
+    },
+    {
+     "schlag": 10,
+     "abw_ms": 14.7,
+     "bild_ms": 16.8,
+     "abw_bild": 0.875
+    },
+    {
+     "schlag": 11,
+     "abw_ms": 12.75,
+     "bild_ms": 16.3,
+     "abw_bild": 0.782
+    }
+   ],
+   "max_abw_bild": 0.875,
+   "bild_ms_p50": 16.69999998807907,
+   "bild_ms_p95": 18.19999998807907,
+   "collage": "tests/shots/fanedit/clip_seed4.jpg"
+  }
+ ],
+ "fehler": [],
+ "ton": []
+}

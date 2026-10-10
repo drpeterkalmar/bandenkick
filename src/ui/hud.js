@@ -52,7 +52,8 @@ export function buildHud(root, canvas) {
       <button class="btn sec" data-act="newgame">Neu starten</button>
       <button class="btn sec" data-act="help">Steuerung</button>
     </div>
-    <div class="row"><button class="btn sec" data-act="slowmo">Zeitlupe: an</button><button class="btn sec" data-act="replay">Wiederholung: an</button><button class="btn sec" data-act="licht">Licht: Tag</button></div>
+    <div class="row"><button class="btn sec" data-act="slowmo">Zeitlupe: an</button><button class="btn sec" data-act="replay">Tor-Wiederholung: Fan-Edit</button><button class="btn sec" data-act="licht">Licht: Tag</button></div>
+    <div class="row"><button class="btn sec" data-act="blitze">Blitze reduzieren: aus</button><button class="btn sec" data-act="cliphoch">Clip im Hochformat: aus</button></div>
     <div class="row"><button class="btn sec" data-act="trainmenu">Training</button></div>
     <p class="small lastshot"></p>
     <p class="small physics"></p>
@@ -106,7 +107,16 @@ export function buildHud(root, canvas) {
   const replay = h('div', 'replay', '<i class="lb t"></i><i class="lb b"></i><i class="vig"></i><i class="flash"></i>' +
     '<div class="rp-label"><b>WIEDERHOLUNG</b><span></span></div><div class="fancam"><i></i>FAN-CAM</div><div class="rp-skip">Tippen = weiter</div>');
   replay.id = 'replay';
-  root.append(top, banner, charge, hold, touch, dbg, start, menu, credits, train, hint, result, help, replay);
+  // n6 Fan-Edit (TikTok-Stil): Rahmen (Hochformat-Ausschnitt auf Querformat möglich), Bildunterschrift, Einschlag-Texte,
+  // km/h-Zähler, Stempel, Emojis, Speed-Lines, Schlag-Puls, Kontur um den Schützen im Standbild, Fortschritt, „Clip nochmal“
+  const fe = h('div', 'fe', '<i class="fe-side l"></i><i class="fe-side r"></i><div class="fe-frame">' +
+    '<i class="fe-lines"></i><i class="fe-puls"></i><i class="fe-flash"></i><div class="fe-ring"><span></span></div>' +
+    '<div class="fe-pov"></div><div class="fe-big"></div><div class="fe-kmh"></div><div class="fe-stamp"></div><div class="fe-name"></div>' +
+    '<div class="fe-gag"></div><div class="fe-emoji"></div><div class="fe-tag">@bandenkick<small>#golazo #hallenkick #fyp</small></div>' +
+    '<div class="fe-prog"><i></i></div><i class="fe-fade"></i><button class="fe-again" data-act="clipnochmal">↻ Clip nochmal</button></div>');
+  replay.append(fe);
+  const clipAgain = h('button', 'clipagain', '↻ Clip nochmal'); clipAgain.dataset.act = 'clipnochmal'; // kurz nach dem Clip im Spiel
+  root.append(top, banner, charge, hold, touch, dbg, start, menu, credits, train, hint, result, help, replay, clipAgain);
 
   const howto = (touchUI) => touchUI
     ? `<li><b>Stick links:</b> laufen · ganz außen oder Knopf = Sprint · <b>⇄</b> Spieler wechseln (sonst automatisch)</li>
@@ -121,10 +131,71 @@ export function buildHud(root, canvas) {
   let bannerT = 0, kickT = 0, lastScore = '', lastKeeper = '', lastCharge = null, lastStatus = '';
   const clock = (sec) => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, '0')}`;
   const rpLabel = replay.querySelector('.rp-label span'), rpFlash = replay.querySelector('.flash');
+  const F = Object.fromEntries(['frame', 'lines', 'puls', 'flash', 'ring', 'pov', 'big', 'kmh', 'stamp', 'name', 'gag', 'emoji', 'prog', 'fade', 'again'].map((k) => [k, fe.querySelector('.fe-' + k)]));
+  const ed = { info: null, next: 0, last: -1, kmh: null, lw: 0 };
+  // Text-Element mit Einschlag-Animation (Klasse neu setzen → CSS-Animation startet neu)
+  const slam = (el, html, cls = '', fit = 0) => {
+    el.innerHTML = html; el.className = el.className.split(' ')[0] + ' an' + (cls ? ' ' + cls : '');
+    // fit = Schriftgröße in cqmin; lange Wörter (FALLRÜCKZIEHER) passen sich der Rahmenbreite an
+    if (fit) { const n = Math.max(1, el.firstChild && el.firstChild.textContent ? el.firstChild.textContent.length : html.length); el.style.fontSize = `min(${fit}cqmin, ${(84 / n).toFixed(1)}cqw)`; } else el.style.fontSize = '';
+    void el.offsetWidth; el.classList.add('go');
+  };
+  const weg = (el) => { el.className = el.className.split(' ')[0]; };
+  const feTrigger = (e, I) => {
+    if (e.emoji) slam(F.emoji, `<i>${e.emoji}</i><i>${e.emoji}</i><i>${e.emoji}</i>`);
+    switch (e.text) {
+      case 'pov': slam(F.pov, I.pov); break;
+      case 'technik': slam(F.big, I.tech, 'tech', 12.5); break;
+      case 'kmh': ed.kmh = { t0: e.t, v: I.kmh }; weg(F.big); F.kmh.className = 'fe-kmh an'; break;
+      case 'kmhStempel': slam(F.kmh, `${I.kmh}<small>KM/H</small>`, 'stempel'); ed.kmh = null; break;
+      case 'golazo': weg(F.kmh); slam(F.big, I.own ? 'EIGENTOR 💀' : 'GOLAZO!', 'golazo', 20); break;
+      case 'kontur': weg(F.big); break;
+      case 'x1': case 'x2': case 'x3': weg(F.big); slam(F.stamp, '×' + e.text[1]); break;
+      case 'name': weg(F.stamp); slam(F.name, `${I.name}<small>${I.team}</small>`, '', 13); break;
+      case 'gag': slam(F.gag, I.gag); break;
+      case 'ende': F.again.classList.add('on'); break;
+    }
+  };
   return {
     // Wiederholung: an/aus mit Text (Schütze · Technik · km/h), Fan-Cam-Abzeichen, Blitz-Stärke 0…1
     replayShow(on, text = '') { document.body.classList.toggle('replaying', on); if (on) rpLabel.textContent = text; },
     replayState(fan, flash) { replay.classList.toggle('fan', fan); rpFlash.style.opacity = flash.toFixed(3); },
+    // n6 Fan-Edit: Start (info = {events, total, pov, tech, kmh, name, team, gag, own, hoch (9:16-Ausschnitt), reduce, cssFlash})
+    editStart(info) {
+      ed.info = info; ed.next = 0; ed.last = -1; ed.kmh = null;
+      replay.classList.add('edit'); replay.classList.toggle('reduce', !!info.reduce);
+      document.body.classList.toggle('cliphoch', !!info.hoch);
+      for (const k of ['big', 'kmh', 'stamp', 'name', 'gag', 'emoji', 'pov']) weg(F[k]);
+      F.again.classList.remove('on'); F.ring.style.display = 'none';
+    },
+    // je Bild: r = Clip-Zeit (s), fx = Effekte (FanEdit.fx), ring = {x, y, h} Schütze im Bild (Pixel) oder null
+    editFrame(r, fx, ring) {
+      const I = ed.info; if (!I) return;
+      if (r < ed.last) { ed.next = 0; for (const k of ['big', 'kmh', 'stamp', 'name', 'gag', 'emoji', 'pov']) weg(F[k]); F.again.classList.remove('on'); } // nochmal
+      ed.last = r;
+      while (ed.next < I.events.length && I.events[ed.next].t <= r) feTrigger(I.events[ed.next++], I);
+      if (ed.kmh) { const u = Math.min(1, (r - ed.kmh.t0) / 0.42); F.kmh.innerHTML = `${Math.round(ed.kmh.v * (1 - (1 - u) ** 3))}<small>KM/H</small>`; }
+      ed.lw = (ed.lw + 37) % 360;
+      F.lines.style.opacity = (fx.lines * (I.reduce ? 0.45 : 1)).toFixed(3);
+      if (fx.lines > 0.01) F.lines.style.transform = `rotate(${I.reduce ? 0 : ed.lw}deg) scale(1.6)`;
+      F.puls.style.opacity = (fx.puls * (I.reduce ? 0.05 : 0.12)).toFixed(3);
+      F.flash.style.opacity = I.cssFlash ? fx.white.toFixed(3) : '0';
+      F.fade.style.opacity = (fx.fade || 0).toFixed(3);
+      F.prog.firstChild.style.width = (100 * r / I.total).toFixed(1) + '%';
+      if (ring && fx.freeze) {
+        F.ring.style.display = 'block';
+        F.ring.style.left = ring.x.toFixed(0) + 'px'; F.ring.style.top = ring.y.toFixed(0) + 'px';
+        F.ring.style.width = (ring.h * 0.75).toFixed(0) + 'px'; F.ring.style.height = (ring.h * 1.15).toFixed(0) + 'px';
+        F.ring.firstChild.textContent = '⬇ ' + I.name;
+      } else F.ring.style.display = 'none';
+    },
+    // Rahmen des Clips (für die Kontur in Pixeln relativ zum Rahmen)
+    editRahmen() { return F.frame.getBoundingClientRect(); },
+    editEnd(nochmalSek = 0) {
+      ed.info = null; replay.classList.remove('edit', 'reduce'); document.body.classList.remove('cliphoch');
+      document.body.classList.toggle('clipnochmal', nochmalSek > 0);
+      clearTimeout(ed.nt); if (nochmalSek > 0) ed.nt = setTimeout(() => document.body.classList.remove('clipnochmal'), nochmalSek * 1000);
+    },
     root, score, kick, menuBtn, banner, touch, stickZone, stickBase, stickKnob, bShot, bPass, bSprint, bSwitch, dbg, start, menu, credits, canvas, charge, chargeFill, hold,
     train, hint, result, help,
     setHowto,

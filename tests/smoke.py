@@ -110,7 +110,8 @@ with Server() as srv, sync_playwright() as pw:
             time.sleep(0.05)
         s.wait_sim(2.2, timeout=60000)
         st = s.state()
-        ok('kontakt' in seen and 'fancam' in seen and st['rules']['phase'] in ('kickoff', 'play') and st['score'] == [1, 0],
+        # n6: Standard ist der Fan-Edit (Einstellungen anlauf … jubel), ?edit=0 die klassische Wiederholung (… fancam)
+        ok('kontakt' in seen and ('fancam' in seen or 'jubel' in seen) and st['rules']['phase'] in ('kickoff', 'play') and st['score'] == [1, 0],
            f"Tor-Wiederholung: Abschnitte {seen} ({r.get('label', '')}), danach Phase {st['rules']['phase']}, Stand {st['score']}")
         goal_shot()
         s.pg.wait_for_function("__game.replay().active && __game.replay().real > 0.5", timeout=20000)

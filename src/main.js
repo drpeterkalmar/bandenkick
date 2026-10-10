@@ -19,6 +19,7 @@ import { Input } from './input/input.js';
 import { buildHud } from './ui/hud.js';
 import { Sound } from './audio/sound.js';
 import { ReplayRecorder, ReplayDirector, ReplayKamera } from './sim/replay.js';
+import { FanEdit, editCamera, editCameraFx, jubelRichtung, EDIT_DELAY } from './sim/fanedit.js';
 import { ReplayFx } from './render/replayfx.js';
 import { BUILD } from './build.js';
 import { makeKino, kinoLicht, kinoStufeSetzen, KontaktSchatten } from './render/kino.js';
@@ -136,11 +137,26 @@ let slowmoOn = !!P.zeitlupe && localStorage.getItem('bk_zeitlupe') !== '0';
 const slowBtn = hud.menu.querySelector('[data-act="slowmo"]');
 const slowLabel = () => { slowBtn.textContent = 'Zeitlupe: ' + (slowmoOn ? 'an' : 'aus'); };
 slowLabel();
-// Tor-Wiederholung (Nacht 2d): an/aus im Pause-Menü (localStorage bk_replay), ?replay=0
-let replayOn = !!P.replay && localStorage.getItem('bk_replay') !== '0';
+// Tor-Wiederholung (Nacht 2d): im Pause-Menü (localStorage bk_replay), ?replay=0. n6: Art Fan-Edit (Standard) / Klassisch
+// (ruhige TV-Wiederholung wie n5) / Aus (localStorage bk_replay_art), ?edit=0 = Klassisch
+const REPLAY_ARTEN = ['edit', 'klassisch', 'aus'];
+let replayArt = !P.replay ? 'aus' : qs.get('edit') === '0' ? 'klassisch' : qs.get('edit') === '1' ? 'edit'
+  : REPLAY_ARTEN.includes(localStorage.getItem('bk_replay_art')) ? localStorage.getItem('bk_replay_art') : localStorage.getItem('bk_replay') === '0' ? 'aus' : 'edit';
+let replayOn = replayArt !== 'aus';
 const replayBtn = hud.menu.querySelector('[data-act="replay"]');
-const replayLabel = () => { replayBtn.textContent = 'Wiederholung: ' + (replayOn ? 'an' : 'aus'); };
+const replayLabel = () => { replayBtn.textContent = 'Tor-Wiederholung: ' + { edit: 'Fan-Edit', klassisch: 'Klassisch', aus: 'Aus' }[replayArt]; };
 replayLabel();
+// n6 Verträglichkeit: „Blitze reduzieren“ (localStorage bk_blitze, Standard nach Systemeinstellung „Bewegung reduzieren“,
+// ?blitze=sanft|voll): Flashes → sanftes Aufhellen, kein RGB-Zucken, weniger Wackler
+let blitzeSanft = qs.has('blitze') ? qs.get('blitze') === 'sanft' : localStorage.getItem('bk_blitze') ? localStorage.getItem('bk_blitze') === '1' : reduceMotion;
+const blitzBtn = hud.menu.querySelector('[data-act="blitze"]');
+const blitzLabel = () => { blitzBtn.textContent = 'Blitze reduzieren: ' + (blitzeSanft ? 'an' : 'aus'); };
+blitzLabel();
+// n6 „Clip im Hochformat“: Fan-Edit auf Querformat-Bildschirmen als 9:16-Ausschnitt (localStorage bk_cliphoch, ?clip=hoch|quer)
+let clipHoch = qs.has('clip') ? qs.get('clip') === 'hoch' : localStorage.getItem('bk_cliphoch') === '1';
+const clipBtn = hud.menu.querySelector('[data-act="cliphoch"]');
+const clipLabel = () => { clipBtn.textContent = 'Clip im Hochformat: ' + (clipHoch ? 'an' : 'aus'); };
+clipLabel();
 const lichtBtn = hud.menu.querySelector('[data-act="licht"]');
 function lichtLabel() { if (lichtBtn) lichtBtn.textContent = 'Licht: ' + (lichtPref === 'auto' ? `automatisch (${lichtMode() === 'abend' ? 'Abend' : 'Tag'})` : lichtPref === 'abend' ? 'Abend' : 'Tag'); }
 let helpBack = 'menu', helpThen = null;
@@ -191,7 +207,13 @@ hud.root.addEventListener('click', (e) => {
   if (a === 'help') { helpBack = mode; helpThen = null; setMode('help'); }
   if (a === 'helpok') { localStorage.setItem('bk_hilfe', '1'); if (helpThen) { const f = helpThen; helpThen = null; f(); } else setMode(helpBack); }
   if (a === 'slowmo') { slowmoOn = !slowmoOn; localStorage.setItem('bk_zeitlupe', slowmoOn ? '1' : '0'); slowLabel(); }
-  if (a === 'replay') { replayOn = !replayOn; localStorage.setItem('bk_replay', replayOn ? '1' : '0'); replayLabel(); }
+  if (a === 'replay') {
+    replayArt = REPLAY_ARTEN[(REPLAY_ARTEN.indexOf(replayArt) + 1) % 3]; replayOn = replayArt !== 'aus';
+    localStorage.setItem('bk_replay_art', replayArt); localStorage.setItem('bk_replay', replayOn ? '1' : '0'); replayLabel();
+  }
+  if (a === 'blitze') { blitzeSanft = !blitzeSanft; localStorage.setItem('bk_blitze', blitzeSanft ? '1' : '0'); blitzLabel(); }
+  if (a === 'cliphoch') { clipHoch = !clipHoch; localStorage.setItem('bk_cliphoch', clipHoch ? '1' : '0'); clipLabel(); }
+  if (a === 'clipnochmal') clipNochmal();
   if (a === 'licht' && deko) {
     lichtPref = { auto: 'tag', tag: 'abend', abend: 'auto' }[lichtPref] || 'auto';
     localStorage.setItem('bk_licht', lichtPref); setLicht(lichtMode()); lichtLabel();
@@ -381,7 +403,7 @@ function handleEvents(ev) {
     } else if (e.type === 'goal' && e.challenge) {
       // Challenge meldet selbst (Treffer/gehalten)
     } else if (e.type === 'goal') {
-      if (R && replayOn && rp.rec && game.players.length === rp.rec.n) { rp.goal = { ...e, t: game.t - DT }; rp.wait = P.replayDelay; }
+      if (R && replayOn && rp.rec && game.players.length === rp.rec.n) { rp.goal = { ...e, t: game.t - DT }; rp.wait = replayArt === 'edit' ? Math.max(P.replayDelay, EDIT_DELAY) : P.replayDelay; }
       if (R) {
         const mine = e.team === me().team;
         hud.flash(mine ? 'TOR!' : 'Gegentor', `${TEAM_NAMES[e.team]} · ${Math.round(e.speed * 3.6)} km/h${e.own ? ' · Eigentor' : e.saved ? ' · Tormann war noch dran' : ''}`, 2.4, DEKO ? `tor t${e.team}` : '');
@@ -580,7 +602,7 @@ function frame() {
   const a = mode === 'play' ? Math.min(1, acc / DT) : 1;
   // Tor-Wiederholung: nach dem Live-Jubel starten; läuft sie, zeigt die Grafik den aufgezeichneten Zustand
   if (rp.wait > 0 && mode === 'play' && !frozen) { rp.wait -= dt; if (rp.wait <= 0) startReplay(); }
-  const rdt = mode === 'play' && !(rp.hold && rp.held) ? dt : 0;
+  const rdt = mode === 'play' && !((rp.hold || rp.haltBei != null) && rp.held) ? dt : 0;
   const rf = rp.dir && (mode === 'play' || mode === 'pause') ? replayFrame(rdt, raw) : null;
   let bx = prev.bx + (b.p.x - prev.bx) * a, by = prev.by + (b.p.y - prev.by) * a, bz = prev.bz + (b.p.z - prev.bz) * a;
   if (rf) { bx = rf.ball.p.x; by = rf.ball.p.y; bz = rf.ball.p.z; ballMesh.quaternion.set(rf.ball.q[1], rf.ball.q[2], rf.ball.q[3], rf.ball.q[0]); }
@@ -590,12 +612,13 @@ function frame() {
   if (kontakt) blob.visible = false;
   const tA = performance.now();
   drawPlayers(rf ? rdt * rp.rate : dt, a, rf);
+  if (rf && rp.dir && rp.dir.edit) editNachFiguren();
   if (kontakt) kontakt.update(bx, by, bz);
   perf.av.push(performance.now() - tA); if (perf.av.length > 240) perf.av.shift();
   const pl = me();
   const px = prev.px[pl.id] + (pl.x - prev.px[pl.id]) * a, pz = prev.pz[pl.id] + (pl.z - prev.pz[pl.id]) * a;
   gcam.update(dt, { x: bx, z: bz, vx: b.v.x, vz: b.v.z }, { x: px, z: pz }, mode === 'play' || mode === 'pause' ? 'play' : 'menu');
-  field.update(rf ? rf.ball.net : b.net, gcam.cam, !!(rf && rp.dir && rp.dir.cur.cam === 'fan'));
+  field.update(rf ? rf.ball.net : b.net, gcam.cam, !!(rf && rp.dir && (rp.dir.cur.cam === 'fan' || (rp.dir.edit && ED_NAHFADE.has(rp.dir.cur.cam)))));
   gran.update(dt);
   // n4: Punkt-Größen in Pixeln gelten für den Bildschirm – im verkleinerten Render-Target des Kino-Looks mitskalieren
   const pxK = kino && kino.pipeline && kino.stages.scale ? kino.renderScale : 1;
@@ -649,7 +672,7 @@ const winkelDiff = (a, b) => { let d = a - b; while (d > Math.PI) d -= 2 * Math.
 // Aufzeichnung je Spieltakt (nur im Spiel), nach einem Tor P.replayDelay s Live-Jubel, dann Wiederholung: die Simulation
 // steht so lange still (sie wird nicht verändert), die Grafik zeigt den aufgezeichneten Zustand mit eigener Kamera.
 // Tippen, Taste oder Knopf überspringt; danach läuft der Jubel weiter und es folgt der Anstoß wie gewohnt.
-const rp = { rec: null, recGame: null, dir: null, wait: -1, goal: null, frame: {}, rate: 1, trail: [], hold: null, held: false, fx: null, label: '', ctx: null, dof: null };
+const rp = { rec: null, recGame: null, dir: null, wait: -1, goal: null, frame: {}, rate: 1, trail: [], hold: null, held: false, fx: null, label: '', ctx: null, dof: null, kinoFx: null, edit: null, letzterEdit: null };
 function recordReplay(evs) {
   if (!game.match || game.challenge || !replayOn) { rp.recGame = null; return; }
   if (rp.recGame !== game || !rp.rec || rp.rec.n !== game.players.length) { rp.rec = new ReplayRecorder(game.players.length); rp.recGame = game; rp.wait = -1; }
@@ -658,6 +681,7 @@ function recordReplay(evs) {
 function startReplay() {
   rp.wait = -1;
   if (!rp.rec || !rp.goal || rp.recGame !== game || mode !== 'play') return;
+  if (replayArt === 'edit') { startEdit(); return; }
   const D = new ReplayDirector(rp.rec, rp.goal, { regie: !RCAM_ALT });
   rp.kam = new ReplayKamera(rp.rec, !RCAM_ALT);
   if (D.done) return;
@@ -677,8 +701,105 @@ function startReplay() {
   if (GLATT) for (const f of figs) if (f.schnitt) f.schnitt(); // n5: harter Schnitt, nicht aus dem Jubel herüberblenden
   if (deko) deko.replay(true);
 }
+// ---------------- n6 Fan-Edit (TikTok-Stil) ----------------
+// Spitznamen je Platz (Mannschaft × Platz wie die Figuren), der Mensch heißt „DU“
+const EDIT_NAMEN = [['MIKA', 'LENI', 'JONAS'], ['TIM', 'ELIF', 'NOAH']];
+const ED_BALL = { x: 0, y: 0, z: 0 }, ED_SCH = { x: 0, z: 0, face: 0 }, ED_V = new THREE.Vector3();
+const ED_NAHFADE = new Set(['keeper', 'netz', 'ecke']); // Kameras am Netz: Netz nicht ausblenden
+function startEdit(D0 = null) {
+  const g = rp.goal;
+  const D = D0 || new FanEdit(rp.rec, g, { reduce: blitzeSanft, seed: Math.round(g.t * 997) + game.score[0] * 7 + game.score[1] * 13 });
+  if (D.done) return;
+  rp.dir = D; rp.held = false; rp.kam = null;
+  const c = D.contact;
+  let side = 1;
+  if (c) { const dl = Math.hypot(c.dx, c.dz) || 1, nx = -c.dz / dl, nz = c.dx / dl; side = nx * -c.x + nz * -c.z >= 0 ? 1 : -1; }
+  const hochClip = clipHoch && gcam.mode !== 'hoch';
+  const fI = rp.rec.frameAt(D.ti, {}, P);
+  const jub = D.schuetze >= 0 ? jubelRichtung(rp.rec, D.schuetze, D.shots[D.shots.length - 1].keys, gcam.mode === 'hoch' || hochClip ? 3.1 : 2.6) : null;
+  rp.ctx = { cage: game.cage, hoch: gcam.mode === 'hoch' || hochClip, contact: c, goal: { side: g.side }, side, makroDir: D.makroDir, impact: [fI.ball.p.x, fI.ball.p.y, fI.ball.p.z],
+    jubelDir: jub != null ? jub : 0, u: 0, dur: 1, ball: null, schuetze: null };
+  const sc = D.schuetze >= 0 ? game.players[D.schuetze] : null;
+  const idx = sc ? game.players.filter((p) => p.team === sc.team).indexOf(sc) : 0;
+  const name = sc ? (sc.id === game.human ? 'DU' : EDIT_NAMEN[sc.team][idx] || 'NR. ' + BIB_NUMS[sc.team][idx]) : TEAM_NAMES[g.team].toUpperCase();
+  rp.edit = { hochClip, name };
+  rp.letzterEdit = { D, goal: g, recGame: game };
+  hud.editStart({ events: D.events, total: D.realTotal, pov: D.pov, tech: D.tech, kmh: D.kmh || Math.round((g.speed || 0) * 3.6),
+    name: sc ? `${name} #${BIB_NUMS[sc.team][idx]}` : name, team: TEAM_NAMES[sc ? sc.team : g.team].toUpperCase(), gag: D.gag, own: !!g.own,
+    hoch: hochClip, reduce: blitzeSanft, cssFlash: !(kino && kino.pipeline) });
+  hud.replayShow(true, '');
+  markers && markers.hide();
+  if (GLATT) for (const f of figs) if (f.schnitt) f.schnitt();
+  if (deko) deko.replay(true);
+  if (kino && kino.grade !== 'edit') { rp.gradeVor = kino.grade; kino.grade = 'edit'; }
+}
+// „Clip nochmal“: läuft der Clip, von vorn; kurz danach den letzten Clip neu starten (solange die Aufzeichnung reicht)
+function clipNochmal() {
+  if (rp.dir && rp.dir.edit) { rp.dir.nochmal(); return; }
+  const L = rp.letzterEdit;
+  if (!L || rp.dir || mode !== 'play' || L.recGame !== game || !rp.rec || rp.rec.tFirst > L.D.shots[0].keys[0][1]) return;
+  L.D.nochmal(); rp.goal = L.goal; startEdit(L.D);
+}
+// Ein Bild des Fan-Edits: Clip-Zeit weiter, Spielzeit über die Tempo-Kurve der Einstellung, Kamera mit Effekten
+function editFrame(dt, raw) {
+  const D = rp.dir;
+  if (raw && (raw.passDown || raw.shotDown) && D.real > 0.3) D.skip();
+  if (rp.haltBei != null && !rp.held && D.real + dt >= rp.haltBei) { dt = Math.max(0, rp.haltBei - D.real); rp.held = true; } // Tests: genau anhalten
+  if (rp.hold && !D.done && D.phase === rp.hold.phase && D.segFrac() >= rp.hold.frac) rp.held = true; // Tests (perf_gate): wie Klassisch
+  const i0 = D.i, tVor = D.t;
+  const t = D.update(dt);
+  if (D.done) { endReplay(); return null; }
+  const schnitt = D.i !== i0;
+  rp.rate = schnitt || dt <= 0 ? D.rateAt() : Math.max(0, (t - tVor) / dt);
+  if (schnitt && GLATT) for (const f of figs) if (f.schnitt) f.schnitt(); // harter Schnitt: Figuren nicht herüberblenden
+  if (G.editMess) G.editMess.push([D.real, D.i, t, performance.now()]);
+  const f = rp.rec.frameAt(t, rp.frame, P);
+  const s = D.shots[D.i], ctx = rp.ctx;
+  ctx.u = D.real - s.t0; ctx.dur = s.t1 - s.t0; ctx.hoch = gcam.mode === 'hoch' || rp.edit.hochClip;
+  ctx.ball = rp.rec.ballGlatt(t, 0.06, ED_BALL);
+  ctx.schuetze = D.schuetze >= 0 ? rp.rec.spielerGlatt(D.schuetze, t, s.cam === 'jubel' ? 0.25 : 0.08, ED_SCH) : null;
+  const fx = rp.edit.fx = D.fx();
+  const cam = editCameraFx(editCamera(s.cam, f, ctx), fx, D.real, D.seed);
+  gcam.override = { pos: cam.pos, look: cam.look };
+  if (Math.abs(gcam.cam.fov - cam.fov) > 0.01) { gcam.cam.fov = cam.fov; gcam.cam.updateProjectionMatrix(); }
+  rp.dof = s.cam === 'makro' ? replayDof('zoom', cam.pos, cam.look, [f.ball.p.x, f.ball.p.y, f.ball.p.z]) : s.cam === 'jubel' ? replayDof('fan', cam.pos, cam.look, null) : null;
+  rp.kinoFx = { white: fx.white, whip: fx.whip > 0.01 ? { len: 0.08 * fx.whip, ang: 0 } : null,
+    edit: { ca: fx.ca, grain: blitzeSanft ? 0.035 : fx.grain, zoom: 0.06 * fx.punch, mono: 0.75 * fx.freeze } };
+  const c = D.contact, k = c ? t - c.t : -1;
+  if (rp.fx) {
+    // Druckwelle am Kontakt, Kometenschweif vom Kontakt bis kurz nach dem Einschlag, Leuchten um den Ball
+    rp.fx.setRing(c, k);
+    const komet = k > 0 && t < D.ti + 0.3;
+    rp.fx.setTrailFarbe([1.0, 0.5, 0.12]);
+    rp.fx.setTrail(komet ? rp.rec.trail(t, Math.min(0.35, k), 24, rp.trail) : null, gcam.cam, komet ? 1 : 0, 0.24);
+    rp.fx.setGlow(0, fx.glow ? [f.ball.p.x, f.ball.p.y, f.ball.p.z] : null, 0.8 + 0.3 * fx.puls, 0.8);
+  }
+  return f;
+}
+// nach dem Stellen der Figuren: Schuhe des Schützen leuchten, Kontur um den Schützen (Standbild), HUD
+function editNachFiguren() {
+  const D = rp.dir, fx = rp.edit.fx;
+  if (!fx) return;
+  let fig = null;
+  if (figSlot) for (let i = 0; i < figSlot.length; i++) if (figSlot[i] && figSlot[i].id === D.schuetze) fig = figs[i];
+  for (let k = 0; k < 2; k++) {
+    const bn = fig && fig.bones ? fig.bones[k ? 'Bip01_R_Foot' : 'Bip01_L_Foot'] : null;
+    if (bn && rp.fx) { bn.getWorldPosition(ED_V); rp.fx.setGlow(1 + k, [ED_V.x, ED_V.y, ED_V.z], 0.42 + 0.12 * fx.puls, fx.freeze ? 0.9 : 0.6); }
+    else if (rp.fx) rp.fx.setGlow(1 + k, null, 0, 0);
+  }
+  let ring = null;
+  if (fx.freeze && fig && fig.root) {
+    const cam = gcam.cam, R = hud.editRahmen(), W = innerWidth, H = innerHeight;
+    const scr = (y) => { ED_V.set(fig.root.position.x, y, fig.root.position.z).project(cam); return [(ED_V.x + 1) / 2 * W - R.left, (1 - ED_V.y) / 2 * H - R.top]; };
+    const a = scr(1.9), b = scr(0), m = scr(0.95);
+    ring = { x: m[0], y: m[1], h: Math.max(40, Math.hypot(a[0] - b[0], a[1] - b[1]) * 1.05) };
+  }
+  hud.editFrame(D.real, fx, ring);
+}
 function endReplay() {
-  rp.dir = null; rp.goal = null; rp.held = false; rp.dof = null;
+  const warEdit = !!(rp.dir && rp.dir.edit);
+  rp.dir = null; rp.goal = null; rp.held = false; rp.dof = null; rp.kinoFx = null;
+  if (warEdit) { hud.editEnd(3); rp.edit = null; if (kino && rp.gradeVor) { kino.grade = rp.gradeVor; rp.gradeVor = null; } }
   if (deko) deko.replay(false);
   gcam.override = null;
   if (GLATT) for (const f of figs) if (f.schnitt) f.schnitt();
@@ -690,6 +811,7 @@ function skipReplay() { if (rp.dir) { rp.dir.skip(); } }
 // Ein Bild der Wiederholung: Zeit weiter, Zustand, Kamera, Effekte → Zustand (oder null, wenn zu Ende)
 function replayFrame(dt, raw) {
   const D = rp.dir;
+  if (D.edit) return editFrame(dt, raw);
   if (raw && (raw.passDown || raw.shotDown) && D.real > 0.3) D.skip();
   const s0 = D.cur, tVor = D.t;
   const t = D.update(dt);
@@ -714,7 +836,10 @@ function replayFrame(dt, raw) {
   }
   return f;
 }
-addEventListener('pointerdown', () => { if (rp.dir && mode === 'play' && rp.dir.real > 0.3) skipReplay(); }, true);
+addEventListener('pointerdown', (e) => {
+  if (e.target && e.target.closest && e.target.closest('[data-act="clipnochmal"]')) return; // n6: „Clip nochmal“ statt überspringen
+  if (rp.dir && mode === 'play' && rp.dir.real > 0.3) skipReplay();
+}, true);
 addEventListener('keydown', (e) => { if (rp.dir && mode === 'play' && e.code !== 'Escape' && rp.dir.real > 0.3) skipReplay(); });
 
 const CULL = { f: new THREE.Frustum(), m: new THREE.Matrix4(), s: new THREE.Sphere(new THREE.Vector3(), 1.5) };
@@ -746,6 +871,9 @@ function drawPlayers(dt, a, rf = null) {
       if (R.phase === 'goal' && pl.speed < 0.8) special = R.scoredTeam === pl.team ? ((R.goals.length ? R.goals[R.goals.length - 1].scorer : game.lastTouch) === pl.id ? 'cheer' : 'clap') : 'wait';
       else if (R.phase === 'end' && pl.speed < 0.8) special = R.winner < 0 ? 'clap' : R.winner === pl.team ? 'cheer2' : 'wait';
       else if (R.phase === 'halftime' && pl.speed < 0.8) special = 'wait';
+    } else if (rf && rp.dir && rp.dir.edit && rf.t > rp.dir.goal.t + 0.15 && pl.speed < (pl.id === rp.dir.schuetze ? 2.5 : 1.2)) {
+      // n6 Fan-Edit: im Jubel jubelt der Schütze, die Mitspieler klatschen (wie live nach dem Tor)
+      special = pl.id === rp.dir.schuetze ? 'cheer' : pl.team === rp.dir.goal.team ? 'clap' : 'wait';
     }
     const ownGoalX = R ? R.goalX(pl.team) : -99;
     const ready = keeper && b.held < 0 && Math.hypot(b.p.x - ownGoalX, b.p.z) < 9 && pl.speed < 2.5 && pl.hand.mode === 'none';
@@ -789,7 +917,7 @@ function autoQuality(dt) {
 // ---------------- n4: Zeichnen, Qualitäts-Autopilot, enge Schattenkamera ----------------
 let grafik = null, grafikKey = null, apMode = 'load', gpuLast = null;
 function zeichne(dt, rf = null) {
-  if (kino) kino.render(scene, gcam.cam, { dt, dof: rf ? rp.dof : null });
+  if (kino) kino.render(scene, gcam.cam, rf && rp.kinoFx ? { dt, dof: rp.dof, ...rp.kinoFx } : { dt, dof: rf ? rp.dof : null });
   else renderer.render(scene, gcam.cam);
 }
 // Kurzmessung (Ladebildschirm): Startszene zeichnen wie im Menü
@@ -873,7 +1001,21 @@ Object.assign(G, {
   start() { startPlay(); },
   mode: () => mode,
   setMode(m) { G.forceMode = m || null; resize(); },
-  newGame(opts = {}) { if (opts.solo !== undefined) setSolo(opts.solo); game = newGame(); resetPrev(); setMode('play'); if (!game.match) game.kickoff(); },
+  // opts.bots: Bot gegen Bot (kein Mensch) mit opts.seed (Zahl wie in den Node-Tests) – n6 Fan-Edit-Bildfolgen
+  newGame(opts = {}) {
+    if (opts.solo !== undefined) setSolo(opts.solo);
+    game = opts.bots ? new Game(P, opts.seed ?? seed, { match: true, human: -1, botLevels: opts.botLevels || [2, 2] }) : newGame();
+    resetPrev(); setMode('play'); if (!game.match) game.kickoff();
+  },
+  // n6: Simulation synchron bis zum Ereignis typ (mit Aufzeichnung für die Wiederholung), höchstens maxSec Spielzeit
+  simBis(maxSec, typ = 'goal') {
+    const n = Math.round(maxSec / DT);
+    for (let i = 0; i < n; i++) { const e = game.step([]); handleEvents(e); recordReplay(e); if (e.some((x) => x.type === typ)) break; }
+    resetPrev();
+    return { t: game.t, score: [...game.score] };
+  },
+  // n6: Fan-Edit bei Clip-Zeit r (s) anhalten (Bildfolgen), null = weiter
+  editHalt(r = null) { rp.haltBei = r; rp.held = false; },
   state() {
     const b = game.ball, pl = me();
     const R = game.match ? game.rules : null;
@@ -925,9 +1067,16 @@ Object.assign(G, {
   freezeWhen(src) { G.freezeFn = new Function('g', 'return (' + src + ')'); },
   cam(pos, look) { gcam.override = pos ? { pos, look } : null; },
   // Tor-Wiederholung (Tests/Fotos): Zustand, sofort starten (letztes Tor), anhalten in Abschnitt/Anteil, überspringen
-  replay() { const D = rp.dir; return { active: !!D, wait: rp.wait, phase: D ? D.phase : null, frac: D ? D.segFrac() : 0, real: D ? D.real : 0, total: D ? D.realTotal : 0, label: rp.label, held: rp.held, contact: D && D.contact ? { ...D.contact } : null, recCount: rp.rec ? rp.rec.count : 0, segs: D ? D.segs.map((x) => x.name) : [] }; },
+  replay() { const D = rp.dir; return { art: replayArt, edit: D && D.edit ? { i: D.i, beat: +D.beat.toFixed(3), schnitte: D.schnitte, cam: D.cur.cam, tech: D.tech, kmh: D.kmh, schuetze: D.schuetze, tc: D.tc, ti: D.ti, t: D.t } : null, active: !!D, wait: rp.wait, phase: D ? D.phase : null, frac: D ? D.segFrac() : 0, real: D ? D.real : 0, total: D ? D.realTotal : 0, label: rp.label, held: rp.held, contact: D && D.contact ? { ...D.contact } : null, recCount: rp.rec ? rp.rec.count : 0, segs: D ? D.segs.map((x) => x.name) : [] }; },
   replayHold(phase = null, frac = 0.5) { rp.hold = phase ? { phase, frac } : null; rp.held = false; },
   replaySkip() { skipReplay(); },
+  // n6: Art der Wiederholung setzen ('edit' | 'klassisch' | 'aus'), Fan-Edit-Messung (je Bild Clip-Zeit, Einstellung,
+  // Spielzeit, Zeitstempel), Clip nochmal, Einstellungen
+  replayArt(a) { if (REPLAY_ARTEN.includes(a)) { replayArt = a; replayOn = a !== 'aus'; replayLabel(); } return replayArt; },
+  editMessStart() { G.editMess = []; },
+  editMessDaten() { const d = G.editMess; G.editMess = null; return d; },
+  clipNochmal() { clipNochmal(); },
+  editOpts(o = {}) { if ('blitze' in o) { blitzeSanft = !!o.blitze; blitzLabel(); } if ('hoch' in o) { clipHoch = !!o.hoch; clipLabel(); } return { blitzeSanft, clipHoch }; },
   // n5 Ruckel-Messung (tests/ruckel.py): Aufzeichnung je Bild starten/abholen
   ruckStart(max = 9000) { G.ruck = new RuckMessung(figs.length, max); },
   ruckDaten() { const d = G.ruck ? G.ruck.daten() : null; G.ruck = null; return d; },

@@ -22,7 +22,7 @@ def abzug(form='quer'):
     with Server() as srv, sync_playwright() as pw:
         s = Session(pw, srv.base, form)
         for name, q, _ in VARIANTEN:
-            S.open_ready(s, '?nosw&seed=3&q=2&nohelp&play&startprobe=0' + q)
+            S.open_ready(s, '?nosw&seed=3&q=2&nohelp&play&startprobe=0&edit=0' + q)  # n6: klassische Wiederholung
             hx = s.ev("__game.game.cage.hx")
             s.ev("__game.freeze(false); __game.newGame(); __game.game.rules.phase = 'play'")
             sx, sz = R.TOR_SZENEN[0][1]; bx, bz = R.TOR_SZENEN[0][2]; vx, vz = R.TOR_SZENEN[0][3]

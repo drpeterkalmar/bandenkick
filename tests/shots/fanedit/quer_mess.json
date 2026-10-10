@@ -1,0 +1,69 @@
+{
+ "form": "quer",
+ "sanft": false,
+ "clips": [
+  {
+   "seed": 8,
+   "tech": "VOLLEY",
+   "kmh": 112,
+   "tor_t": 96.8000000000231,
+   "bilder": 399,
+   "cuts": [
+    {
+     "schlag": 2,
+     "abw_ms": 11.1,
+     "bild_ms": 17.6,
+     "abw_bild": 0.631
+    },
+    {
+     "schlag": 4,
+     "abw_ms": 10.8,
+     "bild_ms": 72.3,
+     "abw_bild": 0.149
+    },
+    {
+     "schlag": 5,
+     "abw_ms": 2.05,
+     "bild_ms": 15.4,
+     "abw_bild": 0.133
+    },
+    {
+     "schlag": 7,
+     "abw_ms": 15.55,
+     "bild_ms": 18.4,
+     "abw_bild": 0.845
+    },
+    {
+     "schlag": 8,
+     "abw_ms": 12.2,
+     "bild_ms": 16.1,
+     "abw_bild": 0.758
+    },
+    {
+     "schlag": 9,
+     "abw_ms": 9.75,
+     "bild_ms": 16.0,
+     "abw_bild": 0.609
+    },
+    {
+     "schlag": 10,
+     "abw_ms": 7.7,
+     "bild_ms": 16.5,
+     "abw_bild": 0.467
+    },
+    {
+     "schlag": 11,
+     "abw_ms": 6.05,
+     "bild_ms": 16.5,
+     "abw_bild": 0.367
+    }
+   ],
+   "max_abw_bild": 0.845,
+   "bild_ms_p50": 16.69999998807907,
+   "bild_ms_p95": 18.19999998807907,
+   "collage": "tests/shots/fanedit/quer_seed8.jpg"
+  }
+ ],
+ "fehler": [],
+ "ton": []
+}
