@@ -4,7 +4,7 @@ Peters Wünsche (09.10.2026): „Mit Fan-Cam meinte ich eigentlich so ein überd
 Zooms usw.“ und „Bei Torschüssen oder Zweikämpfen schnelle Zoom-ins auf die Szene mit Effekten und Speed-Ramps … oder
 Bullet-Time!“. Stand vorher: n5 (Version 0.3.0, ae34b43). Gearbeitet und gemessen auf **rog17 (RTX 3070 Ti, Windows 11,
 Chromium headless über ANGLE/D3D11, stumm `--mute-audio`)**; Handy-Profil = Pixel 7 (DPR 2,625) mit CPU-Drosselung ×4.
-Version **0.4.0**, alles live (Etappen E1–E8 einzeln gelandet). Bandenkick bleibt **lautlos** (Ton-Wächter: 0 Audio-Objekte).
+Version **0.4.0**, alles live (Etappen E1–E12 einzeln gelandet). Bandenkick bleibt **lautlos** (Ton-Wächter: 0 Audio-Objekte).
 
 ## Kurz für Peter
 
@@ -19,8 +19,9 @@ Version **0.4.0**, alles live (Etappen E1–E8 einzeln gelandet). Bandenkick ble
   Tippen überspringt den Clip, „↻ Clip nochmal“ startet ihn neu (auch noch 3 s nach dem Clip).
 - **Live im Spiel – Action-Momente** (ersetzen die alte Luftball-Zeitlupe): bei harten Schüssen/Volley/Fallrückzieher,
   Hechtsprüngen, Paraden, Pfostentreffern, Grätschen, Kopfball-Duellen zoomt die Kamera tief an die Szene, zeigt die letzten
-  Zehntel in Zeitlupe (Rückblick), dann kurz schneller und harter Schnitt zurück. Beim Spektakulärsten **Bullet-Time**: die Zeit
-  steht, die Kamera fährt im Halbkreis um den eingefrorenen Ball. „Selten“ ≈ 5–8 Momente je Bot-Spiel, „Oft“ ≈ 17–24.
+  Zehntel in Zeitlupe (Rückblick: Anlauf, Ausholen, Kontakt mit Druckwelle, leuchtender Ball, Kometenschweif), dann kurz
+  schneller und harter Schnitt zurück. Beim Spektakulärsten **Bullet-Time**: die Zeit steht, die Kamera fährt im Halbkreis um
+  den eingefrorenen Ball. „Selten“ ≈ 5–8 Momente je Bot-Spiel, „Oft“ ≈ 17–24.
 - **Bitte am Handy testen:** ein paar Tore schießen (hoch und quer, einmal mit „Clip im Hochformat“), auf Schnitte im Takt,
   Lesbarkeit der Texte und die Jubel-Szene achten; dann ein Spiel mit „Action-Momente: Oft“ – stören die Momente beim
   Spielen? Fühlt sich die Steuerung in der Zeitlupe fair an? Zum Vergleich `…/bandenkick/?edit=0` (Klassisch), `?action=0`.
@@ -76,10 +77,12 @@ Gags, Jubelwörter, Jubelbewegung variieren schon), Fang-/Kopfball-Tore wirken w
   Simulation nicht als Ereignis – nicht umgesetzt.
 - **Dosierung:** „Selten“ Wertung ≥ 0,8, Zufall 35 %, Abkühlzeit 45 s; „Oft“ ≥ 0,5, 75 %, 12 s; Bullet-Time höchstens alle
   40 s. Nie, wenn ein Gegner am langsamen Ball dicht (< 9 m) vor dem eigenen Tor ist; nicht nach einem Tor.
-- **Speed-Ramp (1,18 s):** Weißblitz < 120 ms + Speed-Lines, Zoom-Punch tief an die Szene (quer zur Schussrichtung bzw. frontal
-  vor den Torwart, Ball im Bild), **Rückblick** 0,16–0,2 s aus dem Ringpuffer in Zeitlupe (zeigt den Kontakt statt nur die
-  Folge; die Simulation steht so lange), dann live 0,12× mit langsamer Fahrt heran, kurz 1,5×, harter Schnitt zurück mit
-  Wischunschärfe und Wackler. Sättigung/Vignette hoch, Knöpfe gedimmt (bleiben bedienbar), Markierungsringe aus.
+- **Speed-Ramp (1,18 s):** Weißblitz < 120 ms + Speed-Lines, Zoom-Punch tief an die Szene (seitlich leicht von vorn nach der
+  Blickrichtung des Schützen, Bildmitte zwischen Schütze und Ball; Torwart frontal vom Feld her), **Rückblick** aus dem
+  Ringpuffer: 0,45 s Echtzeit für die letzten 0,25 s (Schuss) bzw. 0,16 s (Parade) vor dem Auslösen, bremst bis zum Kontakt
+  fast zum Stand – die Simulation steht so lange; am Kontakt Druckwelle, leuchtender Ball, Kometenschweif. Dann live 0,12× mit
+  Fahrt heran, kurz 1,5×, harter Schnitt zurück mit Wischunschärfe und Wackler. Sättigung/Vignette hoch, Knöpfe gedimmt
+  (bleiben bedienbar), Markierungsringe aus, Figuren vor der Linse ausgeblendet.
 - **Bullet-Time (1,45 s):** Zeit steht ≈ 1,15 s (Simulation pausiert und setzt exakt fort), Kamera fährt einen Halbkreis um
   Ball + nächsten Spieler (Radius schrumpft an der Bande, bleibt im Käfig), leichter RGB-Versatz, dann ruckartig zurück.
 - Die alte Luftball-Zeitlupe (Nacht 2) ist darin aufgegangen; `?zeitlupe=0` bzw. die alte Einstellung „Zeitlupe: aus“ = Aus.
@@ -93,10 +96,10 @@ Gags, Jubelwörter, Jubelbewegung variieren schon), Fang-/Kopfball-Tore wirken w
 | Eingabe in der Zeitlupe (`tests/action_bilder.py`) | Mensch tippt Schuss in der Zeitlupe → **Schuss fällt noch im Moment** (hoch und quer, nach 0,82 s Echtzeit) |
 | Bildfolgen (≥ 12 Bilder je Moment) | `tests/shots/action/hoch_*`, `quer_*` (3 automatische Momente + erzwungene Bullet-Time je Format); 0 Fehler, Ton 0 |
 
-**Bewertung „filmisch-spektakulär, Bullet-Time erkennbar?“** (5 Runden): Start 3–6/10 → zuletzt **4–7/10**; Bullet-Time
-wird in allen Runden klar erkannt (6–7/10). Das Ziel ≥ 8/10 ist **nicht erreicht**. Restkritik: Fang-Paraden ohne
-Hechtsprung wirken undramatisch (jetzt nur noch mit Hechtsprung), Kamera zeigt den Schützen teils von hinten, Farbsäume
-an Linien.
+**Bewertung „filmisch-spektakulär, Bullet-Time erkennbar?“** (8 Runden): Start 3–6/10 (Ø ≈ 4,8) → zuletzt **5–7/10
+(Ø ≈ 6,4)**; Bullet-Time wird in allen Runden klar erkannt (6–7/10). Das Ziel ≥ 8/10 ist **nicht erreicht**. Restkritik:
+Ball und Schütze rutschen um den Kontakt an den Bildrand, der Kometenschweif wirkt aus manchen Winkeln wie ein flacher Keil,
+Bullet-Time an beliebiger Stelle hat keinen „Helden“ (in den Testbildern erzwungen), Farbsäume an hellen Linien.
 
 ## Bildrate (gemessen auf rog17, Handy-Profil CPU ×4, Stufe 1 fest, Pixel 7 hoch/quer)
 
@@ -113,10 +116,16 @@ an Linien.
 | **Action-Momente quer** (4 Momente) | 51,6 | 30,0 | 3 % |
 
 - Der Fan-Edit kostet ab dem zweiten Clip ≈ 7–10 fps gegenüber Klassisch, bleibt aber über 30 fps (schlechtestes Fenster ≥ 36).
-- **Offen:** Im allerersten Clip nach dem Laden stockt das erste Bild ≈ 280–300 ms (und einzelne Bilder bis 130 ms) – danach
-  nicht mehr. Behoben unterwegs: Farb-Emojis rastern (150 ms → weg), Effekt-Ebenen neu malen, Shader-Varianten erst beim Tor
-  übersetzen (bis > 1 s am Handy-Profil, jetzt im Ladebildschirm). Die Ursache des Rests habe ich nicht gefunden
-  (Kandidaten: erstes Aufbauen der Overlay-Ebenen, erstes Zeichnen der Tiefenschärfe).
+- **Zweite Messreihe 15:40 (nach E9–E12, rog17 spürbar stärker ausgelastet – auch Klassisch ≈ 10 fps schlechter; die JSON-Dateien
+  enthalten diese Reihe):** Klassisch hoch 40,7/49,7/55,1 fps (schlechtestes Fenster 34/38/48), Fan-Edit hoch 36,1/43,4/42,8
+  (13,6/33,8/34,8); quer Klassisch 42,4/48,5/48,5 (37/40/43), Fan-Edit 34,6/40,6/41,0 (13,5/32,9/30,0). Action-Momente hoch
+  37,4 fps im Moment gegen 46,0 sonst (schlechtestes Fenster 18,0), quer 37,2 gegen 48,2 (16,0). **Unter dieser Last fallen
+  die Action-Momente (mit Rückblick und Kometenschweif) und der erste Clip kurz unter 30 fps – offen.**
+- **Offen:** Im allerersten Clip nach dem Laden stockt das erste Bild ≈ 230–300 ms (und einzelne Bilder bis 130 ms) – danach
+  nicht mehr. Per JS-Profil gefunden und behoben: erzwungenes Layout beim Neustart der Text-Animationen (−100 ms), Shader
+  der erst im Clip sichtbaren Effekte (Ballspur, Druckwelle, Leuchten: 170 → 70 ms, jetzt einmal beim Start vorgezeichnet),
+  Farb-Emojis rastern (150 ms → weg), Shader-Varianten erst beim Tor übersetzen (bis > 1 s, jetzt im Ladebildschirm).
+  Rest: ≈ 70 ms Warten auf einen Shader beim ersten Benutzen und das erste Aufbauen des Overlays.
 - Unabhängig von n6 gefunden: In jedem Bot-Spiel stockt bei Spielzeit ≈ 28 s ein Bild 1,0–1,6 s – auch mit `?replay=0&action=0`
   (Gegenprobe), also älter. Ursache nicht untersucht (für den Mac).
 - Hinweis zur Messung: zwei gedrosselte Browser gleichzeitig verfälschen die Zahlen stark (anfangs passiert) – alle Werte

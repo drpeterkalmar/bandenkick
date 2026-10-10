@@ -12,13 +12,13 @@
   {
    "art": "klassisch",
    "seed": 1,
-   "n": 281,
+   "n": 238,
    "p50": 16.7,
    "p95": 33.4,
    "max": 83.3,
-   "fps_mittel": 49.7,
-   "fps_schlechtestes_0_5s": 42.0,
-   "anteil_ueber_33ms": 0.021,
+   "fps_mittel": 42.4,
+   "fps_schlechtestes_0_5s": 37.2,
+   "anteil_ueber_33ms": 0.013,
    "stufe": 1,
    "skala": 0.85,
    "groesste_luecken_ms_bei_clipzeit": []
@@ -26,13 +26,13 @@
   {
    "art": "klassisch",
    "seed": 8,
-   "n": 308,
+   "n": 274,
    "p50": 16.7,
    "p95": 33.4,
    "max": 33.4,
-   "fps_mittel": 54.4,
-   "fps_schlechtestes_0_5s": 48.4,
-   "anteil_ueber_33ms": 0.032,
+   "fps_mittel": 48.5,
+   "fps_schlechtestes_0_5s": 40.0,
+   "anteil_ueber_33ms": 0.055,
    "stufe": 1,
    "skala": 0.85,
    "groesste_luecken_ms_bei_clipzeit": []
@@ -40,13 +40,13 @@
   {
    "art": "klassisch",
    "seed": 11,
-   "n": 289,
+   "n": 249,
    "p50": 16.7,
-   "p95": 33.3,
+   "p95": 33.4,
    "max": 33.4,
-   "fps_mittel": 56.1,
-   "fps_schlechtestes_0_5s": 52.0,
-   "anteil_ueber_33ms": 0.007,
+   "fps_mittel": 48.5,
+   "fps_schlechtestes_0_5s": 43.1,
+   "anteil_ueber_33ms": 0.06,
    "stufe": 1,
    "skala": 0.85,
    "groesste_luecken_ms_bei_clipzeit": []
@@ -54,89 +54,89 @@
   {
    "art": "edit",
    "seed": 1,
-   "n": 274,
-   "p50": 16.7,
-   "p95": 33.4,
-   "max": 133.4,
-   "fps_mittel": 39.6,
-   "fps_schlechtestes_0_5s": 16.0,
-   "anteil_ueber_33ms": 0.077,
+   "n": 242,
+   "p50": 33.3,
+   "p95": 49.9,
+   "max": 150.1,
+   "fps_mittel": 34.6,
+   "fps_schlechtestes_0_5s": 13.5,
+   "anteil_ueber_33ms": 0.107,
    "stufe": 1,
    "skala": 0.85,
    "groesste_luecken_ms_bei_clipzeit": [
     [
-     296.2,
+     310.4,
      0.12,
      0
     ],
     [
-     130.2,
+     160.4,
      0.62,
      1
     ],
     [
-     112.7,
-     0.52,
-     1
+     136.3,
+     3.47,
+     6
     ]
    ]
   },
   {
    "art": "edit",
    "seed": 8,
-   "n": 312,
-   "p50": 16.7,
+   "n": 282,
+   "p50": 16.8,
    "p95": 33.4,
    "max": 50,
-   "fps_mittel": 45.0,
-   "fps_schlechtestes_0_5s": 36.0,
-   "anteil_ueber_33ms": 0.08,
+   "fps_mittel": 40.6,
+   "fps_schlechtestes_0_5s": 32.9,
+   "anteil_ueber_33ms": 0.099,
    "stufe": 1,
    "skala": 0.85,
    "groesste_luecken_ms_bei_clipzeit": [
     [
-     48.6,
-     1.47,
-     2
-    ],
-    [
-     41.2,
-     0.07,
+     45.4,
+     0.08,
      0
     ],
     [
-     36.7,
-     5.2,
+     42.4,
+     5.21,
      10
+    ],
+    [
+     42.3,
+     1.45,
+     2
     ]
    ]
   },
   {
    "art": "edit",
    "seed": 11,
-   "n": 314,
+   "n": 285,
    "p50": 16.7,
    "p95": 33.4,
    "max": 50,
-   "fps_mittel": 45.3,
-   "fps_schlechtestes_0_5s": 37.5,
-   "anteil_ueber_33ms": 0.073,
+   "fps_mittel": 41.0,
+   "fps_schlechtestes_0_5s": 30.0,
+   "anteil_ueber_33ms": 0.137,
    "stufe": 1,
    "skala": 0.85,
    "groesste_luecken_ms_bei_clipzeit": [
     [
-     43.9,
-     1.46,
-     2
-    ],
-    [
-     41.7,
-     0.14,
+     55.4,
+     0.16,
      0
     ],
     [
-     40.7,
-     0.07,
+     52.0,
+     1.47,
+     2
+    ],
+    [
+     42.5,
+     0.08,
      0
     ]
    ]
