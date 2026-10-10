@@ -169,6 +169,13 @@ export class ReplayRecorder {
     out.x = sx / sw; out.z = sz / sw; out.face = Math.atan2(cz, cx);
     return out;
   }
+  // n6: steht der Spieler zur Spielzeit t (kein Luftball, kein Fallen/Hechten, keine Grätsche, nicht im Sprung)?
+  aufrecht(k, t) {
+    const L = this.locate(t);
+    if (!L) return false;
+    const B = this.buf, q = L.i0 * this.stride + HF + k * NPF;
+    return !B[q + 17] && !B[q + 22] && !B[q + 25] && B[q + 9] < 0.12;
+  }
   // Ballbahn der letzten `back` s bis t (für die Ballspur), höchstens n Punkte
   trail(t, back, n, out = []) {
     out.length = 0;

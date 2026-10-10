@@ -1,0 +1,69 @@
+{
+ "form": "hoch",
+ "sanft": true,
+ "clips": [
+  {
+   "seed": 8,
+   "tech": "VOLLEY",
+   "kmh": 112,
+   "tor_t": 96.8000000000231,
+   "bilder": 406,
+   "cuts": [
+    {
+     "schlag": 2,
+     "abw_ms": 13.0,
+     "bild_ms": 17.9,
+     "abw_bild": 0.726
+    },
+    {
+     "schlag": 4,
+     "abw_ms": 7.6,
+     "bild_ms": 16.3,
+     "abw_bild": 0.466
+    },
+    {
+     "schlag": 5,
+     "abw_ms": 5.75,
+     "bild_ms": 16.6,
+     "abw_bild": 0.346
+    },
+    {
+     "schlag": 7,
+     "abw_ms": 2.15,
+     "bild_ms": 17.7,
+     "abw_bild": 0.121
+    },
+    {
+     "schlag": 8,
+     "abw_ms": 0.9,
+     "bild_ms": 17.9,
+     "abw_bild": 0.05
+    },
+    {
+     "schlag": 9,
+     "abw_ms": 15.45,
+     "bild_ms": 18.1,
+     "abw_bild": 0.854
+    },
+    {
+     "schlag": 10,
+     "abw_ms": 12.4,
+     "bild_ms": 15.6,
+     "abw_bild": 0.795
+    },
+    {
+     "schlag": 11,
+     "abw_ms": 9.75,
+     "bild_ms": 16.5,
+     "abw_bild": 0.591
+    }
+   ],
+   "max_abw_bild": 0.854,
+   "bild_ms_p50": 16.69999998807907,
+   "bild_ms_p95": 17.900000035762787,
+   "collage": "tests/shots/fanedit/hoch_sanft_seed8.jpg"
+  }
+ ],
+ "fehler": [],
+ "ton": []
+}

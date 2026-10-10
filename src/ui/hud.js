@@ -110,7 +110,7 @@ export function buildHud(root, canvas) {
   // n6 Fan-Edit (TikTok-Stil): Rahmen (Hochformat-Ausschnitt auf Querformat möglich), Bildunterschrift, Einschlag-Texte,
   // km/h-Zähler, Stempel, Emojis, Speed-Lines, Schlag-Puls, Kontur um den Schützen im Standbild, Fortschritt, „Clip nochmal“
   const fe = h('div', 'fe', '<i class="fe-side l"></i><i class="fe-side r"></i><div class="fe-frame">' +
-    '<i class="fe-lines"></i><i class="fe-puls"></i><i class="fe-flash"></i><div class="fe-ring"><span></span></div>' +
+    '<i class="fe-lines"></i><i class="fe-puls"></i><i class="fe-flash"></i><i class="fe-spot"></i><div class="fe-ring"><span></span></div>' +
     '<div class="fe-pov"></div><div class="fe-big"></div><div class="fe-kmh"></div><div class="fe-stamp"></div><div class="fe-name"></div>' +
     '<div class="fe-gag"></div><div class="fe-emoji"></div><div class="fe-tag">@bandenkick<small>#golazo #hallenkick #fyp</small></div>' +
     '<div class="fe-prog"><i></i></div><i class="fe-fade"></i><button class="fe-again" data-act="clipnochmal">↻ Clip nochmal</button></div>');
@@ -126,12 +126,12 @@ export function buildHud(root, canvas) {
       g.fillText(ch, 72, 80); return c.toDataURL('image/png');
     } catch (_) { return ''; }
   })());
-  for (const ch of ['🔥', '⚡', '💥']) emojiBild(ch);
+  for (const ch of ['🔥', '⚡', '💥', '😱', '🐐']) emojiBild(ch);
   try {
     const c = document.createElement('canvas'); c.width = c.height = 512; const g = c.getContext('2d');
     const gr = g.createRadialGradient(256, 256, 60, 256, 256, 256); gr.addColorStop(0, 'rgba(255,255,255,0)'); gr.addColorStop(0.45, 'rgba(255,255,255,.55)'); gr.addColorStop(1, 'rgba(255,255,255,1)');
     g.strokeStyle = gr;
-    for (let i = 0; i < 64; i++) { const a = i / 64 * Math.PI * 2 + (i % 3) * 0.02; g.lineWidth = i % 2 ? 2 : 4.5; g.beginPath(); g.moveTo(256 + Math.cos(a) * 90, 256 + Math.sin(a) * 90); g.lineTo(256 + Math.cos(a) * 362, 256 + Math.sin(a) * 362); g.stroke(); }
+    for (let i = 0; i < 56; i++) { const a = i / 56 * Math.PI * 2 + (i % 3) * 0.03; g.lineWidth = i % 2 ? 3.5 : 7; g.beginPath(); g.moveTo(256 + Math.cos(a) * 90, 256 + Math.sin(a) * 90); g.lineTo(256 + Math.cos(a) * 362, 256 + Math.sin(a) * 362); g.stroke(); }
     fe.querySelector('.fe-lines').style.backgroundImage = `url(${c.toDataURL('image/png')})`;
   } catch (_) { /* ohne Speed-Lines */ }
   root.append(top, banner, charge, hold, touch, dbg, start, menu, credits, train, hint, result, help, replay, clipAgain);
@@ -149,15 +149,16 @@ export function buildHud(root, canvas) {
   let bannerT = 0, kickT = 0, lastScore = '', lastKeeper = '', lastCharge = null, lastStatus = '';
   const clock = (sec) => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, '0')}`;
   const rpLabel = replay.querySelector('.rp-label span'), rpFlash = replay.querySelector('.flash');
-  const F = Object.fromEntries(['frame', 'lines', 'puls', 'flash', 'ring', 'pov', 'big', 'kmh', 'stamp', 'name', 'gag', 'emoji', 'prog', 'fade', 'again'].map((k) => [k, fe.querySelector('.fe-' + k)]));
-  const ed = { info: null, next: 0, last: -1, kmh: null, lw: 0, st: new Map() };
+  const F = Object.fromEntries(['frame', 'lines', 'puls', 'flash', 'spot', 'ring', 'pov', 'big', 'kmh', 'stamp', 'name', 'gag', 'emoji', 'prog', 'fade', 'again'].map((k) => [k, fe.querySelector('.fe-' + k)]));
+  const ed = { info: null, next: 0, last: -1, kmh: null, lw: 0, st: new Map(), z: 1, zuf() { this.z = (this.z * 16807) % 2147483647; return this.z / 2147483647; } };
   // Stil nur schreiben, wenn er sich ändert (je Bild: Deckkraft/Drehung der Ebenen)
   const setz = (el, k, v) => { const m = ed.st.get(el) || ed.st.set(el, {}).get(el); if (m[k] !== v) { m[k] = v; el.style[k] = v; } };
   // Text-Element mit Einschlag-Animation (Klasse neu setzen → CSS-Animation startet neu)
-  const slam = (el, html, cls = '', fit = 0) => {
+  const slam = (el, html, cls = '', fit = 0, n = 0) => {
     el.innerHTML = html; el.className = el.className.split(' ')[0] + ' an' + (cls ? ' ' + cls : '');
-    // fit = Schriftgröße in cqmin; lange Wörter (FALLRÜCKZIEHER) passen sich der Rahmenbreite an
-    if (fit) { const n = Math.max(1, el.firstChild && el.firstChild.textContent ? el.firstChild.textContent.length : html.length); el.style.fontSize = `min(${fit}cqmin, ${(84 / n).toFixed(1)}cqw)`; } else el.style.fontSize = '';
+    // fit = Schriftgröße in cqmin; n = Zeichen der längsten Zeile: lange Wörter passen sich der Rahmenbreite an
+    if (fit) el.style.fontSize = `min(${fit}cqmin, ${(86 / Math.max(1, n)).toFixed(1)}cqw)`; else el.style.fontSize = '';
+    el.style.setProperty('--rot', (ed.zuf() * 10 - 6).toFixed(1) + 'deg'); el.style.setProperty('--dy', (ed.zuf() * 6 - 3).toFixed(1) + '%');
     void el.offsetWidth; el.classList.add('go');
   };
   const weg = (el) => { el.className = el.className.split(' ')[0]; };
@@ -165,13 +166,13 @@ export function buildHud(root, canvas) {
     if (e.emoji) { const im = emojiBild(e.emoji); slam(F.emoji, im ? `<i><img src="${im}" alt=""></i>`.repeat(3) : `<i>${e.emoji}</i>`.repeat(3)); }
     switch (e.text) {
       case 'pov': slam(F.pov, I.pov); break;
-      case 'technik': slam(F.big, I.tech, 'tech', 12.5); break;
+      case 'technik': { const z = I.tech.split('|'); slam(F.big, z.join('<br>'), 'tech', 21, Math.max(...z.map((x) => x.length))); break; }
       case 'kmh': ed.kmh = { t0: e.t, v: I.kmh }; weg(F.big); F.kmh.className = 'fe-kmh an'; break;
       case 'kmhStempel': slam(F.kmh, `${I.kmh}<small>KM/H</small>`, 'stempel'); ed.kmh = null; break;
-      case 'golazo': weg(F.kmh); slam(F.big, I.own ? 'EIGENTOR 💀' : 'GOLAZO!', 'golazo', 20); break;
+      case 'golazo': weg(F.kmh); slam(F.big, I.own ? 'EIGEN-<br>TOR!' : 'GOLAZO!', 'golazo', 32, I.own ? 6 : 7); break;
       case 'kontur': weg(F.big); break;
       case 'x1': case 'x2': case 'x3': weg(F.big); slam(F.stamp, '×' + e.text[1]); break;
-      case 'name': weg(F.stamp); slam(F.name, `${I.name}<small>${I.team}</small>`, '', 13); break;
+      case 'name': weg(F.stamp); slam(F.name, `${I.name}<small>${I.team}</small>`, '', 22, I.name.length); break;
       case 'gag': slam(F.gag, I.gag); break;
       case 'ende': F.again.classList.add('on'); break;
     }
@@ -185,7 +186,7 @@ export function buildHud(root, canvas) {
     editVorbereiten(on) { document.body.classList.toggle('fevor', !!on); replay.classList.toggle('edit', !!on || !!ed.info); },
     editStart(info) {
       document.body.classList.remove('fevor');
-      ed.info = info; ed.next = 0; ed.last = -1; ed.kmh = null;
+      ed.info = info; ed.next = 0; ed.last = -1; ed.kmh = null; ed.z = (info.seed || 7) % 2147483646 + 1;
       replay.classList.add('edit'); replay.classList.toggle('reduce', !!info.reduce);
       document.body.classList.toggle('cliphoch', !!info.hoch);
       for (const k of ['big', 'kmh', 'stamp', 'name', 'gag', 'emoji', 'pov']) weg(F[k]);
@@ -194,7 +195,7 @@ export function buildHud(root, canvas) {
     // je Bild: r = Clip-Zeit (s), fx = Effekte (FanEdit.fx), ring = {x, y, h} Schütze im Bild (Pixel) oder null
     editFrame(r, fx, ring) {
       const I = ed.info; if (!I) return;
-      if (r < ed.last) { ed.next = 0; for (const k of ['big', 'kmh', 'stamp', 'name', 'gag', 'emoji', 'pov']) weg(F[k]); F.again.classList.remove('on'); } // nochmal
+      if (r < ed.last) { ed.next = 0; ed.z = (I.seed || 7) % 2147483646 + 1; for (const k of ['big', 'kmh', 'stamp', 'name', 'gag', 'emoji', 'pov']) weg(F[k]); F.again.classList.remove('on'); } // nochmal
       ed.last = r;
       while (ed.next < I.events.length && I.events[ed.next].t <= r) feTrigger(I.events[ed.next++], I);
       if (ed.kmh) { const u = Math.min(1, (r - ed.kmh.t0) / 0.42); F.kmh.innerHTML = `${Math.round(ed.kmh.v * (1 - (1 - u) ** 3))}<small>KM/H</small>`; }
@@ -206,11 +207,14 @@ export function buildHud(root, canvas) {
       setz(F.fade, 'opacity', (fx.fade || 0).toFixed(2));
       setz(F.prog.firstChild, 'transform', `scaleX(${(r / I.total).toFixed(3)})`);
       if (ring && fx.freeze) {
+        const w = Math.max(90, ring.w * 1.4 + 30), hh = Math.max(110, ring.h * 1.35 + 30), x = ring.x.toFixed(0), y = ring.y.toFixed(0);
         setz(F.ring, 'display', 'block');
-        setz(F.ring, 'left', ring.x.toFixed(0) + 'px'); setz(F.ring, 'top', ring.y.toFixed(0) + 'px');
-        setz(F.ring, 'width', (ring.h * 0.75).toFixed(0) + 'px'); setz(F.ring, 'height', (ring.h * 1.15).toFixed(0) + 'px');
+        setz(F.ring, 'left', x + 'px'); setz(F.ring, 'top', y + 'px'); setz(F.ring, 'width', w.toFixed(0) + 'px'); setz(F.ring, 'height', hh.toFixed(0) + 'px');
+        // Spotlight: alles außer dem Schützen abdunkeln (Standbild → einmal gemalt)
+        setz(F.spot, 'display', 'block');
+        setz(F.spot, 'background', `radial-gradient(ellipse ${(w * 0.62).toFixed(0)}px ${(hh * 0.62).toFixed(0)}px at ${x}px ${y}px, rgba(0,0,0,0) 78%, rgba(0,0,0,.55) 100%)`);
         if (F.ring.firstChild.textContent !== '⬇ ' + I.name) F.ring.firstChild.textContent = '⬇ ' + I.name;
-      } else setz(F.ring, 'display', 'none');
+      } else { setz(F.ring, 'display', 'none'); setz(F.spot, 'display', 'none'); }
     },
     // Rahmen des Clips (für die Kontur in Pixeln relativ zum Rahmen)
     editRahmen() { return F.frame.getBoundingClientRect(); },

@@ -405,6 +405,8 @@ export class Avatar {
     for (const [n, a] of this.actListe) {
       a.setEffectiveWeight(this.glatt ? this.sonderW[n] || 0 : n === this.specialName ? sw : 0);
     }
+    // n6: Sonderbewegung an fester Stelle des Clips (Fan-Edit: Jubel in Zeitlupe zeigt gleich die hochgerissenen Arme)
+    if (st.specialZeit != null && want && this.act[want]) { const a = this.act[want]; a.time = st.specialZeit % a.getClip().duration; }
     this.mixer.update(dt);
     // ---- prozedurale Schichten (nach dem Mischer, im Weltraum der Figur) – nur wenn aktiv (spart Matrix-Updates) ----
     // Stemmschritt: Körper lehnt sich gegen die alte Laufrichtung (bis 22°), Hechtsprung: Rolle
