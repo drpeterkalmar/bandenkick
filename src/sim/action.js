@@ -54,7 +54,7 @@ export function bewerte(e, game) {
     const bullet = BULLET_TECH.has(e.tech) || (kreuzeck && (e.tech === 'volley' || kmh >= 105));
     // Fokus zwischen Schütze und Ball, Kamera quer zur Schussrichtung (Schütze von der Seite)
     const pl = P[e.player], fx = pl ? e.x * 0.6 + pl.x * 0.4 : e.x, fz = pl ? e.z * 0.6 + pl.z * 0.4 : e.z, dl = Math.hypot(e.dx || 0, e.dz || 0) || 1;
-    return { w: clamp(w, 0, 1), art: bullet ? 'bullet' : 'ramp', fokus: [fx, Math.max(0.6, (e.y || 0) * 0.5 + 0.5), fz], dir: [-(e.dz || 0) / dl, (e.dx || 1) / dl], spieler: e.player, grund: kreuzeck ? 'kreuzeck' : e.tech || 'schuss' };
+    return { w: clamp(w, 0, 1), art: bullet ? 'bullet' : 'ramp', fokus: [fx, Math.max(0.6, (e.y || 0) * 0.5 + 0.5), fz], ...(pl ? { dir: [-Math.sin(pl.face), Math.cos(pl.face)], vor: [Math.cos(pl.face), Math.sin(pl.face)] } : { dir: [-(e.dz || 0) / dl, (e.dx || 1) / dl], vor: [(e.dx || 1) / dl, (e.dz || 0) / dl] }), spieler: e.player, grund: kreuzeck ? 'kreuzeck' : e.tech || 'schuss' };
   }
   if (e.type === 'post' && (e.speed || 0) > 10) return { w: 0.72, art: 'ramp', fokus: [game.ball.p.x, game.ball.p.y, game.ball.p.z], spieler: -1, grund: 'pfosten' };
   if (e.type === 'parry' && (e.speed || 0) > 14) {
@@ -109,7 +109,7 @@ export function verlauf(art, t, reduce = false, langsam = AKTION.langsam) {
     const T = AKTION.ramp;
     if (t >= T) { o.ende = true; return o; }
     if (t < 0.1) { const u = ss(t / 0.1); o.rate = 1 + (L - 1) * u; o.punch = u; }
-    else if (t < 0.65) { o.rate = L; o.punch = 1; o.drift = (t - 0.1) / 0.55; o.rueck = t < 0.32 ? ss((t - 0.1) / 0.22) : -1; } // Rückblick bis ≈ 0,3 s: Kontakt früh
+    else if (t < 0.65) { o.rate = L; o.punch = 1; o.drift = (t - 0.1) / 0.55; o.rueck = t < 0.55 ? 1 - (1 - (t - 0.1) / 0.45) ** 2 : -1; } // Rückblick 0,45 s, bremst bis zum Kontakt (≈ 0,55 s) fast zum Stand
     else if (t < 0.8) { const u = ss((t - 0.65) / 0.15); o.rate = L + (1.5 - L) * u; o.punch = 1; o.drift = 1 + 0.4 * u; }
     else { const u = ss((t - 0.8) / (T - 0.8)); o.rate = 1.5 + (1 - 1.5) * u; o.punch = 0; o.whip = Math.max(0, 1 - (t - 0.8) / 0.1); o.shake = t < 0.86 ? (reduce ? 0.2 : 0.5) : 0; } // harter Schnitt zurück
     o.sat = t < 0.95 ? ss(t / 0.15) : 1 - ss((t - 0.95) / 0.25);
@@ -141,7 +141,7 @@ export class ActionRegie {
     if (best.art === 'bullet') this.letztBullet = game.t;
     // Rückblick: die Zeitlupe zeigt die letzten Zehntel vor dem Auslösen aus der Aufzeichnung (Kontakt, Parade), die
     // Simulation steht so lange; der Hechtsprung beginnt erst – da braucht es keinen
-    const rueck = best.art === 'ramp' && best.grund !== 'hechtsprung' ? (best.grund === 'parade' || best.grund === 'fang' || best.grund === 'hechtfang' ? 0.16 : 0.2) : 0;
+    const rueck = best.art === 'ramp' && best.grund !== 'hechtsprung' ? (best.grund === 'parade' || best.grund === 'fang' || best.grund === 'hechtfang' ? 0.16 : 0.25) : 0; // Schuss: Ausholen + Kontakt
     this.moment = { ...best, t: 0, tSpiel: game.t, real: 0, rueck };
     this.letzt = game.t; this.zahl++;
     this.log.push({ t: game.t, grund: best.grund, art: best.art, w: +best.w.toFixed(2) });

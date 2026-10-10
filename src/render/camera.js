@@ -101,7 +101,11 @@ export class GameCamera {
       let dx = c.position.x - p[0], dz = c.position.z - p[2]; const dl = Math.hypot(dx, dz) || 1; dx /= dl; dz /= dl;
       // Richtung der Szene (quer zum Schuss / vor dem Torwart), auf der Seite der Spielkamera
       // (Torwart: immer vom Feld her, nie von hinter dem Tor)
-      if (F.dir) { let ex = F.dir[0], ez = F.dir[1]; if (!F.nah && ex * dx + ez * dz < 0) { ex = -ex; ez = -ez; } const el = Math.hypot(ex, ez) || 1; dx = ex / el; dz = ez / el; }
+      if (F.dir) {
+        let ex = F.dir[0], ez = F.dir[1]; if (!F.nah && ex * dx + ez * dz < 0) { ex = -ex; ez = -ez; }
+        if (F.vor) { ex += 0.75 * F.vor[0]; ez += 0.75 * F.vor[1]; } // Schuss: 3/4 von vorn (Gesicht, Fuß und Ball)
+        const el = Math.hypot(ex, ez) || 1; dx = ex / el; dz = ez / el;
+      }
       // langsame Fahrt heran und leichtes Kreisen während der Zeitlupe
       const dr = F.drift || 0, a = 0.3 * dr, ca = Math.cos(a), sa = Math.sin(a), rx = dx * ca - dz * sa, rz = dx * sa + dz * ca;
       const D = (F.nah ? 3.8 - 0.6 * dr : 4.5 - 1.0 * dr) * (this.mode === 'hoch' ? 1 : 0.85), cage = this.cage;

@@ -12,7 +12,7 @@ if '--mute-audio' not in ARGS: ARGS.append('--mute-audio')
 args = [a for a in sys.argv[1:] if not a.startswith('--')]
 FORM = args[0] if args else 'hoch'
 ANZ = int(args[1]) if len(args) > 1 else 3
-ZEITEN = {'ramp': [0.03, 0.07, 0.12, 0.2, 0.3, 0.42, 0.55, 0.66, 0.75, 0.85, 0.95, 1.05, 1.15],
+ZEITEN = {'ramp': [0.03, 0.07, 0.12, 0.2, 0.3, 0.4, 0.48, 0.55, 0.62, 0.72, 0.8, 0.9, 1.05],
           'bullet': [0.03, 0.07, 0.12, 0.25, 0.4, 0.55, 0.7, 0.85, 1.0, 1.15, 1.24, 1.3, 1.4]}
 
 

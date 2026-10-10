@@ -492,14 +492,17 @@ function slowScale(dt) {
     am.rf = rp.rec.frameAt(tR, am.frame || (am.frame = {}), P);
   } else am.tR = null;
   const bb = am.rf ? am.rf.ball.p : game.ball.p;
-  gcam.fokus = { p: M.fokus, k: v.punch, dir: M.dir, nah: M.nah, drift: v.drift, ball: [bb.x, bb.y, bb.z] };
+  // Bildmitte zwischen Oberkörper des Schützen und Ball (läuft mit, auch im Rückblick)
+  const sp = M.spieler >= 0 && !M.nah ? (am.rf ? am.rf.players[M.spieler] : game.players[M.spieler]) : null;
+  const fp = sp ? [(sp.x + bb.x) / 2, 0.8, (sp.z + bb.z) / 2] : M.fokus;
+  gcam.fokus = { p: fp, k: v.punch, dir: M.dir, vor: M.vor, nah: M.nah, drift: v.drift, ball: [bb.x, bb.y, bb.z] };
   gcam.zoom = (gcam.mode === 'hoch' ? 0.6 : 1) * v.punch; // quer: enger (mehr Tele)
   if (v.shake > gcam.shake) gcam.shake = v.shake;
   if (v.orbit >= 0) {
     // Bullet-Time: Halbkreis um den Moment (Start: Richtung der Spielkamera), Blick auf den Fokus
     if (!am.orbit) am.orbit = bulletBahn(M);
     const B = am.orbit, a = B.a0 + B.dir * Math.PI * (0.15 * v.orbit + 0.85 * v.orbitLin), R = B.R(a);
-    gcam.override = { pos: [B.z[0] + Math.cos(a) * R, 1.35 + 0.35 * Math.sin(Math.PI * v.orbit), B.z[2] + Math.sin(a) * R], look: [B.z[0], 0.85, B.z[2]] };
+    gcam.override = { pos: [B.z[0] + Math.cos(a) * R, 1.05 + 0.25 * Math.sin(Math.PI * v.orbit), B.z[2] + Math.sin(a) * R], look: [B.z[0], 0.8, B.z[2]] };
     if (Math.abs(gcam.cam.fov - 46) > 0.01) { gcam.cam.fov = 46; gcam.cam.updateProjectionMatrix(); }
   } else if (am.orbit) { am.orbit = null; gcam.override = null; gcam.setAspect(gcam.cam.aspect, G.forceMode); } // ruckartig zurück
   if (kino) kino.grade = v.sat > 0.4 ? 'aktion' : am.gradeVor || kino.grade;
@@ -512,9 +515,9 @@ function bulletBahn(M) {
   const b = game.ball.p, f = M.fokus;
   let q = null, dq = 9;
   for (const p of game.players) { const d = Math.hypot(p.x - b.x, p.z - b.z); if (d < dq) { dq = d; q = p; } }
-  const z = q && dq < 3 ? [b.x * 0.7 + q.x * 0.3, 0.75, b.z * 0.7 + q.z * 0.3] : [f[0], 0.85, f[2]]; // nah am Ball
+  const z = q && dq < 3 ? [b.x * 0.55 + q.x * 0.45, 0.75, b.z * 0.55 + q.z * 0.45] : [f[0], 0.85, f[2]]; // zwischen Ball und Spieler
   const c = gcam.cam.position, a0 = Math.atan2(c.z - z[2], c.x - z[0]), cg = game.cage;
-  const R = (a) => { let r = 3.7; const cx = Math.cos(a), cz = Math.sin(a); if (cx) r = Math.min(r, ((cx > 0 ? cg.hx : -cg.hx) - 0.35 * Math.sign(cx) - z[0]) / cx); if (cz) r = Math.min(r, ((cz > 0 ? cg.hz : -cg.hz) - 0.35 * Math.sign(cz) - z[2]) / cz); return Math.max(2, r); };
+  const R = (a) => { let r = 2.9; const cx = Math.cos(a), cz = Math.sin(a); if (cx) r = Math.min(r, ((cx > 0 ? cg.hx : -cg.hx) - 0.35 * Math.sign(cx) - z[0]) / cx); if (cz) r = Math.min(r, ((cz > 0 ? cg.hz : -cg.hz) - 0.35 * Math.sign(cz) - z[2]) / cz); return Math.max(1.8, r); };
   const guete = (d) => { let s = 0; for (let i = 0; i <= 8; i++) s += R(a0 + d * Math.PI * i / 8); return s; };
   return { z, a0, dir: guete(1) >= guete(-1) ? 1 : -1, R };
 }
@@ -683,7 +686,7 @@ function frame() {
       if (!f.root || !f.root.visible) continue;
       const fx = f.root.position.x - cp.x, fz = f.root.position.z - cp.z, d = Math.hypot(fx, fz);
       let weg = d < 1.3;
-      if (!weg && lk && d < 2.6) { const lx = lk[0] - cp.x, lz = lk[2] - cp.z, L = Math.hypot(lx, lz) || 1, u = (fx * lx + fz * lz) / L; weg = u > 0 && u < L - 0.8 && Math.abs(fx * lz - fz * lx) / L < 0.45; }
+      if (!weg && lk && d < 3.5) { const lx = lk[0] - cp.x, lz = lk[2] - cp.z, L = Math.hypot(lx, lz) || 1, u = (fx * lx + fz * lz) / L; weg = u > 0 && u < L - 0.8 && Math.abs(fx * lz - fz * lx) / L < 0.6; }
       if (weg) f.root.visible = false;
     }
     marker.visible = false;
