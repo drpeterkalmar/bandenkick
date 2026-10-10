@@ -1,0 +1,93 @@
+{
+ "form": "quer",
+ "drossel": 4,
+ "seeds": [
+  1,
+  8,
+  11
+ ],
+ "sanft": false,
+ "geraet": "rog17 (RTX 3070 Ti, Windows, ANGLE/D3D11)",
+ "laeufe": [
+  {
+   "art": "klassisch",
+   "seed": 1,
+   "n": 220,
+   "p50": 16.8,
+   "p95": 33.4,
+   "max": 2500,
+   "fps_mittel": 27.4,
+   "fps_schlechtestes_0_5s": 0.4,
+   "anteil_ueber_33ms": 0.041,
+   "stufe": 0,
+   "skala": 1
+  },
+  {
+   "art": "klassisch",
+   "seed": 8,
+   "n": 194,
+   "p50": 33.3,
+   "p95": 33.4,
+   "max": 66.6,
+   "fps_mittel": 34.2,
+   "fps_schlechtestes_0_5s": 30.0,
+   "anteil_ueber_33ms": 0.149,
+   "stufe": 0,
+   "skala": 1
+  },
+  {
+   "art": "klassisch",
+   "seed": 11,
+   "n": 212,
+   "p50": 16.7,
+   "p95": 33.4,
+   "max": 33.4,
+   "fps_mittel": 41.3,
+   "fps_schlechtestes_0_5s": 36.0,
+   "anteil_ueber_33ms": 0.127,
+   "stufe": 0,
+   "skala": 1
+  },
+  {
+   "art": "edit",
+   "seed": 1,
+   "n": 211,
+   "p50": 33.3,
+   "p95": 50.1,
+   "max": 2633.2,
+   "fps_mittel": 22.2,
+   "fps_schlechtestes_0_5s": 0.4,
+   "anteil_ueber_33ms": 0.194,
+   "stufe": 0,
+   "skala": 1
+  },
+  {
+   "art": "edit",
+   "seed": 8,
+   "n": 272,
+   "p50": 33.3,
+   "p95": 33.4,
+   "max": 50,
+   "fps_mittel": 39.2,
+   "fps_schlechtestes_0_5s": 32.9,
+   "anteil_ueber_33ms": 0.14,
+   "stufe": 0,
+   "skala": 1
+  },
+  {
+   "art": "edit",
+   "seed": 11,
+   "n": 284,
+   "p50": 16.8,
+   "p95": 33.4,
+   "max": 50.1,
+   "fps_mittel": 40.7,
+   "fps_schlechtestes_0_5s": 35.6,
+   "anteil_ueber_33ms": 0.155,
+   "stufe": 0,
+   "skala": 1
+  }
+ ],
+ "fehler": [],
+ "ton": []
+}

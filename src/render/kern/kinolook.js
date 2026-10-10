@@ -697,8 +697,23 @@ export class KinoLook {
     // n27: Lichtblitz (Feuerwerk), Weißblitz-Übergang, Reißschwenk (o.whip = { len Anteil der Bildbreite, ang rad })
     U.uFx.value.set(o.flash ? o.flash.k : 0, o.white || 0, o.whip ? o.whip.len : 0, o.whip ? o.whip.ang : 0);
     if (o.flash && o.flash.col) U.uFlashCol.value.fromArray(o.flash.col);
-    const defs = {};
-    if (o.edit) { U.uEdit.value.set(o.edit.ca || 0, o.edit.grain || 0, o.edit.zoom || 0, o.edit.mono || 0); defs.EDIT = 1; }
+    if (o.edit) U.uEdit.value.set(o.edit.ca || 0, o.edit.grain || 0, o.edit.zoom || 0, o.edit.mono || 0);
+    const defs = this.compDefs(o, k, sc, sun, haze, dof, taps);
+    this.pass(this.mat('comp', defs, COMP_FS), null);
+    if (o.overlay) o.overlay(r);
+    this.active = k > 0;
+    if (this.active) {
+      this.stats.frames++;
+      this.stats.last = { k: +k.toFixed(3), scale: +U.uScale.value.toFixed(3), max: +U.uMaxLen.value.toFixed(4), taps, half: !!defs.BLUR_HALF };
+    }
+    this.stats.drawn++;
+    this.savePrev(camera);
+    return true;
+  }
+  // Defines des Endbilds (render und vorwaermen)
+  compDefs(o, k, sc, sun, haze, dof, taps) {
+    const st = this.stages, defs = {};
+    if (o.edit) defs.EDIT = 1;
     if (o.whip && o.whip.len > 0.002) defs.WHIP = 1;
     if (st.aa && sc < 0.999 || st.aa && this.msaa() === 0) defs.AA = 1;
     if (st.sharpen) defs.SHARP = 1;
@@ -714,16 +729,28 @@ export class KinoLook {
     if (k > 0) { if (this.blurNeedsHalf()) defs.BLUR_HALF = 1; else { defs.BLUR_FULL = 1; defs.TAPS = taps; } }
     if (this.debug === 'ao' && st.ssao) defs.DEBUG_AO = 1;
     if (!defs.TAPS) defs.TAPS = 1;
-    this.pass(this.mat('comp', defs, COMP_FS), null);
-    if (o.overlay) o.overlay(r);
-    this.active = k > 0;
-    if (this.active) {
-      this.stats.frames++;
-      this.stats.last = { k: +k.toFixed(3), scale: +U.uScale.value.toFixed(3), max: +U.uMaxLen.value.toFixed(4), taps, half: !!defs.BLUR_HALF };
+    return defs;
+  }
+  // Bandenkick n6: Varianten des Endbilds vorab übersetzen, bevor eine Wiederholung sie braucht (sonst stockt das erste
+  // Bild mit Tiefenschärfe/Fan-Edit/Wischschwenk beim Übersetzen). liste = render-Optionen ({edit, dof, whip}); Stand der
+  // Stufen wie jetzt (ohne Bewegungsunschärfe/Dunst/Sonne). Gibt die Zahl neu übersetzter Programme zurück.
+  vorwaermen(liste) {
+    if (!this.pipeline) return 0;
+    const sc = this.stages.scale ? this.renderScale : 1;
+    this._warm = this._warm || new Set();
+    const mats = [];
+    for (const o of liste) {
+      const dof = this.stages.dof && o.dof ? o.dof : null;
+      mats.push(this.mat('comp', this.compDefs(o, 0, sc, null, false, dof, 1), COMP_FS));
+      if (dof) mats.push(this.mat('dof', { TAPS: 1 }, DOF_FS));
     }
-    this.stats.drawn++;
-    this.savePrev(camera);
-    return true;
+    // wirklich zeichnen (in ein 4×4-Ziel): ANGLE/D3D übersetzt manche Programme erst beim ersten Zeichnen
+    if (!this.warmRT) this.warmRT = new THREE.WebGLRenderTarget(4, 4, rtOpts());
+    let n = 0;
+    const alt = this.r.getRenderTarget();
+    for (const m of mats) { if (this._warm.has(m)) continue; this._warm.add(m); this.pass(m, this.warmRT); n++; }
+    this.r.setRenderTarget(alt);
+    return n;
   }
   savePrev(camera) { const P = this.prev; P.pos.copy(camera.position); P.q.copy(camera.quaternion); P.proj.copy(camera.projectionMatrix); P.ok = true; }
 

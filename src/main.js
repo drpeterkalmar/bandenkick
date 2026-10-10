@@ -168,7 +168,7 @@ function withHelp(then) {
 function startChallenge(id) {
   challengeId = id; setSolo(false);
   if (rp.dir) endReplay();
-  rp.wait = -1;
+  rp.wait = -1; hud.editVorbereiten(false);
   document.body.classList.add('challenge');
   game = newGame(); resetPrev(); challengeDone = false;
   if (props) props.dispose();
@@ -235,7 +235,7 @@ function setSolo(s) {
 }
 function startPlay(fresh = false) {
   if (rp.dir) endReplay();
-  rp.wait = -1;
+  rp.wait = -1; hud.editVorbereiten(false);
   if (fresh || game.match === solo) { game = newGame(); resetPrev(); }
   setMode('play');
   if (!game.match && (game.state !== 'play' || game.t < 0.01)) game.kickoff();
@@ -403,7 +403,18 @@ function handleEvents(ev) {
     } else if (e.type === 'goal' && e.challenge) {
       // Challenge meldet selbst (Treffer/gehalten)
     } else if (e.type === 'goal') {
-      if (R && replayOn && rp.rec && game.players.length === rp.rec.n) { rp.goal = { ...e, t: game.t - DT }; rp.wait = replayArt === 'edit' ? Math.max(P.replayDelay, EDIT_DELAY) : P.replayDelay; }
+      if (R && replayOn && rp.rec && game.players.length === rp.rec.n) {
+        rp.goal = { ...e, t: game.t - DT }; rp.wait = replayArt === 'edit' ? Math.max(P.replayDelay, EDIT_DELAY) : P.replayDelay;
+        // n6: Endbild-Varianten der Wiederholung jetzt übersetzen (im Live-Jubel), nicht mitten im Clip
+        if (kino && kino.vorwaermen) { const d = { k: 1 }, w = { len: 0.05 }; G.vorgewaermt = kino.vorwaermen(replayArt === 'edit' ? [{ edit: 1 }, { edit: 1, dof: d }, { edit: 1, whip: w }, { edit: 1, dof: d, whip: w }] : [{ dof: d }]); }
+        szeneVorwaermen();
+        if (replayArt === 'edit') {
+          hud.editVorbereiten(true);
+          // einmal das ganze Endbild mit allen Clip-Effekten zeichnen (legt Ziele für die Tiefenschärfe an); das normale Bild
+          // dieses Durchgangs übermalt es, bevor es angezeigt wird
+          if (kino && kino.pipeline) kino.render(scene, gcam.cam, { dt: 0, dof: { focus: 4, k: 0.85, r: 0.014, near: 0.5, far: 0.9 }, edit: { ca: 0.3, grain: 0.07, zoom: 0.03, mono: 0.2 }, whip: { len: 0.05, ang: 0 } });
+        }
+      }
       if (R) {
         const mine = e.team === me().team;
         hud.flash(mine ? 'TOR!' : 'Gegentor', `${TEAM_NAMES[e.team]} · ${Math.round(e.speed * 3.6)} km/h${e.own ? ' · Eigentor' : e.saved ? ' · Tormann war noch dran' : ''}`, 2.4, DEKO ? `tor t${e.team}` : '');
@@ -680,6 +691,7 @@ function recordReplay(evs) {
 }
 function startReplay() {
   rp.wait = -1;
+  hud.editVorbereiten(false);
   if (!rp.rec || !rp.goal || rp.recGame !== game || mode !== 'play') return;
   if (replayArt === 'edit') { startEdit(); return; }
   const D = new ReplayDirector(rp.rec, rp.goal, { regie: !RCAM_ALT });
@@ -806,6 +818,22 @@ function endReplay() {
   hud.replayShow(false); hud.replayState(false, 0);
   if (rp.fx) rp.fx.hide();
   resetPrev(); acc = 0;
+}
+// n6: Materialien, die erst in der Wiederholung sichtbar werden (Ballspur, Druckwelle, Leuchten, Torgestell hinter der Kamera),
+// einmal vorab übersetzen – sonst stockt der erste Clip an diesen Stellen (gemessen bis 160 ms am Handy-Profil)
+let szeneWarm = false;
+function szeneVorwaermen() {
+  if (szeneWarm) return;
+  szeneWarm = true;
+  const an = [], zeig = (o) => { if (o && !o.visible) { o.visible = true; an.push(o); } };
+  if (rp.fx) { zeig(rp.fx.trail); zeig(rp.fx.ring); rp.fx.glows.forEach(zeig); }
+  if (field && field.frames) field.frames.forEach(zeig);
+  try {
+    // einmal klein zeichnen (ANGLE übersetzt erst beim Zeichnen), Kamera-Zustand bleibt
+    const rt = new THREE.WebGLRenderTarget(32, 32), alt = renderer.getRenderTarget();
+    renderer.setRenderTarget(rt); renderer.render(scene, gcam.cam); renderer.setRenderTarget(alt); rt.dispose();
+  } catch (_) { /* nur Vorwärmen */ }
+  for (const o of an) o.visible = false;
 }
 function skipReplay() { if (rp.dir) { rp.dir.skip(); } }
 // Ein Bild der Wiederholung: Zeit weiter, Zustand, Kamera, Effekte → Zustand (oder null, wenn zu Ende)

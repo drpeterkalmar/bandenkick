@@ -116,6 +116,24 @@ export function buildHud(root, canvas) {
     '<div class="fe-prog"><i></i></div><i class="fe-fade"></i><button class="fe-again" data-act="clipnochmal">↻ Clip nochmal</button></div>');
   replay.append(fe);
   const clipAgain = h('button', 'clipagain', '↻ Clip nochmal'); clipAgain.dataset.act = 'clipnochmal'; // kurz nach dem Clip im Spiel
+  // Emojis und Speed-Lines beim Laden einmal in Bilder malen: Farb-Emojis in Clip-Größe zu rastern kostete im ersten Clip
+  // bis 160 ms (Handy-Profil), der Verlaufs-Strahlenkranz mit Maske ähnlich viel
+  const EMO = {};
+  const emojiBild = (ch) => EMO[ch] || (EMO[ch] = (() => {
+    try {
+      const c = document.createElement('canvas'); c.width = c.height = 144; const g = c.getContext('2d');
+      g.font = '112px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillText(ch, 72, 80); return c.toDataURL('image/png');
+    } catch (_) { return ''; }
+  })());
+  for (const ch of ['🔥', '⚡', '💥']) emojiBild(ch);
+  try {
+    const c = document.createElement('canvas'); c.width = c.height = 512; const g = c.getContext('2d');
+    const gr = g.createRadialGradient(256, 256, 60, 256, 256, 256); gr.addColorStop(0, 'rgba(255,255,255,0)'); gr.addColorStop(0.45, 'rgba(255,255,255,.55)'); gr.addColorStop(1, 'rgba(255,255,255,1)');
+    g.strokeStyle = gr;
+    for (let i = 0; i < 64; i++) { const a = i / 64 * Math.PI * 2 + (i % 3) * 0.02; g.lineWidth = i % 2 ? 2 : 4.5; g.beginPath(); g.moveTo(256 + Math.cos(a) * 90, 256 + Math.sin(a) * 90); g.lineTo(256 + Math.cos(a) * 362, 256 + Math.sin(a) * 362); g.stroke(); }
+    fe.querySelector('.fe-lines').style.backgroundImage = `url(${c.toDataURL('image/png')})`;
+  } catch (_) { /* ohne Speed-Lines */ }
   root.append(top, banner, charge, hold, touch, dbg, start, menu, credits, train, hint, result, help, replay, clipAgain);
 
   const howto = (touchUI) => touchUI
@@ -132,7 +150,9 @@ export function buildHud(root, canvas) {
   const clock = (sec) => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, '0')}`;
   const rpLabel = replay.querySelector('.rp-label span'), rpFlash = replay.querySelector('.flash');
   const F = Object.fromEntries(['frame', 'lines', 'puls', 'flash', 'ring', 'pov', 'big', 'kmh', 'stamp', 'name', 'gag', 'emoji', 'prog', 'fade', 'again'].map((k) => [k, fe.querySelector('.fe-' + k)]));
-  const ed = { info: null, next: 0, last: -1, kmh: null, lw: 0 };
+  const ed = { info: null, next: 0, last: -1, kmh: null, lw: 0, st: new Map() };
+  // Stil nur schreiben, wenn er sich ändert (je Bild: Deckkraft/Drehung der Ebenen)
+  const setz = (el, k, v) => { const m = ed.st.get(el) || ed.st.set(el, {}).get(el); if (m[k] !== v) { m[k] = v; el.style[k] = v; } };
   // Text-Element mit Einschlag-Animation (Klasse neu setzen → CSS-Animation startet neu)
   const slam = (el, html, cls = '', fit = 0) => {
     el.innerHTML = html; el.className = el.className.split(' ')[0] + ' an' + (cls ? ' ' + cls : '');
@@ -142,7 +162,7 @@ export function buildHud(root, canvas) {
   };
   const weg = (el) => { el.className = el.className.split(' ')[0]; };
   const feTrigger = (e, I) => {
-    if (e.emoji) slam(F.emoji, `<i>${e.emoji}</i><i>${e.emoji}</i><i>${e.emoji}</i>`);
+    if (e.emoji) { const im = emojiBild(e.emoji); slam(F.emoji, im ? `<i><img src="${im}" alt=""></i>`.repeat(3) : `<i>${e.emoji}</i>`.repeat(3)); }
     switch (e.text) {
       case 'pov': slam(F.pov, I.pov); break;
       case 'technik': slam(F.big, I.tech, 'tech', 12.5); break;
@@ -161,12 +181,15 @@ export function buildHud(root, canvas) {
     replayShow(on, text = '') { document.body.classList.toggle('replaying', on); if (on) rpLabel.textContent = text; },
     replayState(fan, flash) { replay.classList.toggle('fan', fan); rpFlash.style.opacity = flash.toFixed(3); },
     // n6 Fan-Edit: Start (info = {events, total, pov, tech, kmh, name, team, gag, own, hoch (9:16-Ausschnitt), reduce, cssFlash})
+    // schon beim Tor (Live-Jubel): Overlay unsichtbar aufbauen, damit der erste Clip-Schlag nicht stockt
+    editVorbereiten(on) { document.body.classList.toggle('fevor', !!on); replay.classList.toggle('edit', !!on || !!ed.info); },
     editStart(info) {
+      document.body.classList.remove('fevor');
       ed.info = info; ed.next = 0; ed.last = -1; ed.kmh = null;
       replay.classList.add('edit'); replay.classList.toggle('reduce', !!info.reduce);
       document.body.classList.toggle('cliphoch', !!info.hoch);
       for (const k of ['big', 'kmh', 'stamp', 'name', 'gag', 'emoji', 'pov']) weg(F[k]);
-      F.again.classList.remove('on'); F.ring.style.display = 'none';
+      F.again.classList.remove('on'); ed.st.clear(); F.ring.style.display = 'none';
     },
     // je Bild: r = Clip-Zeit (s), fx = Effekte (FanEdit.fx), ring = {x, y, h} Schütze im Bild (Pixel) oder null
     editFrame(r, fx, ring) {
@@ -176,23 +199,23 @@ export function buildHud(root, canvas) {
       while (ed.next < I.events.length && I.events[ed.next].t <= r) feTrigger(I.events[ed.next++], I);
       if (ed.kmh) { const u = Math.min(1, (r - ed.kmh.t0) / 0.42); F.kmh.innerHTML = `${Math.round(ed.kmh.v * (1 - (1 - u) ** 3))}<small>KM/H</small>`; }
       ed.lw = (ed.lw + 37) % 360;
-      F.lines.style.opacity = (fx.lines * (I.reduce ? 0.45 : 1)).toFixed(3);
-      if (fx.lines > 0.01) F.lines.style.transform = `rotate(${I.reduce ? 0 : ed.lw}deg) scale(1.6)`;
-      F.puls.style.opacity = (fx.puls * (I.reduce ? 0.05 : 0.12)).toFixed(3);
-      F.flash.style.opacity = I.cssFlash ? fx.white.toFixed(3) : '0';
-      F.fade.style.opacity = (fx.fade || 0).toFixed(3);
-      F.prog.firstChild.style.width = (100 * r / I.total).toFixed(1) + '%';
+      setz(F.lines, 'opacity', (fx.lines * (I.reduce ? 0.45 : 1)).toFixed(2));
+      if (fx.lines > 0.01) setz(F.lines, 'transform', `rotate(${I.reduce ? 0 : ed.lw}deg) scale(1.6)`);
+      setz(F.puls, 'opacity', (fx.puls * (I.reduce ? 0.05 : 0.12)).toFixed(2));
+      setz(F.flash, 'opacity', I.cssFlash ? fx.white.toFixed(2) : '0');
+      setz(F.fade, 'opacity', (fx.fade || 0).toFixed(2));
+      setz(F.prog.firstChild, 'transform', `scaleX(${(r / I.total).toFixed(3)})`);
       if (ring && fx.freeze) {
-        F.ring.style.display = 'block';
-        F.ring.style.left = ring.x.toFixed(0) + 'px'; F.ring.style.top = ring.y.toFixed(0) + 'px';
-        F.ring.style.width = (ring.h * 0.75).toFixed(0) + 'px'; F.ring.style.height = (ring.h * 1.15).toFixed(0) + 'px';
-        F.ring.firstChild.textContent = '⬇ ' + I.name;
-      } else F.ring.style.display = 'none';
+        setz(F.ring, 'display', 'block');
+        setz(F.ring, 'left', ring.x.toFixed(0) + 'px'); setz(F.ring, 'top', ring.y.toFixed(0) + 'px');
+        setz(F.ring, 'width', (ring.h * 0.75).toFixed(0) + 'px'); setz(F.ring, 'height', (ring.h * 1.15).toFixed(0) + 'px');
+        if (F.ring.firstChild.textContent !== '⬇ ' + I.name) F.ring.firstChild.textContent = '⬇ ' + I.name;
+      } else setz(F.ring, 'display', 'none');
     },
     // Rahmen des Clips (für die Kontur in Pixeln relativ zum Rahmen)
     editRahmen() { return F.frame.getBoundingClientRect(); },
     editEnd(nochmalSek = 0) {
-      ed.info = null; replay.classList.remove('edit', 'reduce'); document.body.classList.remove('cliphoch');
+      ed.info = null; replay.classList.remove('edit', 'reduce'); document.body.classList.remove('cliphoch', 'fevor');
       document.body.classList.toggle('clipnochmal', nochmalSek > 0);
       clearTimeout(ed.nt); if (nochmalSek > 0) ed.nt = setTimeout(() => document.body.classList.remove('clipnochmal'), nochmalSek * 1000);
     },
