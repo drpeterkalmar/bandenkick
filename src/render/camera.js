@@ -14,6 +14,7 @@ export class GameCamera {
     this.override = null;       // Test/Debug: feste Kamera
     this.shake = 0;
     this.zoom = 0;              // 0…1 Kurz-Zoom (Zeitlupe bei spektakulären Luftbällen)
+    this.fokus = null;          // n6 Action-Moment: { p: [x, y, z], k: 0…1 } – Zoom-Punch: Kamera fährt auf die Szene zu
     this.baseFov = 44;
   }
 
@@ -77,7 +78,7 @@ export class GameCamera {
       const H = 8.6 + ex * 1.3;
       const fit = this.fit(H, hz + 0.45 + ex * 0.2 + this.tz, -hz - 2.2 - ex * 0.9 + this.tz);
       c.position.set(this.tx, H, fit.zc);
-      c.lookAt(this.tx, 0, fit.zc - H / Math.tan(fit.beta));
+      this._l = [this.tx, 0, fit.zc - H / Math.tan(fit.beta)];
     } else {
       const hx = cage.hx, hz = cage.hz;
       const limX = Math.max(0, hx - 3.2), limZ = Math.max(0, hz - 4.6);
@@ -91,8 +92,28 @@ export class GameCamera {
       // Nacht 2c: Abstand wächst mit der Feldbreite (24 × 15: × 1,2 → Figuren ≈ 17 % kleiner; 20 × 13 wie bisher)
       const D = 17.5 * (1 + 0.2 * Math.max(0, hz - 6.5)), pitch = 56 * Math.PI / 180, lead = 2.6;
       c.position.set(this.tx - lead - Math.cos(pitch) * D, Math.sin(pitch) * D, this.tz * 0.85);
-      c.lookAt(this.tx - lead, 0, this.tz);
+      this._l = [this.tx - lead, 0, this.tz];
     }
+    // n6 Zoom-Punch: Kamera fährt aus ihrer Richtung tief an die Szene heran (≈ 5 m, 2,4 m hoch), Blick auf den Fokus
+    const F = this.fokus, l = this._l;
+    if (F && F.k > 0.001) {
+      const k = Math.min(1, F.k), p = F.p;
+      let dx = c.position.x - p[0], dz = c.position.z - p[2]; const dl = Math.hypot(dx, dz) || 1; dx /= dl; dz /= dl;
+      // Richtung der Szene (quer zum Schuss / vor dem Torwart), auf der Seite der Spielkamera
+      // (Torwart: immer vom Feld her, nie von hinter dem Tor)
+      if (F.dir) { let ex = F.dir[0], ez = F.dir[1]; if (!F.nah && ex * dx + ez * dz < 0) { ex = -ex; ez = -ez; } const el = Math.hypot(ex, ez) || 1; dx = ex / el; dz = ez / el; }
+      // langsame Fahrt heran und leichtes Kreisen während der Zeitlupe
+      const dr = F.drift || 0, a = 0.3 * dr, ca = Math.cos(a), sa = Math.sin(a), rx = dx * ca - dz * sa, rz = dx * sa + dz * ca;
+      const D = (F.nah ? 3.8 - 0.6 * dr : 4.5 - 1.0 * dr) * (this.mode === 'hoch' ? 1 : 0.85), cage = this.cage;
+      const zx = Math.max(-cage.hx - 1, Math.min(cage.hx + 1, p[0] + rx * D)), zy = Math.max(1.1, p[1] + (F.nah ? 0.6 : 0.9)), zz = Math.max(-cage.hz + 0.3, Math.min(cage.hz - 0.3, p[2] + rz * D));
+      c.position.x += (zx - c.position.x) * k; c.position.y += (zy - c.position.y) * k; c.position.z += (zz - c.position.z) * k;
+      // Hochformat: Szene etwas nach oben links (unten rechts liegen die Knöpfe)
+      // Blick zwischen Szene und Ball (der Ball bleibt im Bild); Torwart: ganze Figur (Kopf nicht anschneiden)
+      const hy = this.mode === 'hoch' && !F.nah ? -0.35 : 0, hs = this.mode === 'hoch' ? 0.4 : 0, bw = F.ball && !F.nah ? 0.55 : 0;
+      const px = p[0] + (F.ball ? (F.ball[0] - p[0]) * bw : 0), pz = p[2] + (F.ball ? (F.ball[2] - p[2]) * bw : 0);
+      l[0] += (px - rz * hs - l[0]) * k; l[1] += (p[1] + hy - l[1]) * k; l[2] += (pz + rx * hs - l[2]) * k;
+    }
+    c.lookAt(l[0], l[1], l[2]);
     const fov = this.baseFov * (1 - 0.16 * this.zoom);
     if (Math.abs(c.fov - fov) > 0.01) { c.fov = fov; c.updateProjectionMatrix(); }
     if (this.shake > 0) {

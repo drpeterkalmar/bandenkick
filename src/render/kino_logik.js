@@ -32,6 +32,8 @@ export const BK_GRADES = {
   tv: { wb: [1, 1, 1], lift: [0.002, 0.003, 0.006], gamma: [1, 1, 1], gain: [1.01, 1.01, 1.0], shadow: [-0.006, 0, 0.01], high: [0.008, 0.004, -0.006], split: 1, sat: 1.07, vib: 0.12, contrast: 0.14, green: 0 },
   // n4-Abnahme: Kontrast 0,18 machte den Abend am Handy zu dunkel (Rasen/Figuren absaufen) → 0,08 und etwas mehr Gain
   tvAbend: { wb: [0.98, 0.995, 1.03], lift: [0.006, 0.008, 0.014], gamma: [0.97, 0.97, 0.96], gain: [1.05, 1.05, 1.07], shadow: [-0.006, 0, 0.018], high: [0.006, 0.006, 0], split: 1, sat: 1.05, vib: 0.1, contrast: 0.08, green: 0 },
+  // n6 Action-Moment live: satter und etwas härter als TV (nur während des Moments)
+  aktion: { wb: [1.03, 1.0, 0.98], lift: [-0.015, 0.0, 0.012], gamma: [1, 1, 1], gain: [1.1, 1.04, 1.0], shadow: [-0.045, 0.016, 0.07], high: [0.07, 0.025, -0.05], split: 1.5, sat: 1.5, vib: 0.24, contrast: 0.38, green: 0.2 },
   // n6 Fan-Edit: kräftiges Teal/Orange (Schatten türkis, Lichter orange), satt und hart wie ein Handy-Edit
   edit: { wb: [1.02, 1.0, 0.99], lift: [-0.02, -0.004, 0.012], gamma: [1.02, 1.0, 0.98], gain: [1.12, 1.04, 0.99], shadow: [-0.075, 0.025, 0.12], high: [0.11, 0.035, -0.08], split: 1.8, sat: 1.45, vib: 0.26, contrast: 0.5, green: 0.3 },
 };

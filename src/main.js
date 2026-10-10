@@ -20,6 +20,7 @@ import { buildHud } from './ui/hud.js';
 import { Sound } from './audio/sound.js';
 import { ReplayRecorder, ReplayDirector, ReplayKamera } from './sim/replay.js';
 import { FanEdit, editCamera, editCameraFx, jubelRichtung, EDIT_DELAY } from './sim/fanedit.js';
+import { ActionRegie } from './sim/action.js';
 import { ReplayFx } from './render/replayfx.js';
 import { BUILD } from './build.js';
 import { makeKino, kinoLicht, kinoStufeSetzen, KontaktSchatten } from './render/kino.js';
@@ -133,9 +134,15 @@ function setMode(m) {
 const records = {};
 for (const c of CHALLENGES) { try { records[c.id] = JSON.parse(localStorage.getItem('bk_ch_' + c.id) || '{}'); } catch (_) { records[c.id] = {}; } }
 const fmtScore = (def, v) => (v == null ? '–' : def.unit === 's' ? `${Number(v).toFixed(1).replace('.', ',')} s` : `${v} ${def.unit}`);
-let slowmoOn = !!P.zeitlupe && localStorage.getItem('bk_zeitlupe') !== '0';
+// n6 Action-Momente (ersetzt die Zeitlupe aus Nacht 2): Aus / Selten (Standard) / Oft – localStorage bk_action,
+// ?action=0|1|2 (aus/selten/oft); ?zeitlupe=0 bzw. die alte Einstellung „Zeitlupe: aus“ = Aus
+const ACTION_STUFEN = ['aus', 'selten', 'oft'];
+const qa = qs.get('action');
+let actionStufe = !P.zeitlupe ? 'aus' : qa != null ? (qa === '0' || qa === 'aus' ? 'aus' : qa === '2' || qa === 'oft' ? 'oft' : 'selten')
+  : ACTION_STUFEN.includes(localStorage.getItem('bk_action')) ? localStorage.getItem('bk_action') : localStorage.getItem('bk_zeitlupe') === '0' ? 'aus' : 'selten';
+const aktion = new ActionRegie(actionStufe);
 const slowBtn = hud.menu.querySelector('[data-act="slowmo"]');
-const slowLabel = () => { slowBtn.textContent = 'Zeitlupe: ' + (slowmoOn ? 'an' : 'aus'); };
+const slowLabel = () => { slowBtn.textContent = '🎬 Action-Momente: ' + { aus: 'Aus', selten: 'Selten', oft: 'Oft' }[actionStufe]; };
 slowLabel();
 // Tor-Wiederholung (Nacht 2d): im Pause-Menü (localStorage bk_replay), ?replay=0. n6: Art Fan-Edit (Standard) / Klassisch
 // (ruhige TV-Wiederholung wie n5) / Aus (localStorage bk_replay_art), ?edit=0 = Klassisch
@@ -206,7 +213,7 @@ hud.root.addEventListener('click', (e) => {
   if (a === 'chagain') startChallenge(challengeId || pendingCh);
   if (a === 'help') { helpBack = mode; helpThen = null; setMode('help'); }
   if (a === 'helpok') { localStorage.setItem('bk_hilfe', '1'); if (helpThen) { const f = helpThen; helpThen = null; f(); } else setMode(helpBack); }
-  if (a === 'slowmo') { slowmoOn = !slowmoOn; localStorage.setItem('bk_zeitlupe', slowmoOn ? '1' : '0'); slowLabel(); }
+  if (a === 'slowmo') { actionStufe = ACTION_STUFEN[(ACTION_STUFEN.indexOf(actionStufe) + 1) % 3]; aktion.stufe = actionStufe; aktion.abbrechen(); localStorage.setItem('bk_action', actionStufe); slowLabel(); }
   if (a === 'replay') {
     replayArt = REPLAY_ARTEN[(REPLAY_ARTEN.indexOf(replayArt) + 1) % 3]; replayOn = replayArt !== 'aus';
     localStorage.setItem('bk_replay_art', replayArt); localStorage.setItem('bk_replay', replayOn ? '1' : '0'); replayLabel();
@@ -398,8 +405,6 @@ function handleEvents(ev) {
       gran.emit(e.x, e.z, game.ball.v.x, game.ball.v.z, Math.min(0.5, e.speed / 20), rnd);
     } else if ((e.type === 'board' || e.type === 'post') && e.speed > 11) {
       if (!(DEKO && reduceMotion)) gcam.shake = Math.min(1, e.speed / 25); // Deko: „Bewegung reduzieren“ → kein Wackeln
-    } else if (e.type === 'airstart' && slowmoOn && (e.tech === 'fallrueck' || e.tech === 'seitfall' || e.tech === 'flugkopf') && e.player === game.human) {
-      slow.t = 0; slow.on = true; // Spektakel: kurze Zeitlupe + Zoom (abschaltbar, Steuerung bleibt)
     } else if (e.type === 'goal' && e.challenge) {
       // Challenge meldet selbst (Treffer/gehalten)
     } else if (e.type === 'goal') {
@@ -467,15 +472,51 @@ function chargeView(pl, raw) {
   return { kind: 'shot', p, sym, color, label, q: pv.q };
 }
 
-// Zeitlupe bei Fallrück-/Seitfallzieher/Flugkopfball: 0,9 s echte Zeit, Tempo bis 40 %, sanfte Hüllkurve
-const slow = { on: false, t: 0, dur: 0.9 };
+// n6 Action-Momente (aus der Zeitlupe von Nacht 2 entstanden): Tempo der Simulation je Bild (Speed-Ramp, Bullet-Time
+// = 0), Zoom-Punch der Spielkamera auf die Szene, Kreisfahrt in der Bullet-Time, Effekte. Die Simulation läuft mit
+// festen Takten weiter – nur weniger/mehr Takte je Bild bzw. keine (pausiert, setzt exakt fort).
+const am = { an: false, orbit: null, v: null, kmax: 0, halt: null };
 function slowScale(dt) {
-  if (!slow.on) return 1;
-  slow.t += dt;
-  if (slow.t >= slow.dur) { slow.on = false; gcam.zoom = 0; return 1; }
-  const k = Math.sin(Math.PI * slow.t / slow.dur) ** 2;
-  gcam.zoom = k;
-  return 1 - 0.6 * k;
+  const m = aktion.moment;
+  const gehalten = am.halt != null && m && !(m.real + dt < am.halt);
+  if (gehalten) dt = Math.max(0, am.halt - m.real); // Tests: genau anhalten (Simulation steht dann auch)
+  const v = m ? aktion.bild(dt, blitzeSanft) : null;
+  am.v = v;
+  if (!v) { if (am.an) amEnde(); return 1; }
+  if (!am.an) { am.an = true; hud.aktion(true); if (kino && kino.grade !== 'edit') { am.gradeVor = kino.grade; } }
+  const M = aktion.moment;
+  const bb = game.ball.p;
+  gcam.fokus = { p: M.fokus, k: v.punch, dir: M.dir, nah: M.nah, drift: v.drift, ball: [bb.x, bb.y, bb.z] };
+  gcam.zoom = (gcam.mode === 'hoch' ? 0.6 : 1) * v.punch; // quer: enger (mehr Tele)
+  if (v.shake > gcam.shake) gcam.shake = v.shake;
+  if (v.orbit >= 0) {
+    // Bullet-Time: Halbkreis um den Moment (Start: Richtung der Spielkamera), Blick auf den Fokus
+    if (!am.orbit) am.orbit = bulletBahn(M);
+    const B = am.orbit, a = B.a0 + B.dir * Math.PI * (0.15 * v.orbit + 0.85 * v.orbitLin), R = B.R(a);
+    gcam.override = { pos: [B.z[0] + Math.cos(a) * R, 1.35 + 0.35 * Math.sin(Math.PI * v.orbit), B.z[2] + Math.sin(a) * R], look: [B.z[0], 0.85, B.z[2]] };
+    if (Math.abs(gcam.cam.fov - 46) > 0.01) { gcam.cam.fov = 46; gcam.cam.updateProjectionMatrix(); }
+  } else if (am.orbit) { am.orbit = null; gcam.override = null; gcam.setAspect(gcam.cam.aspect, G.forceMode); } // ruckartig zurück
+  if (kino) kino.grade = v.sat > 0.4 ? 'aktion' : am.gradeVor || kino.grade;
+  hud.aktionBild(v, !(kino && kino.pipeline));
+  return gehalten ? 0 : v.rate;
+}
+// Bullet-Time-Bahn: Mitte zwischen Ball und nächstem Spieler, Halbkreis ab der Richtung der Spielkamera in die Richtung,
+// die im Käfig bleibt; Radius schrumpft an der Bande (höchstens 4,4 m, mindestens 2 m) – ganze Figuren im Bild
+function bulletBahn(M) {
+  const b = game.ball.p, f = M.fokus;
+  let q = null, dq = 9;
+  for (const p of game.players) { const d = Math.hypot(p.x - b.x, p.z - b.z); if (d < dq) { dq = d; q = p; } }
+  const z = q && dq < 3 ? [(b.x + q.x) / 2, 0.85, (b.z + q.z) / 2] : [f[0], 0.85, f[2]];
+  const c = gcam.cam.position, a0 = Math.atan2(c.z - z[2], c.x - z[0]), cg = game.cage;
+  const R = (a) => { let r = 3.7; const cx = Math.cos(a), cz = Math.sin(a); if (cx) r = Math.min(r, ((cx > 0 ? cg.hx : -cg.hx) - 0.35 * Math.sign(cx) - z[0]) / cx); if (cz) r = Math.min(r, ((cz > 0 ? cg.hz : -cg.hz) - 0.35 * Math.sign(cz) - z[2]) / cz); return Math.max(2, r); };
+  const guete = (d) => { let s = 0; for (let i = 0; i <= 8; i++) s += R(a0 + d * Math.PI * i / 8); return s; };
+  return { z, a0, dir: guete(1) >= guete(-1) ? 1 : -1, R };
+}
+function amEnde() {
+  am.an = false; am.v = null; gcam.fokus = null; gcam.zoom = 0;
+  if (am.orbit) { am.orbit = null; gcam.override = null; gcam.setAspect(gcam.cam.aspect, G.forceMode); }
+  if (kino && am.gradeVor) { kino.grade = am.gradeVor; am.gradeVor = null; }
+  hud.aktion(false);
 }
 // Challenge: Status oben, Meldungen, Ende → Ergebnis mit Sternen und Bestwert
 let lastChMsg = '';
@@ -600,6 +641,7 @@ function frame() {
       const evs = game.step(ins);
       handleEvents(evs);
       recordReplay(evs);
+      if (!rp.dir && rp.wait < 0) aktion.pruefe(evs, game); // n6 Action-Moment? (nicht nach einem Tor)
       first = false;
       acc -= DT; steps++;
       if (G.freezeFn && G.freezeFn(game)) { frozen = true; G.freezeFn = null; acc = 0; break; } // Tests: im richtigen Takt anhalten
@@ -624,6 +666,20 @@ function frame() {
   const tA = performance.now();
   drawPlayers(rf ? rdt * rp.rate : dt, a, rf);
   if (rf && rp.dir && rp.dir.edit) editNachFiguren();
+  else if (am.an && !rf) { // n6 Action-Moment: Figuren direkt vor der Linse ausblenden (Zoom-Punch, Bullet-Time), Ringe weg
+    const cp = gcam.cam.position;
+    // (auch wer auf der Sichtlinie dicht vor der Linse steht)
+    const lk = gcam.override ? gcam.override.look : gcam.fokus ? gcam.fokus.p : null;
+    for (const f of figs) {
+      if (f.ring) f.ring.visible = false;
+      if (!f.root || !f.root.visible) continue;
+      const fx = f.root.position.x - cp.x, fz = f.root.position.z - cp.z, d = Math.hypot(fx, fz);
+      let weg = d < 1.3;
+      if (!weg && lk && d < 2.6) { const lx = lk[0] - cp.x, lz = lk[2] - cp.z, L = Math.hypot(lx, lz) || 1, u = (fx * lx + fz * lz) / L; weg = u > 0 && u < L - 0.8 && Math.abs(fx * lz - fz * lx) / L < 0.45; }
+      if (weg) f.root.visible = false;
+    }
+    marker.visible = false;
+  }
   if (kontakt) kontakt.update(bx, by, bz);
   perf.av.push(performance.now() - tA); if (perf.av.length > 240) perf.av.shift();
   const pl = me();
@@ -692,6 +748,7 @@ function recordReplay(evs) {
 function startReplay() {
   rp.wait = -1;
   hud.editVorbereiten(false);
+  if (aktion.moment) { aktion.abbrechen(); amEnde(); }
   if (!rp.rec || !rp.goal || rp.recGame !== game || mode !== 'play') return;
   if (replayArt === 'edit') { startEdit(); return; }
   const D = new ReplayDirector(rp.rec, rp.goal, { regie: !RCAM_ALT });
@@ -971,7 +1028,8 @@ function autoQuality(dt) {
 // ---------------- n4: Zeichnen, Qualitäts-Autopilot, enge Schattenkamera ----------------
 let grafik = null, grafikKey = null, apMode = 'load', gpuLast = null;
 function zeichne(dt, rf = null) {
-  if (kino) kino.render(scene, gcam.cam, rf && rp.kinoFx ? { dt, dof: rp.dof, ...rp.kinoFx } : { dt, dof: rf ? rp.dof : null });
+  const av = !rf && am.v ? am.v : null; // n6 Action-Moment: Weißblitz, RGB-Versatz, Zoom-Unschärfe
+  if (kino) kino.render(scene, gcam.cam, rf && rp.kinoFx ? { dt, dof: rp.dof, ...rp.kinoFx } : av ? { dt, white: av.flash, whip: av.whip > 0.01 ? { len: 0.07 * av.whip, ang: 0 } : null, edit: { ca: av.ca, grain: 0.03, zoom: 0.05 * av.lines, mono: 0 } } : { dt, dof: rf ? rp.dof : null });
   else renderer.render(scene, gcam.cam);
 }
 // Kurzmessung (Ladebildschirm): Startszene zeichnen wie im Menü
@@ -1130,6 +1188,13 @@ Object.assign(G, {
   editMessStart() { G.editMess = []; },
   editMessDaten() { const d = G.editMess; G.editMess = null; return d; },
   clipNochmal() { clipNochmal(); },
+  // n6 Action-Momente (Tests): Zustand/Zähler, Stufe, Zufall festlegen, Moment bei Echtzeit r anhalten
+  aktion() { const m = aktion.moment; return { stufe: aktion.stufe, zahl: aktion.zahl, log: aktion.log.slice(-30), aktiv: !!m, art: m ? m.art : null, grund: m ? m.grund : null, real: m ? m.real : 0, v: am.v ? { ...am.v } : null }; },
+  aktionStufe(s) { if (ACTION_STUFEN.includes(s)) { actionStufe = s; aktion.stufe = s; slowLabel(); } return actionStufe; },
+  aktionZufall(p = null) { aktion.rnd = p == null ? Math.random : () => p; },
+  aktionHalt(r = null) { am.halt = r; },
+  // Moment sofort starten (Tests: Eingabe während der Zeitlupe), fokus = [x, y, z]
+  aktionStart(art = 'ramp', fokus = null) { const b = game.ball; aktion.moment = { w: 1, art, fokus: fokus || [b.p.x, b.p.y, b.p.z], spieler: -1, grund: 'test', t: 0, tSpiel: game.t, real: 0 }; aktion.zahl++; },
   editOpts(o = {}) { if ('blitze' in o) { blitzeSanft = !!o.blitze; blitzLabel(); } if ('hoch' in o) { clipHoch = !!o.hoch; clipLabel(); } return { blitzeSanft, clipHoch }; },
   // n5 Ruckel-Messung (tests/ruckel.py): Aufzeichnung je Bild starten/abholen
   ruckStart(max = 9000) { G.ruck = new RuckMessung(figs.length, max); },

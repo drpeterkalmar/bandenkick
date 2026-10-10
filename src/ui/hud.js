@@ -116,6 +116,9 @@ export function buildHud(root, canvas) {
     '<div class="fe-prog"><i></i></div><i class="fe-fade"></i><button class="fe-again" data-act="clipnochmal">↻ Clip nochmal</button></div>');
   replay.append(fe);
   const clipAgain = h('button', 'clipagain', '↻ Clip nochmal'); clipAgain.dataset.act = 'clipnochmal'; // kurz nach dem Clip im Spiel
+  // n6 Action-Momente live: Vignette, Speed-Lines, Blitz (ohne Kino-Look) – Steuerung bleibt sichtbar und bedienbar
+  const amEl = h('div', 'am', '<i class="am-vig"></i><i class="am-lines"></i><i class="am-flash"></i>');
+  const AM = { vig: amEl.children[0], lines: amEl.children[1], flash: amEl.children[2], st: {} };
   // Emojis und Speed-Lines beim Laden einmal in Bilder malen: Farb-Emojis in Clip-Größe zu rastern kostete im ersten Clip
   // bis 160 ms (Handy-Profil), der Verlaufs-Strahlenkranz mit Maske ähnlich viel
   const EMO = {};
@@ -132,9 +135,9 @@ export function buildHud(root, canvas) {
     const gr = g.createRadialGradient(256, 256, 60, 256, 256, 256); gr.addColorStop(0, 'rgba(255,255,255,0)'); gr.addColorStop(0.45, 'rgba(255,255,255,.55)'); gr.addColorStop(1, 'rgba(255,255,255,1)');
     g.strokeStyle = gr;
     for (let i = 0; i < 56; i++) { const a = i / 56 * Math.PI * 2 + (i % 3) * 0.03; g.lineWidth = i % 2 ? 3.5 : 7; g.beginPath(); g.moveTo(256 + Math.cos(a) * 90, 256 + Math.sin(a) * 90); g.lineTo(256 + Math.cos(a) * 362, 256 + Math.sin(a) * 362); g.stroke(); }
-    fe.querySelector('.fe-lines').style.backgroundImage = `url(${c.toDataURL('image/png')})`;
+    const u = `url(${c.toDataURL('image/png')})`; fe.querySelector('.fe-lines').style.backgroundImage = u; amEl.children[1].style.backgroundImage = u;
   } catch (_) { /* ohne Speed-Lines */ }
-  root.append(top, banner, charge, hold, touch, dbg, start, menu, credits, train, hint, result, help, replay, clipAgain);
+  root.append(amEl, top, banner, charge, hold, touch, dbg, start, menu, credits, train, hint, result, help, replay, clipAgain);
 
   const howto = (touchUI) => touchUI
     ? `<li><b>Stick links:</b> laufen · ganz außen oder Knopf = Sprint · <b>⇄</b> Spieler wechseln (sonst automatisch)</li>
@@ -190,6 +193,13 @@ export function buildHud(root, canvas) {
     // Wiederholung: an/aus mit Text (Schütze · Technik · km/h), Fan-Cam-Abzeichen, Blitz-Stärke 0…1
     replayShow(on, text = '') { document.body.classList.toggle('replaying', on); if (on) rpLabel.textContent = text; },
     replayState(fan, flash) { replay.classList.toggle('fan', fan); rpFlash.style.opacity = flash.toFixed(3); },
+    // n6 Action-Moment: an/aus, je Bild Stärken (v aus action.js verlauf)
+    aktion(on) { amEl.classList.toggle('on', !!on); document.body.classList.toggle('aktion', !!on); if (!on) { AM.st = {}; for (const e of [AM.vig, AM.lines, AM.flash]) e.style.opacity = '0'; } },
+    aktionBild(v, cssFlash) {
+      const s = (el, k, x) => { if (AM.st[k] !== x) { AM.st[k] = x; el.style.opacity = x; } };
+      s(AM.vig, 'v', v.sat.toFixed(2)); s(AM.lines, 'l', (0.85 * v.lines).toFixed(2)); s(AM.flash, 'f', cssFlash ? v.flash.toFixed(2) : '0');
+      if (v.lines > 0.01) AM.lines.style.transform = `rotate(${(performance.now() * 0.4) % 360}deg) scale(1.5)`;
+    },
     // n6 Fan-Edit: Start (info = {events, total, pov, tech, kmh, name, team, gag, own, hoch (9:16-Ausschnitt), reduce, cssFlash})
     // schon beim Tor (Live-Jubel): Overlay unsichtbar aufbauen, damit der erste Clip-Schlag nicht stockt
     editVorbereiten(on) { document.body.classList.toggle('fevor', !!on); replay.classList.toggle('edit', !!on || !!ed.info); },
