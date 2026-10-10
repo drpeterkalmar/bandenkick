@@ -16,7 +16,7 @@ FORM = args[0] if args else 'hoch'
 SEEDS = [int(x) for x in args[1].split(',')] if len(args) > 1 else [1, 2, 4, 8, 11, 30, 57]
 SANFT = '--sanft' in sys.argv
 B = 60 / 128
-SCHLAEGE = [0.5, 1.5, 2.5, 3.25, 3.7, 4.4, 5.4, 6.22, 6.7, 7.5, 8.5, 9.5, 10.5, 11.5, 12.7, 14.2]
+SCHLAEGE = [0.5, 1.5, 2.5, 3.25, 3.7, 4.4, 5.4, 6.22, 6.7, 7.5, 8.5, 9.5, 10.5, 11.5, 12.7, 14.4]
 
 
 def collage(name, bilder, titel):

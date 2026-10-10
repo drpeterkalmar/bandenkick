@@ -7,60 +7,78 @@
    "tech": "VOLLEY",
    "kmh": 112,
    "tor_t": 96.8000000000231,
-   "bilder": 406,
+   "bilder": 402,
    "cuts": [
     {
+     "schlag": 1,
+     "abw_ms": 3.25,
+     "bild_ms": 16.0,
+     "abw_bild": 0.203
+    },
+    {
      "schlag": 2,
-     "abw_ms": 13.0,
-     "bild_ms": 17.9,
-     "abw_bild": 0.726
+     "abw_ms": 2.3,
+     "bild_ms": 18.2,
+     "abw_bild": 0.126
     },
     {
      "schlag": 4,
-     "abw_ms": 7.6,
-     "bild_ms": 16.3,
-     "abw_bild": 0.466
+     "abw_ms": 14.4,
+     "bild_ms": 16.8,
+     "abw_bild": 0.857
     },
     {
      "schlag": 5,
-     "abw_ms": 5.75,
-     "bild_ms": 16.6,
-     "abw_bild": 0.346
+     "abw_ms": 11.35,
+     "bild_ms": 16.0,
+     "abw_bild": 0.709
+    },
+    {
+     "schlag": 6,
+     "abw_ms": 9.5,
+     "bild_ms": 16.7,
+     "abw_bild": 0.569
     },
     {
      "schlag": 7,
-     "abw_ms": 2.15,
-     "bild_ms": 17.7,
-     "abw_bild": 0.121
+     "abw_ms": 8.05,
+     "bild_ms": 17.5,
+     "abw_bild": 0.46
     },
     {
      "schlag": 8,
-     "abw_ms": 0.9,
-     "bild_ms": 17.9,
-     "abw_bild": 0.05
+     "abw_ms": 3.3,
+     "bild_ms": 16.8,
+     "abw_bild": 0.196
     },
     {
      "schlag": 9,
-     "abw_ms": 15.45,
-     "bild_ms": 18.1,
-     "abw_bild": 0.854
+     "abw_ms": 2.45,
+     "bild_ms": 16.8,
+     "abw_bild": 0.146
     },
     {
      "schlag": 10,
-     "abw_ms": 12.4,
-     "bild_ms": 15.6,
-     "abw_bild": 0.795
+     "abw_ms": 15.9,
+     "bild_ms": 16.2,
+     "abw_bild": 0.981
     },
     {
      "schlag": 11,
-     "abw_ms": 9.75,
-     "bild_ms": 16.5,
-     "abw_bild": 0.591
+     "abw_ms": 14.85,
+     "bild_ms": 16.6,
+     "abw_bild": 0.895
+    },
+    {
+     "schlag": 13,
+     "abw_ms": 10.15,
+     "bild_ms": 17.6,
+     "abw_bild": 0.577
     }
    ],
-   "max_abw_bild": 0.854,
-   "bild_ms_p50": 16.69999998807907,
-   "bild_ms_p95": 17.900000035762787,
+   "max_abw_bild": 0.981,
+   "bild_ms_p50": 16.600000023841858,
+   "bild_ms_p95": 18.19999998807907,
    "collage": "tests/shots/fanedit/hoch_sanft_seed8.jpg"
   }
  ],

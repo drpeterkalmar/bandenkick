@@ -7,134 +7,79 @@
    "tech": "BANANE",
    "kmh": 86,
    "tor_t": 12.166666666666616,
-   "bilder": 406,
+   "bilder": 405,
    "cuts": [
     {
+     "schlag": 1,
+     "abw_ms": 7.25,
+     "bild_ms": 16.2,
+     "abw_bild": 0.448
+    },
+    {
      "schlag": 2,
-     "abw_ms": 11.9,
+     "abw_ms": 5.4,
      "bild_ms": 17.1,
-     "abw_bild": 0.696
+     "abw_bild": 0.316
     },
     {
      "schlag": 4,
-     "abw_ms": 7.9,
-     "bild_ms": 16.5,
-     "abw_bild": 0.479
+     "abw_ms": 2.1,
+     "bild_ms": 17.7,
+     "abw_bild": 0.119
     },
     {
      "schlag": 5,
-     "abw_ms": 5.55,
-     "bild_ms": 16.3,
-     "abw_bild": 0.34
+     "abw_ms": 15.85,
+     "bild_ms": 15.9,
+     "abw_bild": 0.997
     },
     {
-     "schlag": 7,
-     "abw_ms": 1.95,
-     "bild_ms": 17.3,
-     "abw_bild": 0.113
-    },
-    {
-     "schlag": 8,
+     "schlag": 6,
      "abw_ms": 14.3,
-     "bild_ms": 16.9,
-     "abw_bild": 0.846
-    },
-    {
-     "schlag": 9,
-     "abw_ms": 11.85,
-     "bild_ms": 16.4,
-     "abw_bild": 0.723
-    },
-    {
-     "schlag": 10,
-     "abw_ms": 9.7,
-     "bild_ms": 16.4,
-     "abw_bild": 0.591
-    },
-    {
-     "schlag": 11,
-     "abw_ms": 8.95,
-     "bild_ms": 17.5,
-     "abw_bild": 0.511
-    },
-    {
-     "schlag": 13,
-     "abw_ms": 3.75,
-     "bild_ms": 15.5,
-     "abw_bild": 0.242
-    }
-   ],
-   "max_abw_bild": 0.846,
-   "bild_ms_p50": 16.69999998807907,
-   "bild_ms_p95": 18.099999964237213,
-   "collage": "tests/shots/fanedit/clip_seed2.jpg"
-  },
-  {
-   "seed": 57,
-   "tech": "FLUG-|KOPFBALL",
-   "kmh": 40,
-   "tor_t": 32.608333333332126,
-   "bilder": 420,
-   "cuts": [
-    {
-     "schlag": 2,
-     "abw_ms": 11.7,
-     "bild_ms": 16.3,
-     "abw_bild": 0.718
-    },
-    {
-     "schlag": 4,
-     "abw_ms": 8.0,
-     "bild_ms": 16.3,
-     "abw_bild": 0.491
-    },
-    {
-     "schlag": 5,
-     "abw_ms": 5.95,
-     "bild_ms": 16.3,
-     "abw_bild": 0.365
+     "bild_ms": 17.0,
+     "abw_bild": 0.841
     },
     {
      "schlag": 7,
-     "abw_ms": 1.95,
-     "bild_ms": 16.6,
-     "abw_bild": 0.117
+     "abw_ms": 12.05,
+     "bild_ms": 16.9,
+     "abw_bild": 0.713
     },
     {
      "schlag": 8,
-     "abw_ms": 0.4,
-     "bild_ms": 17.2,
-     "abw_bild": 0.023
+     "abw_ms": 2.8,
+     "bild_ms": 16.6,
+     "abw_bild": 0.169
     },
     {
      "schlag": 9,
-     "abw_ms": 14.35,
-     "bild_ms": 16.0,
-     "abw_bild": 0.897
+     "abw_ms": 1.65,
+     "bild_ms": 16.5,
+     "abw_bild": 0.1
     },
     {
      "schlag": 10,
-     "abw_ms": 12.1,
-     "bild_ms": 17.1,
-     "abw_bild": 0.708
+     "abw_ms": 15.4,
+     "bild_ms": 16.7,
+     "abw_bild": 0.922
     },
     {
      "schlag": 11,
-     "abw_ms": 9.35,
-     "bild_ms": 15.3,
-     "abw_bild": 0.611
+     "abw_ms": 13.85,
+     "bild_ms": 17.1,
+     "abw_bild": 0.81
     },
     {
      "schlag": 13,
-     "abw_ms": 5.45,
-     "bild_ms": 15.7,
-     "abw_bild": 0.347
+     "abw_ms": 9.55,
+     "bild_ms": 17.0,
+     "abw_bild": 0.562
     }
    ],
-   "max_abw_bild": 0.897,
-   "bild_ms_p50": 16.600000023841858,
+   "max_abw_bild": 0.997,
+   "bild_ms_p50": 16.69999998807907,
    "bild_ms_p95": 17.900000035762787,
-   "collage": "tests/shots/fanedit/clip_seed57.jpg"
+   "collage": "tests/shots/fanedit/clip_seed2.jpg"
   }
  ],
  "fehler": [],

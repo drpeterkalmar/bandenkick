@@ -717,7 +717,7 @@ function startReplay() {
 // Spitznamen je Platz (Mannschaft × Platz wie die Figuren), der Mensch heißt „DU“
 const EDIT_NAMEN = [['MIKA', 'LENI', 'JONAS'], ['TIM', 'ELIF', 'NOAH']];
 const ED_BALL = { x: 0, y: 0, z: 0 }, ED_SCH = { x: 0, z: 0, face: 0 }, ED_V = new THREE.Vector3();
-const ED_NAHFADE = new Set(['keeper', 'netz', 'ecke']); // Kameras am Netz: Netz nicht ausblenden
+const ED_NAHFADE = new Set(['keeper', 'netz', 'ecke', 'pfosten']); // Kameras am Netz: Netz nicht ausblenden
 const ED_KNOCHEN = ['Bip01_Head', 'Bip01_Pelvis', 'Bip01_L_Hand', 'Bip01_R_Hand', 'Bip01_L_Foot', 'Bip01_R_Foot'];
 function startEdit(D0 = null) {
   const g = rp.goal;
@@ -731,7 +731,7 @@ function startEdit(D0 = null) {
   const fI = rp.rec.frameAt(D.ti, {}, P);
   const nJ = D.shots.length, hochJ = gcam.mode === 'hoch' || hochClip;
   const jub = D.schuetze >= 0 ? jubelRichtung(rp.rec, D.schuetze, D.shots[nJ - 2].keys, hochJ ? 3.0 : 2.4, 0, game.cage) : null;
-  const jub2 = D.schuetze >= 0 ? jubelRichtung(rp.rec, D.schuetze, D.shots[nJ - 1].keys, hochJ ? 1.6 : 1.7, 1.2, game.cage) : null;
+  const jub2 = D.schuetze >= 0 ? jubelRichtung(rp.rec, D.schuetze, D.shots[nJ - 1].keys, hochJ ? 1.7 : 1.9, 0.45, game.cage) : null;
   // Standbild: Nahaufnahme von vorn-seitlich (Richtung zum Tor ± frei von Verdeckung)
   const sF = D.shots.find((s) => s.freeze), Sf = D.schuetze >= 0 && sF ? rp.rec.spielerGlatt(D.schuetze, D.ti, 0.05) : null;
   const freezeDir = Sf ? jubelRichtung(rp.rec, D.schuetze, sF.keys, hochJ ? 3.0 : 2.7, Math.atan2(fI.ball.p.z - Sf.z, fI.ball.p.x - Sf.x) - Sf.face + 0.6, game.cage) : null;
@@ -782,7 +782,7 @@ function editFrame(dt, raw) {
   if (Math.abs(gcam.cam.fov - cam.fov) > 0.01) { gcam.cam.fov = cam.fov; gcam.cam.updateProjectionMatrix(); }
   // Tiefenschärfe: Makro (Fuß + Ball), hinter dem Tor (Ball scharf, Netz davor weich), Jubel (Schütze scharf)
   const bp = [f.ball.p.x, f.ball.p.y, f.ball.p.z];
-  rp.dof = s.cam === 'makro' ? replayDof('zoom', cam.pos, cam.look, bp) : s.cam === 'netz' ? replayDof('fan', cam.pos, cam.look, bp) : s.cam === 'jubel' || s.cam === 'jubel2' ? replayDof('fan', cam.pos, cam.look, null) : null;
+  rp.dof = s.cam === 'makro' ? replayDof('zoom', cam.pos, cam.look, bp) : s.cam === 'netz' || s.cam === 'pfosten' ? replayDof('fan', cam.pos, cam.look, bp) : s.cam === 'jubel' || s.cam === 'jubel2' ? replayDof('fan', cam.pos, cam.look, null) : null;
   rp.kinoFx = { white: fx.white, whip: fx.whip > 0.01 ? { len: 0.08 * fx.whip, ang: 0 } : null,
     edit: { ca: 1.4 * fx.ca, grain: blitzeSanft ? 0.035 : fx.grain, zoom: 0.07 * fx.punch, mono: 0.35 * fx.freeze } };
   const c = D.contact, k = c ? t - c.t : -1;
@@ -913,7 +913,7 @@ function drawPlayers(dt, a, rf = null) {
     const x = rf ? pl.x : prev.px[pl.id] + (pl.x - prev.px[pl.id]) * a, z = rf ? pl.z : prev.pz[pl.id] + (pl.z - prev.pz[pl.id]) * a;
     let face = rf || !GLATT ? pl.face : prev.pf[pl.id] + winkelDiff(pl.face, prev.pf[pl.id]) * a; // n5: wie die Lage interpoliert
     // n6 Fan-Edit: im Jubel dreht sich der Schütze zur Kamera
-    if (rf && rp.dir && rp.dir.edit && rp.dir.cur.cam === 'jubel' && pl.id === rp.dir.schuetze && gcam.override) face = Math.atan2(gcam.override.pos[2] - z, gcam.override.pos[0] - x);
+    if (rf && rp.dir && rp.dir.edit && (rp.dir.cur.cam === 'jubel' || rp.dir.cur.cam === 'jubel2') && pl.id === rp.dir.schuetze && gcam.override) face = Math.atan2(gcam.override.pos[2] - z, gcam.override.pos[0] - x);
     if (f.capsule) { posePlayer(f.capsule, pl, x, z); continue; }
     const keeper = rf ? pl.keeper : R ? R.keeper[pl.team] === pl.id && R.phase !== 'end' && R.handsOffTeam !== pl.team : false;
     let special = null, specialZeit = null, armeHoch = 0;
