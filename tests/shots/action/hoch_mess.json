@@ -8,12 +8,12 @@
   },
   {
    "art": "ramp",
-   "grund": "parade",
+   "grund": "volley",
    "collage": "tests/shots/action/hoch_1_ramp.jpg"
   },
   {
    "art": "ramp",
-   "grund": "volley",
+   "grund": "innenrist",
    "collage": "tests/shots/action/hoch_2_ramp.jpg"
   },
   {
@@ -24,7 +24,7 @@
  ],
  "eingabe_in_zeitlupe": {
   "schuss_waehrend_moment": true,
-  "echtzeit_im_moment_beim_schuss": 0.7996999999880794
+  "echtzeit_im_moment_beim_schuss": 0.8158000000119214
  },
  "fehler": [],
  "ton": []

@@ -736,6 +736,7 @@ export class KinoLook {
   // Stufen wie jetzt (ohne Bewegungsunschärfe/Dunst/Sonne). Gibt die Zahl neu übersetzter Programme zurück.
   vorwaermen(liste) {
     if (!this.pipeline) return 0;
+    if (liste.some((o) => o.dof)) this.wantDof = true; // Ziel der Tiefenschärfe beim nächsten Bild anlegen, nicht erst im Replay
     const sc = this.stages.scale ? this.renderScale : 1;
     this._warm = this._warm || new Set();
     const mats = [];

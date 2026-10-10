@@ -194,7 +194,7 @@ export function buildHud(root, canvas) {
     replayShow(on, text = '') { document.body.classList.toggle('replaying', on); if (on) rpLabel.textContent = text; },
     replayState(fan, flash) { replay.classList.toggle('fan', fan); rpFlash.style.opacity = flash.toFixed(3); },
     // n6 Action-Moment: an/aus, je Bild Stärken (v aus action.js verlauf)
-    aktion(on) { amEl.classList.toggle('on', !!on); document.body.classList.toggle('aktion', !!on); if (!on) { AM.st = {}; for (const e of [AM.vig, AM.lines, AM.flash]) e.style.opacity = '0'; } },
+    aktion(on) { amEl.classList.toggle('on', !!on); document.body.classList.toggle('aktion', !!on); if (!on) { AM.st = {}; for (const e of [AM.vig, AM.lines, AM.flash]) e.style.opacity = '0.001'; } },
     aktionBild(v, cssFlash) {
       const s = (el, k, x) => { if (AM.st[k] !== x) { AM.st[k] = x; el.style.opacity = x; } };
       s(AM.vig, 'v', v.sat.toFixed(2)); s(AM.lines, 'l', (0.85 * v.lines).toFixed(2)); s(AM.flash, 'f', cssFlash ? v.flash.toFixed(2) : '0');

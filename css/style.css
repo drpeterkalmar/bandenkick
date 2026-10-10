@@ -262,9 +262,8 @@ body.fevor:not(.replaying) .replay { display: block; opacity: .01; } /* Fan-Edit
 body.fevor:not(.replaying) .replay > :not(.fe) { display: none; }
 .fe-emoji img { width: 1em; height: 1em; display: block; }
 /* n6 Action-Momente live (über dem Spielbild, unter der Bedienung) */
-.am { position: absolute; inset: 0; pointer-events: none; display: none; overflow: hidden; }
-.am.on { display: block; }
-.am i { position: absolute; inset: 0; opacity: 0; will-change: opacity, transform; }
+.am { position: absolute; inset: 0; pointer-events: none; overflow: hidden; } /* immer angelegt (Ebenen schon gerastert), unsichtbar */
+.am i { position: absolute; inset: 0; opacity: .001; will-change: opacity, transform; }
 .am-vig { background: radial-gradient(ellipse at center, transparent 34%, rgba(0,0,0,.85) 100%); }
 .am-lines { inset: -25% !important; background: center / cover no-repeat; }
 .am-flash { background: #fff; }

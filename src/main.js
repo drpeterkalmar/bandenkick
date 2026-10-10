@@ -313,6 +313,9 @@ async function boot() {
   resize();
   input.resetStick();
   if (AUTOPILOT && !START.fest) await startGrafik();
+  // n6: Endbild-Varianten von Fan-Edit, Wiederholung und Action-Momenten (Tiefenschärfe, RGB-Versatz/Zoom-Unschärfe,
+  // Wischschwenk) schon beim Laden übersetzen – beim Tor kostete das am Handy-Profil bis über 1 s
+  if (kino && kino.vorwaermen) { const d = { k: 1 }, w = { len: 0.05 }; G.vorgewaermt = kino.vorwaermen([{ edit: 1 }, { edit: 1, whip: w }, { edit: 1, dof: d }, { edit: 1, dof: d, whip: w }, { dof: d }]); }
   loadMsg.remove();
   setMode(qs.has('play') ? 'play' : 'menu');
   if (challengeId) startChallenge(challengeId);
@@ -408,17 +411,13 @@ function handleEvents(ev) {
     } else if (e.type === 'goal' && e.challenge) {
       // Challenge meldet selbst (Treffer/gehalten)
     } else if (e.type === 'goal') {
-      if (R && replayOn && rp.rec && game.players.length === rp.rec.n) {
+      if (R && replayOn && rp.rec && rp.recGame === game && game.players.length === rp.rec.n) {
         rp.goal = { ...e, t: game.t - DT }; rp.wait = replayArt === 'edit' ? Math.max(P.replayDelay, EDIT_DELAY) : P.replayDelay;
         // n6: Endbild-Varianten der Wiederholung jetzt übersetzen (im Live-Jubel), nicht mitten im Clip
         if (kino && kino.vorwaermen) { const d = { k: 1 }, w = { len: 0.05 }; G.vorgewaermt = kino.vorwaermen(replayArt === 'edit' ? [{ edit: 1 }, { edit: 1, dof: d }, { edit: 1, whip: w }, { edit: 1, dof: d, whip: w }] : [{ dof: d }]); }
-        szeneVorwaermen();
-        if (replayArt === 'edit') {
-          hud.editVorbereiten(true);
-          // einmal das ganze Endbild mit allen Clip-Effekten zeichnen (legt Ziele für die Tiefenschärfe an); das normale Bild
-          // dieses Durchgangs übermalt es, bevor es angezeigt wird
-          if (kino && kino.pipeline) kino.render(scene, gcam.cam, { dt: 0, dof: { focus: 4, k: 0.85, r: 0.014, near: 0.5, far: 0.9 }, edit: { ca: 0.3, grain: 0.07, zoom: 0.03, mono: 0.2 }, whip: { len: 0.05, ang: 0 } });
-        }
+        // (n6-Messung: die ganze Szene in ein eigenes Ziel zu zeichnen übersetzte alle Materialien neu – 1,7 s Hänger am
+        // Handy-Profil; deshalb nur die Endbild-Varianten und das Overlay)
+        if (replayArt === 'edit') hud.editVorbereiten(true);
       }
       if (R) {
         const mine = e.team === me().team;
@@ -485,7 +484,14 @@ function slowScale(dt) {
   if (!v) { if (am.an) amEnde(); return 1; }
   if (!am.an) { am.an = true; hud.aktion(true); if (kino && kino.grade !== 'edit') { am.gradeVor = kino.grade; } }
   const M = aktion.moment;
-  const bb = game.ball.p;
+  // Rückblick aus der Aufzeichnung (Simulation steht): Spielzeit läuft von tSpiel − rueck bis tSpiel
+  am.rf = null;
+  if (v.rueck >= 0 && M.rueck > 0 && rp.rec && rp.recGame === game && rp.rec.tFirst < M.tSpiel - M.rueck) {
+    const tR = M.tSpiel - M.rueck * (1 - v.rueck);
+    am.rate = dt > 0 && am.tR != null ? Math.max(0, (tR - am.tR) / dt) : 0.3; am.tR = tR;
+    am.rf = rp.rec.frameAt(tR, am.frame || (am.frame = {}), P);
+  } else am.tR = null;
+  const bb = am.rf ? am.rf.ball.p : game.ball.p;
   gcam.fokus = { p: M.fokus, k: v.punch, dir: M.dir, nah: M.nah, drift: v.drift, ball: [bb.x, bb.y, bb.z] };
   gcam.zoom = (gcam.mode === 'hoch' ? 0.6 : 1) * v.punch; // quer: enger (mehr Tele)
   if (v.shake > gcam.shake) gcam.shake = v.shake;
@@ -498,7 +504,7 @@ function slowScale(dt) {
   } else if (am.orbit) { am.orbit = null; gcam.override = null; gcam.setAspect(gcam.cam.aspect, G.forceMode); } // ruckartig zurück
   if (kino) kino.grade = v.sat > 0.4 ? 'aktion' : am.gradeVor || kino.grade;
   hud.aktionBild(v, !(kino && kino.pipeline));
-  return gehalten ? 0 : v.rate;
+  return gehalten || am.rf ? 0 : v.rate;
 }
 // Bullet-Time-Bahn: Mitte zwischen Ball und nächstem Spieler, Halbkreis ab der Richtung der Spielkamera in die Richtung,
 // die im Käfig bleibt; Radius schrumpft an der Bande (höchstens 4,4 m, mindestens 2 m) – ganze Figuren im Bild
@@ -506,13 +512,14 @@ function bulletBahn(M) {
   const b = game.ball.p, f = M.fokus;
   let q = null, dq = 9;
   for (const p of game.players) { const d = Math.hypot(p.x - b.x, p.z - b.z); if (d < dq) { dq = d; q = p; } }
-  const z = q && dq < 3 ? [(b.x + q.x) / 2, 0.85, (b.z + q.z) / 2] : [f[0], 0.85, f[2]];
+  const z = q && dq < 3 ? [b.x * 0.7 + q.x * 0.3, 0.75, b.z * 0.7 + q.z * 0.3] : [f[0], 0.85, f[2]]; // nah am Ball
   const c = gcam.cam.position, a0 = Math.atan2(c.z - z[2], c.x - z[0]), cg = game.cage;
   const R = (a) => { let r = 3.7; const cx = Math.cos(a), cz = Math.sin(a); if (cx) r = Math.min(r, ((cx > 0 ? cg.hx : -cg.hx) - 0.35 * Math.sign(cx) - z[0]) / cx); if (cz) r = Math.min(r, ((cz > 0 ? cg.hz : -cg.hz) - 0.35 * Math.sign(cz) - z[2]) / cz); return Math.max(2, r); };
   const guete = (d) => { let s = 0; for (let i = 0; i <= 8; i++) s += R(a0 + d * Math.PI * i / 8); return s; };
   return { z, a0, dir: guete(1) >= guete(-1) ? 1 : -1, R };
 }
 function amEnde() {
+  am.rf = null; am.tR = null;
   am.an = false; am.v = null; gcam.fokus = null; gcam.zoom = 0;
   if (am.orbit) { am.orbit = null; gcam.override = null; gcam.setAspect(gcam.cam.aspect, G.forceMode); }
   if (kino && am.gradeVor) { kino.grade = am.gradeVor; am.gradeVor = null; }
@@ -656,7 +663,8 @@ function frame() {
   // Tor-Wiederholung: nach dem Live-Jubel starten; läuft sie, zeigt die Grafik den aufgezeichneten Zustand
   if (rp.wait > 0 && mode === 'play' && !frozen) { rp.wait -= dt; if (rp.wait <= 0) startReplay(); }
   const rdt = mode === 'play' && !((rp.hold || rp.haltBei != null) && rp.held) ? dt : 0;
-  const rf = rp.dir && (mode === 'play' || mode === 'pause') ? replayFrame(rdt, raw) : null;
+  let rf = rp.dir && (mode === 'play' || mode === 'pause') ? replayFrame(rdt, raw) : null;
+  if (!rf && am.rf && mode === 'play') { rf = am.rf; rp.rate = am.rate; } // n6 Action-Moment: Rückblick
   let bx = prev.bx + (b.p.x - prev.bx) * a, by = prev.by + (b.p.y - prev.by) * a, bz = prev.bz + (b.p.z - prev.bz) * a;
   if (rf) { bx = rf.ball.p.x; by = rf.ball.p.y; bz = rf.ball.p.z; ballMesh.quaternion.set(rf.ball.q[1], rf.ball.q[2], rf.ball.q[3], rf.ball.q[0]); }
   else ballMesh.quaternion.set(b.q[1], b.q[2], b.q[3], b.q[0]);
@@ -666,7 +674,7 @@ function frame() {
   const tA = performance.now();
   drawPlayers(rf ? rdt * rp.rate : dt, a, rf);
   if (rf && rp.dir && rp.dir.edit) editNachFiguren();
-  else if (am.an && !rf) { // n6 Action-Moment: Figuren direkt vor der Linse ausblenden (Zoom-Punch, Bullet-Time), Ringe weg
+  else if (am.an) { // n6 Action-Moment: Figuren direkt vor der Linse ausblenden (Zoom-Punch, Bullet-Time), Ringe weg
     const cp = gcam.cam.position;
     // (auch wer auf der Sichtlinie dicht vor der Linse steht)
     const lk = gcam.override ? gcam.override.look : gcam.fokus ? gcam.fokus.p : null;
@@ -741,7 +749,7 @@ const winkelDiff = (a, b) => { let d = a - b; while (d > Math.PI) d -= 2 * Math.
 // Tippen, Taste oder Knopf überspringt; danach läuft der Jubel weiter und es folgt der Anstoß wie gewohnt.
 const rp = { rec: null, recGame: null, dir: null, wait: -1, goal: null, frame: {}, rate: 1, trail: [], hold: null, held: false, fx: null, label: '', ctx: null, dof: null, kinoFx: null, edit: null, letzterEdit: null };
 function recordReplay(evs) {
-  if (!game.match || game.challenge || !replayOn) { rp.recGame = null; return; }
+  if (!game.match || game.challenge) { rp.recGame = null; return; } // n6: auch ohne Wiederholung (Rückblick der Action-Momente)
   if (rp.recGame !== game || !rp.rec || rp.rec.n !== game.players.length) { rp.rec = new ReplayRecorder(game.players.length); rp.recGame = game; rp.wait = -1; }
   rp.rec.record(game, evs);
 }
@@ -863,7 +871,7 @@ function editNachFiguren() {
   if (fig && fig.bones && fig.bones.Bip01_Head) { fig.bones.Bip01_Head.getWorldPosition(ED_V); rp.ctx.kopfY = ED_V.y; } // für die Jubel-Kamera
   // andere Figuren direkt vor der Linse ausblenden (sonst füllt ein unscharfer Rücken das Bild)
   const cp = gcam.override && gcam.override.pos;
-  if (cp) for (const f of figs) if (f !== fig && f.root && f.root.visible && Math.hypot(f.root.position.x - cp[0], f.root.position.z - cp[2]) < 1.25) f.root.visible = false;
+  if (cp) for (const f of figs) { if (f.ring) f.ring.visible = false; if (f !== fig && f.root && f.root.visible && Math.hypot(f.root.position.x - cp[0], f.root.position.z - cp[2]) < 1.25) f.root.visible = false; } // Torwart-Ringe aus
   for (let k = 0; k < 2; k++) {
     const bn = fig && fig.bones ? fig.bones[k ? 'Bip01_R_Foot' : 'Bip01_L_Foot'] : null;
     if (bn && rp.fx) { bn.getWorldPosition(ED_V); rp.fx.setGlow(1 + k, [ED_V.x, ED_V.y, ED_V.z], 0.42 + 0.12 * fx.puls, fx.freeze ? 0.9 : 0.6); }
@@ -895,22 +903,6 @@ function endReplay() {
   hud.replayShow(false); hud.replayState(false, 0);
   if (rp.fx) rp.fx.hide();
   resetPrev(); acc = 0;
-}
-// n6: Materialien, die erst in der Wiederholung sichtbar werden (Ballspur, Druckwelle, Leuchten, Torgestell hinter der Kamera),
-// einmal vorab übersetzen – sonst stockt der erste Clip an diesen Stellen (gemessen bis 160 ms am Handy-Profil)
-let szeneWarm = false;
-function szeneVorwaermen() {
-  if (szeneWarm) return;
-  szeneWarm = true;
-  const an = [], zeig = (o) => { if (o && !o.visible) { o.visible = true; an.push(o); } };
-  if (rp.fx) { zeig(rp.fx.trail); zeig(rp.fx.ring); rp.fx.glows.forEach(zeig); }
-  if (field && field.frames) field.frames.forEach(zeig);
-  try {
-    // einmal klein zeichnen (ANGLE übersetzt erst beim Zeichnen), Kamera-Zustand bleibt
-    const rt = new THREE.WebGLRenderTarget(32, 32), alt = renderer.getRenderTarget();
-    renderer.setRenderTarget(rt); renderer.render(scene, gcam.cam); renderer.setRenderTarget(alt); rt.dispose();
-  } catch (_) { /* nur Vorwärmen */ }
-  for (const o of an) o.visible = false;
 }
 function skipReplay() { if (rp.dir) { rp.dir.skip(); } }
 // Ein Bild der Wiederholung: Zeit weiter, Zustand, Kamera, Effekte → Zustand (oder null, wenn zu Ende)
@@ -1028,7 +1020,7 @@ function autoQuality(dt) {
 // ---------------- n4: Zeichnen, Qualitäts-Autopilot, enge Schattenkamera ----------------
 let grafik = null, grafikKey = null, apMode = 'load', gpuLast = null;
 function zeichne(dt, rf = null) {
-  const av = !rf && am.v ? am.v : null; // n6 Action-Moment: Weißblitz, RGB-Versatz, Zoom-Unschärfe
+  const av = (!rf || rf === am.rf) && am.v ? am.v : null; // n6 Action-Moment: Weißblitz, RGB-Versatz, Zoom-Unschärfe
   if (kino) kino.render(scene, gcam.cam, rf && rp.kinoFx ? { dt, dof: rp.dof, ...rp.kinoFx } : av ? { dt, white: av.flash, whip: av.whip > 0.01 ? { len: 0.07 * av.whip, ang: 0 } : null, edit: { ca: av.ca, grain: 0.03, zoom: 0.05 * av.lines, mono: 0 } } : { dt, dof: rf ? rp.dof : null });
   else renderer.render(scene, gcam.cam);
 }

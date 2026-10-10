@@ -218,8 +218,11 @@ Ball mit (Sohle/Außenseite). `?zack=0` = altes Gefühl aus Nacht 1 zum Vergleic
 | `?banane=0` … `1` | Angeschnittener Schuss: 1 = feste Banane (Nacht 2c: Grundtempo wie Vollspann, ≥ 95 % im Spiel, Drall wächst mit dem Tempo bis 12 U/s), 0 = 85 % Tempo wie Nacht 2b |
 | `?schusshilfe=1` | Schuss-Hilfe: > 1 = gute Lage zählt mehr (z. B. 1.5 leichter), < 1 = strenger |
 | `?luft=0` | keine automatischen Luftball-Techniken (Volley, Kopfball …) |
-| `?zeitlupe=0` | keine Zeitlupe bei Luftbällen |
-| `?replay=0`, `?replayDelay=1` | keine Tor-Wiederholung (sonst im Pause-Menü umschaltbar); Sekunden Live-Jubel davor |
+| `?action=0` / `1` / `2` | n6 **Action-Momente** live (Zoom-Punch, Speed-Ramp, Bullet-Time): aus / selten (Standard) / oft – im Pause-Menü „🎬 Action-Momente“; `?zeitlupe=0` = aus |
+| `?replay=0`, `?replayDelay=1` | keine Tor-Wiederholung (sonst im Pause-Menü umschaltbar); Sekunden Live-Jubel davor (Fan-Edit: mindestens 2 s) |
+| `?edit=0` / `?edit=1` | n6 Tor-Wiederholung **Klassisch** (ruhige TV-Wiederholung wie n5) / **Fan-Edit** (TikTok-Stil, Standard); im Pause-Menü „Tor-Wiederholung: Fan-Edit / Klassisch / Aus“ |
+| `?clip=hoch` / `quer` | n6 Fan-Edit auf Querformat-Bildschirmen als 9:16-Ausschnitt („Clip im Hochformat“) / Vollbild |
+| `?blitze=sanft` / `voll` | n6 „Blitze reduzieren“: Flashes → sanftes Aufhellen, kein RGB-Zucken, weniger Wackler (Standard nach Systemeinstellung „Bewegung reduzieren“) |
 | `?challenge=torwand` | direkt in eine Übung (torwand, volley, bande, dribbel, elfmeter, doppelpass, tw_serie, tw_reaktion, tw_1gegen1) |
 | `?nohelp` | Hilfekarte beim ersten Start überspringen |
 
@@ -236,8 +239,13 @@ Ball mit (Sohle/Außenseite). `?zack=0` = altes Gefühl aus Nacht 1 zum Vergleic
   Bande), `shot.js` (Qualität q, Eckenwahl), `technique.js` (Technik-Tabellen, Luftball-Bewertung), `air.js`
   (Luftball-Planer und -Ausführung – Bots nutzen dieselbe API), `challenges.js` (9 Übungen, Ballmaschine, Sterne).
   `src/render/training.js` (Ballmaschine, Torwand, Hütchen, Dummies, Zielmarken).
-- `src/sim/replay.js` (Nacht 2d): Ringpuffer des Darstellungs-Zustands, Ablauf und Kameras der Tor-Wiederholung (ohne
-  DOM, in Node getestet); `src/render/replayfx.js`: Leuchtspur und Druckwelle (je 1 Draw-Call), Kinobalken/Blitz per CSS.
+- `src/sim/replay.js` (Nacht 2d): Ringpuffer des Darstellungs-Zustands (n6: 10 s), Ablauf und Kameras der Tor-Wiederholung
+  (ohne DOM, in Node getestet); `src/render/replayfx.js`: Leuchtspur/Kometenschweif, Druckwelle, Leuchten um Ball und Schuhe.
+- **n6 Fan-Edit** `src/sim/fanedit.js`: stummer Takt 128 BPM als Schnittraster, Einstellungen, Tempo-Kurven (Speed-Ramps),
+  Effekt-Fahrplan, Kameras (ohne DOM, `tests/node/fanedit.test.mjs`); Effekte im Endbild (`kern/kinolook.js`, Zweig `EDIT`:
+  RGB-Versatz, Zoom-Unschärfe, Filmkorn, Entsättigung), Texte/Emojis/Speed-Lines als CSS (`ui/hud.js`).
+- **n6 Action-Momente** `src/sim/action.js`: Spektakel-Wertung, Abkühlzeit, Sicherheitsregel, Verlauf von Speed-Ramp und
+  Bullet-Time (`tests/node/action.test.mjs`); Zoom-Punch in `render/camera.js` (`fokus`), Rückblick aus dem Ringpuffer.
 - Verschönerung (Deko): `src/render/deko.js` bündelt `stimmung.js` (Himmel, Rasen-Shader, Außenboden, Abnutzung),
   `umgebung.js` (Anlage, gemalte Bäume als Billboards, Boden-Detailtextur), `zuschauer.js` (Atlas aus den Rocketbox-
   Menschen, Bildtafeln mit Jubel im Shader), `effekte.js` (Konfetti/Rasenfetzen im Shader, Ballspur, Rutschspuren,
@@ -298,6 +306,12 @@ node tests/node/wucht.test.mjs      # Wucht vorher/nachher (Tempo, Flugzeit, Kur
 node tests/node/wucht_probe.mjs selfplay "wucht=1" 8   # Messwerkzeug: Schüsse, Tore, Hechtsprünge, schnellster Schuss, Ball draußen
 node tests/node/stumm.test.mjs      # Ton aus: kein Audio-Erzeuger im ausgelieferten Code, Stub ohne Wirkung
 node tests/node/replay.test.mjs     # Tor-Wiederholung: Ringpuffer, Kontakt-Takt, Ablauf ≤ 7 s, Überspringen, Spielzustand unverändert
+node tests/node/fanedit.test.mjs    # n6 Fan-Edit: Schnitte auf dem Taktraster, Ball am Kontakt im Bild, ≤ 3 Flashes < 120 ms, Blitze reduzieren
+node tests/node/action.test.mjs     # n6 Action-Momente: Verlauf, Häufigkeit je Bot-Spiel, Abkühlzeit, Sicherheitsregel, Simulation unverändert
+python3 tests/fanedit_bilder.py hoch 1,2,4,8,11,30,57   # n6 Bildfolgen je Tor (Collagen), Schnitt-Messung im Browser (auch quer, clip, --sanft)
+python3 tests/fanedit_perf.py hoch --q 1                # n6 Bildrate im Clip am Handy-Profil (CPU ×4), Fan-Edit gegen Klassisch
+python3 tests/action_bilder.py hoch 3                   # n6 Action-Momente: Bildfolgen, Bullet-Time, Eingabe während der Zeitlupe
+python3 tests/action_perf.py hoch                       # n6 Bildrate in Action-Momenten am Handy-Profil
 python3 tests/shots5.py final       # Fotos Nacht 2d: sechs Luftball-Techniken im Kontakt (Spiel- und Seitenkamera), Hechtsprung, Wiederholung (FORMS=hoch)
 python3 tests/shots4.py final   # Fotos Nacht 2c: Auto-Torwart hechtet, Grätsche, Flanke, großes Feld (hoch/quer)
 python3 tests/shots3.py final   # Fotos Nacht 2b: Aufladering, Training, Torwand, Fallrückzieher, Kopfball, Ergebnis
@@ -317,6 +331,13 @@ python3 tools/fetch_assets.py && python3 tools/make_assets.py   # Assets neu bau
 Browser-Tests laufen headless über die GPU (ANGLE/Metal), nie zwei Browser gleichzeitig.
 
 ## Änderungen
+- **n6 Fan-Edit und Action-Momente (10.10., Version 0.4.0)** – Peters Wünsche vom 09.10.: Die Tor-Wiederholung ist jetzt ein
+  überdrehter TikTok-Fan-Edit (≈ 7 s, Schnitte auf einem stummen 128-BPM-Takt, Vorgriff „WARTE AB 👀“, Zeitlupe am Kontakt,
+  derselbe Schuss aus drei Winkeln, Standbild mit Kontur, Jubel, große Texte, km/h-Zähler, Emojis, Teal/Orange) – Hochformat
+  zuerst, „Clip im Hochformat“ auch auf Querformat, „Clip nochmal“, „Blitze reduzieren“; die ruhige Wiederholung bleibt als
+  „Klassisch“. Live im Spiel: **Action-Momente** (Zoom-Punch, Speed-Ramp mit Rückblick, Bullet-Time) bei harten Schüssen,
+  Hechtsprüngen, Paraden, Grätschen – Aus/Selten/Oft. Bericht: [`N6_FANEDIT_BERICHT.md`](N6_FANEDIT_BERICHT.md).
+- **n5 flüssig (09.10., 0.3.0)** – weiche Figuren und ruckelfreie Wiederholung ([`FLUESSIG_BERICHT.md`](FLUESSIG_BERICHT.md)).
 - **Technik n4 (08.10.)** – „wie FIFA bei flüssiger Webapp-Leistung“: Fernseh-Farben, Kontaktschatten unter Spielern und
   Ball, Bloom am Flutlicht, Tiefenschärfe in der Tor-Wiederholung, Fuß-IK (Fuß trifft den Ball, keine Füße im Rasen),
   Schattenkarte folgt dem Bild, Qualitäts-Autopilot auf- und abwärts. p95 je Stufe gleich oder besser, Replay −55 %,

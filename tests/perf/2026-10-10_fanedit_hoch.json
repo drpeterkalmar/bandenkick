@@ -11,13 +11,13 @@
   {
    "art": "klassisch",
    "seed": 1,
-   "n": 238,
+   "n": 271,
    "p50": 16.7,
    "p95": 33.4,
-   "max": 66.7,
-   "fps_mittel": 42.5,
-   "fps_schlechtestes_0_5s": 32.9,
-   "anteil_ueber_33ms": 0.046,
+   "max": 83.3,
+   "fps_mittel": 48.0,
+   "fps_schlechtestes_0_5s": 42.0,
+   "anteil_ueber_33ms": 0.03,
    "stufe": 1,
    "skala": 0.85,
    "groesste_luecken_ms_bei_clipzeit": []
@@ -25,13 +25,13 @@
   {
    "art": "klassisch",
    "seed": 8,
-   "n": 296,
+   "n": 313,
    "p50": 16.7,
-   "p95": 33.4,
-   "max": 33.4,
-   "fps_mittel": 52.2,
-   "fps_schlechtestes_0_5s": 40.0,
-   "anteil_ueber_33ms": 0.017,
+   "p95": 33.3,
+   "max": 33.5,
+   "fps_mittel": 55.2,
+   "fps_schlechtestes_0_5s": 48.0,
+   "anteil_ueber_33ms": 0.016,
    "stufe": 1,
    "skala": 0.85,
    "groesste_luecken_ms_bei_clipzeit": []
@@ -39,60 +39,60 @@
   {
    "art": "edit",
    "seed": 1,
-   "n": 259,
-   "p50": 33.2,
-   "p95": 33.5,
-   "max": 166.7,
-   "fps_mittel": 37.4,
-   "fps_schlechtestes_0_5s": 25.0,
-   "anteil_ueber_33ms": 0.069,
+   "n": 287,
+   "p50": 16.7,
+   "p95": 33.4,
+   "max": 133.4,
+   "fps_mittel": 41.5,
+   "fps_schlechtestes_0_5s": 19.4,
+   "anteil_ueber_33ms": 0.07,
    "stufe": 1,
    "skala": 0.85,
    "groesste_luecken_ms_bei_clipzeit": [
     [
-     161.7,
-     2.92,
-     3
-    ],
-    [
-     131,
-     0.13,
+     291.3,
+     0.12,
      0
     ],
     [
-     80.9,
-     3.36,
-     4
+     133.0,
+     0.63,
+     1
+    ],
+    [
+     98.9,
+     3.47,
+     6
     ]
    ]
   },
   {
    "art": "edit",
    "seed": 8,
-   "n": 307,
+   "n": 331,
    "p50": 16.7,
    "p95": 33.4,
    "max": 50,
-   "fps_mittel": 44.2,
-   "fps_schlechtestes_0_5s": 35.6,
-   "anteil_ueber_33ms": 0.065,
+   "fps_mittel": 47.7,
+   "fps_schlechtestes_0_5s": 39.4,
+   "anteil_ueber_33ms": 0.057,
    "stufe": 1,
    "skala": 0.85,
    "groesste_luecken_ms_bei_clipzeit": [
     [
-     44.5,
-     1.45,
-     1
+     44.6,
+     1.46,
+     2
     ],
     [
-     40.2,
-     2.86,
-     3
-    ],
-    [
-     39.5,
-     0.07,
+     36.0,
+     0.06,
      0
+    ],
+    [
+     33.3,
+     5.19,
+     10
     ]
    ]
   }

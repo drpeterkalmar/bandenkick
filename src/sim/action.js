@@ -58,12 +58,13 @@ export function bewerte(e, game) {
   }
   if (e.type === 'post' && (e.speed || 0) > 10) return { w: 0.72, art: 'ramp', fokus: [game.ball.p.x, game.ball.p.y, game.ball.p.z], spieler: -1, grund: 'pfosten' };
   if (e.type === 'parry' && (e.speed || 0) > 14) {
-    const w = clamp(0.4 + ((e.speed || 0) - 14) / 22, 0, 0.85); // Parade nach dem Kontakt: der Hechtsprung davor ist das Bild
+    const kp = P[e.player], hecht = kp && kp.hand && (kp.hand.mode === 'dive' || kp.hand.mode === 'ground');
+    const w = hecht ? clamp(0.5 + ((e.speed || 0) - 14) / 22, 0, 0.9) : 0.3; // nur mit Hechtsprung spektakulär
     return { w, art: (e.speed || 0) > 24 ? 'bullet' : 'ramp', ...torwartBlick(P[e.player], e), spieler: e.player, grund: 'parade' };
   }
   if (e.type === 'catch' && (e.speed || 0) > 17) {
     const pl = P[e.player], hecht = pl && pl.hand && pl.hand.mode === 'dive';
-    return { w: hecht ? 0.68 : 0.5, art: 'ramp', ...torwartBlick(pl, e), spieler: e.player, grund: hecht ? 'hechtfang' : 'fang' };
+    return { w: hecht ? 0.68 : 0.3, art: 'ramp', ...torwartBlick(pl, e), spieler: e.player, grund: hecht ? 'hechtfang' : 'fang' };
   }
   if (e.type === 'dive') {
     const k = P[e.player], b = game.ball, sp = Math.hypot(b.v.x, b.v.y, b.v.z);
@@ -94,13 +95,13 @@ export function unsicher(game) {
 
 // Verlauf eines Moments zur Echtzeit t (s): Tempo der Simulation, Zoom-Punch 0…1, Effekte, Bullet-Time-Kreisfahrt
 export function verlauf(art, t, reduce = false, langsam = AKTION.langsam) {
-  const o = { rate: 1, punch: 0, flash: 0, lines: 0, ca: 0, sat: 0, orbit: -1, shake: 0, drift: 0, whip: 0, ende: false };
+  const o = { rate: 1, punch: 0, flash: 0, lines: 0, ca: 0, sat: 0, orbit: -1, shake: 0, drift: 0, whip: 0, rueck: -1, ende: false };
   const L = langsam;
   if (art === 'bullet') {
     const T = AKTION.bullet;
     if (t >= T) { o.ende = true; return o; }
     if (t < 0.1) { const u = ss(t / 0.1); o.rate = 1 + (0.05 - 1) * u; o.punch = u; }
-    else if (t < 1.25) { o.rate = 0; o.punch = 1; o.orbit = ss((t - 0.1) / 1.15); o.orbitLin = clamp((t - 0.1) / 1.15, 0, 1); o.ca = reduce ? 0 : 0.55; }
+    else if (t < 1.25) { o.rate = 0; o.punch = 1; o.orbit = ss((t - 0.1) / 1.15); o.orbitLin = clamp((t - 0.1) / 1.15, 0, 1); o.ca = reduce ? 0 : 0.3; }
     else { const u = ss((t - 1.25) / (T - 1.25)); o.rate = 1.4 + (1 - 1.4) * u; o.punch = 0; o.shake = t < 1.32 ? (reduce ? 0.25 : 0.7) : 0; }
     o.sat = t < 1.25 ? ss(t / 0.15) : 1 - ss((t - 1.25) / 0.2);
     o.lines = t < 0.35 ? 1 - t / 0.35 : 0;
@@ -108,7 +109,7 @@ export function verlauf(art, t, reduce = false, langsam = AKTION.langsam) {
     const T = AKTION.ramp;
     if (t >= T) { o.ende = true; return o; }
     if (t < 0.1) { const u = ss(t / 0.1); o.rate = 1 + (L - 1) * u; o.punch = u; }
-    else if (t < 0.65) { o.rate = L; o.punch = 1; o.drift = (t - 0.1) / 0.55; }
+    else if (t < 0.65) { o.rate = L; o.punch = 1; o.drift = (t - 0.1) / 0.55; o.rueck = t < 0.32 ? ss((t - 0.1) / 0.22) : -1; } // Rückblick bis ≈ 0,3 s: Kontakt früh
     else if (t < 0.8) { const u = ss((t - 0.65) / 0.15); o.rate = L + (1.5 - L) * u; o.punch = 1; o.drift = 1 + 0.4 * u; }
     else { const u = ss((t - 0.8) / (T - 0.8)); o.rate = 1.5 + (1 - 1.5) * u; o.punch = 0; o.whip = Math.max(0, 1 - (t - 0.8) / 0.1); o.shake = t < 0.86 ? (reduce ? 0.2 : 0.5) : 0; } // harter Schnitt zurück
     o.sat = t < 0.95 ? ss(t / 0.15) : 1 - ss((t - 0.95) / 0.25);
@@ -138,7 +139,10 @@ export class ActionRegie {
     if (this.rnd() > p) return null;
     if (best.art === 'bullet' && game.t - (this.letztBullet ?? -1e9) < AKTION.bulletAbkuehl) best = { ...best, art: 'ramp' };
     if (best.art === 'bullet') this.letztBullet = game.t;
-    this.moment = { ...best, t: 0, tSpiel: game.t, real: 0 };
+    // Rückblick: die Zeitlupe zeigt die letzten Zehntel vor dem Auslösen aus der Aufzeichnung (Kontakt, Parade), die
+    // Simulation steht so lange; der Hechtsprung beginnt erst – da braucht es keinen
+    const rueck = best.art === 'ramp' && best.grund !== 'hechtsprung' ? (best.grund === 'parade' || best.grund === 'fang' || best.grund === 'hechtfang' ? 0.16 : 0.2) : 0;
+    this.moment = { ...best, t: 0, tSpiel: game.t, real: 0, rueck };
     this.letzt = game.t; this.zahl++;
     this.log.push({ t: game.t, grund: best.grund, art: best.art, w: +best.w.toFixed(2) });
     return this.moment;
