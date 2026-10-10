@@ -12,11 +12,6 @@
    "collage": "tests/shots/action/quer_1_ramp.jpg"
   },
   {
-   "art": "ramp",
-   "grund": "innenrist",
-   "collage": "tests/shots/action/quer_2_ramp.jpg"
-  },
-  {
    "art": "bullet",
    "grund": "erzwungen",
    "collage": "tests/shots/action/quer_bullet.jpg"
@@ -24,7 +19,7 @@
  ],
  "eingabe_in_zeitlupe": {
   "schuss_waehrend_moment": true,
-  "echtzeit_im_moment_beim_schuss": 0.8165000000000004
+  "echtzeit_im_moment_beim_schuss": 0.900399999976158
  },
  "fehler": [],
  "ton": []

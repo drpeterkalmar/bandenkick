@@ -103,7 +103,7 @@ export class GameCamera {
       // (Torwart: immer vom Feld her, nie von hinter dem Tor)
       if (F.dir) {
         let ex = F.dir[0], ez = F.dir[1]; if (!F.nah && ex * dx + ez * dz < 0) { ex = -ex; ez = -ez; }
-        if (F.vor) { ex += 0.75 * F.vor[0]; ez += 0.75 * F.vor[1]; } // Schuss: 3/4 von vorn (Gesicht, Fuß und Ball)
+        if (F.vor) { ex += 0.4 * F.vor[0]; ez += 0.4 * F.vor[1]; } // Schuss: seitlich leicht von vorn (Gesicht, Fuß und Ball; der Ball fliegt nicht sofort auf die Kamera zu)
         const el = Math.hypot(ex, ez) || 1; dx = ex / el; dz = ez / el;
       }
       // langsame Fahrt heran und leichtes Kreisen während der Zeitlupe
