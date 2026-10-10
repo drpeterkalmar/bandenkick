@@ -4,7 +4,7 @@ Peters Wünsche (09.10.2026): „Mit Fan-Cam meinte ich eigentlich so ein überd
 Zooms usw.“ und „Bei Torschüssen oder Zweikämpfen schnelle Zoom-ins auf die Szene mit Effekten und Speed-Ramps … oder
 Bullet-Time!“. Stand vorher: n5 (Version 0.3.0, ae34b43). Gearbeitet und gemessen auf **rog17 (RTX 3070 Ti, Windows 11,
 Chromium headless über ANGLE/D3D11, stumm `--mute-audio`)**; Handy-Profil = Pixel 7 (DPR 2,625) mit CPU-Drosselung ×4.
-Version **0.4.0**, alles live (Etappen E1–E13 einzeln gelandet). Bandenkick bleibt **lautlos** (Ton-Wächter: 0 Audio-Objekte).
+Version **0.4.0**, alles live (Etappen E1–E15 einzeln gelandet). Bandenkick bleibt **lautlos** (Ton-Wächter: 0 Audio-Objekte).
 
 ## Kurz für Peter
 
@@ -40,9 +40,13 @@ Ablauf in Schlägen (1 Schlag = 0,469 s; jede Einstellung beginnt genau auf eine
 | 5–6 | hinter dem Tor | Ball auf das Netz zu | km/h-Stempel |
 | 6–7 | am Pfosten | **Einschlag genau auf Schlag 6**, Netz zappelt | Flash 2, GOLAZO! + zweites Wort (BRUTAL!/KRANK!/…), 💥, Shake |
 | 7–8 | Standbild | Nahaufnahme des Schützen im Einschlag-Moment | Kontur + Namensschild, Spotlight, entsättigt, Fahrt heran |
-| 8–11 | derselbe Schuss ×3 | Seitenlinie / hinter dem Schützen / Gegenschuss (Reihenfolge je Tor) | ×1 ×2 ×3, Wischschwenks, Speed-Lines |
+| 8–11 | derselbe Schuss ×3 | die 3 besten von Seitenlinie / hinter dem Schützen / Gegenschuss / Torecke – gewählt nach Ball im Bild und großem, unverdecktem Schützen (Reihenfolge je Tor) | ×1 ×2 ×3, Wischschwenks, Speed-Lines |
 | 11–13 | Jubel frontal | Schütze steht wieder, Arme hoch (V), dreht sich zur Kamera | Flash 3, Name „MIKA #7“, 🔥, Gag-Untertitel |
-| 13–15 | Jubel nah | Faust ballen/küssen (je Tor), Fahrt heran | ⚡, Abblende, „↻ Clip nochmal“ |
+| 13–15 | Jubel nah | Faust ballen/küssen (je Tor), Fahrt heran | Titel („GOAT 🐐“, „MVP 👑“ …), ⚡, Abblende, „↻ Clip nochmal“ |
+
+Abwechslung je Tor: Hook-Spruch (WARTE AB / SCHAU GENAU / GLEICH… / OHNE WORTE / ACHTUNG), Akzentfarbe, Emoji-Satz, zweites
+Jubelwort, Titel, Gag, Jubelbewegung, Reihenfolge der Winkel, Layout/Einflug-Animation A (Stempel) oder B (seitlich gleitend,
+GOLAZO! unten).
 
 - Tempo je Einstellung als monotone Kurve (keine Sprünge innerhalb einer Einstellung, Standbild = flaches Stück); die
   n5-Glättung der Figuren bleibt, an jedem Schnitt werden die Figuren hart umgesetzt (kein Herüberblenden).
@@ -63,12 +67,12 @@ Ablauf in Schlägen (1 Schlag = 0,469 s; jede Einstellung beginnt genau auf eine
 | Rauchtest `tests/smoke.py` (mit `--mute-audio`) | **GRÜN** – Wiederholung (alle Einstellungen), Tippen überspringt, Ton 0 in Menü/Spiel/Wiederholung/Training |
 | Collagen | `tests/shots/fanedit/hoch_seed*.jpg`, `quer_seed*.jpg`, `clip_seed*.jpg`, `hoch_sanft_seed8.jpg` |
 
-**Bewertung „wirkt das wie ein überdrehter TikTok-Fan-Edit?“** (unabhängiger Prüfer, Bildfolgen à 16 Standbilder, 10 Runden mit
-Nachbesserung dazwischen): Start 5–6/10 → 7–7,5 → bestes Einzelergebnis 8,5/10 (hoch Volley, hoch Dropkick), mehrere Clips
-8/10; **Durchschnitt zuletzt 6,5–7,75 – das Ziel ≥ 8/10 für alle Clips habe ich nicht verlässlich erreicht.** Der Prüfer
-betont selbst, dass Standbilder Bewegung, Schnittrhythmus und Flashes nicht zeigen. Restkritik der letzten Runden: einzelne
-×1–×3-Winkel zeigen den Schützen klein oder angeschnitten, der Ablauf ist bei jedem Tor gleich (Reihenfolge der Winkel,
-Gags, Jubelwörter, Jubelbewegung variieren schon), Fang-/Kopfball-Tore wirken weniger spektakulär.
+**Bewertung „wirkt das wie ein überdrehter TikTok-Fan-Edit?“** (unabhängiger Prüfer, Bildfolgen à 16 Standbilder, 15 Runden mit
+Nachbesserung dazwischen): Start Ø ≈ 5,7 (5–6/10) → Ø ≈ 7 → **zuletzt Ø ≈ 7,5–7,65: 5–6 der 10 Clips 8/10, die übrigen 7/10**
+(bestes Einzelergebnis 8,5). **Das Ziel ≥ 8/10 für jeden Clip ist nicht erreicht.** Der Prüfer betont selbst, dass Standbilder
+Bewegung, Schnittrhythmus und Flashes nicht zeigen. Restkritik: einzelne ×1–×3-Winkel ohne Ball oder mit kleinem Schützen,
+der Ablauf (Schlagraster, Reihenfolge der Abschnitte) ist bei jedem Tor gleich, die beiden Jubel-Einstellungen ähneln sich,
+im Querformat ist der Jubel weit.
 
 ## Action-Momente live (src/sim/action.js)
 
@@ -117,6 +121,20 @@ Bullet-Time an beliebiger Stelle hat keinen „Helden“ (in den Testbildern erz
 | **Action-Momente quer** (4 Momente) | 51,6 | 30,0 | 3 % |
 
 - Der Fan-Edit kostet ab dem zweiten Clip ≈ 7–10 fps gegenüber Klassisch, bleibt aber über 30 fps (schlechtestes Fenster ≥ 36).
+- **Endmessung 17:15 (Stand E15, alle Hänger-Korrekturen; rog17 mittel ausgelastet, JSON-Dateien = diese Reihe):**
+
+  | Messung | Mittel fps (Clip 1 / 2 / 3) | schlechtestes 0,5-s-Fenster | Bilder > 33 ms |
+  |---|---|---|---|
+  | Klassisch hoch | 43,2 / 53,6 / 57,9 | 36 / 46 / 50 | 1–3 % |
+  | **Fan-Edit hoch** | 37,3 / 42,8 / 43,4 | **28,0** / 34,8 / 37,2 | 7–12 % |
+  | Klassisch quer | 42,8 / 46,9 / 48,4 | 36 / 40 / 41 | 5–9 % |
+  | **Fan-Edit quer** | 34,6 / 39,2 / 41,3 | **23,2** / 32,0 / 32,9 | 11–14 % |
+  | **Action-Momente hoch** (3 Momente, sonst 49,0 fps) | 42,0 | 29,0 | – |
+  | **Action-Momente quer** (3 Momente, sonst 48,5 fps) | 38,6 | 28,0 | – |
+
+  Ab dem zweiten Clip bleibt der Fan-Edit über 30 fps; der **erste Clip** (quer 23 fps im schlechtesten Fenster) und die
+  **Action-Momente** (28–29 fps im schlechtesten Fenster, Mittel 39–42) liegen am Handy-Profil knapp unter der 30-fps-Grenze –
+  **offen**.
 - **Zweite Messreihe 15:40 (nach E9–E12, rog17 spürbar stärker ausgelastet – auch Klassisch ≈ 10 fps schlechter; die JSON-Dateien
   enthalten diese Reihe):** Klassisch hoch 40,7/49,7/55,1 fps (schlechtestes Fenster 34/38/48), Fan-Edit hoch 36,1/43,4/42,8
   (13,6/33,8/34,8); quer Klassisch 42,4/48,5/48,5 (37/40/43), Fan-Edit 34,6/40,6/41,0 (13,5/32,9/30,0). Action-Momente hoch
@@ -145,9 +163,9 @@ Bullet-Time an beliebiger Stelle hat keinen „Helden“ (in den Testbildern erz
 
 ## Offen (für den Mac)
 
-1. Bewertungsziel ≥ 8/10 nicht erreicht (Fan-Edit Ø ≈ 7–7,75, Action-Momente 4–7). Nächste Hebel: Winkel nach
-   Sichtbarkeit des Schützen wählen (statt fester Liste), mehr Abwechslung im Ablauf je Tor, Action-Momente bei Schüssen
-   früher auslösen bzw. den Rückblick verlängern, Farbsäume an hellen Linien dämpfen.
+1. Bewertungsziel ≥ 8/10 nicht erreicht (Fan-Edit Ø ≈ 7,5 – die Hälfte der Clips 8/10; Action-Momente Ø ≈ 6,4). Nächste
+   Hebel: zweite Ablauf-Vorlage (andere Reihenfolge/Schnittzahl), Jubel mit Mitspieler (Umarmen) statt zweimal derselben
+   Pose, Querformat-Jubel enger, Action-Momente: Ball und Fuß am Kontakt sicher in der Bildmitte, Farbsäume dämpfen.
 2. Start-Hänger beim allerersten Clip-Bild (≈ 0,19 s unter ×4-Drosselung: Layout des Overlays + Skript) und der ältere
    1–1,6-s-Hänger bei Spielzeit 28 s (auch ohne n6).
 3. „Tor des Spiels“ ist umgesetzt (E14, `tests/tordesspiels.py`: Bot-Spiel bis zum Abpfiff, Knopf sichtbar, Clip läuft,

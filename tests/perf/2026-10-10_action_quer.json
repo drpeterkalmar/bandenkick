@@ -4,7 +4,7 @@
  "drossel": 4,
  "sek": 90.0,
  "geraet": "rog17 (RTX 3070 Ti, Windows, ANGLE/D3D11)",
- "momente": 4,
+ "momente": 3,
  "log": [
   {
    "t": 2.9583333333333255,
@@ -23,31 +23,25 @@
    "grund": "innenrist",
    "art": "ramp",
    "w": 0.67
-  },
-  {
-   "t": 90.13333333335113,
-   "grund": "aussenrist",
-   "art": "ramp",
-   "w": 0.74
   }
  ],
  "im_moment": {
-  "n": 137,
+  "n": 139,
   "p50": 16.7,
   "p95": 50,
-  "max": 100,
+  "max": 116.6,
   "fps_mittel": 38.6,
   "fps_schlechtestes_0_5s": 28.0,
-  "anteil_ueber_33ms": 0.139
+  "anteil_ueber_33ms": 0.115
  },
  "sonst": {
-  "n": 4106,
+  "n": 4192,
   "p50": 16.7,
   "p95": 33.4,
-  "max": 1366.5,
-  "fps_mittel": 47.5,
-  "fps_schlechtestes_0_5s": 0.7,
-  "anteil_ueber_33ms": 0.057
+  "max": 1883.2,
+  "fps_mittel": 48.5,
+  "fps_schlechtestes_0_5s": 0.5,
+  "anteil_ueber_33ms": 0.047
  },
  "fehler": [],
  "ton": []
