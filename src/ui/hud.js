@@ -171,12 +171,17 @@ export function buildHud(root, canvas) {
         break;
       }
       case 'technik': { const z = I.tech.split('|'); slam(F.big, z.join('<br>'), 'tech', 21, Math.max(...z.map((x) => x.length))); break; }
-      case 'kmh': ed.kmh = { t0: e.t, v: I.kmh < 60 && I.dist ? I.dist : I.kmh, m: I.kmh < 60 && I.dist }; weg(F.big); F.kmh.className = 'fe-kmh an'; break;
-      case 'kmhStempel': slam(F.kmh, I.kmh < 60 && I.dist ? `${I.dist.toFixed(1).replace('.', ',')} M<small>DISTANZ</small>` : `${I.kmh}<small>KM/H</small>`, 'stempel'); ed.kmh = null; break;
+      // langsame Schüsse: Entfernung (ab 6 m) oder Schwierigkeit 10/10 statt km/h
+      case 'kmh': ed.kmh = { t0: e.t, art: I.kmh >= 60 ? 'kmh' : I.dist >= 6 ? 'm' : 'sw', v: I.kmh >= 60 ? I.kmh : I.dist >= 6 ? I.dist : 10 }; weg(F.big); F.kmh.className = 'fe-kmh an'; break;
+      case 'kmhStempel': slam(F.kmh, I.kmh >= 60 ? `${I.kmh}<small>KM/H</small>` : I.dist >= 6 ? `${I.dist.toFixed(1).replace('.', ',')} M<small>DISTANZ</small>` : `10/10<small>SCHWIERIGKEIT</small>`, 'stempel'); ed.kmh = null; break;
+      case 'warte': slam(F.big, 'WARTE AB 👀', 'warte', 16, 11); break;
+      case 'zurueck': slam(F.big, '⏪ ZURÜCK', 'warte', 14, 10); break;
       case 'golazo': weg(F.kmh); slam(F.big, I.own ? 'EIGEN-<br>TOR!' : 'GOLAZO!', 'golazo', 32, I.own ? 6 : 7); break;
-      case 'kontur': weg(F.big); break;
+      case 'golazo2': slam(F.stamp, I.wort || 'TOOOR!', 'wort', 15, (I.wort || 'TOOOR!').length); break;
+      case 'kontur': weg(F.big); weg(F.stamp); break;
+      case 'leer': weg(F.big); break;
       case 'x1': case 'x2': case 'x3': weg(F.big); slam(F.stamp, '×' + e.text[1]); break;
-      case 'name': weg(F.stamp); slam(F.name, `${I.name}<small>${I.team}</small>`, '', 22, I.name.length); break;
+      case 'name': weg(F.stamp); slam(F.name, `${I.name}<small>${I.team}</small>`, '', document.body.classList.contains('quer') && !I.hoch ? 14 : 22, I.name.length); break;
       case 'gag': slam(F.gag, I.gag); break;
       case 'ende': F.again.classList.add('on'); break;
     }
@@ -202,7 +207,10 @@ export function buildHud(root, canvas) {
       if (r < ed.last) { ed.next = 0; ed.z = (I.seed || 7) % 2147483646 + 1; for (const k of ['big', 'kmh', 'stamp', 'name', 'gag', 'emoji', 'pov']) weg(F[k]); F.again.classList.remove('on'); } // nochmal
       ed.last = r;
       while (ed.next < I.events.length && I.events[ed.next].t <= r) feTrigger(I.events[ed.next++], I);
-      if (ed.kmh) { const u = Math.min(1, (r - ed.kmh.t0) / 0.42), v = ed.kmh.v * (1 - (1 - u) ** 3); F.kmh.innerHTML = ed.kmh.m ? `${v.toFixed(1).replace('.', ',')} M<small>DISTANZ</small>` : `${Math.round(v)}<small>KM/H</small>`; }
+      if (ed.kmh) {
+        const u = Math.min(1, (r - ed.kmh.t0) / 0.42), v = ed.kmh.v * (1 - (1 - u) ** 3);
+        F.kmh.innerHTML = ed.kmh.art === 'm' ? `${v.toFixed(1).replace('.', ',')} M<small>DISTANZ</small>` : ed.kmh.art === 'sw' ? `${Math.round(v)}/10<small>SCHWIERIGKEIT</small>` : `${Math.round(v)}<small>KM/H</small>`;
+      }
       ed.lw = (ed.lw + 37) % 360;
       setz(F.lines, 'opacity', (fx.lines * (I.reduce ? 0.45 : 1)).toFixed(2));
       if (fx.lines > 0.01) setz(F.lines, 'transform', `rotate(${I.reduce ? 0 : ed.lw}deg) scale(1.6)`);
@@ -211,12 +219,15 @@ export function buildHud(root, canvas) {
       setz(F.fade, 'opacity', (fx.fade || 0).toFixed(2));
       setz(F.prog.firstChild, 'transform', `scaleX(${(r / I.total).toFixed(3)})`);
       if (ring && fx.freeze) {
-        const w = Math.max(90, ring.w * 1.4 + 30), hh = Math.max(110, ring.h * 1.35 + 30), x = ring.x.toFixed(0), y = ring.y.toFixed(0);
+        const H0 = F.frame.clientHeight, w = Math.max(90, ring.w * 1.4 + 30), hh = Math.min(H0 * 0.8, Math.max(110, ring.h * 1.35 + 30)), x = ring.x.toFixed(0), y = Math.min(H0 - hh / 2 - 6, Math.max(hh / 2 + 6, ring.y)).toFixed(0);
         setz(F.ring, 'display', 'block');
         setz(F.ring, 'left', x + 'px'); setz(F.ring, 'top', y + 'px'); setz(F.ring, 'width', w.toFixed(0) + 'px'); setz(F.ring, 'height', hh.toFixed(0) + 'px');
+        // Namensschild über dem Ring; oben kein Platz → darunter; auch unten keiner → innen oben
+        const H = F.frame.clientHeight, obenEng = ring.y - hh / 2 < H * 0.22, untenEng = ring.y + hh / 2 > H * 0.86;
+        F.ring.classList.toggle('unten', obenEng && !untenEng); F.ring.classList.toggle('innen', obenEng && untenEng);
         // Spotlight: alles außer dem Schützen abdunkeln (Standbild → einmal gemalt)
         setz(F.spot, 'display', 'block');
-        setz(F.spot, 'background', `radial-gradient(ellipse ${(w * 0.62).toFixed(0)}px ${(hh * 0.62).toFixed(0)}px at ${x}px ${y}px, rgba(0,0,0,0) 78%, rgba(0,0,0,.55) 100%)`);
+        setz(F.spot, 'background', `radial-gradient(ellipse ${(w * 0.62).toFixed(0)}px ${(hh * 0.62).toFixed(0)}px at ${x}px ${y}px, rgba(0,0,0,0) 78%, rgba(0,0,0,.42) 100%)`);
         if (F.ring.firstChild.textContent !== '⬇ ' + I.name) F.ring.firstChild.textContent = '⬇ ' + I.name;
       } else { setz(F.ring, 'display', 'none'); setz(F.spot, 'display', 'none'); }
     },

@@ -32,6 +32,7 @@ export const EDIT_POV = [
   'POV: der Torwart dachte, er hat ihn 🙏', 'POV: du sagst „schieß doch einfach“', 'Wenn der Ball Feierabend im Netz macht',
   'Niemand: … Absolut niemand: … Er:', 'Physiklehrer hassen diesen Trick', 'POV: Hallenkick um 22 Uhr',
 ];
+export const EDIT_WORT = ['UNHALTBAR!', 'WAHNSINN!', 'BRUTAL!', 'WELTKLASSE!', 'KRANK!', 'TOOOR!'];
 export const EDIT_GAG = [
   'Torwart.exe reagiert nicht', 'Netz braucht jetzt Urlaub', 'Lieferung zugestellt 📦', 'Das war Steuerhinterziehung für Torhüter',
   'Bro hat das Netz gefrühstückt', 'Kein VAR kann das retten', 'Erklär das mal deiner Oma', 'Mama, ich bin im Fernsehen',
@@ -83,7 +84,9 @@ function plan(tc, ti, tEnd, tFirst, tg, jub, winkel) {
   const jubel1 = cl(jub ? jub[1] : Math.min(tEnd - 0.02, tg + 1.15)), jubel0 = cl(jub ? jub[0] : Math.min(jubel1 - 0.3, Math.max(ti + 0.25, jubel1 - 1.0)));
   const W = winkel || ['drohne', 'hinten', 'ecke'];
   return [
-    { name: 'anlauf', cam: 'tief', b0: 0, b1: 2, keys: [[0, cl(tc - 0.95)], [2 * B - 0.2, cl(tc - 0.16)], [2 * B, cl(tc - 0.12)]] },
+    // Hook: ein Schlag Vorgriff auf den Einschlag (fast Standbild), dann zurück zum Anlauf
+    { name: 'vorgriff', cam: 'netz', b0: 0, b1: 1, keys: [[0, cl(ti - 0.03)], [B, cl(ti + 0.02)]] },
+    { name: 'anlauf', cam: 'tief', b0: 1, b1: 2, whip: -1, keys: [[0, cl(tc - 0.6)], [B - 0.15, cl(tc - 0.16)], [B, cl(tc - 0.12)]] },
     // Kontakt genau auf Schlag 3, davor/danach fast Standbild (≈ 0,05×), am Ende ruckartig schneller
     { name: 'kontakt', cam: 'makro', b0: 2, b1: 4, keys: [[0, cl(tc - 0.1)], [0.2, cl(tc - 0.016)], [B, tc], [B + 0.27, cl(tc + 0.012)], [2 * B, cl(tc + Math.min(0.2, F * 0.4))]] },
     { name: 'torwart', cam: 'keeper', b0: 4, b1: 5, whip: 1, keys: [[0, cl(tc + Math.min(0.03, F * 0.1))], [0.15, cl(tc + Math.min(0.08, F * 0.25))], [B, cl(ti - Math.min(0.06, F * 0.15))]] },
@@ -103,13 +106,14 @@ function plan(tc, ti, tEnd, tFirst, tg, jub, winkel) {
 // text: Einblendung (vom HUD gezeichnet)
 function fahrplan() {
   return [
-    { b: 0, text: 'pov', punch: 0.6, ca: 0.5 },
-    { b: 1, punch: 0.5, ca: 0.3 }, { b: 1.5, punch: 0.3 }, { b: 2, punch: 0.6, ca: 0.4 },
+    { b: 0, text: 'pov', punch: 0.6, ca: 0.5 }, { b: 0, text: 'warte' },
+    { b: 1, punch: 0.6, ca: 0.4, text: 'zurueck' }, { b: 1.5, punch: 0.3 }, { b: 2, punch: 0.6, ca: 0.4, text: 'leer' },
     { b: 3, flash: 1, punch: 1, ca: 1, shake: 0.35, text: 'technik', emoji: '😱' },
     { b: 4, punch: 0.6, ca: 0.4, text: 'kmh', lines: 1 },
     { b: 5, punch: 0.35, text: 'kmhStempel' },
     { b: 6, flash: 1, punch: 1, ca: 1, shake: 1, text: 'golazo', emoji: '💥' },
-    { b: 7, punch: 0.3, text: 'kontur', emoji: '🐐' },
+    { b: 6.5, punch: 0.5, text: 'golazo2' },
+    { b: 7, punch: 0.3, text: 'kontur' },
     { b: 8, punch: 0.7, ca: 0.35, text: 'x1', lines: 1 },
     { b: 9, punch: 0.7, ca: 0.35, text: 'x2', lines: 1 },
     { b: 10, punch: 0.7, ca: 0.35, text: 'x3', lines: 1 },
@@ -148,7 +152,8 @@ export class FanEdit {
     }
     const jub = [Math.min(tu, tLast - 0.4), Math.min(tLast - 0.02, Math.max(tu, tLast - 0.4) + 1.0)];
     // derselbe Schuss aus drei Winkeln – Reihenfolge je Tor anders
-    const WK = [['drohne', 'hinten', 'ecke'], ['hinten', 'drohne', 'ecke'], ['ecke', 'drohne', 'hinten'], ['drohne', 'ecke', 'hinten']][seed % 4];
+    // (Drohne nur noch im Querformat-Mix selten: von oben ist der Ball zu klein → Seitenlinie tief statt dessen)
+    const WK = [['tief', 'hinten', 'ecke'], ['hinten', 'tief', 'ecke'], ['ecke', 'tief', 'hinten'], ['tief', 'ecke', 'hinten']][seed % 4];
     this.jubelClip = seed % 2 ? 'cheer' : 'cheer2'; this.jubelVersatz = seed % 2 ? 1.8 : 0.8; // Faust ballen / Faust küssen
     this.shots = plan(tc, ti, tLast, tFirst, tg, jub, WK).map((s) => ({ ...s, t0: s.b0 * BEAT, t1: s.b1 * BEAT, k: monoKurve(s.keys) }));
     this.events = fahrplan().map((x) => ({ ...x, t: x.b * BEAT }));
@@ -157,6 +162,7 @@ export class FanEdit {
     this.realTotal = this.shots[this.shots.length - 1].t1;
     this.segs = this.shots.map((s) => ({ name: s.name, cam: s.cam, t0: s.keys[0][1], t1: s.keys[s.keys.length - 1][1], rate: 1 }));
     this.pov = EDIT_POV[seed % EDIT_POV.length];
+    this.wort = EDIT_WORT[(seed >> 2) % EDIT_WORT.length]; // zweites Jubelwort nach GOLAZO!
     this.gag = EDIT_GAG[(seed >> 3) % EDIT_GAG.length];
     this.tech = c ? EDIT_TECH[c.tech] || (c.type === 'air' ? 'VOLLEY' : 'KNALLER') : 'ABSTAUBER';
     this.kmh = c ? Math.round((c.speed || 0) * 3.6) : 0;
@@ -257,10 +263,10 @@ export function freieSicht(rec, ts, z, a0, D, ohne = -1) {
 // keys = Stützpunkte der Jubel-Einstellung [[s, Spielzeit], …], D = Kamera-Abstand
 // a0 = gewünschte Richtung relativ zur Blickrichtung des Schützen (jubel2: seitlich)
 export function jubelRichtung(rec, k, keys, D, a0 = 0, cage = null) {
-  const t0 = keys[0][1], t1 = keys[keys.length - 1][1], ts = [t0, t0 * 0.75 + t1 * 0.25, (t0 + t1) / 2, t0 * 0.25 + t1 * 0.75, t1];
+  const t0 = keys[0][1], t1 = keys[keys.length - 1][1], ts = Array.from({ length: 9 }, (_, i) => t0 + (t1 - t0) * i / 8);
   const S = rec.spielerGlatt(k, (t0 + t1) / 2, 0.3), fr = {};
   let best = S.face + a0, bestFrei = -1;
-  for (const d of [0, 1, -1, 2, -2, 3, -3, 4]) {
+  for (const d of [0, 1, -1, 2, -2, 3, -3, 4, -4, 5, -5, 6]) {
     const a = S.face + a0 + d * Math.PI / 6;
     let frei = 9;
     // Kamera muss im Käfig bleiben (sonst steht die Bande davor)
@@ -294,9 +300,12 @@ export function editCamera(kind, f, ctx) {
   const fr = clamp(ctx.u / Math.max(0.05, ctx.dur), 0, 1);
   const I = ctx.impact || [gx + sx * 0.5, 0.8, 0];
   if (kind === 'tief') {
-    // Seitenlinie tief: Kamera knapp über dem Rasen quer zum Anlauf, langsame Fahrt mit
-    const D = (hoch ? 5.0 : 4.2) - 1.2 * ss(fr), px = c.x + nx * D - ux * (1.4 - fr * 0.8), pz = c.z + nz * D - uz * (1.4 - fr * 0.8);
-    return { pos: [px, 0.42, pz], look: [b.x * 0.75 + c.x * 0.25, 0.6, b.z * 0.75 + c.z * 0.25], fov: hoch ? 50 : 34 };
+    // Seitenlinie tief: knapp über dem Rasen quer zum Anlauf, auf den Schützen und den Ball, langsame Fahrt heran
+    const S = ctx.schuetze || { x: c.x, z: c.z }, mx = (S.x + b.x) / 2, mz = (S.z + b.z) / 2;
+    const D = (hoch ? 4.6 : 3.8) - 1.0 * ss(fr);
+    let px = mx + nx * D - ux * 0.6, pz = mz + nz * D - uz * 0.6;
+    if (Math.abs(px) > cage.hx - 0.3 || Math.abs(pz) > cage.hz - 0.3) { px = mx - nx * D - ux * 0.6; pz = mz - nz * D - uz * 0.6; } // im Käfig bleiben
+    return { pos: [clamp(px, -cage.hx + 0.3, cage.hx - 0.3), 0.42, clamp(pz, -cage.hz + 0.3, cage.hz - 0.3)], look: [mx, 0.75, mz], fov: hoch ? 50 : 36 };
   }
   if (kind === 'makro') {
     // Extreme Nahaufnahme Fuß/Ball: Blick fest auf den Kontaktpunkt, langsame Fahrt heran (Ball am Kontakt sicher im Bild)
@@ -318,27 +327,32 @@ export function editCamera(kind, f, ctx) {
     // hinter dem Tor (außen), tief, Blick durchs Netz aufs Feld: das Netz zappelt im Vordergrund
     // Blick durch den Einschlagpunkt hindurch aufs Feld: der Einschlag liegt in der Bildmitte (auch im schmalen Hochformat)
     const pz = clamp(I[2] * 0.7, -cage.gw, cage.gw), px = gx + sx * (cage.gD + 1.25), py = 0.95;
-    const iy = clamp(I[1], 0.3, 1.6), dx = I[0] - px, dy = iy - py, dz = I[2] - pz - 0.35 * sd, dd = Math.hypot(dx, dy, dz) || 1;
-    return { pos: [px, py, pz + 0.35 * sd], look: [I[0] + dx / dd * 3, iy + dy / dd * 1.5, I[2] + dz / dd * 3], fov: hoch ? 64 : 50 };
+    const Z = [I[0] * 0.5 + b.x * 0.5, clamp(I[1] * 0.5 + b.y * 0.5, 0.3, 1.6), I[2] * 0.5 + b.z * 0.5];
+    const dx = Z[0] - px, dy = Z[1] - py, dz = Z[2] - pz - 0.35 * sd, dd = Math.hypot(dx, dy, dz) || 1;
+    return { pos: [px, py, pz + 0.35 * sd], look: [Z[0] + dx / dd * 3, Z[1] + dy / dd * 1.5, Z[2] + dz / dd * 3], fov: hoch ? 68 : 52 };
   }
   if (kind === 'weit') {
-    // Standbild weit: Schütze und Tor gemeinsam im Bild (Kontur um den Schützen zeichnet das HUD)
+    // Standbild: Nahaufnahme des Schützen im Moment des Einschlags (Kontur und Spotlight zeichnet das HUD)
     const S = ctx.schuetze || { x: c.x, z: c.z };
+    if (ctx.freezeDir != null) {
+      const D = (hoch ? 3.0 : 3.3) - 0.5 * ss(fr), a = ctx.freezeDir, ky = clamp(ctx.kopfY ?? 1.7, 0.3, 1.9);
+      return { pos: [S.x + Math.cos(a) * D, Math.max(0.9, ky * 0.8), S.z + Math.sin(a) * D], look: [S.x, Math.max(0.35, ky * 0.55), S.z], fov: hoch ? 54 : 42 };
+    }
     const mx = (S.x + I[0]) / 2, mz = (S.z + I[2]) / 2, L = Math.hypot(I[0] - S.x, I[2] - S.z) || 1;
     if (hoch) {
       const vx = (I[0] - S.x) / L, vz = (I[2] - S.z) / L;
-      return { pos: [S.x - vx * 3.6 + nx * 1.0, 4.0, S.z - vz * 3.6 + nz * 1.0], look: [mx * 0.4 + S.x * 0.6, 0.6, mz * 0.4 + S.z * 0.6], fov: 54 * (1 - 0.14 * ss(fr)) };
+      return { pos: [S.x - vx * 3.0 + nx * 0.9, 3.4, S.z - vz * 3.0 + nz * 0.9], look: [mx * 0.3 + S.x * 0.7, 0.7, mz * 0.3 + S.z * 0.7], fov: 52 * (1 - 0.16 * ss(fr)) };
     }
     const qx = -(I[2] - S.z) / L, qz = (I[0] - S.x) / L, sg = qx * -mx + qz * -mz >= 0 ? 1 : -1; // von der Feldmitte her
-    const D = L * 0.6 + 3.8, lx = mx * 0.5 + S.x * 0.5, lz = mz * 0.5 + S.z * 0.5;
-    return { pos: [lx + qx * sg * D, 3.2, lz + qz * sg * D], look: [lx, 0.8, lz], fov: 40 * (1 - 0.14 * ss(fr)) };
+    const D = L * 0.45 + 3.0, lx = mx * 0.35 + S.x * 0.65, lz = mz * 0.35 + S.z * 0.65;
+    return { pos: [lx + qx * sg * D, 2.8, lz + qz * sg * D], look: [lx, 0.8, lz], fov: 40 * (1 - 0.16 * ss(fr)) };
   }
   if (kind === 'drohne') {
     // Drohne von oben: über der Mitte zwischen Kontakt und Tor, dreht sich langsam (Bild rotiert)
     const mx = (c.x + I[0]) / 4 + b.x / 2, mz = (c.z + I[2]) / 4 + b.z / 2, a = 0.45 * (fr - 0.5);
     let ox = hoch ? -ux : nx, oz = hoch ? -uz : nz; // hoch: Schuss läuft im Bild nach oben, quer: quer durchs Bild
     const ca = Math.cos(a), sa = Math.sin(a), rx = ox * ca - oz * sa, rz = ox * sa + oz * ca; ox = rx; oz = rz;
-    return { pos: [mx + ox * 1.2, hoch ? 6.0 : 5.2, mz + oz * 1.2], look: [mx, 0, mz], fov: hoch ? 56 : 46 };
+    return { pos: [mx + ox * 1.4, hoch ? 4.6 : 4.2, mz + oz * 1.4], look: [mx, 0, mz], fov: hoch ? 58 : 48 };
   }
   if (kind === 'hinten') {
     // hinter dem Schützen, Blick über die Schulter aufs Tor
@@ -355,12 +369,12 @@ export function editCamera(kind, f, ctx) {
   const S = ctx.schuetze || { x: b.x, z: b.z, face: 0 };
   const a0 = ctx.jubelDir ?? S.face ?? 0;
   // Kopfhöhe des Schützen aus dem letzten Bild (liegt er noch nach Fallrückzieher/Hechten, zielt die Kamera tiefer)
-  const ky = clamp(ctx.kopfY ?? 1.7, 0.25, 1.9), lyB = Math.max(0.3, ky - (hoch ? 0.5 : 0.32));
+  const ky = clamp(ctx.kopfY ?? 1.7, 0.25, 1.9), lyB = Math.max(0.3, ky - (hoch ? 0.5 : 0.15)); // quer: Platz über dem Kopf für die Arme
   if (kind === 'jubel2') {
-    const a = (ctx.jubel2Dir ?? a0 + 0.9) + 0.35 * (fr - 0.5), D = (hoch ? 2.1 : 2.0) - 0.3 * fr;
-    return { pos: [S.x + Math.cos(a) * D, Math.min(0.65, ky * 0.4 + 0.1), S.z + Math.sin(a) * D], look: [S.x, Math.max(0.3, ky - 0.25), S.z], fov: hoch ? 46 : 38 };
+    const a = (ctx.jubel2Dir ?? a0 + 1.2) + 0.35 * (fr - 0.5), D = (hoch ? 1.6 : 1.7) - 0.25 * fr;
+    return { pos: [S.x + Math.cos(a) * D, Math.max(0.5, ky - 0.55), S.z + Math.sin(a) * D], look: [S.x, Math.max(0.3, ky - 0.2), S.z], fov: hoch ? 44 : 36 };
   }
-  const a = a0 + 0.6 * (fr - 0.5), D = hoch ? 3.0 - 0.8 * ss(fr) : 2.6 - 0.6 * ss(fr);
+  const a = a0 + 0.6 * (fr - 0.5), D = hoch ? 3.0 - 0.8 * ss(fr) : 3.2 - 0.6 * ss(fr);
   return { pos: [S.x + Math.cos(a) * D, Math.min(0.8, ky * 0.45 + 0.1), S.z + Math.sin(a) * D], look: [S.x, lyB, S.z], fov: hoch ? 48 : 38 };
 }
 

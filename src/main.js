@@ -731,15 +731,18 @@ function startEdit(D0 = null) {
   const fI = rp.rec.frameAt(D.ti, {}, P);
   const nJ = D.shots.length, hochJ = gcam.mode === 'hoch' || hochClip;
   const jub = D.schuetze >= 0 ? jubelRichtung(rp.rec, D.schuetze, D.shots[nJ - 2].keys, hochJ ? 3.0 : 2.4, 0, game.cage) : null;
-  const jub2 = D.schuetze >= 0 ? jubelRichtung(rp.rec, D.schuetze, D.shots[nJ - 1].keys, hochJ ? 2.1 : 1.75, 0.9, game.cage) : null;
+  const jub2 = D.schuetze >= 0 ? jubelRichtung(rp.rec, D.schuetze, D.shots[nJ - 1].keys, hochJ ? 1.6 : 1.7, 1.2, game.cage) : null;
+  // Standbild: Nahaufnahme von vorn-seitlich (Richtung zum Tor ± frei von Verdeckung)
+  const sF = D.shots.find((s) => s.freeze), Sf = D.schuetze >= 0 && sF ? rp.rec.spielerGlatt(D.schuetze, D.ti, 0.05) : null;
+  const freezeDir = Sf ? jubelRichtung(rp.rec, D.schuetze, sF.keys, hochJ ? 3.0 : 2.7, Math.atan2(fI.ball.p.z - Sf.z, fI.ball.p.x - Sf.x) - Sf.face + 0.6, game.cage) : null;
   rp.ctx = { cage: game.cage, hoch: gcam.mode === 'hoch' || hochClip, contact: c, goal: { side: g.side }, side, makroDir: D.makroDir, impact: [fI.ball.p.x, fI.ball.p.y, fI.ball.p.z],
-    jubelDir: jub != null ? jub : 0, jubel2Dir: jub2, kopfY: null, u: 0, dur: 1, ball: null, schuetze: null };
+    jubelDir: jub != null ? jub : 0, jubel2Dir: jub2, freezeDir, kopfY: null, u: 0, dur: 1, ball: null, schuetze: null };
   const sc = D.schuetze >= 0 ? game.players[D.schuetze] : null;
   const idx = sc ? game.players.filter((p) => p.team === sc.team).indexOf(sc) : 0;
   const name = sc ? (sc.id === game.human ? 'DU' : EDIT_NAMEN[sc.team][idx] || 'NR. ' + BIB_NUMS[sc.team][idx]) : TEAM_NAMES[g.team].toUpperCase();
   rp.edit = { hochClip, name };
   rp.letzterEdit = { D, goal: g, recGame: game };
-  hud.editStart({ events: D.events, total: D.realTotal, seed: D.seed, dist: D.dist, pov: D.pov, tech: D.tech, kmh: D.kmh || Math.round((g.speed || 0) * 3.6),
+  hud.editStart({ events: D.events, total: D.realTotal, seed: D.seed, dist: D.dist, wort: D.wort, pov: D.pov, tech: D.tech, kmh: D.kmh || Math.round((g.speed || 0) * 3.6),
     name: sc ? `${name} #${BIB_NUMS[sc.team][idx]}` : name, team: TEAM_NAMES[sc ? sc.team : g.team].toUpperCase(), gag: D.gag, own: !!g.own,
     hoch: hochClip, reduce: blitzeSanft, cssFlash: !(kino && kino.pipeline) });
   hud.replayShow(true, '');
@@ -772,7 +775,7 @@ function editFrame(dt, raw) {
   const s = D.shots[D.i], ctx = rp.ctx;
   ctx.u = D.real - s.t0; ctx.dur = s.t1 - s.t0; ctx.hoch = gcam.mode === 'hoch' || rp.edit.hochClip;
   ctx.ball = rp.rec.ballGlatt(t, 0.06, ED_BALL);
-  ctx.schuetze = D.schuetze >= 0 ? rp.rec.spielerGlatt(D.schuetze, t, s.cam === 'jubel' ? 0.25 : 0.08, ED_SCH) : null;
+  ctx.schuetze = D.schuetze >= 0 ? rp.rec.spielerGlatt(D.schuetze, t, s.cam === 'jubel' || s.cam === 'tief' ? 0.25 : 0.08, ED_SCH) : null;
   const fx = rp.edit.fx = D.fx();
   const cam = editCameraFx(editCamera(s.cam, f, ctx), fx, D.real, D.seed);
   gcam.override = { pos: cam.pos, look: cam.look };
@@ -781,15 +784,16 @@ function editFrame(dt, raw) {
   const bp = [f.ball.p.x, f.ball.p.y, f.ball.p.z];
   rp.dof = s.cam === 'makro' ? replayDof('zoom', cam.pos, cam.look, bp) : s.cam === 'netz' ? replayDof('fan', cam.pos, cam.look, bp) : s.cam === 'jubel' || s.cam === 'jubel2' ? replayDof('fan', cam.pos, cam.look, null) : null;
   rp.kinoFx = { white: fx.white, whip: fx.whip > 0.01 ? { len: 0.08 * fx.whip, ang: 0 } : null,
-    edit: { ca: 1.4 * fx.ca, grain: blitzeSanft ? 0.035 : fx.grain, zoom: 0.07 * fx.punch, mono: 0.6 * fx.freeze } };
+    edit: { ca: 1.4 * fx.ca, grain: blitzeSanft ? 0.035 : fx.grain, zoom: 0.07 * fx.punch, mono: 0.35 * fx.freeze } };
   const c = D.contact, k = c ? t - c.t : -1;
   if (rp.fx) {
     // Druckwelle am Kontakt, Kometenschweif vom Kontakt bis kurz nach dem Einschlag, Leuchten um den Ball
     rp.fx.setRing(c, k);
     const komet = k > 0 && t < D.ti + 0.3;
     rp.fx.setTrailFarbe([1.0, 0.5, 0.12]);
-    rp.fx.setTrail(komet ? rp.rec.trail(t, Math.min(0.35, k), 24, rp.trail) : null, gcam.cam, komet ? 1 : 0, 0.24);
-    rp.fx.setGlow(0, fx.glow ? [f.ball.p.x, f.ball.p.y, f.ball.p.z] : null, 0.8 + 0.3 * fx.puls, 0.8);
+    const dCam = Math.hypot(f.ball.p.x - cam.pos[0], f.ball.p.y - cam.pos[1], f.ball.p.z - cam.pos[2]);
+    rp.fx.setTrail(komet ? rp.rec.trail(t, Math.min(0.35, k), 24, rp.trail) : null, gcam.cam, komet ? 1 : 0, Math.max(0.24, dCam * 0.028));
+    rp.fx.setGlow(0, fx.glow ? [f.ball.p.x, f.ball.p.y, f.ball.p.z] : null, Math.max(0.8, dCam * 0.13) * (1 + 0.3 * fx.puls), 0.8);
   }
   return f;
 }
@@ -800,6 +804,9 @@ function editNachFiguren() {
   let fig = null;
   if (figSlot) for (let i = 0; i < figSlot.length; i++) if (figSlot[i] && figSlot[i].id === D.schuetze) fig = figs[i];
   if (fig && fig.bones && fig.bones.Bip01_Head) { fig.bones.Bip01_Head.getWorldPosition(ED_V); rp.ctx.kopfY = ED_V.y; } // für die Jubel-Kamera
+  // andere Figuren direkt vor der Linse ausblenden (sonst füllt ein unscharfer Rücken das Bild)
+  const cp = gcam.override && gcam.override.pos;
+  if (cp) for (const f of figs) if (f !== fig && f.root && f.root.visible && Math.hypot(f.root.position.x - cp[0], f.root.position.z - cp[2]) < 1.25) f.root.visible = false;
   for (let k = 0; k < 2; k++) {
     const bn = fig && fig.bones ? fig.bones[k ? 'Bip01_R_Foot' : 'Bip01_L_Foot'] : null;
     if (bn && rp.fx) { bn.getWorldPosition(ED_V); rp.fx.setGlow(1 + k, [ED_V.x, ED_V.y, ED_V.z], 0.42 + 0.12 * fx.puls, fx.freeze ? 0.9 : 0.6); }
@@ -904,7 +911,9 @@ function drawPlayers(dt, a, rf = null) {
     if (f.capsule) { f.capsule.group.visible = vis; } else f.root.visible = vis;
     if (!vis) continue;
     const x = rf ? pl.x : prev.px[pl.id] + (pl.x - prev.px[pl.id]) * a, z = rf ? pl.z : prev.pz[pl.id] + (pl.z - prev.pz[pl.id]) * a;
-    const face = rf || !GLATT ? pl.face : prev.pf[pl.id] + winkelDiff(pl.face, prev.pf[pl.id]) * a; // n5: wie die Lage interpoliert
+    let face = rf || !GLATT ? pl.face : prev.pf[pl.id] + winkelDiff(pl.face, prev.pf[pl.id]) * a; // n5: wie die Lage interpoliert
+    // n6 Fan-Edit: im Jubel dreht sich der Schütze zur Kamera
+    if (rf && rp.dir && rp.dir.edit && rp.dir.cur.cam === 'jubel' && pl.id === rp.dir.schuetze && gcam.override) face = Math.atan2(gcam.override.pos[2] - z, gcam.override.pos[0] - x);
     if (f.capsule) { posePlayer(f.capsule, pl, x, z); continue; }
     const keeper = rf ? pl.keeper : R ? R.keeper[pl.team] === pl.id && R.phase !== 'end' && R.handsOffTeam !== pl.team : false;
     let special = null, specialZeit = null, armeHoch = 0;
