@@ -157,12 +157,15 @@ export function buildHud(root, canvas) {
   // Stil nur schreiben, wenn er sich ändert (je Bild: Deckkraft/Drehung der Ebenen)
   const setz = (el, k, v) => { const m = ed.st.get(el) || ed.st.set(el, {}).get(el); if (m[k] !== v) { m[k] = v; el.style[k] = v; } };
   // Text-Element mit Einschlag-Animation (Klasse neu setzen → CSS-Animation startet neu)
+  // (Neustart der Einschlag-Animation ohne erzwungenes Layout: abwechselnd zwei gleiche Animationen „go“/„go2“ –
+  // `offsetWidth` kostete im ersten Clip ≈ 100 ms am Handy-Profil)
   const slam = (el, html, cls = '', fit = 0, n = 0) => {
+    const g2 = !el.classList.contains('go2');
     el.innerHTML = html; el.className = el.className.split(' ')[0] + ' an' + (cls ? ' ' + cls : '');
     // fit = Schriftgröße in cqmin; n = Zeichen der längsten Zeile: lange Wörter passen sich der Rahmenbreite an
     if (fit) el.style.fontSize = `min(${fit}cqmin, ${(86 / Math.max(1, n)).toFixed(1)}cqw)`; else el.style.fontSize = '';
     el.style.setProperty('--rot', (ed.zuf() * 10 - 6).toFixed(1) + 'deg'); el.style.setProperty('--dy', (ed.zuf() * 6 - 3).toFixed(1) + '%');
-    void el.offsetWidth; el.classList.add('go');
+    el.classList.add(g2 ? 'go2' : 'go');
   };
   const weg = (el) => { el.className = el.className.split(' ')[0]; };
   const feTrigger = (e, I) => {

@@ -584,7 +584,7 @@ function aimFrame(pl, raw, km) {
   }
 }
 
-let halfRate = false;
+let halfRate = false, fxWarm = false;
 function frame() {
   requestAnimationFrame(frame);
   const t0 = performance.now();
@@ -721,6 +721,15 @@ function frame() {
   schattenFolgen();
   const gz = grafik && grafik.gpu && grafik.gpu.ok ? grafik.gpu : null;
   if (gz) gz.anfang();
+  // n6: Materialien, die erst in Clip/Wiederholung/Action-Moment sichtbar werden (Ballspur, Druckwelle, Leuchten), einmal
+  // im echten Render-Weg zeichnen (unsichtbar übermalt) – sonst wartet das erste Clip-Bild ≈ 170 ms auf den Shader
+  if (!fxWarm && G.ready && rp.fx) {
+    fxWarm = true;
+    const an = [rp.fx.trail, rp.fx.ring, ...rp.fx.glows].filter((o) => !o.visible);
+    for (const o of an) o.visible = true;
+    try { if (kino) kino.render(scene, gcam.cam, { dt: 0 }); else renderer.render(scene, gcam.cam); } catch (_) { /* nur Vorwärmen */ }
+    for (const o of an) o.visible = false;
+  }
   zeichne(dt, rf);
   if (gz) { gz.ende(); if (gpuExt && gz.ms != null && gz.ms !== gpuLast) { gpuLast = gz.ms; gpuMs.push(gz.ms); if (gpuMs.length > 240) gpuMs.shift(); } }
   perf.rd.push(performance.now() - tR); if (perf.rd.length > 240) perf.rd.shift();
