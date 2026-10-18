@@ -124,18 +124,40 @@ export const DEFAULTS = {
   // Ballmagnet (Nacht 2c): Feder zur Soll-Vorlage vor dem Fuß zwischen den Kontakten, 0 = aus (wie Nacht 2b)
   // Nacht 2d (Peter: „viel mehr Ballmagnet“): 1,2 statt 0,5 (über 1: stärkere Feder, Vorlage/Genauigkeit bei 1 ausgereizt),
   // im Sprint 70 % statt 45 %. ?magnet=0.5&magnetSprint=0.45 = Nacht 2c
-  magnet: 1.2,            // Stärke 0…2                                                             [?magnet=]
+  // n7 Etappe 0 (Peter 14.10.: „besserer Ballbesitz, mehr Magnet“): 1,8 statt 1,2 – Feder, Dämpfung und Kappung wachsen mit
+  // (magnetK·m, magnetC·m, magnetAcc·m), Vorlage/Genauigkeit sind bei 1 ausgereizt. ?magnet=1.2&abschirmen=0&magnetTurnMin=0.25&magnetC=20 = n6
+  magnet: 1.8,            // Stärke 0…2                                                             [?magnet=]
   magnetK: 112,           // 1/s² Federkonstante quer zur Stick-Richtung bei Stärke 1 (0,3 m daneben → 17 m/s² bei 0,5)
-  magnetC: 20,            // 1/s Dämpfung (Tempo des Balls quer ans Tempo des Spielers angleichen)
+  magnetC: 30,            // 1/s Dämpfung (Tempo des Balls quer ans Tempo des Spielers angleichen); n7: 30 statt 20 – mit Stärke
+                          // 1,8 schwang der Ball sonst quer nach (Skript-Parcours 9,5 → 12 s mit verpassten Slalom-Toren, mit 30: 8 s)
   magnetAcc: 42,          // m/s² höchste Zugbeschleunigung bei Stärke 1 (0,5 → 21 m/s²)
   magnetSprint: 0.7,      // Anteil im Sprint (Nacht 2c: 0,45)
   magnetTurn0: 60,        // ° Richtungswechsel Stick ↔ Laufrichtung: ab hier wird der Magnet schwächer …
-  magnetTurn1: 120,       // ° … bis hier auf 25 %
+  magnetTurn1: 120,       // ° … bis hier auf magnetTurnMin
+  magnetTurnMin: 0.5,     // n7: Anteil bei magnetTurn1 (bis n6: 0,25) …
+  magnetKehr: 0.15,       // … n7: echte Kehrtwende (120° → 165°) zusätzlich × bis hierhin – dort lässt der Magnet los, sonst
+                          // springt der Ball mit Stärke 1,8 beim zappeligen Kinder-Stick öfter weg (1 = aus)
   magnetSlack: 0.25,      // m so weit darf der Ball über die Soll-Vorlage hinaus rollen, bevor er gebremst wird
   magnetLead: 0.7,        // Vorlagen beim Führen kürzer: Zeit und Weg × (1 − magnetLead · Stärke)
   magnetShield: 0.3,      // m: Gegner nah → Ball zur abgewandten Seite (Abschirmen), 0 = aus
   magnetSlide: 0,         // Nacht 2d: Anteil, solange ein Gegner in ≤ 3 m am Ball grätscht (0 = Magnet aus, Grätsche erobert)
   magnetOpp: 0.5,         // Anteil, wenn ein Gegner ≤ 0,4 m am Ball ist (ab 1 m voll) – Tackles bleiben möglich
+  // n7 Etappe 0: Abschirmen. Fast alle Ballverluste beim Führen passierten im Zweikampf (3,56 von 3,8 je Minute) – mehr Magnet
+  // allein half kaum (−10 %). Steht ein Gegner ≤ schirmR m am Ball, legt der Führende kürzer vor (Vorlage × 1 − schirmVorlage
+  // · Nähe) und den Ball auf die abgewandte Seite (bis schirmSeite m). Ein Gegner bekommt den Ball dann per bloßem Kontakt
+  // (Fuß, vorgemerkter Kick) nur, wenn sein Fuß ihn klar früher erreicht (≥ schirmVor m näher als der Fuß des Führenden) und
+  // nicht durch dessen Körper hindurch. Die Grätsche bleibt das Mittel zum Ballgewinn. 0 = wie n6 (magnetShield, 1,2 m)
+  abschirmen: 1,          //                                                                         [?abschirmen=0]
+  schirmR: 1.5,           // m Gegner am Ball
+  schirmVorlage: 0.5,     // Vorlage kürzer, Anteil bei Gegner ganz nah (≤ 0,5 m)
+  schirmSeite: 0.35,      // m Ball zur abgewandten Seite
+  schirmVor: 0.3,         // m: so viel näher muss der Fuß des Gegners am Ball sein (Startwert 0,15; gemessen 0,3)
+  schirmNah: 0.9,         // m: Ball höchstens so weit vom Fuß des Führenden, sonst ist er frei
+  schirmT: 1.0,           // s seit dem letzten Kontakt des Führenden
+  // Bots wissen davon: Ball behalten ist mit Abschirmen sicherer (Gegner zählt erst ab schirmKeep m weniger als bisher), und gegen
+  // einen abschirmenden Führenden grätschen sie öfter (Rate × schirmGraetsche, auch wenn der Ball eng am Fuß ist)
+  schirmKeep: 0,          // m
+  schirmGraetsche: 1.2,   //
   assistRelease: 0.06,    // s Zeitkonstante: deutliche Eingabe → Hilfe weg (≤ 0,3 s bis < 5 %)
   assistReturn: 0.5,      // s Zeitkonstante: sanft zurück
   assistAngle: 35,        // ° Abweichung Stick ↔ Ball, ab der die Eingabe „deutlich“ ist

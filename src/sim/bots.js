@@ -315,7 +315,9 @@ export class Bots {
         const loose = Math.hypot(b.p.x - fx, b.p.z - fz) > L.tackle;
         // Grätsche (Nacht 2c): gelegentlich, je nach Stufe (L.slide je Sekunde, solange sie möglich ist); starke Bots
         // nur, wenn der Ball etwas vom Fuß des Gegners weg ist
-        if (L.slide && pl.tackleOk(g) && Math.hypot(b.p.x - pl.x, b.p.z - pl.z) > 0.9 && (L.slide < 0.4 || Math.hypot(b.p.x - fx, b.p.z - fz) > 0.45) && g.rng.next() < L.slide / 120) {
+        // n7: gegen einen abschirmenden Führenden (bloßer Kontakt reicht nicht mehr) öfter
+        const sch = g.P.abschirmen ? g.P.schirmGraetsche : 1;
+        if (L.slide && pl.tackleOk(g) && Math.hypot(b.p.x - pl.x, b.p.z - pl.z) > 0.9 && (L.slide < 0.4 || Math.hypot(b.p.x - fx, b.p.z - fz) > 0.45) && g.rng.next() < L.slide * sch / 120) {
           const mate = g.players.some((m) => m.team === team && m.id !== pl.id && m.id !== g.rules.keeper[team]);
           pl.startTackle(g, this.fwd(team, b.p.x) > 3 || !mate ? 'shot' : 'pass', null);
           this.stats.tackles = (this.stats.tackles || 0) + 1;
@@ -461,7 +463,8 @@ export class Bots {
       const ahead = od > 0.01 ? (ox * dx + oz * dz) / od : 0;
       m = Math.min(m, od / (ahead > 0.3 ? 1.6 : 1));
     }
-    return clamp((m - 0.5) / 2.2, 0.15, 0.95);
+    const P = this.g.P;
+    return clamp((m - 0.5 + (P.abschirmen ? P.schirmKeep : 0)) / 2.2, 0.15, 0.95); // n7: Abschirmen hält den Ball sicherer
   }
 
   // Nutzwerte (erwarteter Wert): Schuss, Pass, Bandenpass (zum Mitspieler / zu sich selbst), Dribbeln, Befreien.

@@ -316,7 +316,7 @@ export class Player {
       const ahead = bx * fxf + bz * fzf, closing = (ball.v.x - this.vx) * fxf + (ball.v.z - this.vz) * fzf;
       settle = ahead > 0.6 && closing < -0.8 && this.pending.age < 0.25 && !oppNear(game, this, 1.4);
     }
-    if (!touched && !handsFirst && inReach && rel < P.ctrlRelMax && !settle) {
+    if (!touched && !handsFirst && inReach && rel < P.ctrlRelMax && !settle && !this.shieldBlocked(game)) {
       if (this.pending && this.pending.locked) {
         // Tipp: Modus steht noch nicht fest (≤ doppel s) – Ball nicht wegspielen, gleich kommt der Kick
       } else if (this.pending && this.touchCd <= 0.1) {
@@ -434,7 +434,8 @@ export class Player {
     if (this.sprinting) m *= P.magnetSprint;                                   // Sprint: weite Vorlagen
     if (want && this.speed > 1) {                                              // scharfer Richtungswechsel
       const ang = Math.acos(clamp(sx * this.hx + sz * this.hz, -1, 1));
-      m *= 1 - 0.75 * smoothstep(P.magnetTurn0 * DEG, P.magnetTurn1 * DEG, ang);
+      m *= 1 - (1 - P.magnetTurnMin) * smoothstep(P.magnetTurn0 * DEG, P.magnetTurn1 * DEG, ang);
+      if (P.magnetKehr < 1) m *= 1 - (1 - P.magnetKehr) * smoothstep(P.magnetTurn1 * DEG, 165 * DEG, ang); // n7: Kehrtwende
     }
     let dOpp = 9;                                                              // Gegner am Ball
     for (const o of game.players) if (o.team !== this.team) dOpp = Math.min(dOpp, Math.hypot(o.x - b.p.x, o.z - b.p.z));
@@ -457,14 +458,16 @@ export class Player {
     const dx = want ? sx : Math.cos(this.face), dz = want ? sz : Math.sin(this.face);
     // an der Bande nicht in die Bande ziehen (sonst klemmt der Ball dort fest)
     if ((Math.abs(b.p.x) > game.cage.hx - 0.5 && dx * Math.sign(b.p.x) > 0.3) || (Math.abs(b.p.z) > game.cage.hz - 0.5 && dz * Math.sign(b.p.z) > 0.3)) return;
-    const L = 0.15 + 0.05 * this.speed;                                        // Vorlage: Stand 0,15 m, 5 m/s 0,4 m
-    // Abschirmen: Gegner ≤ 1,2 m am Ball → Soll-Vorlage bis magnetShield m zur abgewandten Seite (Körper dazwischen)
-    let sh = 0;
-    if (P.magnetShield > 0) {
-      let best = null, bd = 1.2;
+    // Abschirmen: Gegner ≤ 1,2 m (n7: schirmR) am Ball → Soll-Vorlage bis magnetShield (n7: schirmSeite) m zur abgewandten Seite
+    // (Körper dazwischen), n7 zusätzlich kürzer vor dem Fuß
+    const R = P.abschirmen ? P.schirmR : 1.2, shM = P.abschirmen ? P.schirmSeite : P.magnetShield;
+    let sh = 0, near = 0;
+    if (shM > 0) {
+      let best = null, bd = R;
       for (const o of game.players) { if (o.team === this.team) continue; const d = Math.hypot(o.x - b.p.x, o.z - b.p.z); if (d < bd) { bd = d; best = o; } }
-      if (best) { const side = (best.x - this.x) * -dz + (best.z - this.z) * dx; sh = -Math.sign(side || 1) * P.magnetShield * (1.2 - bd) / 0.8; }
+      if (best) { near = clamp((R - bd) / (R - 0.4), 0, 1); const side = (best.x - this.x) * -dz + (best.z - this.z) * dx; sh = -Math.sign(side || 1) * shM * near; }
     }
+    const L = (0.15 + 0.05 * this.speed) * (P.abschirmen ? 1 - P.schirmVorlage * near : 1); // Vorlage: Stand 0,15 m, 5 m/s 0,4 m
     // Zielpunkt nie in der Bande (Abschirmen an der Bande entlang würde den Ball sonst dagegen drücken)
     const tx = clamp(fx + dx * L - dz * sh, -game.cage.hx + 0.4, game.cage.hx - 0.4), tz = clamp(fz + dz * L + dx * sh, -game.cage.hz + 0.4, game.cage.hz - 0.4);
     const ex = tx - b.p.x, ez = tz - b.p.z;
@@ -479,6 +482,33 @@ export class Player {
     if (al > amax) { ax *= amax / al; az *= amax / al; }
     b.v.x += ax * dt; b.v.z += az * dt;
     if (b.p.y < b.r + 0.02) { b.w.x = b.v.z / b.r; b.w.z = -b.v.x / b.r; }       // rollt (kein Rutschen)
+  }
+
+  // n7: Nähe des nächsten Gegners zum Ball 0 (≥ schirmR) … 1 (≤ 0,5 m)
+  oppNearBall(game) {
+    const P = this.P, b = game.ball;
+    let d = 9;
+    for (const o of game.players) if (o.team !== this.team) d = Math.min(d, Math.hypot(o.x - b.p.x, o.z - b.p.z));
+    return clamp((P.schirmR - d) / (P.schirmR - 0.5), 0, 1);
+  }
+
+  // n7 Abschirmen: Führt ein Gegner den Ball eng am Fuß (zuletzt berührt ≤ schirmT s, Ball ≤ schirmNah m vor seinem Fuß, flach,
+  // nicht weggeschossen), kommt dieser Spieler per bloßem Kontakt (Fuß, vorgemerkter Kick) nur an den Ball, wenn sein Fuß ihn
+  // klar früher erreicht – nicht durch den Körper des Führenden hindurch. Grätsche (tackleContact) ist ausgenommen.
+  shieldBlocked(game) {
+    const P = this.P, b = game.ball;
+    if (!P.abschirmen || !game.match || game.lastTouch < 0) return false;
+    const c = game.players[game.lastTouch];
+    // (ein Kick zu sich selbst – Mitnehmen – zählt als Führen; ein Führ-Kontakt schiebt den Ball bis ctrlRel m/s an)
+    if (!c || c.team === this.team || c.slide || c.fall || c.stumbleT > 0 || c.hand.mode !== 'none' || game.t - c.lastTouchT > P.schirmT || (c.kickT < 0.5 && !c.selfKick)) return false;
+    if (b.p.y > 0.5 || Math.hypot(b.v.x - c.vx, b.v.z - c.vz) > P.ctrlRel) return false;
+    const [cx, cz] = c.footPoint(), dc = Math.hypot(b.p.x - cx, b.p.z - cz);
+    if (dc > P.schirmNah) return false;
+    const [fx, fz] = this.footPoint(), dm = Math.hypot(b.p.x - fx, b.p.z - fz);
+    // Körper (Radius 0,3 m) des Führenden zwischen meiner Körpermitte und dem Ball?
+    const ex = b.p.x - this.x, ez = b.p.z - this.z, L2 = ex * ex + ez * ez || 1, t = clamp(((c.x - this.x) * ex + (c.z - this.z) * ez) / L2, 0, 1);
+    const body = Math.hypot(c.x - this.x - ex * t, c.z - this.z - ez * t) < 0.3 && t > 0.05 && t < 0.95;
+    return body || dm > dc - P.schirmVor;
   }
 
   // Ballkontakt beim Führen: Richtung = Stick, Stärke passend zum Tempo (Hilfe), kleine Fehler aus dem Seed.
@@ -500,8 +530,10 @@ export class Player {
     // (sonst würden Vorlagezeit und -weg negativ: bei ?magnet=1.5 sprang der Ball 22-mal je Minute weg)
     const ml = Math.min(1, mm);
     // Beim Aufladen: kurze Vorbereitungs-Kontakte, der Ball bleibt am Fuß (sonst ist er beim Loslassen weg)
-    const T = this.charging ? 0.32 : (P.touchLead + (P.touchLeadSprint - P.touchLead) * sf) * (1 - P.magnetLead * ml);
-    const L = this.charging ? 0.05 : (P.touchExtra + (P.touchExtraSprint - P.touchExtra) * sf) * (1 - P.magnetLead * ml);
+    // n7 Abschirmen: Gegner nah am Ball → kürzere Vorlage (Zeit und Weg)
+    const sk = P.abschirmen ? 1 - P.schirmVorlage * this.oppNearBall(game) : 1;
+    const T = this.charging ? 0.32 : (P.touchLead + (P.touchLeadSprint - P.touchLead) * sf) * (1 - P.magnetLead * ml) * sk;
+    const L = this.charging ? 0.05 : (P.touchExtra + (P.touchExtraSprint - P.touchExtra) * sf) * (1 - P.magnetLead * ml) * sk;
     // Weg des Spielers bis zum nächsten Kontakt: ab dem Tempo in Stick-Richtung (nach einem Stemmschritt klein)
     // mit der Antrittskurve bis zum Wunschtempo (altes Modell: pauschal +2,5 m/s²)
     // Läuft er noch gegen die neue Richtung (Stemmschritt), kommt die Bremszeit dazu.
@@ -787,7 +819,7 @@ export class Player {
     this.touchCd = 0.35;
     this.bodyOffT = 0.3; // der eigene Körper blockt den eigenen Schuss nicht
     this.lastTouchT = game.t;
-    this.kickT = 0; this.touchT = 0;
+    this.kickT = 0; this.touchT = 0; this.selfKick = pd.to === this.id;
     this.kickFoot = -this.kickFoot;
     const techL = pd.kind === 'pass' ? (Math.cos(this.face) * dx + Math.sin(this.face) * dz < Math.cos(100 * DEG) ? 'ferse' : 'innen') : pd.kind === 'clear' ? 'vollspann' : (Math.abs(spinSide) > 3 ? 'innenrist' : spinBack > 10 ? 'chip' : 'vollspann');
     this.tech = techL; this.techT = 0;
@@ -830,7 +862,7 @@ export class Player {
     this.touchCd = 0.35;
     this.bodyOffT = 0.3;
     this.lastTouchT = game.t;
-    this.kickT = 0; this.touchT = 0;
+    this.kickT = 0; this.touchT = 0; this.selfKick = plan.to === this.id;
     this.tech = plan.tech; this.techT = 0;
     const bs = -(ball.p.x - this.x) * Math.sin(this.face) + (ball.p.z - this.z) * Math.cos(this.face);
     this.kickFoot = plan.foot || (plan.tech === 'ferse' ? -(this.strong) : bs >= 0 ? 1 : -1);
