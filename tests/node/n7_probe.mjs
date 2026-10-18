@@ -28,6 +28,9 @@ export function emptyStats() {
     slowCatch: 0, slowAll: 0, catches: 0, parries: 0, dives: 0, rebound: 0, afterParry: 0,
     losses: 0, duel: 0, free: 0, dribbleT: 0, touches: 0, tackles: 0, tackleBall: 0, tackleStart: 0,
     longDrib: 0, maxDrib: 0, cornerT: 0, energyMin: [], lowT: 0,
+    // Datenblatt-Messgrößen (Abschnitt 5)
+    acuteGoals: 0, acuteShots: 0, air: 0, airGoals: 0, doubles: 0, gg: 0, ggN: 0, passOk: 0, passInt: 0, passN: 0,
+    cornerTouches: 0, cornerStuck: 0, perfekt: 0, perfektGoals: 0, nachdrall: 0, stumble: 0, rausBlock: 0,
   };
 }
 
@@ -38,6 +41,9 @@ export function measureGame(qs, mix, s) {
   let reb = null;                               // letzte Parade {t, team = Mannschaft des Tormanns, again = Angreifer danach am Ball}
   let dr = -1, duel = false, drStart = 0;
   let clock = 0;
+  let lastPass = null, pendPass = null, lastAir = null, lastPerf = null;
+  const runs = [];                              // Geben und Gehen: Passgeber nach dem Pass beobachten
+  const fwd = (team, x) => (team === 0 ? x : -x);
   const oppDist = (g, p) => { let m = 9; for (const o of g.players) if (o.team !== p.team) m = Math.min(m, Math.hypot(o.x - g.ball.p.x, o.z - g.ball.p.z)); return m; };
   const endDrib = (g) => { if (dr >= 0) { const d = g.t - drStart; if (d > 8) r.longDrib++; r.maxDrib = Math.max(r.maxDrib, d); } dr = -1; };
   const lose = () => { r.losses++; if (duel) r.duel++; else r.free++; };
@@ -48,7 +54,17 @@ export function measureGame(qs, mix, s) {
       const p = e.player != null && e.player >= 0 ? g.players[e.player] : null;
       // Schüsse und erster Torwartkontakt
       if (e.type === 'kick') {
-        if (e.kind === 'shot') { r.shots++; r.shotSp.push(e.speed); last = { v: e.speed, t: g.t, team: p ? p.team : -1, defl: false }; } else last = null;
+        if (e.kind === 'shot') {
+          r.shots++; r.shotSp.push(e.speed); last = { v: e.speed, t: g.t, team: p ? p.team : -1, defl: false, x: e.x, z: e.z };
+          if (p) { const gx = p.team === 0 ? g.cage.hx : -g.cage.hx; last.acute = Math.abs(e.z) > 3 && Math.hypot(gx - e.x, e.z) < 6; if (last.acute) r.acuteShots++; }
+        } else last = null;
+        if (p && e.kind === 'pass' && e.to >= 0 && e.to !== e.player && g.players[e.to].team === p.team) {
+          if (lastPass && lastPass.from === e.to && lastPass.to === e.player && g.t - lastPass.t < 4) r.doubles++;   // Doppelpass
+          lastPass = { from: e.player, to: e.to, t: g.t };
+          pendPass = { to: e.to, team: p.team }; r.passN++;
+          const D = Math.hypot(g.players[e.to].x - e.x, g.players[e.to].z - e.z);
+          if (D >= 4) { r.ggN++; runs.push({ id: e.player, team: p.team, x0: p.x, t0: g.t, done: false }); }
+        }
         if (e.kind === 'pass' && e.to >= 0 && e.to !== e.player) r.passes++;   // Pass zum Mitspieler (kein Mitnehmen zu sich selbst)
         if (reb && p && p.team !== reb.team && g.t - reb.t <= 2) reb.again = true;     // Angreifer spielt den Abpraller
       } else if (last && (e.type === 'board' || e.type === 'post' || e.type === 'net' || e.type === 'body')) last.defl = true; // abgefälscht
@@ -65,12 +81,27 @@ export function measureGame(qs, mix, s) {
       }
       if (e.type === 'goal') {
         r.goals++;
-        if (last && g.t - last.t <= 2) { const i = SHOT_BINS.findIndex(([a, c]) => last.v >= a && last.v < c); r.bins[i].goal++; }
+        if (last && g.t - last.t <= 2) { const i = SHOT_BINS.findIndex(([a, c]) => last.v >= a && last.v < c); r.bins[i].goal++; if (last.acute) r.acuteGoals++; }
         if (reb && reb.team !== e.team && g.t - reb.t <= 2) { r.afterParry++; if (reb.again) r.rebound++; }
         reb = null;
         last = null;
       }
       if (e.type === 'dive') r.dives++;
+      if (e.type === 'air') { r.air++; lastAir = { t: g.t, team: p ? p.team : -1 }; }
+      if (e.type === 'perfektpass') { r.perfekt++; lastPerf = { t: g.t, team: e.team }; }
+      if (e.type === 'stolpern') r.stumble++;
+      if (e.type === 'block') r.rausBlock++;
+      if (e.type === 'nachdrall') r.nachdrall++;
+      if (e.type === 'goal') {
+        if (lastAir && lastAir.team === e.team && g.t - lastAir.t < 2.5) r.airGoals++;
+        if (lastPerf && lastPerf.team === e.team && g.t - lastPerf.t < 4) r.perfektGoals++;
+        lastAir = null; lastPerf = null;
+      }
+      if (p && (e.type === 'touch' || e.type === 'kick' || e.type === 'control' || e.type === 'catch' || e.type === 'parry')) {
+        if (pendPass && e.player !== lastPass?.from) { if (e.player === pendPass.to) r.passOk++; else if (p.team !== pendPass.team) r.passInt++; pendPass = null; }
+        if (lastPass && p.team !== g.players[lastPass.from].team) lastPass = null;
+        if ((e.type === 'touch' || e.type === 'kick') && Math.abs(e.x) > g.cage.hx - 2.5 && Math.abs(e.z) > g.cage.hz - 2.5) r.cornerTouches++;
+      }
       if (e.type === 'tackle' && e.phase === 'start') r.tackleStart++;
       if (e.type === 'tackle' && e.phase === 'hit') { r.tackles++; if (e.result === 'ball') r.tackleBall++; }
       // Ballverluste beim Führen (wie dribble_probe.mjs)
@@ -87,6 +118,10 @@ export function measureGame(qs, mix, s) {
         endDrib(g);
       }
     }
+    for (const ru of runs) if (!ru.done) {
+      const pl = g.players[ru.id];
+      if (fwd(ru.team, pl.x - ru.x0) >= 4) { ru.done = true; r.gg++; } else if (g.t - ru.t0 > 3) ru.done = true;
+    }
     if (dr >= 0) {
       r.dribbleT += DT;
       if (Math.abs(b.p.x) > g.cage.hx - 2 && Math.abs(b.p.z) > g.cage.hz - 2) r.cornerT += DT;
@@ -97,6 +132,7 @@ export function measureGame(qs, mix, s) {
     if (g.rules.energy) r._emin = Math.min(r._emin ?? 100, ...g.rules.energy);
   } });
   r.games = 1; r.minutes = clock / 60; r.stuck = st.stuck.length; r.faults = st.faults;
+  r.cornerStuck = st.stuck.filter((x) => x.kind === 'Ball in der Ecke eingeklemmt').length;
   if (r._emin != null) r.energyMin.push(r._emin);
   delete r._emin;
   return r;
@@ -171,6 +207,10 @@ export function summary(r) {
     lossMin: r.losses / r.minutes, duelMin: r.duel / r.minutes, freeMin: r.free / r.minutes, footSMin: r.dribbleT / r.minutes,
     tacklesPerGame: r.tackles / r.games, tackleBallPerGame: r.tackleBall / r.games, tackleBallShare: pc(r.tackleBall, r.tackleStart), tackleStartPerGame: r.tackleStart / r.games,
     longDrib: r.longDrib, maxDrib: r.maxDrib, cornerSMin: r.cornerT / r.minutes,
+    acuteShare: pc(r.acuteGoals, r.goals), acuteGoals: r.acuteGoals, acuteShots: r.acuteShots, airPerGame: r.air / r.games, airGoals: r.airGoals,
+    doublesPerGame: r.doubles / r.games, ggShare: pc(r.gg, r.ggN), passOkShare: pc(r.passOk, r.passN), passIntShare: pc(r.passInt, r.passN),
+    cornerTouchesPerGame: r.cornerTouches / r.games, cornerStuck: r.cornerStuck, perfektPerGame: r.perfekt / r.games, perfektGoalShare: pc(r.perfektGoals, r.perfekt),
+    nachdrallPerGame: r.nachdrall / r.games, stumblePerGame: r.stumble / r.games, blockPerGame: r.rausBlock / r.games,
     energyMin: r.energyMin.length ? r.energyMin.reduce((a, b) => a + b, 0) / r.energyMin.length : null, lowShare: pc(r.lowT, r.minutes * 60),
   };
 }
@@ -184,6 +224,8 @@ export function printSummary(label, s) {
   console.log(`  … nur direkte Schüsse (nicht von Bande/Pfosten/Netz/Spieler abgefälscht): ${names.map((n, i) => `${n} ${f(s.catchBinsD[i], 0)} % (${s.binND[i]})`).join(', ')}`);
   console.log(`  langsame Bälle (< 45 km/h an den Händen) gefangen ${f(s.slowCatch, 0)} % (${s.slowN}) · Fangen/Abwehren/Hechten je Spiel ${f(s.catchesPerGame)}/${f(s.parriesPerGame)}/${f(s.divesPerGame)} · Tore ≤ 2 s nach Parade ${s.afterParry} = ${f(s.afterParryShare)} %, davon Nachschuss ${s.rebound} = ${f(s.reboundShare)} % der Tore`);
   console.log(`  Ballverluste beim Führen ${f(s.lossMin, 2)}/min (Zweikampf ${f(s.duelMin, 2)}, verspringt ${f(s.freeMin, 2)}) · Ball am Fuß ${f(s.footSMin)} s/min · Grätschen je Spiel ${f(s.tackleStartPerGame)} (Treffer ${f(s.tacklesPerGame)}, Ballgewinn ${f(s.tackleBallPerGame)} = ${f(s.tackleBallShare, 0)} %)`);
+  console.log(`  Datenblatt: Tore aus spitzem Winkel ${s.acuteGoals} = ${f(s.acuteShare)} % der Tore (${s.acuteShots} Schüsse) · Luftbälle/Spiel ${f(s.airPerGame)} (${s.airGoals} Tore) · Doppelpässe/Spiel ${f(s.doublesPerGame)} · Geben und Gehen ${f(s.ggShare, 0)} % der Pässe ≥ 4 m · Pässe kommen an ${f(s.passOkShare, 0)} %, abgefangen ${f(s.passIntShare, 0)} % · Ballkontakte in den Ecken/Spiel ${f(s.cornerTouchesPerGame)}, eingeklemmt ${s.cornerStuck}`);
+  if (s.perfektPerGame || s.nachdrallPerGame || s.stumblePerGame || s.blockPerGame) console.log(`  Traumpässe/Spiel ${f(s.perfektPerGame)} (Tore danach ${f(s.perfektGoalShare, 0)} %) · Nachdrall/Spiel ${f(s.nachdrallPerGame)} · Heber-Stolpern/Spiel ${f(s.stumblePerGame)} · Blocken/Spiel ${f(s.blockPerGame)}`);
   console.log(`  Dribblings > 8 s: ${s.longDrib}, längstes ${f(s.maxDrib)} s · Ball am Fuß in den Ecken ${f(s.cornerSMin, 2)} s/min${s.energyMin != null ? ` · Tormann-Energie Minimum Ø ${f(s.energyMin, 0)}, unter der Fanggrenze ${f(s.lowShare)} % der Spielzeit` : ''}`);
 }
 

@@ -126,3 +126,29 @@ Verluste wieder – das Gefühl am Ball zählt beim Menschen, und dort hält der
    `?magnet=1.5`; aus: `?abschirmen=0`.
 3. Scharf aufs Tor schießen: Der Tormann klatscht ab (Arme hoch) oder faustet, der Ball springt seitlich in den Torraum – hinterher
    und nachschießen! Langsame Bälle fängt er weiter. Alt: `?fangMax=0`; Tormann etwas sicherer: `?fangMax=15`.
+
+---
+
+## Vorlagen-Etappe E0 – Messbasis und Datenblatt im Repo
+- `VORLAGEN.md`: das Datenblatt in eigenen Worten, Vorbilder nur als Vorlage A–D, ohne Quellpfade, Klassen- oder Spielnamen.
+- `tests/node/n7_probe.mjs` zählt zusätzlich die Messgrößen aus Abschnitt 5: Tore aus spitzem Winkel (Schuss von |z| > 3 m,
+  < 6 m vor dem Tor), Luftbälle, Doppelpässe (A → B → A in 4 s), Geben und Gehen (Passgeber ≥ 4 m nach vorn in 3 s nach einem
+  Pass ≥ 4 m), Bot-Pässe kommen an / abgefangen, Ballkontakte in den Ecken (2,5 × 2,5 m), eingeklemmte Bälle, später Energie,
+  Traumpässe, Nachdrall, Stolpern, Blocken.
+- Basis = Stand 0.5.0 (nach Etappe 0):
+
+| Messgröße | Stufe 2 gegen 2 (20 Spiele, Seeds 1–20) | Stufe 1 gegen 3 (10 Spiele) |
+|---|---|---|
+| Tore je Schuss / Tore je Spiel | 28,0 % / 15,8 | 30,5 % / 14,9 |
+| Nachschuss-Tore (Anteil aller Tore) | 28,2 % | 16,1 % |
+| Hechter je Spiel | 22,6 | 12,7 |
+| Tore aus spitzem Winkel (Anteil aller Tore) | 17,1 % | 20,8 % |
+| Luftbälle je Spiel | 10,3 | 7,6 |
+| Doppelpässe je Spiel | 20,1 | 15,7 |
+| Geben und Gehen (Anteil der Pässe ≥ 4 m) | 21 % | 31 % |
+| Bot-Pässe kommen an / abgefangen | 64 / 31 % | 63 / 31 % |
+| Ballkontakte in den Ecken je Spiel / eingeklemmt | 114 / 0 | 98 / 0 |
+| Hänger / Numerik-Fehler | 0 / 0 | 0 / 0 |
+
+Hinweis: Nachschuss-Tore liegen schon nach Etappe 0 über dem E1-Gate (≥ 10 %), weil der Tormann jetzt jeden scharfen Ball
+abklatscht. Die Müdigkeit (E1) verschiebt deshalb vor allem die mittleren Bälle (siehe dort).
