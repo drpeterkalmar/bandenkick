@@ -276,6 +276,20 @@ export const DEFAULTS = {
   catchLow: 0.12,         // m … bis zu dieser Höhe (Ballmitte) aufnehmen …
   catchHigh: 2.35,        // m … bis zu dieser Höhe fangen (mit Strecken)
   catchMaxRel: 24,        // m/s darüber nur abwehren (Ball prallt ab)
+  // n7 Etappe 0 (Peter 14.10.: „Torwart hält fast nie einen scharfen Schuss, sondern klatscht nur ab“): eine Fanggrenze für alle
+  // Tormänner (CPU-Stufen und Auto-Torwart). Über fangMax m/s (Relativtempo an den Händen) wird abgeklatscht; nur Bälle direkt
+  // auf den Körper (≤ fangKoerper m, nicht im Hechtsprung) fängt er bis fangKoerperMax m/s noch ab und zu (bei fangMax mit
+  // fangKoerperP, linear bis 0). Der Abpraller geht seitlich/schräg nach vorn in den Torraum, mit abprallMin…abprallMax des
+  // Tempos; hohe Bälle (≥ faustH m) werden gefaustet (steiler, etwas weiter). ?fangMax=0 = alt (Grenzen je Stufe 15/17/22 m/s,
+  // Auto-Torwart ≈ 23 m/s, Abpraller gerade heraus)
+  fangMax: 13,            // m/s ≈ 47 km/h                                                           [?fangMax=]
+  fangKoerper: 0.3,       // m
+  fangKoerperMax: 16,     // m/s
+  fangKoerperP: 0.5,      //
+  abprallMin: 0.25, abprallMax: 0.4, // Anteil des Tempos
+  abprallW0: 25, abprallW1: 70,      // ° Winkel zur Richtung „aus dem Tor heraus“ (zur Seite, an der der Ball vorbeikommt)
+  faustH: 1.6,            // m
+  nachfassen: 0.5,        // s nach dem Abklatschen fängt er den Abpraller nicht gleich wieder (sonst kein Nachschuss)
   diveSpeed: 5.2,         // m/s seitlich beim Hechten
   diveT: 0.38,            // s Flugphase des Hechtsprungs
   diveReach: 1.25,        // m Reichweite im Hechtsprung

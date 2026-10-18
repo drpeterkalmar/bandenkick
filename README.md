@@ -46,10 +46,11 @@ Als App installierbar (PWA), läuft offline.
 ## Steuerung
 | | |
 |---|---|
-| **Handy** | **Stick links** (Finger irgendwo in der linken Hälfte): laufen, ganz nach außen = Sprint. **Pass** und **Schuss** tippen oder doppeltippen (Tabelle unten), der Ring um den Knopf zeigt den Modus. **Sprint:** Knopf halten. **⇄** Spieler wechseln (sonst automatisch zum ballnächsten, nach deinem Pass zum Empfänger). |
+| **Handy** | **Stick links** (Finger irgendwo in der linken Hälfte): laufen – **ein Tempo für alle, kein Sprint** (n7). **Pass** und **Schuss** tippen oder doppeltippen (Tabelle unten), der Ring um den Knopf zeigt den Modus. **⇄** Spieler wechseln (sonst automatisch zum ballnächsten, nach deinem Pass zum Empfänger). |
 | **Als letzte Hand im eigenen Torraum** | **Auto-Torwart (Nacht 2c):** Fangen und Hechten macht er selbst – so sicher wie ein Bot-Tormann der alten Stufe 2. Laufen darfst du selbst (der Stick gewinnt; lässt du ihn los, stellt er sich hin). Mit Ball: Pass-Knopf = **Abwurf** (auf den Stick bzw. den freiesten Mitspieler), Schuss-Knopf = **Abschlag**; ohne Eingabe wirft er nach 1 s selbst ab (Nacht 2e; ohne freien Mitspieler nach 2 s weiter Abschlag). `?autotorwart=0` = alte grüne Knöpfe (Schuss = Fangen, Pass = Hechten). In den drei Torwart-Übungen im Training bleiben die Knöpfe, dort ist Fangen die Aufgabe. |
-| **Tastatur/Maus** | WASD/Pfeile laufen, Shift Sprint, **C/Tab** Wechsel. Maus zielt. **J/Enter/Linksklick = Pass-Knopf**, **Leertaste/K/Rechtsklick = Schuss-Knopf** – gleiche Gesten wie am Handy (Tormann mit Ball: Abwurf bzw. Abschlag). Esc Pause. |
-| **Gamepad** | Linker Stick laufen, A = Pass-Knopf, X oder RT = Schuss-Knopf (Gesten wie am Handy), **Y Wechsel**, LB/RB Sprint. |
+| **Tastatur/Maus** | WASD/Pfeile laufen, **C/Tab** Wechsel. Maus zielt. **J/Enter/Linksklick = Pass-Knopf**, **Leertaste/K/Rechtsklick = Schuss-Knopf** – gleiche Gesten wie am Handy (Tormann mit Ball: Abwurf bzw. Abschlag). Esc Pause. |
+| **Gamepad** | Linker Stick laufen, A = Pass-Knopf, X oder RT = Schuss-Knopf (Gesten wie am Handy), **Y Wechsel**. |
+| | Mit `?sprintfrei=0` kommt der alte Sprint zurück (Knopf, Stick ganz außen, Shift, LB/RB). |
 
 ### Gesten (Nacht 2c „Kinderhände“: Tipp statt Aufladen)
 | Geste | Pass-Knopf | Schuss-Knopf |
@@ -119,6 +120,21 @@ Als App installierbar (PWA), läuft offline.
   - **Leistung:** im Budget (Bild-Arbeit p95 höchstens +5 %, Stufe 0 gleich, +39 KB). `?deko=0` = altes Aussehen.
   - Details, Messwerte und Collagen: [`DEKO_BERICHT.md`](DEKO_BERICHT.md).
 
+**n7 Etappe 0 (14.10., Peter: „keine Sprintfunktion mehr, besserer Ballbesitz (mehr Magnet), Torwart hält fast nie einen scharfen
+Schuss, sondern klatscht nur ab“)** – gilt für alle Spieler, Mensch und Bots, beide Tormänner:
+- **Kein Sprint:** ein Lauftempo **6,0 m/s** für alle (Startwert 6,3; bei 6,0 kommen Pässe im Lauf so sicher an wie vorher).
+  Antritt und Wenden bleiben „zackig“. Der Sprint-Knopf ist weg, Schuss/Pass/Wechsel sitzen im Hochformat tiefer im Daumenbogen.
+  Bots traben ohne Eile (≈ 5 m/s) und laufen voll, wenn es eilt. `?sprintfrei=0` = alt, `?ein=6.3` = anderes Lauftempo.
+- **Ballbesitz:** Ballmagnet 1,8 (statt 1,2) und **Abschirmen** – steht ein Gegner ≤ 1,5 m am Ball, legt der Führende kürzer und auf
+  die abgewandte Seite vor. Der Gegner kommt per bloßem Fußkontakt nur an den Ball, wenn er ihn klar früher erreicht (≥ 0,3 m näher),
+  nie durch den Körper des Führenden hindurch; die **Grätsche** bleibt das Mittel zum Ballgewinn (sie erobert jetzt sogar öfter).
+  Ballverluste beim Führen 3,8 → 1,7–1,9 je Minute. `?abschirmen=0`, `?magnet=1.2&magnetC=20&magnetTurnMin=0.25` = n6.
+- **Tormann klatscht ab:** eine Fanggrenze für alle Tormänner – über **13 m/s** (≈ 47 km/h an den Händen) wird abgeklatscht bzw.
+  gefaustet (hohe Bälle), nur Bälle direkt auf den Körper fängt er bis ≈ 16 m/s noch ab und zu. Der Abpraller fliegt mit 25–40 %
+  des Tempos schräg zur Seite in den Torraum (nie ins eigene Tor), der Tormann fasst 0,5 s nicht nach – Nachschuss-Chancen.
+  Direkte Schüsse ab 58 km/h werden so gut wie nie gefangen, langsame Bälle weiter immer. `?fangMax=0` = alt.
+- Details, Messtabelle vorher/nachher, Regler: [`N7_VORLAGEN_BERICHT.md`](N7_VORLAGEN_BERICHT.md).
+
 **Ballmagnet (Nacht 2c, Peter: „leichter ballmagnet, sonst kein dribbling“; Nacht 2d: „viel mehr Ballmagnet“ → Stärke 1,2
 statt 0,5, im Sprint 70 % statt 45 %):** zwischen den echten Ballkontakten führt
 eine weiche Feder den Ball, den du zuletzt berührt hast, auf die Linie deines Sticks und bremst ihn, wenn er zu weit
@@ -169,7 +185,7 @@ Ball mit (Sohle/Außenseite). `?zack=0` = altes Gefühl aus Nacht 1 zum Vergleic
 - **Käfig:** 24 × 15 m (Nacht 2c, vorher 20 × 13 = `?feld=20x13`), Tore 3 × 2 m in der Bande, Bande 1 m, Ballfangnetz, Dachnetz auf 5 m. Mit Dach reicht das
   Seitennetz bis zum Dach (sonst Spalt zwischen 3 und 5 m). Ohne Dach (`?dach=0`) ist das Netz 2 m hoch
   (Oberkante 3 m); fliegt der Ball darüber, gibt es „Aus“ und der Ball kommt zurück.
-- **Spieler:** Sprint 7,5 m/s, Laufen 5,2 m/s, 0 → 4 m/s in 0,60 s, 0 → 7 m/s in 2,5 s; Kurve r = v²/13 m/s²
+- **Spieler:** n7: ein Lauftempo 6,0 m/s (bis n6: Sprint 7,5 m/s, Laufen 5,2 m/s, `?sprintfrei=0`), 0 → 4 m/s in 0,60 s, 0 → 7 m/s in 2,5 s; Kurve r = v²/13 m/s²
   (4,3 m im Sprint), Stemmschritt 16 m/s². Ballführung mit echten Ballkontakten und Ballmagnet, kein Klebeball;
   im Sprint längere Vorlagen. Körper als Zylinder (Ball prallt ab, kann aber nie auf einem Spieler liegen bleiben), Spieler schieben
   sich gegenseitig weg (Zweikampf).
@@ -187,9 +203,12 @@ Ball mit (Sohle/Außenseite). `?zack=0` = altes Gefühl aus Nacht 1 zum Vergleic
 | `?tormann=1` … `3` | Stärke der CPU-Tormänner getrennt von den Feldspielern (Zwischenwerte wie `1.5` erlaubt; ohne Regler wie `?bots=`). Standard 2 lässt ≈ 30 % der Schüsse rein (Nacht 2b: 14 %) |
 | `?zack=0` | altes Bewegungsmodell aus Nacht 1 (A/B-Vergleich) |
 | `?wende=13`, `?stemm=16`, `?bremse=9`, `?kurve=20`, `?antritt=0.672` | Kurven-Querbeschleunigung, Stemmschritt-Bremsung, Abbremsen (m/s²), Winkel bis zur reinen Kurve (°), Antritts-Zeitkonstante (s) |
-| `?sprint=8`, `?lauf=5.5` | Sprint-/Lauftempo (m/s) |
+| `?sprintfrei=0`, `?ein=6`, `?trab=0.83` | n7: alter Sprint (Knopf/Rand/Shift/LB-RB); das eine Lauftempo (m/s); Anteil, mit dem Bots ohne Eile laufen |
+| `?sprint=8`, `?lauf=5.5` | Sprint-/Lauftempo (m/s); mit Sprint-frei wirkt `sprint` nur noch auf die Antrittskurve |
+| `?abschirmen=0`, `?schirmR=1.5`, `?schirmVor=0.3`, `?schirmSeite=0.35`, `?schirmVorlage=0.5`, `?schirmGraetsche=1.2` | n7 Abschirmen aus; Gegner-Abstand zum Ball (m); so viel näher muss der Gegnerfuß sein (m); Ball zur abgewandten Seite (m); kürzere Vorlage (Anteil); Grätsch-Rate der Bots gegen Abschirmer |
+| `?fangMax=13`, `?fangKoerperMax=16`, `?abprallMin=0.25`, `?abprallMax=0.4`, `?nachfassen=0.5` | n7 Fanggrenze aller Tormänner (m/s, `0` = alt); Körperbälle bis (m/s); Abpraller-Tempo (Anteil); Sekunden ohne Nachfassen nach dem Abklatschen |
 | `?hilfe=0` … `1` | Stärke der Ballführungs-Hilfe (lenkt den Spieler zum Ball) |
-| `?magnet=0` … `2` | Ballmagnet (Standard 1,2; Nacht 2c 0,5; 0 = Ballführung wie Nacht 2b). Feinregler: `?magnetK=112`, `?magnetC=20`, `?magnetAcc=42`, `?magnetLead=0.7`, `?magnetSprint=0.7` (Nacht 2c 0,45), `?magnetOpp=0.5`, `?magnetShield=0.3`, `?magnetTurn0=60`, `?magnetTurn1=120`, `?magnetSlide=0` (Magnet während einer gegnerischen Grätsche) |
+| `?magnet=0` … `2` | Ballmagnet (Standard 1,8 seit n7, davor 1,2; Nacht 2c 0,5; 0 = Ballführung wie Nacht 2b). Feinregler: `?magnetK=112`, `?magnetC=20`, `?magnetAcc=42`, `?magnetLead=0.7`, `?magnetSprint=0.7` (Nacht 2c 0,45), `?magnetOpp=0.5`, `?magnetShield=0.3`, `?magnetTurn0=60`, `?magnetTurn1=120`, `?magnetTurnMin=0.5` (n6 0,25), `?magnetKehr=0.15` (Kehrtwende lässt los), `?magnetSlide=0` (Magnet während einer gegnerischen Grätsche) |
 | `?wucht=1.5` | Endtempo von Vollspann, angeschnittenen Schüssen, Volley und Dropkick (Nacht 2d; `1` = Nacht 2c). `?wuchtDrall=1`: Drall der Banane wächst mit (0 = Drall wie Nacht 2c, die Kurve wird dann kleiner) |
 | `?hechten=0`, `?hechtAb=0.7`, `?hechtVorlauf=0.7`, `?hechtKnapp=0.5`, `?groundT=0.5`, `?diveArmT=0.2` | Tormann-Hechtsprung (Nacht 2d): alte Regel; ab so viel Abstand Ball ↔ Körper (m) hechtet er; frühester Absprung vor dem Ball (s); Spektakel-Hechter bei so knapp daneben (m); am Boden (s, Nacht 2c 0,75); bis die Arme gestreckt sind (s) |
 | `?schuss=32`, `?pass=12`, `?effet=12` | max. Schusstempo (Grundwert vor der Wucht, wirkt auf alle Schüsse), Passtempo, max. Effet (U/s) |
@@ -290,6 +309,13 @@ node tests/node/curve.test.mjs      # Banane/Flanke vorher/nachher: Tempo, Flugz
 node tests/node/shot.test.mjs       # Schussqualität q monoton, Trefferquote gute Lage, schlechte Lage langsamer/zentraler
 node tests/node/air.test.mjs        # Ballmaschinen-Serie: jede Luftball-Technik gewählt und trifft, Timing zählt
 node tests/node/challenge.test.mjs  # alle 9 Übungen headless mit Skript-Spieler: Sterne, untätig endet
+node tests/node/abschirmen.test.mjs # n7: Abschirmen (Körper dazwischen, klar früher, Grätsche erobert), Mensch gegen Verteidiger
+node tests/node/fanggrenze.test.mjs # n7: Fanggrenze aller Tormänner, Abpraller (Tempo, Richtung, Fausten), Bot-Spiele je Schusstempo
+node tests/node/n7_probe.mjs 20 "" st2  # n7-Messwerkzeug: alle Etappe-0-Größen im Bot-Selbstspiel (parallel), Mix alle | st2 | 13
+node tests/node/hold_probe.mjs      # n7: Skript-Mensch dribbelt gegen Stufe-2-Verteidiger (Haltedauer, Verluste)
+node tests/node/keeper_catch_probe.mjs "" 12  # n7: Fangquote erster Torwartkontakt je Schusstempo (alle / direkte Schüsse)
+node tests/node/run_par.mjs 5      # alle Node-Tests parallel (≈ 6 statt 11 min)
+python3 tests/n7_hud.py; python3 tests/n7_parade.py quer flach  # n7: Fotos Knöpfe ohne Sprint, Bildfolge Abklatschen/Fausten
 node tests/node/magnet.test.mjs     # Ballmagnet vorher/nachher: Kinder-Stick (Ball weg je Minute), Parcours, Selbstspiel-Ballverluste, Regeln
 node tests/node/dribble_probe.mjs 20 "magnet=0"  # Messwerkzeug: Parcours (Skript/Kinderhand), Ballverluste beim Führen im Selbstspiel
 node tests/node/tackle.test.mjs     # Grätsche: Auslöser, Ball zuerst (Pass/Schuss/klären), Gegner zuerst (Ball frei, stolpert), Bots, keine Hänger
@@ -332,6 +358,8 @@ python3 tools/fetch_assets.py && python3 tools/make_assets.py   # Assets neu bau
 Browser-Tests laufen headless über die GPU (ANGLE/Metal), nie zwei Browser gleichzeitig.
 
 ## Änderungen
+- **n7 Etappe 0 (14.10./18.10., Version 0.5.0)** – kein Sprint (ein Lauftempo 6,0 m/s), Ballbesitz mit Magnet 1,8 und Abschirmen,
+  Tormann klatscht scharfe Schüsse ab (Nachschuss-Tore 3–8 % → 24–28 % aller Tore). Bericht: [`N7_VORLAGEN_BERICHT.md`](N7_VORLAGEN_BERICHT.md).
 - **n6 Fan-Edit und Action-Momente (10.10., Version 0.4.0)** – Peters Wünsche vom 09.10.: Die Tor-Wiederholung ist jetzt ein
   überdrehter TikTok-Fan-Edit (≈ 7 s, Schnitte auf einem stummen 128-BPM-Takt, Vorgriff „WARTE AB 👀“, Zeitlupe am Kontakt,
   derselbe Schuss aus drei Winkeln, Standbild mit Kontur, Jubel, große Texte, km/h-Zähler, Emojis, Teal/Orange) – Hochformat

@@ -24,7 +24,7 @@ export function gameSetup(mix, s) {
 export function emptyStats() {
   return {
     games: 0, minutes: 0, goals: 0, shots: 0, passes: 0, stuck: 0, faults: 0, nan: 0,
-    bins: SHOT_BINS.map(() => ({ catch: 0, parry: 0, goal: 0 })), shotSp: [],
+    bins: SHOT_BINS.map(() => ({ catch: 0, parry: 0, goal: 0 })), binsD: SHOT_BINS.map(() => ({ catch: 0, parry: 0, goal: 0 })), shotSp: [],
     slowCatch: 0, slowAll: 0, catches: 0, parries: 0, dives: 0, rebound: 0, afterParry: 0,
     losses: 0, duel: 0, free: 0, dribbleT: 0, touches: 0, tackles: 0, tackleBall: 0, tackleStart: 0,
     longDrib: 0, maxDrib: 0, cornerT: 0, energyMin: [], lowT: 0,
@@ -48,16 +48,18 @@ export function measureGame(qs, mix, s) {
       const p = e.player != null && e.player >= 0 ? g.players[e.player] : null;
       // Schüsse und erster Torwartkontakt
       if (e.type === 'kick') {
-        if (e.kind === 'shot') { r.shots++; r.shotSp.push(e.speed); last = { v: e.speed, t: g.t, team: p ? p.team : -1 }; } else last = null;
+        if (e.kind === 'shot') { r.shots++; r.shotSp.push(e.speed); last = { v: e.speed, t: g.t, team: p ? p.team : -1, defl: false }; } else last = null;
         if (e.kind === 'pass' && e.to >= 0 && e.to !== e.player) r.passes++;   // Pass zum Mitspieler (kein Mitnehmen zu sich selbst)
         if (reb && p && p.team !== reb.team && g.t - reb.t <= 2) reb.again = true;     // Angreifer spielt den Abpraller
-      } else if (e.type === 'touch' || e.type === 'control') { last = null; if (reb && p && p.team !== reb.team && g.t - reb.t <= 2) reb.again = true; }
+      } else if (last && (e.type === 'board' || e.type === 'post' || e.type === 'net' || e.type === 'body')) last.defl = true; // abgefälscht
+      else if (e.type === 'touch' || e.type === 'control') { last = null; if (reb && p && p.team !== reb.team && g.t - reb.t <= 2) reb.again = true; }
       if ((e.type === 'catch' || e.type === 'parry') && p) {
         if (e.type === 'catch') { r.catches++; reb = null; } else { r.parries++; reb = { t: g.t, team: p.team, again: false }; }
         if (e.speed < 12.5) { r.slowAll++; if (e.type === 'catch') r.slowCatch++; }
         if (last && g.t - last.t <= 2 && last.team !== p.team) {
           const i = SHOT_BINS.findIndex(([a, c]) => last.v >= a && last.v < c);
           r.bins[i][e.type]++;
+          if (!last.defl) r.binsD[i][e.type]++;
         }
         last = null;
       }
@@ -136,7 +138,7 @@ export function humanHold(qs = '', seeds = 20, secs = 90) {
 
 export function merge(a, b) {
   for (const k of Object.keys(a)) {
-    if (k === 'bins') a.bins.forEach((x, i) => { for (const j in x) x[j] += b.bins[i][j]; });
+    if (k === 'bins' || k === 'binsD') a[k].forEach((x, i) => { for (const j in x) x[j] += b[k][i][j]; });
     else if (Array.isArray(a[k])) a[k].push(...b[k]);
     else if (k === 'maxDrib') a[k] = Math.max(a[k], b[k]);
     else a[k] += b[k];
@@ -159,11 +161,11 @@ export function runProbe(qs = '', N = 12, mix = 'alle', W = 6) {
 export function summary(r) {
   const pc = (a, b) => (b ? 100 * a / b : NaN);
   const sp = [...r.shotSp].sort((a, b) => a - b), q = (p) => (sp.length ? sp[Math.floor(p * (sp.length - 1))] * 3.6 : NaN);
-  const fq = r.bins.map((x) => pc(x.catch, x.catch + x.parry));
+  const fq = r.bins.map((x) => pc(x.catch, x.catch + x.parry)), fqD = r.binsD.map((x) => pc(x.catch, x.catch + x.parry));
   return {
     games: r.games, goalsPerShot: pc(r.goals, r.shots), goalsPerGame: r.goals / r.games, shotsPerGame: r.shots / r.games, passesPerGame: r.passes / r.games,
     stuck: r.stuck, faults: r.faults + r.nan, shotKmh: [q(0.1), q(0.5), q(0.9)],
-    catchBins: fq, binN: r.bins.map((x) => x.catch + x.parry), slowCatch: pc(r.slowCatch, r.slowAll), slowN: r.slowAll,
+    catchBins: fq, binN: r.bins.map((x) => x.catch + x.parry), catchBinsD: fqD, binND: r.binsD.map((x) => x.catch + x.parry), slowCatch: pc(r.slowCatch, r.slowAll), slowN: r.slowAll,
     catchesPerGame: r.catches / r.games, parriesPerGame: r.parries / r.games, divesPerGame: r.dives / r.games,
     rebound: r.rebound, reboundShare: pc(r.rebound, r.goals), afterParry: r.afterParry, afterParryShare: pc(r.afterParry, r.goals),
     lossMin: r.losses / r.minutes, duelMin: r.duel / r.minutes, freeMin: r.free / r.minutes, footSMin: r.dribbleT / r.minutes,
@@ -179,6 +181,7 @@ export function printSummary(label, s) {
   console.log(`== ${label}: ${s.games} Spiele`);
   console.log(`  Tore je Schuss ${f(s.goalsPerShot)} % · Tore/Spiel ${f(s.goalsPerGame)} · Schüsse/Spiel ${f(s.shotsPerGame)} · Pässe/Spiel ${f(s.passesPerGame)} · Hänger ${s.stuck} · Numerik ${s.faults}`);
   console.log(`  Schusstempo p10/p50/p90 ${s.shotKmh.map((x) => f(x, 0)).join('/')} km/h · Fangquote erster Kontakt: ${names.map((n, i) => `${n} km/h ${f(s.catchBins[i], 0)} % (${s.binN[i]})`).join(', ')}`);
+  console.log(`  … nur direkte Schüsse (nicht von Bande/Pfosten/Netz/Spieler abgefälscht): ${names.map((n, i) => `${n} ${f(s.catchBinsD[i], 0)} % (${s.binND[i]})`).join(', ')}`);
   console.log(`  langsame Bälle (< 45 km/h an den Händen) gefangen ${f(s.slowCatch, 0)} % (${s.slowN}) · Fangen/Abwehren/Hechten je Spiel ${f(s.catchesPerGame)}/${f(s.parriesPerGame)}/${f(s.divesPerGame)} · Tore ≤ 2 s nach Parade ${s.afterParry} = ${f(s.afterParryShare)} %, davon Nachschuss ${s.rebound} = ${f(s.reboundShare)} % der Tore`);
   console.log(`  Ballverluste beim Führen ${f(s.lossMin, 2)}/min (Zweikampf ${f(s.duelMin, 2)}, verspringt ${f(s.freeMin, 2)}) · Ball am Fuß ${f(s.footSMin)} s/min · Grätschen je Spiel ${f(s.tackleStartPerGame)} (Treffer ${f(s.tacklesPerGame)}, Ballgewinn ${f(s.tackleBallPerGame)} = ${f(s.tackleBallShare, 0)} %)`);
   console.log(`  Dribblings > 8 s: ${s.longDrib}, längstes ${f(s.maxDrib)} s · Ball am Fuß in den Ecken ${f(s.cornerSMin, 2)} s/min${s.energyMin != null ? ` · Tormann-Energie Minimum Ø ${f(s.energyMin, 0)}, unter der Fanggrenze ${f(s.lowShare)} % der Spielzeit` : ''}`);

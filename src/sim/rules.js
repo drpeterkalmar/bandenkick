@@ -143,17 +143,37 @@ export class Rules {
         g.events.push({ type: 'parry', tip: true, player: pl.id, speed: rel, x: b.p.x, y: b.p.y, z: b.p.z });
         continue;
       }
-      if (rel > (inp.catchRel ?? P.catchMaxRel * (0.8 + 0.2 * skill)) || (inp.fumble && rel > 13)) {
+      let parry = rel > (inp.catchRel ?? P.catchMaxRel * (0.8 + 0.2 * skill)) || (inp.fumble && rel > 13);
+      // n7 Etappe 0: eine Fanggrenze für alle – scharfe Bälle klatscht er ab, nur direkt auf den Körper ab und zu gefangen
+      if (P.fangMax > 0 && !parry && rel > P.fangMax) {
+        // Körperball: die Ballbahn (relativ zum Tormann) geht höchstens fangKoerper m an der Körpermitte vorbei
+        const rx = b.v.x - pl.vx, rz = b.v.z - pl.vz, rl = Math.hypot(rx, rz);
+        const body = pl.hand.mode !== 'dive' && (rl > 1 ? Math.abs(dx * rz - dz * rx) / rl : d) <= P.fangKoerper;
+        const pc = body ? P.fangKoerperP * clamp((P.fangKoerperMax - rel) / (P.fangKoerperMax - P.fangMax), 0, 1) : 0;
+        parry = !(pc > 0 && g.rng.next() < pc);
+      }
+      if (parry) {
         // Abwehren: Ball prallt von den Händen ab (weg vom Tor, gedämpft)
-        const out = team === 0 ? 1 : -1;
-        const sp = rel * 0.32;
-        const side = g.rng.range(-0.8, 0.8);
-        const l = Math.hypot(1, side);
-        b.v.set(out * sp / l, 1.5 + g.rng.next() * 2, (side * sp) / l + b.v.z * 0.2);
+        const out = team === 0 ? 1 : -1, high = b.p.y >= P.faustH;
+        if (P.fangMax > 0) {
+          // n7: Abklatschen bzw. Fausten – zur Seite, an der der Ball am Körper vorbeikommt (mittig: zufällig), schräg nach vorn
+          // in den Torraum, nie zurück ins Tor und nicht immer genau zum Schützen
+          const dzb = b.p.z - pl.z, sd = Math.abs(dzb) > 0.08 ? Math.sign(dzb) : (g.rng.next() < 0.5 ? -1 : 1);
+          const a = (P.abprallW0 + (P.abprallW1 - P.abprallW0) * g.rng.next()) * Math.PI / 180;
+          const sp = rel * (P.abprallMin + (P.abprallMax - P.abprallMin) * g.rng.next()) * (high ? 1.15 : 1);
+          b.v.set(out * sp * Math.cos(a), high ? 3 + g.rng.next() * 2 : 0.8 + g.rng.next() * 1.6, sd * sp * Math.sin(a));
+        } else {
+          const sp = rel * 0.32;
+          const side = g.rng.range(-0.8, 0.8);
+          const l = Math.hypot(1, side);
+          b.v.set(out * sp / l, 1.5 + g.rng.next() * 2, (side * sp) / l + b.v.z * 0.2);
+        }
         b.w.scale(0.3); b.contact = false;
         pl.touchCd = 0.4;
+        if (P.fangMax > 0) pl.catchCd = g.t + P.nachfassen; // n7: Abpraller nicht sofort wieder fangen
+        if (pl.hand.mode !== 'dive') { pl.tech = high ? 'fausten' : 'parade'; pl.techT = 0; } // n7: Parade sichtbar (Arme)
         this.touch(pl, true);
-        g.events.push({ type: 'parry', player: pl.id, speed: rel, x: b.p.x, y: b.p.y, z: b.p.z });
+        g.events.push({ type: 'parry', player: pl.id, speed: rel, high, x: b.p.x, y: b.p.y, z: b.p.z });
         continue;
       }
       b.held = pl.id; b.v.set(0, 0, 0); b.w.set(0, 0, 0); b.contact = false;

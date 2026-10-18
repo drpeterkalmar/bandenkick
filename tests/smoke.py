@@ -143,6 +143,14 @@ with Server() as srv, sync_playwright() as pw:
         h2 = s.state()['human']
         ok(h1 != h0 and h2 != h1 and all(s.state()['players'][h]['team'] == 0 for h in (h0, h1, h2)), f"Spielerwechsel per Taste: {h0} → {h1} → {h2} (nur Orange)")
         s.ev("__game.bots(true)")
+        # n7 Etappe 0 (Peter 14.10.: „keine Sprintfunktion mehr“): kein Sprint-Knopf, Sprint-Eingang (Shift/Rand/LB) ohne Wirkung
+        ok(s.ev("getComputedStyle(document.getElementById('bSprint')).display") == 'none', 'kein Sprint-Knopf (n7)')
+        s.ev("__game.newGame(); __game.game.rules.phase = 'play'; __game.bots(false); __game.placePlayer(-4, -2, 0); __game.placeBall(0, 0.11, 6)")
+        h = s.ev("__game.game.human")
+        s.ev("__game.input({wx: 1, wz: 0, sprint: true}, 2.0)"); s.wait_sim(1.6)
+        vmax = s.ev(f"__game.game.players[{h}].speed"); vein = s.ev("__game.game.P.vEin")
+        ok(vein - 0.1 <= vmax <= vein + 0.01, f'Sprint-Eingang wirkt nicht: Spieler läuft {vmax:.2f} m/s = Lauftempo {vein} m/s')
+        s.ev("__game.bots(true)")
         # Nacht 2e: kein Ton – im Menü, Spiel, Tor-Wiederholung, Training (Übung) und nach Taps kein Audio-Objekt
         s.tap('.iconbtn'); s.frames(2)
         ok(s.ev("document.querySelector('[data-act=\"sound\"]')") is None, 'Pause-Menü ohne Ton-Knopf')
@@ -150,13 +158,6 @@ with Server() as srv, sync_playwright() as pw:
         s.frames(10); s.ev("__game.press([[0, 0.07, 'shot']])"); s.wait_sim(1.5)
         ac = s.ev("window.__audioCalls")
         ok(ac == [] and s.ev("__game.sound.ctx") is None and s.ev("document.querySelectorAll('audio').length") == 0, f'Ton aus: 0 Audio-Objekte in Menü, Spiel, Wiederholung, Training ({ac})')
-        # n7 Etappe 0 (Peter 14.10.: „keine Sprintfunktion mehr“): kein Sprint-Knopf, Sprint-Eingang (Shift/Rand/LB) ohne Wirkung
-        ok(s.ev("getComputedStyle(document.getElementById('bSprint')).display") == 'none', 'kein Sprint-Knopf (n7)')
-        s.ev("__game.newGame(); __game.game.rules.phase = 'play'; __game.bots(false); __game.placePlayer(-8, 0, 0); __game.placeBall(0, 0.11, 6)")
-        s.ev("__game.input({wx: 1, wz: 0, sprint: true}, 2.5)"); s.wait_sim(2.4)
-        vmax = s.ev("__game.game.players[__game.game.human].speed"); vein = s.ev("__game.game.P.vEin")
-        ok(vmax <= vein + 0.01, f'Sprint-Eingang wirkt nicht: {vmax:.2f} m/s ≤ {vein} m/s')
-        s.ev("__game.bots(true)")
         ok(s.small_buttons() == [], f'Knöpfe ≥ 48 px im Spiel: {s.small_buttons()}')
         ok(s.overlaps(['#bShot', '#bPass', '#bSprint', '#bSwitch', '.score', '.iconbtn']) == [], 'Knöpfe überlappen nicht')
         errs = s.errors + ['JSERR ' + e for e in s.ev('window.__errors')]

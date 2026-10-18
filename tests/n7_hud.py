@@ -19,5 +19,5 @@ with Server() as srv, sync_playwright() as pw:
           return o; }""")
         print(form, json.dumps(lag, ensure_ascii=False))
         print('  Überlappung:', s.overlaps(['#bShot', '#bPass', '#bSprint', '#bSwitch', '.score', '.iconbtn']), '· Fehler:', s.errors[:3])
-        print('  Foto:', s.shot(f'hud_{tag}_{form}', 'n7'))
+        p = s.shot(f'hud_{tag}_{form}', 'n7'); from PIL import Image; im = Image.open(p).convert('RGB'); im.thumbnail((1100, 1100)); im.save(p[:-4] + '.jpg', quality=82); os.remove(p); print('  Foto:', p[:-4] + '.jpg')
     s.close()

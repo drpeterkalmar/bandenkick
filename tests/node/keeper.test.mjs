@@ -148,7 +148,11 @@ function rollers(K) {
   const c = [1, 2, 3].map((K) => keeperSeries(K, 60, '', 14 * W, 22 * W));
   const q = c.map((x) => 100 * x.goal / x.n);
   // (Stufe 2 und 3 halten isoliert fast alles – der Unterschied liegt dann im Fangen statt Abwehren)
-  check(`Eckschuss-Serie ${(14 * W).toFixed(0)}–${(22 * W).toFixed(0)} m/s: Tore gegen Tormann 1 / 2 / 3 monoton`, q[0] > q[1] + 10 && q[1] >= q[2] && c[2].catch > c[1].catch ? 1 : 0, 1, 1, '', 1, c.map((x, i) => `Stufe ${i + 1}: ${x.goal}/${x.n} Tore, ${x.catch} gefangen, ${x.parry} abgewehrt`).join(' · '));
+  // n7 Etappe 0 (Peter 14.10.: „Torwart hält fast nie einen scharfen Schuss, sondern klatscht nur ab“): scharfe Schüsse fängt
+  // keine Stufe mehr – der Unterschied liegt in Toren/Abwehr; der Vergleich „Stufe 3 fängt mehr“ gilt nur mit ?fangMax=0
+  const fm = makeParams('').fangMax > 0;
+  check(`Eckschuss-Serie ${(14 * W).toFixed(0)}–${(22 * W).toFixed(0)} m/s: Tore gegen Tormann 1 / 2 / 3 monoton`, q[0] > q[1] + 10 && q[1] >= q[2] && (fm || c[2].catch > c[1].catch) ? 1 : 0, 1, 1, '', 1, c.map((x, i) => `Stufe ${i + 1}: ${x.goal}/${x.n} Tore, ${x.catch} gefangen, ${x.parry} abgewehrt`).join(' · '));
+  if (fm) check('… scharfe Schüsse werden abgeklatscht, nicht gefangen (alle Stufen, n7)', c.reduce((a, x) => a + x.catch, 0) / c.reduce((a, x) => a + x.catch + x.parry, 0) * 100, 0, 5, '%', 0);
 }
 // 7) Nacht 2d (Peter: „Torwart soll viel mehr hechten“): In der Eckschuss-Serie (14–22 m/s wie Nacht 2c) endet ein Ball,
 //    der ≥ 0,8 m neben dem Tormann aufs Tor kommt, zu ≥ 70 % mit einem Hechtsprung – auf jeder Stufe

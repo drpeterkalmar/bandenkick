@@ -702,6 +702,12 @@ function techPose(pl, t) {
     return { pitch: 1.5 * lie, roll: 0, drop: -0.74 * lie, legs: true, thigh: 0.2 * lie, arms: -0.6 * lie }; // Flugkopfball: bäuchlings
   }
   const k = pl.techT ?? 9;
+  // n7: Abklatschen/Fausten – die Sim setzt die Technik erst im Kontakt-Takt, deshalb Arme in 0,05 s ganz oben, dann 0,4 s zurück
+  if ((pl.tech === 'parade' || pl.tech === 'fausten') && k < 0.45) {
+    const u = k < 0.05 ? k / 0.05 : Math.max(0, 1 - (k - 0.05) / 0.4);
+    return pl.tech === 'parade' ? { pitch: -0.12 * u, roll: 0, drop: -0.1 * u, legs: true, thigh: -0.25 * u, calf: 0.3 * u, arms: 1.7 * u }
+      : { pitch: -0.2 * u, roll: 0, drop: 0.05 * u, legs: true, thigh: -0.35 * u, arms: 2.6 * u, nod: -0.2 * u };
+  }
   if (k < 0.45) {
     const u = Math.sin(Math.min(1, k / 0.45) * Math.PI);
     switch (pl.tech) {
