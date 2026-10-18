@@ -143,15 +143,17 @@ export function buildHud(root, canvas) {
   const warm = h('div', 'fe-warm', '<i class="w1"></i><i class="w2"></i><b>GOLAZO! 10/10</b>');
   root.append(amEl, top, banner, charge, hold, touch, dbg, start, menu, credits, train, hint, result, help, replay, clipAgain, tds, warm);
 
-  const howto = (touchUI) => touchUI
-    ? `<li><b>Stick links:</b> laufen · ganz außen oder Knopf = Sprint · <b>⇄</b> Spieler wechseln (sonst automatisch)</li>
+  // n7: ohne Sprint (sprintfrei) kein Hinweis auf Sprint-Knopf, Stick-Rand, Shift oder LB/RB
+  const howto = (touchUI, frei) => touchUI
+    ? `<li><b>Stick links:</b> laufen${frei ? ' (ein Tempo für alle, kein Sprint)' : ' · ganz außen oder Knopf = Sprint'} · <b>⇄</b> Spieler wechseln (sonst automatisch)</li>
        <li><b>Pass/Schuss:</b> tippen = flach/Vollspann, <b>doppeltippen</b> = hoch/angeschnitten (Ring zeigt den Modus)</li>
        <li><b>Torwart</b> (letzte Hand im Torraum): fängt und hechtet von selbst. Mit Ball: Pass = <b>Abwurf</b>, Schuss = <b>Abschlag</b> – sonst wirft er nach 1 s selbst ab</li>`
-    : `<li><b>WASD / Pfeile:</b> laufen, <b>Shift:</b> Sprint, <b>C / Tab:</b> Spieler wechseln</li>
+    : `<li><b>WASD / Pfeile:</b> laufen${frei ? '' : ', <b>Shift:</b> Sprint'}, <b>C / Tab:</b> Spieler wechseln</li>
        <li><b>J / Enter / Linksklick:</b> Pass · <b>Leertaste / K / Rechtsklick:</b> Schuss – tippen = flach/Vollspann, <b>doppeltippen</b> = hoch/angeschnitten; Maus zielt</li>
        <li><b>Torwart</b> (letzte Hand im Torraum): fängt und hechtet von selbst; mit Ball J = Abwurf, Leertaste = Abschlag (sonst nach 1 s von selbst)</li>
-       <li><b>Gamepad:</b> Stick laufen, A Pass/Abwurf, X/RT Schuss/Abschlag, Y Wechsel, LB/RB Sprint</li>`;
-  const setHowto = (touchUI) => root.querySelectorAll('.howto').forEach((u) => { u.innerHTML = howto(touchUI); });
+       <li><b>Gamepad:</b> Stick laufen, A Pass/Abwurf, X/RT Schuss/Abschlag, Y Wechsel${frei ? '' : ', LB/RB Sprint'}</li>`;
+  let frei0 = false;
+  const setHowto = (touchUI, frei = frei0) => { frei0 = frei; root.querySelectorAll('.howto').forEach((u) => { u.innerHTML = howto(touchUI, frei); }); };
 
   let bannerT = 0, kickT = 0, lastScore = '', lastKeeper = '', lastCharge = null, lastStatus = '';
   const clock = (sec) => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, '0')}`;

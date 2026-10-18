@@ -14,3 +14,4 @@ __pycache__/
 tests/tmp/
 !tests/shots/fanedit/
 !tests/shots/action/
+!tests/shots/n7/

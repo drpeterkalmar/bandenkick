@@ -67,6 +67,7 @@ const quality = stufenWerte(qLevel, { dpr: devicePixelRatio || 1, schatten2: SCH
 if (isTouch) document.body.classList.add('touch');
 if (DEKO) document.body.classList.add('deko');
 if (P.treffpunkt) document.body.classList.add('treffpunkt');
+if (P.sprintfrei) document.body.classList.add('sprintfrei'); // n7: kein Sprint-Knopf, Knöpfe neu angeordnet
 if (qs.has('debug')) document.body.classList.add('debug');
 Avatar.ikMessen = qs.has('debug'); // n5: IK-Zeitmessung nur im Debug (kostet je Bild)
 const urlSolo = qs.has('solo') || qs.get('modus') === 'training';
@@ -75,7 +76,7 @@ document.body.classList.toggle('solo', solo);
 
 const canvas = document.getElementById('c');
 const hud = buildHud(document.getElementById('ui'), canvas);
-hud.setHowto(isTouch);
+hud.setHowto(isTouch, !!P.sprintfrei);
 const loadMsg = document.createElement('div');
 loadMsg.style.cssText = 'position:fixed;inset:0;display:grid;place-items:center;font:600 18px system-ui;color:#fff;background:#10251a';
 loadMsg.textContent = 'Bandenkick lädt …';
@@ -103,6 +104,7 @@ const newGame = () => (challengeId ? new Game(P, seed + '_' + challengeId + '_' 
 let game = newGame();
 const gcam = new GameCamera(innerWidth / innerHeight, game.cage);
 const input = new Input(hud);
+input.sprintfrei = !!P.sprintfrei;
 const sound = new Sound(); // Nacht 2e: stumm (Stub), kein AudioContext
 
 const BIB_NUMS = [[7, 10, 4], [9, 11, 5]]; // Deko: Rückennummern der Leibchen (Mensch = Orange Mitte → 10)
@@ -255,7 +257,7 @@ const me = () => game.players[Math.max(0, game.human)];
   hud.menu.querySelector('.physics').innerHTML =
     `Feld ${f(P.fieldL, 0)} × ${f(P.fieldW, 0)} m · Bande ${f(P.boardH, 1)} m · ${P.roof ? `Dachnetz ${f(P.roofH, 1)} m` : `ohne Dach, Netz bis ${f(P.netTop, 1)} m`} · Torraum ${f(P.torraum, 1)} m<br>` +
     `Kunstrasen nach FIFA Quality Pro: Abprall 0,72 m · schräg 52 % · Rollen 6,0 m<br>` +
-    `Sprint ${f(P.vSprint, 1)} m/s · Wende: Kurve ${f(P.aLat, 0)} m/s², Stemmschritt ${f(P.aPlant, 0)} m/s²${P.zack ? '' : ' (altes Modell)'} · Schuss bis ${Math.round(P.shotMax * P.wucht * 3.6)} km/h (Wucht ${f(P.wucht, 1)}) · Bots Stufe ${P.botLevel} · ${f(P.dauer, 0)} min je Halbzeit · Version ${BUILD}`;
+    `${P.sprintfrei ? `Lauftempo ${f(P.vRun, 1)} m/s (kein Sprint)` : `Sprint ${f(P.vSprint, 1)} m/s`} · Wende: Kurve ${f(P.aLat, 0)} m/s², Stemmschritt ${f(P.aPlant, 0)} m/s²${P.zack ? '' : ' (altes Modell)'} · Schuss bis ${Math.round(P.shotMax * P.wucht * 3.6)} km/h (Wucht ${f(P.wucht, 1)}) · Bots Stufe ${P.botLevel} · ${f(P.dauer, 0)} min je Halbzeit · Version ${BUILD}`;
 }
 
 // ---------------- Szene aufbauen ----------------

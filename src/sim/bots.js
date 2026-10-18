@@ -125,7 +125,7 @@ export class Bots {
 
   // Frühester Zeitpunkt, zu dem der Spieler den (vorhergesagten) Ball am Fuß haben kann
   timeToBall(p, L) {
-    const vmax = this.g.P.vSprint * L.speed;
+    const vmax = this.g.P.vTop * L.speed;
     for (let k = 0; k < NP; k++) {
       if (this.py[k] > 1.0) continue;
       const t = k * PDT;
@@ -264,7 +264,8 @@ export class Bots {
     x = clamp(x, -cage.hx + 0.35, cage.hx - 0.35); z = clamp(z, -cage.hz + 0.35, cage.hz - 0.35);
     const dx = x - pl.x, dz = z - pl.z, d = Math.hypot(dx, dz);
     if (d < 0.18) { inp.mx = 0; inp.mz = 0; return d; }
-    const m = Math.min(1, d / slow);
+    const P = this.g.P;
+    const m = Math.min(1, d / slow) * (P.sprintfrei && !(urgent && d > 2.0) ? P.trab : 1); // n7: ohne Eile traben
     inp.mx = dx / d * m; inp.mz = dz / d * m;
     inp.sprint = urgent && d > 2.0;
     return d;
@@ -399,8 +400,9 @@ export class Bots {
       this.firstTouch(pl, L);
       this.moveTo(inp, pl, b.p.x, b.p.z, false, 0.4); return;
     }
-    inp.mx = br.dribX; inp.mz = br.dribZ;
     inp.sprint = this.space(pl) > 3.5;
+    const k = g.P.sprintfrei && !inp.sprint ? g.P.trab : 1; // n7: wo er früher nicht sprintete, trabt er
+    inp.mx = br.dribX * k; inp.mz = br.dribZ * k;
   }
 
   space(pl) {
@@ -761,7 +763,7 @@ export class Bots {
 
   // Hecht-Entscheidung Nacht 2c (?hechten=0): nur wenn Laufen nicht reicht, höchstens 0,5 s vor dem Ball
   diveChoice2c(K, dz, tc) {
-    const P = this.g.P, reachRun = P.vSprint * K.run * tc * 0.6;
+    const P = this.g.P, reachRun = P.vTop * K.run * tc * 0.6;
     if (Math.abs(dz) > 0.55 && Math.abs(dz) > reachRun && Math.abs(dz) < (P.diveReach * K.diveReach + P.diveSpeed * P.diveT) * K.dive + 0.3 && tc < 0.5) return { T: P.diveT, sp: P.diveSpeed };
     return null;
   }

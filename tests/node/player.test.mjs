@@ -8,11 +8,14 @@ import { cut, TARGETS } from './agility.mjs';
 const rows = [];
 const check = (name, value, lo, hi, unit, target, note = '') => { const ok = value >= lo && value <= hi; rows.push({ name, value, lo, hi, unit, target, ok, note }); return ok; };
 const P = makeParams({});
+// n7 Etappe 0: Standard ist sprintfrei (ein Lauftempo vEin für alle). Die Sprint-Werte von Nacht 1/2 prüfen die Tests mit
+// ?sprintfrei=0 (altes Verhalten bleibt per Regler erreichbar).
+const PS = makeParams('sprintfrei=0');
 const inp = (o = {}) => ({ mx: 0, mz: 0, sprint: false, pass: false, shootHeld: false, shootRelease: false, cx: 0, cy: 0, ...o });
 
-// 1) Antritt und Höchsttempo (ohne Ball)
+// 1) Antritt und Höchsttempo (ohne Ball) – ?sprintfrei=0
 {
-  const g = new Game(P, 1); const pl = g.players[0];
+  const g = new Game(PS, 1); const pl = g.players[0];
   g.ball.place(0, 0.11, 6); // Ball aus dem Weg
   pl.place(-9, -5, 0);
   let t7 = -1, vmax = 0;
@@ -23,21 +26,35 @@ const inp = (o = {}) => ({ mx: 0, mz: 0, sprint: false, pass: false, shootHeld: 
     if (t7 < 0 && pl.speed >= 7) t7 = g.t;
     vmax = Math.max(vmax, pl.speed);
   }
-  check('Antritt 0 → 7 m/s', t7, 2.2, 2.8, 's', 2.5);
-  check('Höchsttempo Sprint', vmax, 7.4, 7.55, 'm/s', 7.5);
-  const g2 = new Game(P, 1); const p2 = g2.players[0]; g2.ball.place(0, 0.11, 6); p2.place(-9, -5, 0);
+  check('?sprintfrei=0: Antritt 0 → 7 m/s', t7, 2.2, 2.8, 's', 2.5);
+  check('?sprintfrei=0: Höchsttempo Sprint', vmax, 7.4, 7.55, 'm/s', 7.5);
+  const g2 = new Game(PS, 1); const p2 = g2.players[0]; g2.ball.place(0, 0.11, 6); p2.place(-9, -5, 0);
   let v2 = 0; for (let i = 0; i < 3 / DT; i++) { g2.step([inp({ mx: 1 })]); v2 = Math.max(v2, p2.speed); }
-  check('Lauftempo ohne Sprint', v2, 5.0, 5.3, 'm/s', 5.2);
+  check('?sprintfrei=0: Lauftempo ohne Sprint', v2, 5.0, 5.3, 'm/s', 5.2);
+}
+// 1b) n7 Etappe 0 (Peter 14.10.: „keine Sprintfunktion mehr“): ein Tempo für alle – der Sprint-Eingang wirkt nicht
+{
+  const run = (o, PP = P) => {
+    const g = new Game(PP, 1); const pl = g.players[0]; g.ball.place(0, 0.11, 6); pl.place(-9, -5, 0);
+    let v = 0, t6 = -1;
+    for (let i = 0; i < 4 / DT; i++) { g.step([inp({ mx: 1, ...o })]); if (pl.x > 8) pl.x -= 16; v = Math.max(v, pl.speed); if (t6 < 0 && pl.speed >= 6) t6 = g.t; }
+    return { v, t6, sprinting: pl.sprinting };
+  };
+  const a = run({}), b = run({ sprint: true });
+  check('Ein Lauftempo: Höchsttempo = vEin', a.v, P.vEin - 0.05, P.vEin + 0.02, 'm/s', P.vEin, `?ein=${P.vEin}`);
+  check('Sprint-Eingang (Knopf, Stick-Rand, Shift, LB/RB → inp.sprint) ändert das Tempo nicht', Math.abs(b.v - a.v), 0, 1e-9, 'm/s', 0, `mit „Sprint“ ${b.v.toFixed(3)} m/s, Spieler.sprinting = ${b.sprinting}`);
+  check('Antritt bleibt spritzig: 0 → 6 m/s', a.t6, 1.2, 1.9, 's', null, 'Antrittskurve wie bisher (läuft gegen 7,5 m/s), endet bei vEin');
+  check('?ein=5.8 wirkt', run({}, makeParams('ein=5.8')).v, 5.75, 5.82, 'm/s', 5.8);
 }
 // 2) Kurve tempoabhängig: Stick 15° neben der Laufrichtung (unter der Kurven-Grenze) → r = v²/aLat
-function turnRadius(v, sprint) {
-  const g = new Game(makeParams('?feld=60x40'), 1); const pl = g.players[0];
+function turnRadius(v, sprint, qs = '?feld=60x40') {
+  const g = new Game(makeParams(qs), 1); const pl = g.players[0];
   g.ball.place(25, 0.11, 18);
   pl.place(0, 0, 0); pl.speed = v; pl.vx = v;
   const pts = [];
   for (let i = 0; i < 1.2 / DT; i++) {
     const a = Math.atan2(pl.hz, pl.hx) + 15 * Math.PI / 180;
-    const m = v / (sprint ? P.vSprint : P.vRun);
+    const m = v / (sprint ? g.P.vSprint : g.P.vRun);
     g.step([inp({ mx: Math.cos(a) * m, mz: Math.sin(a) * m, sprint })]);
     pts.push([pl.x, pl.z, pl.speed]);
   }
@@ -49,8 +66,9 @@ function turnRadius(v, sprint) {
   return { r: s / Math.abs(da), v: pts[n - 1][2] };
 }
 {
-  const r75 = turnRadius(7.5, true), r4 = turnRadius(4, false), r2 = turnRadius(2, false);
-  check('Kurve: Radius bei 7,5 m/s (Tempo bleibt)', r75.r, 3.8, 4.9, 'm', 7.5 * 7.5 / P.aLat, `Tempo danach ${r75.v.toFixed(2)} m/s; Nacht 1: 9,4 m`);
+  const r75 = turnRadius(7.5, true, '?feld=60x40&sprintfrei=0'), r63 = turnRadius(P.vEin, false), r4 = turnRadius(4, false), r2 = turnRadius(2, false);
+  check('?sprintfrei=0: Kurve: Radius bei 7,5 m/s (Tempo bleibt)', r75.r, 3.8, 4.9, 'm', 7.5 * 7.5 / P.aLat, `Tempo danach ${r75.v.toFixed(2)} m/s; Nacht 1: 9,4 m`);
+  check('Kurve: Radius beim Lauftempo vEin (Tempo bleibt)', r63.r, 0.85 * P.vEin ** 2 / P.aLat, 1.15 * P.vEin ** 2 / P.aLat, 'm', P.vEin ** 2 / P.aLat, `Tempo danach ${r63.v.toFixed(2)} m/s`);
   check('Kurve: Radius bei 4 m/s', r4.r, 1.0, 1.5, 'm', 16 / P.aLat, 'Nacht 1: 2,7 m');
   check('Kurve: Radius bei 2 m/s', r2.r, 0.2, 0.45, 'm', 4 / P.aLat, 'Nacht 1: 0,65 m');
 }
@@ -94,16 +112,17 @@ function turnRadius(v, sprint) {
   }
   // A/B: ?zack=0 = altes Modell aus Nacht 1 (Peters Probe: Sprint 90° nach 1,75 s)
   {
-    const P0 = makeParams('?feld=60x40&zack=0');
+    const P0 = makeParams('?feld=60x40&zack=0&sprintfrei=0');
     const r = cut(P0, 7.5, true, 90);
     check('?zack=0 (altes Modell): Sprint 90° wie Nacht 1', r.tHead, 1.7, 1.8, 's', 1.75, `Überschießen ${r.drift.toFixed(1)} m (Nacht 1: 9,2 m)`);
   }
 }
 // 3) Ballführung: 6 s geradeaus laufen/sprinten – echte Kontakte, Ball nie „angeklebt“, bleibt nah
 const PBIG = makeParams('?feld=60x40'); // langes Feld: eingeschwungener Zustand messen
+const PBIG0 = makeParams('?feld=60x40&sprintfrei=0');
 function dribble(sprint, seconds = 6, PP = PBIG) {
   const g = new Game(PP, 7); const pl = g.players[0];
-  const v0 = (sprint ? P.vSprint : P.vRun) * P.dribbleSlow;
+  const v0 = (sprint ? PP.vSprint : PP.vRun) * PP.dribbleSlow;
   pl.place(-28, 0, 0); pl.speed = v0; pl.vx = v0; // schon in Fahrt
   g.ball.place(-28 + P.footAhead + 0.05, 0.11, 0); g.ball.v.set(v0, 0, 0); g.ball.w.set(0, 0, -v0 / 0.11);
   let touches = 0, maxD = 0, dists = [], lastTouchX = null, gaps = [];
@@ -130,10 +149,13 @@ function dribble(sprint, seconds = 6, PP = PBIG) {
   check('Führen (Laufen): Ball entfernt sich zwischen Kontakten (kein Klebeball)', d.maxD, 0.12, 3.0, 'm', null, `max. Abstand Fuß–Ball (Nacht 2c 0,28 m); ?magnet=0: ${d0.maxD.toFixed(2)} m`);
   check('?magnet=0: Ball entfernt sich zwischen Kontakten wie Nacht 2b', d0.maxD, 0.45, 3.0, 'm', null, `${d0.touches} Kontakte`);
   check('Magnet trägt nicht: Kontakte je 10 m mindestens wie ohne Magnet', d.touches / Math.max(1, d.x + 28) * 10, d0.touches / Math.max(1, d0.x + 28) * 10, 99, '', null, `${d.touches} Kontakte auf ${(d.x + 28).toFixed(0)} m, ohne Magnet ${d0.touches} auf ${(d0.x + 28).toFixed(0)} m`);
-  check('Führen (Laufen): Tempo mit Ball', d.speed, 4.0, 5.3, 'm/s', null, `Vorlage ${d.gap.toFixed(2)} m je Kontakt`);
-  const s = dribble(true);
-  check('Führen (Sprint): längere Vorlagen als im Laufen', s.gap / Math.max(d.gap, 0.01), 1.3, 10, '×', null, `Sprint ${s.gap.toFixed(2)} m vs. ${d.gap.toFixed(2)} m je Kontakt, ${s.touches} Kontakte`);
-  check('Führen (Sprint): Tempo mit Ball', s.speed, 5.8, 7.5, 'm/s', null);
+  check('Führen (ein Lauftempo): Tempo mit Ball', d.speed, 0.85 * P.vEin, P.vEin, 'm/s', P.vEin * P.dribbleSlow, `Vorlage ${d.gap.toFixed(2)} m je Kontakt`);
+  const dl = dribble(false, 6, PBIG0), s = dribble(true, 6, PBIG0);
+  check('?sprintfrei=0: Führen (Laufen): Tempo mit Ball', dl.speed, 4.0, 5.3, 'm/s', null, `Vorlage ${dl.gap.toFixed(2)} m je Kontakt`);
+  check('?sprintfrei=0: Führen (Sprint): längere Vorlagen als im Laufen', s.gap / Math.max(dl.gap, 0.01), 1.3, 10, '×', null, `Sprint ${s.gap.toFixed(2)} m vs. ${dl.gap.toFixed(2)} m je Kontakt, ${s.touches} Kontakte`);
+  check('?sprintfrei=0: Führen (Sprint): Tempo mit Ball', s.speed, 5.8, 7.5, 'm/s', null);
+  const sf = dribble(true);
+  check('Führen mit „Sprint“-Eingang: gleiche Vorlagen wie ohne (kein Sprint)', Math.abs(sf.gap - d.gap), 0, 0.02, 'm', 0, `${sf.gap.toFixed(2)} vs. ${d.gap.toFixed(2)} m`);
 }
 // 4) Hilfe gibt eine deutliche Eingabe sofort frei (≤ 0,3 s): beim Führen Stick um 90° drehen
 {

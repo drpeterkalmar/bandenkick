@@ -273,7 +273,7 @@ export class Rules {
     return [side * 6, zs * (hz - 2.5)];
   }
 
-  // Kann ein Gegner einen Abwurf von pl zu m abfangen? Für Punkte entlang des Wegs: Gegner (Sprint, 0,3 s Reaktion,
+  // Kann ein Gegner einen Abwurf von pl zu m abfangen? Für Punkte entlang des Wegs: Gegner (Höchsttempo vTop, 0,3 s Reaktion,
   // 0,45 m Reichweite) deutlich früher dort als der Ball (Abwurf-Tempo wie in release)?
   interceptable(pl, m) {
     const g = this.g, P = g.P;
@@ -283,7 +283,7 @@ export class Rules {
       if (o.team === pl.team) continue;
       for (let s = 1; s < D; s += 0.5) {
         const px = pl.x + ex / D * s, pz = pl.z + ez / D * s;
-        const to = Math.max(0, Math.hypot(o.x - px, o.z - pz) - 0.45) / P.vSprint + 0.3;
+        const to = Math.max(0, Math.hypot(o.x - px, o.z - pz) - 0.45) / P.vTop + 0.3;
         if (to < s / v - 0.05) return true;
       }
     }

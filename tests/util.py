@@ -17,6 +17,9 @@ if sys.platform == 'win32': GPU_ARGS[0] = "--use-angle=d3d11"
 GPU_NAME = ('Direct3D', 'D3D11') if sys.platform == 'win32' else ('Metal',)
 SWIFT_ARGS = ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist", "--enable-webgl"]
 ARGS = SWIFT_ARGS if os.environ.get('WEBGL') == 'swiftshader' else GPU_ARGS
+# n7: Test-Browser immer stumm (Peter 08.10.: der Mac darf nicht bimmeln) – gilt für alle Skripte, die ARGS nutzen
+for _a in (GPU_ARGS, SWIFT_ARGS):
+    if '--mute-audio' not in _a: _a.append('--mute-audio')
 GL_RENDERER = """() => { const gl = document.createElement('canvas').getContext('webgl2'); if (!gl) return 'kein WebGL2';
   const e = gl.getExtension('WEBGL_debug_renderer_info'); return e ? gl.getParameter(e.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER); }"""
 

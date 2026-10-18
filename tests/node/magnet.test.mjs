@@ -14,7 +14,7 @@ const avg = (a) => a.reduce((s, x) => s + x, 0) / Math.max(1, a.length);
 // 1) Kinderhand-Führen
 const kid = (qs, opp) => { const r = []; for (let s = 1; s <= 30; s++) r.push(kidDribble(qs, { seed: s, opp })); return { lost: avg(r.map((x) => x.lost)), rev: avg(r.map((x) => x.lostRev)), speed: avg(r.map((x) => x.speed)) }; };
 // Nacht 2c = magnet 0,5 / Sprint 0,45 (Referenz für „viel mehr“)
-const N2C = 'magnet=0.5&magnetSprint=0.45&magnetSlide=1&tackleBall=0.1';
+const N2C = 'magnet=0.5&magnetSprint=0.45&magnetSlide=1&tackleBall=0.1&sprintfrei=0'; // (n7: Nacht 2c hatte noch Sprint)
 const a0 = kid('magnet=0', false), aC = kid(N2C, false), a1 = kid('', false), b0 = kid('magnet=0', true), bC = kid(N2C, true), b1 = kid('', true);
 check('Kinderhand allein (30 × 60 s): Ball springt weg (Magnet ÷ ohne)', a1.lost / a0.lost, 0, 0.3, '×', 0.17, `ohne ${a0.lost.toFixed(1)}, Nacht 2c ${aC.lost.toFixed(1)}, jetzt ${a1.lost.toFixed(1)} je Minute, davon ${a1.rev.toFixed(1)} nach einer Kehrtwende (> 150°: dort lässt der Magnet absichtlich los), Tempo mit Ball ${a0.speed.toFixed(2)} → ${a1.speed.toFixed(2)} m/s`);
 check('… gegenüber Nacht 2c (Magnet 0,5): Ball springt weg', a1.lost / aC.lost, 0, 0.6, '×', 0.5, `${aC.lost.toFixed(1)} → ${a1.lost.toFixed(1)} je Minute`);

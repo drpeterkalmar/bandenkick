@@ -150,6 +150,13 @@ with Server() as srv, sync_playwright() as pw:
         s.frames(10); s.ev("__game.press([[0, 0.07, 'shot']])"); s.wait_sim(1.5)
         ac = s.ev("window.__audioCalls")
         ok(ac == [] and s.ev("__game.sound.ctx") is None and s.ev("document.querySelectorAll('audio').length") == 0, f'Ton aus: 0 Audio-Objekte in Menü, Spiel, Wiederholung, Training ({ac})')
+        # n7 Etappe 0 (Peter 14.10.: „keine Sprintfunktion mehr“): kein Sprint-Knopf, Sprint-Eingang (Shift/Rand/LB) ohne Wirkung
+        ok(s.ev("getComputedStyle(document.getElementById('bSprint')).display") == 'none', 'kein Sprint-Knopf (n7)')
+        s.ev("__game.newGame(); __game.game.rules.phase = 'play'; __game.bots(false); __game.placePlayer(-8, 0, 0); __game.placeBall(0, 0.11, 6)")
+        s.ev("__game.input({wx: 1, wz: 0, sprint: true}, 2.5)"); s.wait_sim(2.4)
+        vmax = s.ev("__game.game.players[__game.game.human].speed"); vein = s.ev("__game.game.P.vEin")
+        ok(vmax <= vein + 0.01, f'Sprint-Eingang wirkt nicht: {vmax:.2f} m/s ≤ {vein} m/s')
+        s.ev("__game.bots(true)")
         ok(s.small_buttons() == [], f'Knöpfe ≥ 48 px im Spiel: {s.small_buttons()}')
         ok(s.overlaps(['#bShot', '#bPass', '#bSprint', '#bSwitch', '.score', '.iconbtn']) == [], 'Knöpfe überlappen nicht')
         errs = s.errors + ['JSERR ' + e for e in s.ev('window.__errors')]

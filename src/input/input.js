@@ -19,6 +19,7 @@ export class Input {
     this.aimWorld = null;         // Maus-Ziel am Boden (von main gesetzt)
     this.now = 0;
     this.pad = null;
+    this.sprintfrei = false;      // n7: von main gesetzt (?sprintfrei=1) – Sprint-Knopf, Stick-Rand, Shift und LB/RB wirken nicht
     this.bind();
   }
 
@@ -156,6 +157,7 @@ export class Input {
       if (Math.hypot(rx, ry) > 0.25) { cx = rx; cy = -ry; }
       this.pad = p.id;
     }
+    if (this.sprintfrei) sprint = false;
     const release = this.shootWas && !shoot;
     this.shootWas = shoot;
     // Treffpunkt beim Loslassen = zuletzt gehaltener (Finger verlässt den Knopf)

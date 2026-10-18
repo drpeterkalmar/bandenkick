@@ -4,7 +4,8 @@ import { makeParams } from '../../src/sim/params.js';
 import { Game, DT } from '../../src/sim/step.js';
 import { pathToFileURL } from 'node:url';
 
-export function playGame(seed, { qs = '', levels = null, maxT = null } = {}) {
+// onStep(g, ev) (n7): wird nach jedem Takt mit den Ereignissen aufgerufen (Messwerkzeuge, z. B. n7_probe.mjs)
+export function playGame(seed, { qs = '', levels = null, maxT = null, onStep = null } = {}) {
   const P = makeParams(qs);
   const g = new Game(P, seed, { match: true, human: -1, botLevels: levels });
   const cage = g.cage;
@@ -17,6 +18,7 @@ export function playGame(seed, { qs = '', levels = null, maxT = null } = {}) {
   const track = g.players.map((p) => ({ x0: p.x, z0: p.z, path: 0, px: p.x, pz: p.z, t0: 0, minX: p.x, maxX: p.x, minZ: p.z, maxZ: p.z, touchT: 0 }));
   while (g.rules.phase !== 'end' && g.t < limit) {
     const ev = g.step([]);
+    if (onStep) onStep(g, ev);
     for (const e of ev) {
       st.events[e.type] = (st.events[e.type] || 0) + 1;
       if (e.type === 'goal') st.goals[e.team]++;

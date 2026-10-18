@@ -138,7 +138,7 @@ export class Player {
     if (mag > 1) { mx /= mag; mz /= mag; mag = 1; }
     const want = mag > 0.12;
     const sx = want ? mx / mag : 0, sz = want ? mz / mag : 0; // Stick-Richtung
-    this.sprinting = !!inp.sprint && want;
+    this.sprinting = !P.sprintfrei && !!inp.sprint && want; // n7: ?sprintfrei=1 → nie Sprint (Knopf, Rand, Shift, Bots)
     const aimDir = () => {
       if (inp.aim && (inp.aimX || inp.aimZ)) { const l = Math.hypot(inp.aimX, inp.aimZ); return [inp.aimX / l, inp.aimZ / l]; }
       if (want) return [sx, sz];
@@ -218,7 +218,7 @@ export class Player {
       const dx = tx - this.x, dz = tz - this.z, d = Math.hypot(dx, dz);
       if (d > 0.12) {
         recv = true; dirX = dx / d; dirZ = dz / d;
-        recvV = near ? clamp(Math.max(this.speed, d / 0.35), 1.5, P.vSprint) : clamp(d / Math.max(0.12, tGo), 1.5, P.vSprint);
+        recvV = near ? clamp(Math.max(this.speed, d / 0.35), 1.5, P.vTop) : clamp(d / Math.max(0.12, tGo), 1.5, P.vTop);
       }
     }
     const tau = targetW > this.assistW ? P.assistReturn : P.assistRelease;
@@ -233,9 +233,9 @@ export class Player {
     let vd = 0;
     if (moving) {
       vd = (want ? mag : 0.8) * (this.sprinting ? P.vSprint : P.vRun);
-      // Vorgemerkter Kick ohne Stick: dem Ball mindestens so schnell nachlaufen, wie er rollt (bis Sprint).
+      // Vorgemerkter Kick ohne Stick: dem Ball mindestens so schnell nachlaufen, wie er rollt (bis Sprint bzw. n7 bis vTop).
       // Nacht 2c: auch mit Stick, wenn er grob zum Ball zeigt (Tipp-Kick: der Spieler legt einen Schritt zu)
-      if (this.pending && !held && (!want || (this.pending.tap && targetW > 0))) vd = Math.max(vd, Math.min(P.vSprint, Math.hypot(ball.v.x, ball.v.z) + 1.5));
+      if (this.pending && !held && (!want || (this.pending.tap && targetW > 0))) vd = Math.max(vd, Math.min(P.vTop, Math.hypot(ball.v.x, ball.v.z) + 1.5));
       if (this.dribbling) vd *= P.dribbleSlow;
       if (this.charging && bd < 0.75) vd *= 0.8; // zum Schuss hin etwas verlangsamen – nur mit dem Ball am Fuß (sonst läuft er davon)
       if (this.hand.mode === 'hold') vd = Math.min(vd, P.vRun * 0.6); // mit Ball in der Hand nur gehen

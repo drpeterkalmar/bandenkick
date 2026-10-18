@@ -76,8 +76,17 @@ export const DEFAULTS = {
   torraum: 4,             // m Halbkreis-Radius um die Tormitte: nur dort darf die „letzte Hand“ die Hände nehmen
 
   // ---------------- Spieler ----------------
-  vSprint: 7.5,           // m/s Höchsttempo Sprint
-  vRun: 5.2,              // m/s Laufen ohne Sprint
+  vSprint: 7.5,           // m/s Höchsttempo Sprint (mit ?sprintfrei=1 nur noch Grenze der Antrittskurve, siehe tauAcc0)
+  vRun: 5.2,              // m/s Laufen ohne Sprint (mit ?sprintfrei=1 = vEin)
+  // n7 Etappe 0 (Peter 14.10.: „keine Sprintfunktion mehr“): kein Sprint für niemanden – weder Knopf noch Stick-Rand, Shift oder
+  // Gamepad, auch nicht für Bots. Alle laufen mit einem Tempo vEin; Antritt und Wenden bleiben „zackig“ wie beim Laufen.
+  // Sprint-Sonderwerte (magnetSprint, touchLeadSprint, touchExtraSprint, Streuung im Sprint) entfallen damit.
+  sprintfrei: 1,          // 0 = alt (Sprint per Knopf/Stick-Rand/Shift/Gamepad, Laufen vRun)       [?sprintfrei=0]
+  vEin: 6.0,              // m/s das eine Lauftempo (Startwert 6,3; gemessen 6,0: Pässe im Lauf wie vorher, siehe N7_VORLAGEN_BERICHT.md) [?ein=]
+  // Bots laufen ohne Eile (wo sie früher nicht sprinteten) nur mit diesem Anteil des Lauftempos (6,0 × 0,83 ≈ 5 m/s wie das
+  // alte Laufen); eilt es, laufen sie voll (6,0 statt 7,5 m/s). Sonst stehen die Verteidiger überall schneller und fangen mehr
+  // Pässe ab. Gilt nur mit sprintfrei; der Mensch regelt sein Tempo mit dem Stick.
+  trab: 0.83,             //                                                                         [?trab=1]
   // Bewegungsmodell „zack“ (Nacht 2, Peter: „fühlt sich an wie Auto fahren“): kleine Winkel = Kurve,
   // große Winkel = Stemmschritt (hart bremsen, Körper dreht, Abstoß in die neue Richtung), dann Antritt.
   // ?zack=0 = altes Modell aus Nacht 1 (Laufrichtung dreht nur mit ω = aLat/v wie ein Lenkrad).
@@ -269,7 +278,7 @@ export const ALIASES = {
   schuss: 'shotMax', pass: 'passSpeed', bande: 'boardEn', netz: 'netH', dachhoehe: 'roofH',
   abprall: 'turfEn', rollen: 'turfRoll0', effet: 'spinMax', torbreite: 'goalW', torhoehe: 'goalH',
   stemm: 'aPlant', bremse: 'aBrake', kurve: 'curveDeg', bots: 'botLevel',
-  tipp: 'tapMax', autotorwart: 'autoTorwart', autowurf: 'autoWurf', kegel: 'passCone', innen: 'passInnenDeg', hacke: 'passHackeDeg', chipmin: 'chipElevMin', chipmax: 'chipElevMax',
+  ein: 'vEin', tipp: 'tapMax', autotorwart: 'autoTorwart', autowurf: 'autoWurf', kegel: 'passCone', innen: 'passInnenDeg', hacke: 'passHackeDeg', chipmin: 'chipElevMin', chipmax: 'chipElevMax',
 };
 // ?zack=0: Werte des alten Bewegungsmodells (Nacht 1), sofern nicht ausdrücklich übersteuert
 const ZACK0 = { aLat: 6.0, aBrake: 6.5 };
@@ -278,6 +287,9 @@ const LADEN1 = { doppel: 0.25 };
 // ?halten=0: Tormann mit Ball wie Nacht 2d (6 s Zwangsabwurf, Auto-Torwart nach 2 s), sofern nicht ausdrücklich übersteuert
 const HALTEN0 = { holdMax: 6, autoWurf: 2 };
 const ZACK0_ALIAS = { antritt: 'tauAcc' };
+// n7 ?sprintfrei=1 (Standard): die Grätsche rutscht schneller los als früher aus dem Sprint (sonst −12 % Grätschen mit
+// Ballgewinn, gemessen in 48 Bot-Spielen), sofern nicht ausdrücklich übersteuert
+const SPRINTFREI1 = { slideSpeed: 8 };
 
 // Liest Overrides aus einem Query-String (oder Objekt) und gibt ein vollständiges Parameter-Objekt zurück.
 export function makeParams(overrides = {}) {
@@ -311,6 +323,12 @@ export function makeParams(overrides = {}) {
   if (P.laden) for (const [k, v] of Object.entries(LADEN1)) if (!set.has(k)) P[k] = v;
   if (!P.halten) for (const [k, v] of Object.entries(HALTEN0)) if (!set.has(k)) P[k] = v;
   P.zack = P.zack ? 1 : 0;
+  // n7: ein Lauftempo (vEin) statt Laufen/Sprint, ?lauf= übersteuert weiter ausdrücklich. vTop = höchstes Lauftempo, das
+  // ein Spieler erreichen kann (Vorhersagen, Abfangen, Empfänger-Lauf); die Antrittskurve läuft weiter gegen vSprint.
+  P.sprintfrei = P.sprintfrei ? 1 : 0;
+  if (P.sprintfrei && !set.has('vRun')) P.vRun = P.vEin;
+  if (P.sprintfrei) for (const [k, v] of Object.entries(SPRINTFREI1)) if (!set.has(k)) P[k] = v;
+  P.vTop = P.sprintfrei ? P.vRun : P.vSprint;
   P.roof = P.roof ? 1 : 0;
   P.goalW = clamp(P.goalW, 1, P.fieldW - 2);
   P.goalH = clamp(P.goalH, 0.8, 3);

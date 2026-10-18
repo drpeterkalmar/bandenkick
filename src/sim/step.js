@@ -261,7 +261,7 @@ export class Game {
     if (me.hand.mode === 'dive' || me.hand.mode === 'ground') return;
     const ttb = (p) => {
       const tx = b.p.x + b.v.x * 0.3, tz = b.p.z + b.v.z * 0.3;
-      return Math.hypot(tx - p.x, tz - p.z) / P.vSprint;
+      return Math.hypot(tx - p.x, tz - p.z) / P.vTop;
     };
     const mates = this.players.filter((p) => p.team === me.team && p.id !== me.id);
     if (inp && inp.switch) {

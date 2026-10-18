@@ -56,7 +56,7 @@ export function planAir(game, pl, { tPress = game.t, purpose = 'shot', minScore 
       const bx = s.x + fr.ox, bz = s.z + fr.oz;
       const d = Math.hypot(bx - pl.x, bz - pl.z);
       const va = ((bx - pl.x) * pl.vx + (bz - pl.z) * pl.vz) / (d || 1);
-      const reach = pl.travel(va, P.vSprint, s.t) + T.extra + 0.25;
+      const reach = pl.travel(va, P.vTop, s.t) + T.extra + 0.25;
       if (d > reach) continue;
       // Kopfball über Kopfhöhe: Sprung nötig (Scheitel am Treffpunkt), braucht Zeit
       if (tech === 'kopf' && h > P.headH + 0.02) {
@@ -134,7 +134,7 @@ export function stepAir(pl, dt, game, want, sx, sz) {
   // Bewegung: zur Körperposition, pünktlich zum Treffpunkt (im Flug nur noch Schwung)
   if (!a.go || a.tech === 'flugkopf') {
     const need = d / Math.max(0.06, tRem);
-    const vmax = a.tech === 'flugkopf' && a.go ? 6 : P.vSprint;
+    const vmax = a.tech === 'flugkopf' && a.go ? 6 : P.vTop;
     const v = clamp(need, 0, vmax);
     const k = 1 - Math.exp(-dt * (a.go ? 20 : 9));
     const tvx = d > 0.02 ? dx / d * v : 0, tvz = d > 0.02 ? dz / d * v : 0;

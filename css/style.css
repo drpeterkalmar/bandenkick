@@ -89,6 +89,13 @@ body.quer #bShot { right: calc(env(safe-area-inset-right, 0px) + 26px); bottom: 
 body.quer #bPass { right: calc(env(safe-area-inset-right, 0px) + 146px); bottom: calc(env(safe-area-inset-bottom, 0px) + 26px); }
 body.quer #bSprint { right: calc(env(safe-area-inset-right, 0px) + 150px); bottom: calc(env(safe-area-inset-bottom, 0px) + 136px); }
 body.quer #bSwitch { right: calc(env(safe-area-inset-right, 0px) + 36px); bottom: calc(env(safe-area-inset-bottom, 0px) + 166px); }
+/* n7 (Peter 14.10.: „keine Sprintfunktion mehr“): ohne Sprint-Knopf rücken Schuss, Pass und Wechsel tiefer in den Daumenbogen
+   unten rechts (hoch: Schuss 46 px tiefer, Pass 30 px tiefer, Wechsel zwischen Schuss und Pass; quer: der Sprint-Platz bleibt frei,
+   Schuss/Pass/Wechsel liegen dort schon im Daumenbogen) */
+body.sprintfrei #bSprint { display: none; }
+body.sprintfrei.hoch #bShot { right: calc(env(safe-area-inset-right, 0px) + 24px); bottom: calc(env(safe-area-inset-bottom, 0px) + 72px); }
+body.sprintfrei.hoch #bPass { right: calc(env(safe-area-inset-right, 0px) + 146px); bottom: calc(env(safe-area-inset-bottom, 0px) + 28px); }
+body.sprintfrei.hoch #bSwitch { right: calc(env(safe-area-inset-right, 0px) + 156px); bottom: calc(env(safe-area-inset-bottom, 0px) + 136px); }
 
 /* --- Karten (Start, Menü, Credits) --- */
 .overlay { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; padding: 16px; pointer-events: auto;
