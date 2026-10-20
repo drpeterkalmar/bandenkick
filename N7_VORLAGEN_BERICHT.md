@@ -307,3 +307,68 @@ Torraumgrenze). Sichtprüfung: die Kurve ist klar zu sehen, ohne Knick (kein Ver
    Kurve in diese Richtung. Je früher, desto stärker – nach einer Viertelsekunde wirkt nichts mehr.
 2. Direkt nach dem Schuss Stick zurück: der Ball steigt (Achtung Latte!), Stick vor: er senkt sich.
 3. Zu stark/zu schwach? `?nachdrall=0.6` bzw. `?nachdrall=1.5`; aus: `?nachdrall=0`. Bots ohne Nachdrall: `?nachdrallBot=0`.
+
+---
+
+## Vorlagen-Etappe E3 – Traumpass und Geben und Gehen (Release 0.5.3)
+
+Datenblatt #6 (Vorlage B, angepasst) und #7 (Vorlage A, angepasst). Neu `src/sim/perfekt.js`, Laufweg in `src/sim/bots.js`.
+
+### Was neu ist
+- **#6 Traumpass → Direktabnahme** (`?perfekt=1`): Bei jedem Pass zu einem Mitspieler wertet das Spiel den Treffpunkt: höchstens
+  **7 m** vor der Tormitte, Pass ≥ 3 m, kein Gegner ≤ 1,5 m am Treffpunkt und ≤ 1,2 m am Passweg (auch nicht der Tormann),
+  Wertung 0,67 · „Schussweg frei“ (Feldspieler des Gegners, auf 4 m) + 0,33 · „Empfänger frei“ ≥ 0,7. Dann:
+  - **goldener Ring** (pulsierend) unter dem Empfänger und **goldene Ballspur**, solange der Ball zu ihm unterwegs ist;
+  - schießt der Empfänger **direkt** (ohne Annahme; auch Volley/Kopfball), steigt die Schuss-Qualität um **0,4** (höchstens 1)
+    und die Wucht um × 1,1 – sichtbar als ein Schuss, der platzierter und härter kommt;
+  - Ereignis `perfektpass`; der Direktschuss trägt `perfekt` und zählt bei den Action-Momenten (n6) als Höhepunkt (Wertung
+    ≥ 0,7, Grund „traumpass“) – keine eigene Zeitlupe, Fan-Edit/Wiederholung unverändert.
+  - Bots nehmen einen Traumpass immer direkt ab (`?perfektBot=1`).
+- **#7 Geben und Gehen** (`?gebengehen=1`): Nach einem Pass prüft der Passgeber (Bot, auch der eben abgegebene Spieler des
+  Menschen) alle 0,5 s bis 2 s nach dem Pass, ob 4,5–7,5 m vor ihm Raum ist (Wertung √(1 − Abstand zum Tor / 24 m) × (1 − 0,3
+  je Gegner ≤ 2,5 m) ≥ 0,5), und läuft dann 2 s dorthin (Einheitstempo, kein Sprint). Der Lauf endet, wenn er den Ball bekommt
+  oder der Gegner ihn hat. Der Empfänger-Bot spielt ihn bevorzugt zurück an (Wert × 1,15). Ereignis `gebengehen`.
+- Werte gemessen gewählt (Datenblatt-Startwerte in Klammern): Abstand 7 m (8), Schussweg-Maß 4 m (ohne Maß), freier Passweg
+  neu, Qualität + 0,4 (+ 0,25), Laufziel 4,5–7,5 m, Rückpass-Bonus × 1,15 (+ 0,3).
+
+### Messung (Bot-Selbstspiel Stufe 2, 40 Spiele, Seeds 1–40)
+
+| Größe | Datenblatt-Ziel | ohne (`?perfekt=0&gebengehen=0`) | mit E3 |
+|---|---|---|---|
+| Traumpässe je Spiel | 2–5 | – | 3,3 |
+| … davon direkt abgenommen | – | – | 61 % |
+| Tore ≤ 4 s nach einem Traumpass | 40–55 % | – | 42 % |
+| Geben und Gehen (Passgeber ≥ 4 m nach vorn in 3 s, Anteil der Pässe ≥ 4 m) | 30–50 % | 21 % | 31 % |
+| Doppelpässe je Spiel (A → B → A in 4 s) | ≥ 3 | 20,6 | 24,4 |
+| Bot-Pässe kommen an | ≥ 60 % | 63 % | 60 % |
+| Tore je Schuss / Tore je Spiel | 25–35 % / ± 20 % | 28,9 % / 15,8 | 29,9 % / 16,6 |
+| Pässe je Spiel | – | 84,7 | 92,8 |
+| Hechter / Luftbälle je Spiel | ≥ 15 / ≥ 9 | 21,7 / 9,9 | 22,9 / 10,6 |
+| Hänger / Numerik | 0 / 0 | 0 / 0 | 0 / 0 |
+
+Einzeln: nur Traumpass (`?gebengehen=0`) 2,5 Traumpässe je Spiel, 52 % Tore danach; nur Geben und Gehen (`?perfekt=0`)
+33 %, Doppelpässe 24,2. Zusammen gibt es mehr Traumpässe (die Läufer stehen frei vor dem Tor), die einzelnen sind etwas
+schwerer zu verwerten.
+
+### Bewertung
+- Alle Datenblatt-Ziele erreicht; die Bot-Passquote liegt genau an der Grenze (60 %, vorher 63 %): die Läufer werden öfter
+  angespielt, wenn es eng ist. Der Rückpass-Bonus selbst spielt kaum eine Rolle (× 1,3 → 59 %, × 1,15 → 60 %, ohne → 60 %).
+- Tore nach Traumpass schwanken je 20 Spiele um ± 8 Punkte (≈ 70 Traumpässe), die Messung über 40 Spiele ist belastbarer.
+
+### Bilder
+`tests/shots/n7/e3_traumpass_quer.jpg`, `e3_traumpass_hoch.jpg` (`python3 tests/n7_e3_bilder.py quer|hoch`): Pass von hinten
+auf den freien Mitspieler vor dem Tor, 0,15/0,3/0,45 s danach und der Direktschuss. Sichtprüfung: goldener Ring unter dem
+Empfänger (pulsiert), kurze goldene Spur hinter dem Pass, der Direktschuss (150 km/h, q 0,9) mit normaler heller Spur; danach
+ist der Ring weg.
+
+### Tests E3
+- Neu `tests/node/traumpass.test.mjs` (21 Prüfungen: Wertung frei/Gegner am Treffpunkt/im Schussweg/Tormann im Passweg/zu weit,
+  Regler aus, Direktabnahme + 0,4 und härter, nur einmal, Lauf des Passgebers mit/ohne, Bot-Spiel mit allen Messgrößen).
+  Alle 35 Node-Tests grün, `tests/smoke.py` 0 Fehler.
+
+### Handy-Test für Peter (E3)
+1. Einem Mitspieler, der frei vor dem Tor steht, zupassen: leuchtet unter ihm ein **goldener Ring** und zieht der Ball eine
+   goldene Spur, ist es ein Traumpass – dann sofort **Schuss tippen**, bevor er den Ball annimmt: der Direktschuss kommt
+   härter und genauer. Aus: `?perfekt=0`; leichter auszulösen: `?perfektD=8`.
+2. Nach deinem Pass läuft der Spieler, den du gerade abgegeben hast, nach vorn – spiel ihn zurück an (Doppelpass). Vergleich:
+   `?gebengehen=0`.

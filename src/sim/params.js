@@ -317,6 +317,19 @@ export const DEFAULTS = {
                           // 12 → 1,4 m, 14 → 1,5 m, 20 → 1,6 m)
   nachdrallHoch: 5,       // U/s Rück-/Vorwärtsdrall bei vollem Stick
   nachdrallBot: 1,        // × Chance der Bots (0 = Bots nie)
+  // n7 Vorlagen E3 #6 (Vorlage B, angepasst): Traumpass → Direktabnahme (src/sim/perfekt.js). Empfänger ≤ perfektD m vor dem Tor,
+  // Pass ≥ perfektMin m, kein Gegner ≤ perfektFrei m, Wertung (Schussweg frei auf perfektWeg m, Empfänger frei) ≥ perfektSchwelle.
+  // Direktabnahme: Qualität + perfektQ, Wucht × perfektWucht. 0 = aus
+  perfekt: 1,             //                                                                         [?perfekt=0]
+  perfektQ: 0.4, perfektWucht: 1.1, perfektD: 7, perfektMin: 3, perfektFrei: 1.5, perfektWeg: 4, perfektSchwelle: 0.7, perfektPass: 1.2,
+  // (Datenblatt: 8 m, q + 0,25, Schussweg-Wertung ohne Maß – gemessen: mit 8 m und 1,2 m 8,5 Traumpässe je Spiel, mit 7 m, 4 m
+  // und freiem Passweg 3,5–4,5 (Ziel 2–5); Tore danach mit q + 0,25 ≈ 31 %, mit q + 0,4 ≈ 44 % (Ziel 40–55 %))
+  perfektBot: 1,          // Chance, dass ein Bot-Empfänger einen Traumpass direkt abnimmt
+  // E3 #7 (Vorlage A, angepasst): Geben und Gehen – der Passgeber (Bot, auch der eben abgegebene Spieler des Menschen) prüft alle
+  // ggTakt s, ob vor ihm Raum ist (Wertung ≥ ggSchwelle), und läuft dann laufT s Richtung Tor; der Empfänger-Bot spielt ihn
+  // bevorzugt an (Rückpass-Wert × 1 + ggBonus). 0 = aus
+  gebengehen: 1,          //                                                                         [?gebengehen=0]
+  laufT: 2, ggTakt: 0.5, ggSchwelle: 0.5, ggBonus: 0.15, // (Datenblatt-Bonus +0,3: gemessen kaum Wirkung, Bot-Pässe 59 statt 60 %)
   diveSpeed: 5.2,         // m/s seitlich beim Hechten
   diveT: 0.38,            // s Flugphase des Hechtsprungs
   diveReach: 1.25,        // m Reichweite im Hechtsprung

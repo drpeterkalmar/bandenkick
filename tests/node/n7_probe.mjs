@@ -30,7 +30,7 @@ export function emptyStats() {
     longDrib: 0, maxDrib: 0, cornerT: 0, energyMin: [], lowT: 0,
     // Datenblatt-Messgrößen (Abschnitt 5)
     acuteGoals: 0, acuteShots: 0, air: 0, airGoals: 0, doubles: 0, gg: 0, ggN: 0, passOk: 0, passInt: 0, passN: 0,
-    cornerTouches: 0, cornerStuck: 0, perfekt: 0, perfektGoals: 0, nachdrall: 0, stumble: 0, rausBlock: 0,
+    cornerTouches: 0, cornerStuck: 0, perfekt: 0, perfektGoals: 0, perfektShot: 0, nachdrall: 0, stumble: 0, rausBlock: 0,
   };
 }
 
@@ -89,6 +89,7 @@ export function measureGame(qs, mix, s) {
       if (e.type === 'dive') r.dives++;
       if (e.type === 'air') { r.air++; lastAir = { t: g.t, team: p ? p.team : -1 }; }
       if (e.type === 'perfektpass') { r.perfekt++; lastPerf = { t: g.t, team: e.team }; }
+      if (e.type === 'kick' && e.perfekt) r.perfektShot++;
       if (e.type === 'stolpern') r.stumble++;
       if (e.type === 'block') r.rausBlock++;
       if (e.type === 'nachdrall') r.nachdrall++;
@@ -209,7 +210,7 @@ export function summary(r) {
     longDrib: r.longDrib, maxDrib: r.maxDrib, cornerSMin: r.cornerT / r.minutes,
     acuteShare: pc(r.acuteGoals, r.goals), acuteGoals: r.acuteGoals, acuteShots: r.acuteShots, airPerGame: r.air / r.games, airGoals: r.airGoals,
     doublesPerGame: r.doubles / r.games, ggShare: pc(r.gg, r.ggN), passOkShare: pc(r.passOk, r.passN), passIntShare: pc(r.passInt, r.passN),
-    cornerTouchesPerGame: r.cornerTouches / r.games, cornerStuck: r.cornerStuck, perfektPerGame: r.perfekt / r.games, perfektGoalShare: pc(r.perfektGoals, r.perfekt),
+    cornerTouchesPerGame: r.cornerTouches / r.games, cornerStuck: r.cornerStuck, perfektPerGame: r.perfekt / r.games, perfektGoalShare: pc(r.perfektGoals, r.perfekt), perfektShotShare: pc(r.perfektShot, r.perfekt),
     nachdrallPerGame: r.nachdrall / r.games, stumblePerGame: r.stumble / r.games, blockPerGame: r.rausBlock / r.games,
     energyMin: r.energyMin.length ? r.energyMin.reduce((a, b) => a + b, 0) / r.energyMin.length : null, lowShare: pc(r.lowT, r.minutes * 60),
   };
@@ -225,7 +226,7 @@ export function printSummary(label, s) {
   console.log(`  langsame Bälle (< 45 km/h an den Händen) gefangen ${f(s.slowCatch, 0)} % (${s.slowN}) · Fangen/Abwehren/Hechten je Spiel ${f(s.catchesPerGame)}/${f(s.parriesPerGame)}/${f(s.divesPerGame)} · Tore ≤ 2 s nach Parade ${s.afterParry} = ${f(s.afterParryShare)} %, davon Nachschuss ${s.rebound} = ${f(s.reboundShare)} % der Tore`);
   console.log(`  Ballverluste beim Führen ${f(s.lossMin, 2)}/min (Zweikampf ${f(s.duelMin, 2)}, verspringt ${f(s.freeMin, 2)}) · Ball am Fuß ${f(s.footSMin)} s/min · Grätschen je Spiel ${f(s.tackleStartPerGame)} (Treffer ${f(s.tacklesPerGame)}, Ballgewinn ${f(s.tackleBallPerGame)} = ${f(s.tackleBallShare, 0)} %)`);
   console.log(`  Datenblatt: Tore aus spitzem Winkel ${s.acuteGoals} = ${f(s.acuteShare)} % der Tore (${s.acuteShots} Schüsse) · Luftbälle/Spiel ${f(s.airPerGame)} (${s.airGoals} Tore) · Doppelpässe/Spiel ${f(s.doublesPerGame)} · Geben und Gehen ${f(s.ggShare, 0)} % der Pässe ≥ 4 m · Pässe kommen an ${f(s.passOkShare, 0)} %, abgefangen ${f(s.passIntShare, 0)} % · Ballkontakte in den Ecken/Spiel ${f(s.cornerTouchesPerGame)}, eingeklemmt ${s.cornerStuck}`);
-  if (s.perfektPerGame || s.nachdrallPerGame || s.stumblePerGame || s.blockPerGame) console.log(`  Traumpässe/Spiel ${f(s.perfektPerGame)} (Tore danach ${f(s.perfektGoalShare, 0)} %) · Nachdrall/Spiel ${f(s.nachdrallPerGame)} · Heber-Stolpern/Spiel ${f(s.stumblePerGame)} · Blocken/Spiel ${f(s.blockPerGame)}`);
+  if (s.perfektPerGame || s.nachdrallPerGame || s.stumblePerGame || s.blockPerGame) console.log(`  Traumpässe/Spiel ${f(s.perfektPerGame)} (direkt abgenommen ${f(s.perfektShotShare, 0)} %, Tore danach ${f(s.perfektGoalShare, 0)} %) · Nachdrall/Spiel ${f(s.nachdrallPerGame)} · Heber-Stolpern/Spiel ${f(s.stumblePerGame)} · Blocken/Spiel ${f(s.blockPerGame)}`);
   console.log(`  Dribblings > 8 s: ${s.longDrib}, längstes ${f(s.maxDrib)} s · Ball am Fuß in den Ecken ${f(s.cornerSMin, 2)} s/min${s.energyMin != null ? ` · Tormann-Energie Minimum Ø ${f(s.energyMin, 0)}, unter der Fanggrenze ${f(s.lowShare)} % der Spielzeit` : ''}`);
 }
 

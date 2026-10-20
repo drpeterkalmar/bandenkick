@@ -86,6 +86,12 @@ export class Bots {
       if (d < 2.4 && rel < 4.5 && b.p.y < 0.7) owner = p.id;
     }
     this.owner = owner; this.ownerTeam = owner >= 0 ? g.players[owner].team : -1;
+    // n7 E3 #7: neuer Pass zu einem Mitspieler → der Passgeber prüft „Geben und Gehen“
+    const lp = g.lastPass;
+    if (P.gebengehen && lp && lp.t !== this.passSeen) {
+      this.passSeen = lp.t;
+      if (lp.to >= 0 && lp.to !== lp.from && lp.from !== g.rules.keeper[g.players[lp.from].team]) this.brain[lp.from].gg = { t0: lp.t, to: lp.to, next: lp.t, run: null };
+    }
     for (let team = 0; team < 2; team++) this.roles(team);
     void P;
   }
@@ -195,6 +201,7 @@ export class Bots {
     const phase = g.rules.phase;
     if (phase === 'kickoff') return this.kickoffInput(pl, br, inp, L);
     if (pl.air || pl.fall || pl.slide || this.airCheck(pl, br, L)) { inp.mx = 0; inp.mz = 0; return inp; } // Luftball/Grätsche läuft
+    if (br.gg && (br.role === 'support' || br.role === 'cover') && this.gebenGehen(pl, br, inp)) return inp;
     switch (br.role) {
       case 'keeper': this.keeper(pl, br, inp, L, K); break;
       case 'carrier': this.carrier(pl, br, inp, L); break;
@@ -510,7 +517,9 @@ export class Bots {
       const succ = clamp((lane - 0.4) / 1.4, 0, 0.97) * clamp(open / 2.2, 0.25, 1) * (1 - D0 / 35);
       const mid = this.loseVal(team, (b.p.x + tx) / 2, (b.p.z + tz) / 2);
       const val = this.keepVal(team, tx, tz) - (isKp ? 0.03 : 0);
-      if (lane > 1.0) opts.push({ kind: 'pass', u: succ * val + (1 - succ) * mid, act: () => { pl.kickAt({ kind: 'pass', lead: true, to: m.id, noise: L.noise / 1.3 }); this.stats.passes++; } });
+      // n7 E3: der Mitspieler, der mir eben zugespielt hat, läuft in die Tiefe → Rückpass × (1 + ggBonus)
+      const mb = this.brain[m.id], back = g.P.gebengehen && mb.gg && mb.gg.run && mb.gg.to === pl.id ? 1 + g.P.ggBonus : 1;
+      if (lane > 1.0) opts.push({ kind: 'pass', u: (succ * val + (1 - succ) * mid) * (succ * val + (1 - succ) * mid > 0 ? back : 1), act: () => { pl.kickAt({ kind: 'pass', lead: true, to: m.id, noise: L.noise / 1.3 }); this.stats.passes++; } });
       else {
         // Passweg zu: Chip über den Gegner in den Laufweg, wenn der Gegner nicht direkt vor dem Ball steht
         const blk = this.blocker(team, b.p.x, b.p.z, tx, tz);
@@ -591,10 +600,46 @@ export class Bots {
     return best;
   }
 
+  // n7 Vorlagen E3 #7 (Vorlage A, angepasst): Geben und Gehen. Nach dem Pass prüft der Passgeber alle ggTakt s (bis laufT s
+  // nach dem Pass), ob vor ihm Raum ist: Ziel 4,5–7,5 m Richtung Tor, Wertung = √(1 − Abstand zum Tor / 24 m) × (1 − 0,3 je Gegner
+  // ≤ 2,5 m am Ziel). Ab ggSchwelle läuft er laufT s dorthin (Einheitstempo). Endet, sobald er den Ball hat oder der Gegner.
+  // → true = Eingabe gesetzt
+  gebenGehen(pl, br, inp) {
+    const g = this.g, P = g.P, b = g.ball, cage = g.cage, team = pl.team, gg = br.gg;
+    if (this.ownerTeam === 1 - team || (b.held >= 0 && g.players[b.held].team !== team) || this.owner === pl.id) { br.gg = null; return false; }
+    if (!gg.run) {
+      if (g.t > gg.t0 + P.laufT) { br.gg = null; return false; }
+      if (g.t < gg.next) return false;
+      gg.next = g.t + P.ggTakt;
+      const gx = this.oppGoalX(team), dir = Math.sign(gx);
+      let best = null, bw = P.ggSchwelle;
+      for (const fwd of [4.5, 6, 7.5]) for (const dz of [0, -2.5, 2.5]) {
+        const x = clamp(pl.x + dir * fwd, -cage.hx + 1.2, cage.hx - 1.2), z = clamp(pl.z * 0.7 + dz, -cage.hz + 1, cage.hz - 1);
+        if (g.rules.inBox(1 - team, x, z)) continue;
+        let n = 0; for (const o of g.players) if (o.team !== team && Math.hypot(o.x - x, o.z - z) < 2.5) n++;
+        const w = Math.sqrt(clamp(1 - Math.hypot(gx - x, z) / 24, 0, 1)) * Math.max(0, 1 - 0.3 * n);
+        if (w >= bw) { bw = w; best = [x, z]; }
+      }
+      if (!best) return false;
+      gg.run = { x: best[0], z: best[1], until: g.t + P.laufT };
+      g.events.push({ type: 'gebengehen', player: pl.id, to: gg.to, x: best[0], z: best[1] });
+    }
+    if (g.t > gg.run.until) { br.gg = null; return false; }
+    this.moveTo(inp, pl, gg.run.x, gg.run.z, true, 0.6);
+    inp.speedCap = 1;
+    return true;
+  }
+
   // Anspielstation: freien Raum vor dem Ball suchen
   support(pl, br, inp, L) {
     const g = this.g, b = g.ball, cage = g.cage, team = pl.team;
     const pp = g.passPlan;
+    // n7 E3: Traumpass zu mir → mit der Chance perfektBot direkt abnehmen (Schuss vormerken, sobald der Ball bald da ist)
+    const pf = g.perfekt;
+    if (pf && pf.to === pl.id && !pf.used && br.pfT !== pf.t && this.ttb[pl.id].t < 0.7) {
+      br.pfT = pf.t;
+      if (g.rng.next() < g.P.perfektBot) pl.kickAt({ kind: 'shot', auto: true, mode: 'std', power: Math.min(1, 0.7 + L.shotPow + 0.2 * g.rng.next()), noise: L.aimNoise, skill: L.skill });
+    }
     if (pp && pp.to === pl.id && b.held < 0 && g.t < pp.t + 1.2) { // Pass in den Laufweg: Empfänger-Hilfe (wie beim Menschen)
       inp.mx = 0; inp.mz = 0; inp.speedCap = 1;
       return;

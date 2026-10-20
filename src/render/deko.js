@@ -190,7 +190,7 @@ export class Deko {
     this.spuren.update(dt);
     if (ctx.game && ctx.live) this.watchPlayers(ctx.game);
     const b = ctx.ball;
-    if (b && ctx.cam) this.spur.update(dt, b.p, b.v, ctx.cam, !!ctx.live && !this.paused, !!ctx.still);
+    if (b && ctx.cam) this.spur.update(dt, b.p, b.v, ctx.cam, !!ctx.live && !this.paused, !!ctx.still, !!ctx.gold);
     if (ctx.cam) {
       // n4: ctx.pxK = Renderskala des Kino-Looks (Punkte werden im kleineren Render-Target gezeichnet)
       const h = this.renderer.getDrawingBufferSize(this._v2 || (this._v2 = new THREE.Vector2())).y, px = h / (2 * Math.tan(ctx.cam.fov * Math.PI / 360)) * (ctx.pxK || 1);

@@ -4,6 +4,7 @@
 // Ballphysik, Luftbälle air.js. ?treffpunkt=1 = alte Profi-Steuerung (freie Richtung, Spin aus dem Treffpunkt).
 // Hilfen ziehen nur, solange der Spieler nichts Deutliches tut.
 import { setKick, passDist } from './kickplan.js';
+import { perfektPass } from './perfekt.js';
 import { planPass } from './pass.js';
 import { planShot } from './shot.js';
 import { planAir, planAirHelp, stepAir, stepFall } from './air.js';
@@ -878,7 +879,11 @@ export class Player {
     if (to < -1) to = -1; // Challenge-Ziel (virtuell)
     if (game.match) { game.rules.touch(this); game.passTo = to; if (plan.tech !== 'kopf' && plan.tech !== 'flugkopf' && plan.to !== this.id) game.rules.markKick(this, dx, dz, to); }
     game.passPlan = plan.kind === 'pass' && plan.meet ? { to: plan.to ?? -1, from: this.id, x: plan.meet[0], z: plan.meet[1], t: game.t + (plan.T || 1), chip: !!plan.chip, bank: plan.bank || 0 } : null;
-    game.events.push({ type: 'kick', kind: plan.kind === 'air' ? 'shot' : plan.kind, tech: plan.tech, player: this.id, human: game.human === this.id, speed, x: ball.p.x, y: ball.p.y, z: ball.p.z, dx, dz, to, q: plan.q ?? null });
+    game.events.push({ type: 'kick', kind: plan.kind === 'air' ? 'shot' : plan.kind, tech: plan.tech, player: this.id, human: game.human === this.id, speed, x: ball.p.x, y: ball.p.y, z: ball.p.z, dx, dz, to, q: plan.q ?? null, perfekt: !!plan.perfekt });
+    if (game.match && plan.kind === 'pass') {
+      perfektPass(game, this, plan, ball.p.x, ball.p.z); // n7 E3: Traumpass?
+      game.lastPass = { from: this.id, to: plan.to ?? -1, t: game.t }; // n7 E3: für Geben und Gehen
+    }
     return plan;
   }
 

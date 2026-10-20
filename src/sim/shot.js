@@ -6,6 +6,7 @@
 // aus dem Ziel-Löser (echte Flugphysik inkl. Kurve), der Flug danach ist die normale Ballphysik.
 import { aimAt, spinOf, clamp } from './kickplan.js';
 import { shotTechnique, curveSign } from './technique.js';
+import { perfektAbnahme } from './perfekt.js';
 
 // Tor, auf das der Spieler schießt: im Spiel/Challenge nach Mannschaft (0 → rechts), im freien Training das Tor in
 // Blickrichtung – beim Luftball das Tor aus dem Plan (beim Drücken; Nacht 2d: der Fallrückzieher schaut jetzt richtig
@@ -151,11 +152,13 @@ export function planShot(game, pl, opts = {}) {
   const Q = shotQuality(feat, P);
   // Technik des Schützen (Bots je Stufe, Mensch 1): wirkt wie ?schusshilfe= – gute Technik platziert auch aus
   // mittelmäßiger Lage noch gut
-  const q = clamp(Math.pow(Q.qEff, 1 / (opts.skill || 1)) * (opts.qMul ?? 1), 0.02, 1);
+  // n7 E3: Direktabnahme nach einem Traumpass – Qualität + perfektQ, Wucht × perfektWucht
+  const pf = opts.preview ? null : perfektAbnahme(game, pl);
+  const q = clamp(Math.pow(Q.qEff, 1 / (opts.skill || 1)) * (opts.qMul ?? 1) + (pf ? pf.dq : 0), 0.02, 1);
   const af = aimFactor(q);
   const aim = [gx, 0.6 + (corner.y - 0.6) * af, corner.z * af];
   let speed, side = 0, back = 0, noiseDeg;
-  const W = Math.max(0.3, P.wucht ?? 1);
+  const W = Math.max(0.3, P.wucht ?? 1) * (pf ? pf.wucht : 1);
   if (opts.speed != null) {
     speed = opts.speed * speedFactor(q);
     side = opts.side || 0; back = opts.back || 0;
@@ -184,5 +187,5 @@ export function planShot(game, pl, opts = {}) {
     const need = Math.atan2(aim[1] - from[1] + 0.5 * P.g * tf * tf, D);
     sol = { dir: [dx / D, dz / D], el: need > 0.45 ? 0.035 : clamp(need, 0.02, 0.45), t: tf, ok: false, err: 0 };
   }
-  return { kind: 'shot', mode, tech, foot, q, qRaw: Q.q, factors: Q.factors, corner, aim, speed, side, back, noiseDeg, dir: sol.dir, el: sol.el, elRad: sol.el, ok: sol.ok, flightT: sol.t, from };
+  return { kind: 'shot', mode, tech, foot, q, qRaw: Q.q, factors: Q.factors, corner, aim, speed, side, back, noiseDeg, dir: sol.dir, el: sol.el, elRad: sol.el, ok: sol.ok, flightT: sol.t, from, perfekt: !!pf };
 }

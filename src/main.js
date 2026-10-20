@@ -261,7 +261,7 @@ const me = () => game.players[Math.max(0, game.human)];
 }
 
 // ---------------- Szene aufbauen ----------------
-let field, ballMesh, blob, gran, marker, figs = [], capsule = null, figSlot = null;
+let field, ballMesh, blob, gran, marker, figs = [], capsule = null, figSlot = null, goldRing = null;
 async function boot() {
   const texLoader = new THREE.TextureLoader();
   const tl = (u) => texLoader.loadAsync(u);
@@ -289,6 +289,10 @@ async function boot() {
   capsule = makePlayer(0xff7a1a);
   marker = capsule.marker;
   scene.add(marker);
+  // n7 E3: goldener Ring unter dem Empfänger eines Traumpasses
+  goldRing = new THREE.Mesh(new THREE.RingGeometry(0.5, 0.66, 48).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xffc83a, transparent: true, opacity: 0.9, depthWrite: false }));
+  goldRing.position.y = 0.03; goldRing.visible = false; goldRing.renderOrder = 3; goldRing.name = 'traumpass';
+  scene.add(goldRing);
   if (A) {
     for (let team = 0; team < 2; team++) for (let i = 0; i < 3; i++) {
       const av = new Avatar(A, ROSTER[team][i % ROSTER[team].length], team, { shadows: quality.avatarShadows, cull: AV_CULL, ik: AV_IK, glatt: GLATT, traeg: qs.get('traeg') === '1' /* n5: Sicherheitsnetz nur auf Wunsch (Bildrate) */, deko: DEKO ? { sunDir, num: BIB_NUMS[team][i], extShadow: true } : null });
@@ -718,7 +722,7 @@ function frame() {
   const pxK = kino && kino.pipeline && kino.stages.scale ? kino.renderScale : 1;
   gran.points.material.size = 0.05 * pxK;
   if (deko) deko.update(dt, { pxK, inGame: (mode === 'play' || mode === 'pause') && !rf && !gcam.override, hoch: gcam.mode === 'hoch',
-    live: mode === 'play' && !rf, paused: mode === 'pause', still: frozen || mode === 'pause', game, cam: gcam.cam, ball: { p: ballMesh.position, v: b.v } });
+    live: mode === 'play' && !rf, paused: mode === 'pause', still: frozen || mode === 'pause', game, cam: gcam.cam, ball: { p: ballMesh.position, v: b.v }, gold: !rf && !!traumpass() });
   hud.tick(dt);
   const touchUI = document.body.classList.contains('touch');
   const km = keeperMode();
@@ -1051,6 +1055,20 @@ function drawPlayers(dt, a, rf = null) {
   marker.position.set(mx, 0, mz);
   marker.rotation.y = -pl.face;
   marker.visible = mode === 'play' && game.human >= 0;
+  // n7 E3: Traumpass läuft → goldener Ring (pulsierend) unter dem Empfänger
+  const pf = traumpass();
+  if (goldRing) {
+    goldRing.visible = !!pf;
+    if (pf) {
+      const r = game.players[pf.to], rx = prev.px[r.id] + (r.x - prev.px[r.id]) * a, rz = prev.pz[r.id] + (r.z - prev.pz[r.id]) * a;
+      goldRing.position.set(rx, 0.03, rz); goldRing.scale.setScalar(1 + 0.12 * Math.sin(performance.now() / 90));
+    }
+  }
+}
+// n7 E3: laufender Traumpass (Ball unterwegs zum Empfänger) oder null
+function traumpass() {
+  const pf = game.perfekt;
+  return mode === 'play' && pf && !pf.used && game.lastTouch === pf.from && game.ball.held < 0 && game.t <= pf.t + pf.T ? pf : null;
 }
 
 // Qualitäts-Automatik (nur ohne ?q=): liegt der Bildabstand im Spiel 3 s lang über 24 ms (< ~42 fps), erst die

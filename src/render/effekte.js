@@ -120,10 +120,13 @@ export class BallSpur {
   reset() { this.since = 0; this.mesh.visible = false; }
   contact() { this.since = 0; }
   // je Bild: Ball (Position p, Geschwindigkeit v), Kamera; on = Spielansicht ohne Wiederholung; still = angehalten
-  update(dt, p, v, cam, on, still = false) {
+  // gold (n7 E3): Traumpass unterwegs – goldene Spur auch bei Pass-Tempo
+  update(dt, p, v, cam, on, still = false, gold = false) {
     if (!on) { this.reset(); return; }
     if (!still) this.since += dt; // angehalten (Pause, Test): Spur bleibt am Ball, Zeit steht
-    const speed = Math.hypot(v.x, v.y, v.z), k = Math.max(0, Math.min(1, (speed - 17) / 12)), tau = Math.min(TAU, this.since);
+    const speed = Math.hypot(v.x, v.y, v.z), tau = Math.min(TAU, this.since);
+    const k = gold ? Math.max(0.9, Math.min(1, (speed - 17) / 12)) * Math.min(1, speed / 4) : Math.max(0, Math.min(1, (speed - 17) / 12));
+    if (gold !== this.gold) { this.gold = gold; if (gold) this.mat.uniforms.color.value.setRGB(1.0, 0.62, 0.1); else this.mat.uniforms.color.value.setRGB(1.0, 0.93, 0.7); }
     if (k <= 0.01 || tau < 0.02) { this.mesh.visible = false; return; }
     const P = this.pos, A = this.alpha, cp = cam.position;
     for (let s = 0; s < NT; s++) {

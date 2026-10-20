@@ -152,6 +152,11 @@ Schuss, sondern klatscht nur ab“)** – gilt für alle Spieler, Mensch und Bot
 Hälfte in den ersten 0,08 s), die Kurve macht die echte Ballphysik. Nur die Stick-Änderung nach dem Kontakt zählt. Bots nutzen
 ihn selten (5/15/30 % der Schüsse je Stufe). `?nachdrall=0` = aus.
 
+**n7 Vorlagen E3 – Traumpass und Geben und Gehen (20.10.):** spielst du einem Mitspieler zu, der frei vor dem Tor steht (bis 7 m,
+Schuss- und Passweg frei), leuchtet unter ihm ein **goldener Ring** und der Ball zieht eine **goldene Spur** – nimmst du ihn
+**direkt** (Schuss tippen, bevor er den Ball annimmt), kommt der Schuss genauer und härter. Nach einem Pass läuft der Passgeber
+in den freien Raum Richtung Tor (**Geben und Gehen**), die Bots spielen ihn gern zurück an. `?perfekt=0`, `?gebengehen=0` = aus.
+
 **Ballmagnet (Nacht 2c, Peter: „leichter ballmagnet, sonst kein dribbling“; Nacht 2d: „viel mehr Ballmagnet“ → Stärke 1,2
 statt 0,5, im Sprint 70 % statt 45 %):** zwischen den echten Ballkontakten führt
 eine weiche Feder den Ball, den du zuletzt berührt hast, auf die Linie deines Sticks und bremst ihn, wenn er zu weit
@@ -228,6 +233,8 @@ Ball mit (Sohle/Außenseite). `?zack=0` = altes Gefühl aus Nacht 1 zum Vergleic
 | `?winkel=0` … `1` | n7 E1 Tormann-Stellung: Anteil Richtung Winkelhalbierende (Standard 0,5, `0` = alt) |
 | `?raus=0`, `?rausD=5`, `?rausMarge=1`, `?rausMax=1`, `?blockSpreiz=1` | n7 E1 Herauslaufen 1 gegen 1 aus; Schusspunkt vor dem Tor (m); so viel früher muss ein Verteidiger dort sein (m); höchstens so weit über die Torraumkante (m); Körperbreite beim Blocken (m) |
 | `?stolpern=0.25` | n7 E1 Chance, dass der Tormann bei einem Heber über ihn stolpert (`0` = nie) |
+| `?perfekt=0`, `?perfektD=7`, `?perfektQ=0.4`, `?perfektWucht=1.1`, `?perfektBot=1` | n7 E3 Traumpass aus; höchstens so weit vor dem Tor (m); Direktabnahme: Qualität +, Wucht ×; Chance, dass Bots ihn direkt nehmen |
+| `?gebengehen=0`, `?laufT=2`, `?ggSchwelle=0.5`, `?ggBonus=0.15` | n7 E3 Geben und Gehen aus; Laufzeit (s); Mindest-Wertung des Raums; Rückpass-Bonus der Bots |
 | `?nachdrall=0` … `2`, `?nachdrallT=0.25`, `?nachdrallSeite=14`, `?nachdrallHoch=5`, `?nachdrallBot=1` | n7 E2 Nachdrall nach dem Schuss: Stärke (`0` = aus); Fenster (s); Seitendrall bzw. Rück-/Vorwärtsdrall bei vollem Stick (U/s); × Chance der Bots (Stufe 1/2/3: 5/15/30 %) |
 | `?hilfe=0` … `1` | Stärke der Ballführungs-Hilfe (lenkt den Spieler zum Ball) |
 | `?magnet=0` … `2` | Ballmagnet (Standard 1,8 seit n7, davor 1,2; Nacht 2c 0,5; 0 = Ballführung wie Nacht 2b). Feinregler: `?magnetK=112`, `?magnetC=20`, `?magnetAcc=42`, `?magnetLead=0.7`, `?magnetSprint=0.7` (Nacht 2c 0,45), `?magnetOpp=0.5`, `?magnetShield=0.3`, `?magnetTurn0=60`, `?magnetTurn1=120`, `?magnetTurnMin=0.5` (n6 0,25), `?magnetKehr=0.15` (Kehrtwende lässt los), `?magnetSlide=0` (Magnet während einer gegnerischen Grätsche) |
@@ -338,6 +345,8 @@ node tests/node/hold_probe.mjs      # n7: Skript-Mensch dribbelt gegen Stufe-2-V
 node tests/node/keeper_catch_probe.mjs "" 12  # n7: Fangquote erster Torwartkontakt je Schusstempo (alle / direkte Schüsse)
 node tests/node/tormann_e1.test.mjs # n7 E1: Müdigkeit, Kondition je Stufe, Winkelhalbierende, 1 gegen 1, Blocken, Heber-Stolpern, Bot-Spiel
 SPITZ=1 node tests/node/keeper_series.mjs 300  # n7 E1: Schussserie aus spitzem Winkel (Winkelhalbierende)
+node tests/node/traumpass.test.mjs  # n7 E3: Traumpass (Wertung, Direktabnahme), Geben und Gehen, Bot-Spiel
+python3 tests/n7_e3_bilder.py quer   # n7 E3: Fotos goldener Ring, goldene Spur, Direktschuss
 node tests/node/nachdrall.test.mjs  # n7 E2: Nachdrall (Abklingen, Kurve/Steigen/Senken nach 15 m, Bot-Spiel mit/ohne)
 python3 tests/n7_e2_bilder.py quer   # n7 E2: Stroboskop-Bild desselben Schusses ohne/mit Nachdrall
 python3 tests/n7_e1_bilder.py quer   # n7 E1: Fotos Handschuhe frisch/müde, Blocken, Stolpern
@@ -385,6 +394,9 @@ python3 tools/fetch_assets.py && python3 tools/make_assets.py   # Assets neu bau
 Browser-Tests laufen headless über die GPU (ANGLE/Metal), nie zwei Browser gleichzeitig.
 
 ## Änderungen
+- **n7 Vorlagen E3 Traumpass und Geben und Gehen (20.10., Version 0.5.3)** – Pass auf einen freien Mitspieler bis 7 m vor dem Tor:
+  goldener Ring + goldene Ballspur, Direktschuss besser und härter (Tore danach 42 %); nach dem Pass läuft der Passgeber in die
+  Tiefe (Doppelpässe 20,6 → 24,4 je Spiel).
 - **n7 Vorlagen E2 Nachdrall (20.10., Version 0.5.2)** – gleich nach dem Schuss den Stick zur Seite: der Ball zieht über echten
   Drall eine Kurve (15-m-Schuss ≈ 1,5 m), zurück = steigt, vor = senkt sich; Bots je Stufe 5/15/30 % der Schüsse.
 - **n7 Vorlagen E1 Tormann (20.10., Version 0.5.1)** – Tormann-Müdigkeit (Paraden kosten Energie, müde fängt er mittlere Bälle
