@@ -290,6 +290,24 @@ export const DEFAULTS = {
   abprallW0: 25, abprallW1: 70,      // ° Winkel zur Richtung „aus dem Tor heraus“ (zur Seite, an der der Ball vorbeikommt)
   faustH: 1.6,            // m
   nachfassen: 0.5,        // s nach dem Abklatschen fängt er den Abpraller nicht gleich wieder (sonst kein Nachschuss)
+  // n7 Vorlagen E1 #1 (Vorlage B, schneller getaktet): Tormann-Müdigkeit je Mannschaft. Energie 100; jede Parade kostet (Fangen
+  // muedeFangK, Hechtfang/-abwehr muedeHecht, Abklatschen muedeAbwehr), +muedeErh je Sekunde Spielzeit. Unter muedeFang sinkt die
+  // Fanggrenze für mittlere Bälle (bis −muedeSenk m/s bei Energie 0) und er steht langsamer auf (zwischen Energie 80 und 20 bis
+  // Tempo × muedeAuf). Sichtbar: die Handschuhe leuchten schwächer. 0 = aus
+  muede: 1,               //                                                                         [?muede=0]
+  // (Datenblatt-Startwerte −5/−10/−7, +4/s: Energie fiel im Spiel kaum unter 85 – gemessen gewählt: Minimum je Spiel ≈ 45)
+  muedeFang: 60, muedeErh: 1, muedeFangK: 8, muedeHecht: 18, muedeAbwehr: 14, muedeSenk: 5, muedeAuf: 0.6,
+  // E1 #2 (Vorlage A): Stellung auf der Winkelhalbierenden zwischen Ball → linker und Ball → rechter Pfosten statt auf der Linie
+  // Tormitte → Ball (Tiefe wie bisher). 0 = alt
+  winkel: 0.5,            // Anteil 0 … 1 (gemessen: 1 brachte nicht weniger Tore aus spitzem Winkel)  [?winkel=0]
+  // E1 #3 (Vorlage A/B, angepasst): Herauslaufen 1 gegen 1 – „Wettlauf zum Schusspunkt“ (rausD m vor dem Tor auf dem Weg des
+  // Angreifers): ist kein Verteidiger mindestens rausMarge m näher dran als der Angreifer, läuft der Tormann ihm entgegen, höchstens
+  // bis Torraumkante + rausMax m (Hände nur im Torraum). Draußen blockt er mit gespreizten Beinen (Körper-Breite blockSpreiz m
+  // für flache Bälle). Ein zweiter Angreifer nah am Tor bremst das Herauslaufen auf 70 %. 0 = aus
+  raus: 1,                //                                                                         [?raus=0]
+  rausD: 5, rausMarge: 1, rausMax: 1, blockSpreiz: 1.0, rausAbst: 2.2, rausVor: 4, // m Abstand zum Angreifer beim Entgegenlaufen; Angreifer höchstens rausD + rausVor m vor dem Tor
+  // E1 #4 (Vorlage B, gedämpft): Heber (Chip) über den Tormann – mit dieser Chance stolpert er (0,6 s langsam, keine Hände)
+  stolpern: 0.25,         //                                                                         [?stolpern=0]
   diveSpeed: 5.2,         // m/s seitlich beim Hechten
   diveT: 0.38,            // s Flugphase des Hechtsprungs
   diveReach: 1.25,        // m Reichweite im Hechtsprung

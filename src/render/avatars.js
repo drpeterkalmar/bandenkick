@@ -45,7 +45,8 @@ const IKZ = [0, 0, 0];
 const TR_KNOCHEN = ['Bip01_L_Thigh', 'Bip01_L_Calf', 'Bip01_L_Foot', 'Bip01_R_Thigh', 'Bip01_R_Calf', 'Bip01_R_Foot'];
 const TR_GRENZE = 0.45, TR_WEG = 0.08, TR_TAU = 0.04;
 const _qi = new THREE.Quaternion(), _qa = new THREE.Quaternion(), _va = new THREE.Vector3();
-const TECH_WERTE = ['pitch', 'roll', 'drop', 'thigh', 'calf', 'twist', 'thigh2', 'arms', 'nod'];
+const GLOVE_GRAU = new THREE.Color(0x5f625a); // n7 E1: Handschuhe eines müden Tormanns
+const TECH_WERTE = ['pitch', 'roll', 'drop', 'thigh', 'calf', 'twist', 'thigh2', 'arms', 'nod', 'spreiz'];
 const KERN = new Set([...LOCO, 'idle', 'crouch']);
 // Knochennamen je Seite (statt je Bild per Zeichenkette zusammengesetzt)
 const BN = Object.fromEntries(['L', 'R'].map((sd) => [sd, Object.fromEntries(['Thigh', 'Calf', 'Foot', 'UpperArm', 'Forearm'].map((k) => [k, `Bip01_${sd}_${k}`]))]));
@@ -246,6 +247,7 @@ export class Avatar {
     this.meshes.push(this.bib);
     // Tormann: leuchtende Handschuhe + Bodenring
     const gm = new THREE.MeshStandardMaterial({ color: 0xe8ff6a, emissive: 0xa8f000, emissiveIntensity: 1.25, roughness: 0.6 });
+    this.gloveMat = gm;
     this.gloves = ['Bip01_L_Hand', 'Bip01_R_Hand'].map((b) => {
       const s = new THREE.Mesh(new THREE.SphereGeometry(4.2, 12, 8), gm); // Knochen-Raum ist in cm (Skalierung 0,01)
       s.scale.set(1.55, 0.7, 1.15); s.position.set(6.5, 0, 0); // flach wie eine Hand mit Handschuh
@@ -444,6 +446,11 @@ export class Avatar {
     this.root.position.y = pl.jumpY || 0;
     const proc = plantK > 0.01 || this.lean > 0.01 || this.trAn > 0 || this.kickVor !== null || this.vorKick || (this.schwung || 0) > 0.01 || Math.abs(this.leanP) + Math.abs(this.leanR) > 0.01 || this.dive > 0.01 || kt < 0.4 || this.holdW > 0.01 || this.ready > 0.05 || this.tpW > 0.01 || (st.armeHoch || 0) > 0.01; // n6: Jubel-Arme brauchen die prozeduralen Schichten
     this.gloves[0].visible = this.gloves[1].visible = !!st.keeper;
+    // n7 E1: Handschuhe leuchten mit der Tormann-Energie (müde: matter, unter 60 deutlich schwächer und grauer)
+    if (st.keeper && st.energie !== this.gloveE) {
+      const en = st.energie ?? 1, k = en >= 0.6 ? 0.6 + 0.4 * (en - 0.6) / 0.4 : 0.02 + 0.58 * (en / 0.6) ** 1.5, u = 1 - k; this.gloveE = st.energie;
+      this.gloveMat.emissiveIntensity = 1.25 * k; this.gloveMat.color.setHex(0xe8ff6a).lerp(GLOVE_GRAU, u); // matt grau statt gelb
+    }
     this.ring.visible = !!st.keeper;
     if (st.keeper) this.ring.material.opacity = 0.55 + 0.25 * Math.sin(performance.now() / 180);
     this.blob.scale.setScalar(1 + this.dive * 0.8);
@@ -506,6 +513,7 @@ export class Avatar {
         if (T.thigh2) this.rotBoneWorld(BN[other].Thigh, 'side', T.thigh2 * tl);
         if (T.arms) for (const sd of ['L', 'R']) this.rotBoneWorld(BN[sd].UpperArm, 'side', -T.arms * tl);
         if (T.nod) this.rotBoneWorld('Bip01_Head', 'side', T.nod * tl);
+        if (T.spreiz) for (const sd of ['L', 'R']) this.rotBoneWorld(BN[sd].Thigh, 'fwd', (sd === 'L' ? 1 : -1) * T.spreiz * tl); // n7: Beine seitlich
       }
       // Schwung geglättet: beim Dribbeln setzt der nächste Kontakt ein, bevor der alte Schwung zu Ende ist (Bein schnappte zurück)
       const kZiel = kt < 0.4 ? Math.sin(Math.min(1, kt / 0.4) * Math.PI) * (1 - tl) : 0, cZiel = kt < 0.4 ? kZiel * (1 - kt / 0.4) : 0;
@@ -523,6 +531,7 @@ export class Avatar {
       if (T.thigh2) this.rotBoneWorld(BN[other].Thigh, 'side', T.thigh2 * tw);
       if (T.arms) for (const sd of ['L', 'R']) this.rotBoneWorld(BN[sd].UpperArm, 'side', -T.arms * tw);
       if (T.nod) this.rotBoneWorld('Bip01_Head', 'side', T.nod * tw);
+      if (T.spreiz) for (const sd of ['L', 'R']) this.rotBoneWorld(BN[sd].Thigh, 'fwd', (sd === 'L' ? 1 : -1) * T.spreiz * tw);
     } else if (kt < 0.4) {
       // Schuss/Pass: Schussbein schwingt nach vorn
       const k = Math.sin(Math.min(1, kt / 0.4) * Math.PI);
@@ -720,6 +729,7 @@ function techPose(pl, t) {
       case 'oberschenkel': return { pitch: -0.08 * u, roll: 0, drop: 0, legs: true, thigh: -1.0 * u, calf: 0.9 * u };
       case 'kopf': return { pitch: 0.3 * u, roll: 0, drop: 0, legs: true, thigh: 0, nod: 0.4 * u, arms: 0.3 * u };
       case 'volley': case 'dropkick': return { pitch: -0.3 * u, roll: -side * 0.15 * u, drop: -0.05 * u, legs: true, thigh: -1.3 * u, arms: 0.5 * u };
+      case 'blocken': return { pitch: 0.2, roll: 0, drop: -0.2, legs: true, thigh: -0.15, thigh2: -0.15, calf: 0.35, spreiz: 0.55, arms: 0.9 }; // n7 E1: Beine seitlich gespreizt, tief
       case 'stolpern': return { pitch: 0.5 * u, roll: side * 0.15 * u, drop: -0.12 * u, legs: true, thigh: 0.35 * u, calf: 0.6 * u, arms: 0.9 * u }; // nach Grätsche des Gegners
       default: return null;
     }

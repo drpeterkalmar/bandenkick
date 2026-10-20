@@ -196,6 +196,7 @@ export class Game {
       if (gs) R.onGoal(gs);
       else if (outOfCage(this.cage, b.p)) { if (this.cage.roof) this.faults++; R.onOut(); }
     }
+    if (live) R.chipCheck(); // n7 E1: Heber-Stolpern
     R.post(DT);
     if (this.human >= 0) this.autoSwitch(inputs[this.human]);
     this.state = R.phase === 'goal' ? 'goal' : R.phase === 'out' ? 'out' : 'play';

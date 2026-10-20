@@ -134,7 +134,7 @@ function rollers(K) {
   const note = (x) => `${x.goalsAll}/${x.shots}, Fangen ${(x.catch / x.games).toFixed(1)}, Abwehr ${(x.parry / x.games).toFixed(1)} je Spiel`;
   check(`CPU-Tormann Stufe 1: Tore je Schuss (${2 * N} Spiele)`, q[0], 38, 100, '%', 40, note(r[0]));
   check(`CPU-Tormann Stufe 2 (Standard): Tore je Schuss (${2 * N} Spiele)`, q[1], 24, 36, '%', 30, note(r[1]) + ' · Nacht 2b: 14 %, Nacht 2d: 29–31 %');
-  check(`CPU-Tormann Stufe 3: Tore je Schuss (${2 * N} Spiele)`, q[2], 0, 26, '%', 25, note(r[2]));
+  check(`CPU-Tormann Stufe 3: Tore je Schuss (${2 * N} Spiele)`, q[2], 0, 29, '%', 25, note(r[2]) + ' · n7 E1: Müdigkeit/Herauslaufen/Winkel heben Stufe 3 von 25,5 auf ≈ 28 % (Datenblatt-Gate: Stufe 3 hält nicht mehr fast alles), Grenze 26 → 29 %');
   check('Stufen monoton (1 > 2 > 3)', q[0] > q[1] && q[1] > q[2] ? 1 : 0, 1, 1, '', 1, q.map((x) => x.toFixed(1)).join(' > '));
   const slow = r.reduce((a, x) => [a[0] + (x.bySpeed['<12']?.goals || 0), a[1] + (x.bySpeed['<12']?.n || 0)], [0, 0]);
   // Nacht 2e: nur ~60 solche Schüsse je Lauf – gemessen je Seed mit ?halten=0 (Nacht 2d) 8–16 %, neu 9–17 % → Grenze 18 %

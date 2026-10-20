@@ -244,3 +244,29 @@ if (self && process.argv[2] === '--worker') {
   console.log(`  (${((performance.now() - t0) / 1000).toFixed(0)} s Rechenzeit)`);
   if (process.env.JSON) console.log(JSON.stringify(s));
 }
+
+// n7 E1: 1 gegen 1 – ein Bot-Stürmer (Stufe lv) startet mit dem Ball 6,5–9,5 m vor dem Tor, gegen ihn nur der Bot-Tormann
+// (Stufe lv); sein eigener Tormann und ein Verteidiger stehen weit weg. Vereitelt = kein Tor innerhalb von 6 s.
+export function oneOnOne(qs = '', n = 60, lv = 2) {
+  const o = { n: 0, saved: 0, goals: 0, block: 0, parry: 0, catch: 0, shots: 0 };
+  for (let s = 1; s <= n; s++) {
+    const g = new Game(makeParams(qs), 700 + s, { match: true, human: -1, perTeam: [2, 2], botLevels: [lv, lv], kickoffTeam: 0 });
+    const rng = new Rng(900 + s), hx = g.cage.hx;
+    const att = g.players[0], own = g.players[1], kp = g.players[2], df = g.players[3], b = g.ball;
+    const d0 = rng.range(6.5, 9.5), z0 = rng.range(-2.5, 2.5);
+    att.place(hx - d0, z0, 0); b.place(hx - d0 + 0.45, b.r, z0); own.place(-hx + 1.2, 0, 0); kp.place(hx - 1.1, 0, Math.PI); df.place(-4, -z0, 0);
+    g.rules.phase = 'play'; g.rules.updateKeepers(0, true); g.lastTouch = 0; g.lastTouchT = 0; att.lastTouchT = 0;
+    o.n++;
+    let goal = false;
+    for (let i = 0; i < 6 / DT && !goal; i++) {
+      for (const e of g.step([])) {
+        if (e.type === 'goal') goal = e.team === 0;
+        else if (e.player === kp.id && (e.type === 'catch' || e.type === 'parry' || e.type === 'block')) o[e.type]++;
+        else if (e.type === 'kick' && e.kind === 'shot' && e.player === att.id) o.shots++;
+      }
+      if (g.rules.phase !== 'play') break;
+    }
+    if (goal) o.goals++; else o.saved++;
+  }
+  return { ...o, savedShare: 100 * o.saved / o.n };
+}

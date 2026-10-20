@@ -62,6 +62,8 @@ export function bewerte(e, game) {
     const w = hecht ? clamp(0.5 + ((e.speed || 0) - 14) / 22, 0, 0.9) : 0.3; // nur mit Hechtsprung spektakulär
     return { w, art: (e.speed || 0) > 24 ? 'bullet' : 'ramp', ...torwartBlick(P[e.player], e), spieler: e.player, grund: 'parade' };
   }
+  // n7 E1: Glanzparade eines müden Tormanns (Ereignis aus rules.js)
+  if (e.type === 'glanzparade') return { w: 0.78, art: 'ramp', ...torwartBlick(P[e.player], e), spieler: e.player, grund: 'glanzparade' };
   if (e.type === 'catch' && (e.speed || 0) > 17) {
     const pl = P[e.player], hecht = pl && pl.hand && pl.hand.mode === 'dive';
     return { w: hecht ? 0.68 : 0.3, art: 'ramp', ...torwartBlick(pl, e), spieler: e.player, grund: hecht ? 'hechtfang' : 'fang' };

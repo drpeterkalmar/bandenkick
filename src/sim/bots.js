@@ -30,13 +30,15 @@ export const LEVELS = {
 //   tip        Anteil am Rand der Reichweite, in dem er den Ball nur mit den Fingerspitzen erwischt (abgefälscht)
 //   posErr     m Stellungsfehler (seitlich, je Ball neu gewürfelt)
 //   reach      Anteil der Hand-Reichweite im Stand (P.catchReach)
+//   raus       n7 E1: Anteil des Wegs beim Herauslaufen (1 gegen 1), gemessen so gewählt, dass 1 gegen 1 je Stufe 30–60 % vereitelt
+//   kond       n7 E1: Müdigkeit je Parade × kond (gute Tormänner haben mehr Kondition)
 export const KEEPER_LEVELS = {
-  1: { react: 0.2, catchSkill: 0.3, fumble: 0.35, dive: 0.6, run: 0.8, move: 0.86, diveReach: 0.75, catchRel: 15, tip: 0.5, posErr: 0.3, reach: 0.74 },
-  2: { react: 0.08, catchSkill: 0.6, fumble: 0.15, dive: 0.8, run: 0.88, move: 0.78, diveReach: 0.85, catchRel: 17, tip: 0.33, posErr: 0.28, reach: 0.85 },
-  3: { react: 0.06, catchSkill: 0.85, fumble: 0.06, dive: 0.95, run: 0.95, move: 0.8, diveReach: 0.95, catchRel: 22, tip: 0.15, posErr: 0.12, reach: 0.97 },
+  1: { react: 0.2, catchSkill: 0.3, fumble: 0.35, dive: 0.6, run: 0.8, move: 0.86, diveReach: 0.75, catchRel: 15, tip: 0.5, posErr: 0.3, reach: 0.74, raus: 0.8, kond: 1.25 },
+  2: { react: 0.08, catchSkill: 0.6, fumble: 0.15, dive: 0.8, run: 0.88, move: 0.78, diveReach: 0.85, catchRel: 17, tip: 0.33, posErr: 0.28, reach: 0.85, raus: 0.4, kond: 1 },
+  3: { react: 0.06, catchSkill: 0.85, fumble: 0.06, dive: 0.95, run: 0.95, move: 0.8, diveReach: 0.95, catchRel: 22, tip: 0.15, posErr: 0.12, reach: 0.97, raus: 0.25, kond: 0.6 },
 };
 // Auto-Torwart des Menschen (Nacht 2c: Fangen und Hechten ohne Knöpfe) = Tormann der alten Stufe 2 (Nacht 2b)
-export const HUMAN_KEEPER = { react: 0.1, catchSkill: 0.8, fumble: 0.12, dive: 0.9, run: 0.88, move: 0.836, diveReach: 1, catchRel: null, tip: 0, posErr: 0, reach: 1 };
+export const HUMAN_KEEPER = { react: 0.1, catchSkill: 0.8, fumble: 0.12, dive: 0.9, run: 0.88, move: 0.836, diveReach: 1, catchRel: null, tip: 0, posErr: 0, reach: 1, raus: 0.5, kond: 1 };
 // Tormann-Werte für eine Mannschaft der Stufe `teamLevel` (P.tormann > 0 übersteuert, Zwischenwerte linear)
 export function keeperLevel(P, teamLevel) {
   const k = clamp(P.tormann > 0 ? P.tormann : teamLevel, 1, 3);
@@ -185,6 +187,7 @@ export class Bots {
     const g = this.g, pl = g.players[i], br = this.brain[i], inp = this.inp[i], L = this.L[pl.team];
     inp.pass = false; inp.shootHeld = false; inp.shootRelease = false; inp.dive = false; inp.throw = false; inp.punt = false;
     inp.hand = false; inp.autoCatch = false; inp.sprint = false; inp.aim = false; inp.speedCap = L.speed;
+    pl.block = 0; // n7 E1: Blocken setzt nur die Tormann-Logik, jeden Takt neu
     const K = this.K[pl.team];
     inp.catchSkill = K.catchSkill; inp.fumble = br.catchRoll < K.fumble;
     inp.diveReach = K.diveReach; inp.catchRel = K.catchRel; inp.tip = K.tip; inp.reachMul = K.reach;
@@ -726,6 +729,9 @@ export class Bots {
       this.moveTo(inp, pl, b.p.x, b.p.z, false, 0.4);
       return;
     }
+    // n7 E1 #3: Herauslaufen 1 gegen 1 (Wettlauf zum Schusspunkt), draußen blocken
+    if (P.raus && this.rausLauf(pl, br, inp, K, team, gx, side)) return;
+    pl.block = 0;
     // Stellungsspiel: auf der Linie Tormitte → Ball, je nach Ballentfernung weiter vor
     const bx = b.p.x + b.v.x * 0.25, bz = b.p.z + b.v.z * 0.25;
     const dx = bx - gx, dz = bz, d = Math.hypot(dx, dz) || 1;
@@ -734,9 +740,61 @@ export class Bots {
     // oder loser Ball < 9 m) höchstens 1,3 m vor der Linie; nur bei eigenem Ballbesitz weiter heraus. Schnell zurück.
     const danger = !own && d < 9;
     const rk = danger ? clamp(0.6 + 0.1 * d, 0.75, 1.5) : clamp(0.7 + 0.12 * d + (own ? 1.0 : 0), 0.9, own ? 3.0 : 2.2);
-    const kx = gx + dx / d * rk, kz = clamp(dz / d * rk + (danger ? br.posErr || 0 : 0), -cage.gw - 0.3, cage.gw + 0.3);
+    const kx = gx + dx / d * rk;
+    let kz0 = dz / d * rk;
+    // n7 E1 #2: Winkelhalbierende zwischen Ball → linker und Ball → rechter Pfosten (Tiefe wie bisher) – schließt die kurze Ecke
+    if (P.winkel && Math.abs(bx - gx) > 0.3) {
+      const al = Math.hypot(gx - bx, -cage.gw - bz), ar = Math.hypot(gx - bx, cage.gw - bz);
+      const ux = (gx - bx) / al + (gx - bx) / ar, uz = (-cage.gw - bz) / al + (cage.gw - bz) / ar;
+      if (Math.abs(ux) > 1e-3) kz0 += (bz + uz / ux * (kx - bx) - kz0) * Math.min(1, P.winkel); // winkel = Anteil (0 … 1)
+    }
+    const kz = clamp(kz0 + (danger ? br.posErr || 0 : 0), -cage.gw - 0.3, cage.gw + 0.3);
     this.moveTo(inp, pl, kx, kz, danger && Math.hypot(kx - pl.x, kz - pl.z) > 1.2, 0.6);
     inp.autoCatch = inOwnBox; inp.hand = inOwnBox;
+  }
+
+  // n7 E1 #3 (Vorlage A/B, angepasst): Herauslaufen. Ein Gegner führt den Ball aufs Tor zu; Schusspunkt = rausD m vor der Tormitte
+  // auf seinem Weg. Ist kein Mitspieler mindestens rausMarge m näher am Schusspunkt als der Angreifer, läuft der Tormann ihm
+  // entgegen – höchstens bis Torraumkante + rausMax m, ein zweiter Angreifer nah am Tor bremst auf 70 % des Wegs. Außerhalb
+  // des Torraums (keine Hände) blockt er: Beine gespreizt (pl.block → breiterer Körper für flache Bälle). → true = übernommen
+  rausLauf(pl, br, inp, K, team, gx, side) {
+    const g = this.g, b = g.ball, P = g.P;
+    if (this.ownerTeam !== 1 - team || b.held >= 0) { pl.block = 0; return false; }
+    const c = g.players[this.owner];
+    const cdx = c.x - gx, cdz = c.z, cd = Math.hypot(cdx, cdz) || 1;
+    if (cd > P.rausD + P.rausVor || cd < 1.2 || side * cdx < 0.5) { pl.block = 0; return false; }
+    // läuft er aufs Tor zu (oder steht er schon nah davor)?
+    const toward = -(c.vx * cdx + c.vz * cdz) / cd;
+    if (toward < 1 && cd > P.rausD + 1) { pl.block = 0; return false; }
+    const sx = gx + cdx / cd * Math.min(P.rausD, cd), sz = cdz / cd * Math.min(P.rausD, cd);
+    const dA = Math.hypot(c.x - sx, c.z - sz);
+    let attackers = 0;
+    for (const o of g.players) {
+      if (o.team === team && o.id !== pl.id && Math.hypot(o.x - sx, o.z - sz) + P.rausMarge <= dA) { pl.block = 0; return false; } // ein Verteidiger ist früher dort
+      if (o.team !== team && o.id !== c.id && Math.hypot(o.x - gx, o.z) < cd + 1) {
+        attackers++;
+        // freier zweiter Angreifer nah am Tor (kein Verteidiger ≤ 1,5 m): nicht herauslaufen – sonst Querpass ins leere Tor
+        if (Math.hypot(o.x - gx, o.z) < 7 && !g.players.some((d) => d.team === team && d.id !== pl.id && Math.hypot(d.x - o.x, d.z - o.z) < 1.5)) { pl.block = 0; return false; }
+      }
+    }
+    // Ziel: dem Angreifer entgegen, mit Abstand rausAbst m; im Torraum (Hände) bleiben (Weg × Anteil der Stufe). Ist der Angreifer
+    // allein schon nah an der Torraumkante (≤ Kante + rausMax + rausAbst), geht er ihm entgegen (Stufe 1/2 und Mensch ganz, Stufe 3
+    // halb – sonst kassierte sie im Spiel mehr), höchstens bis Kante + rausMax
+    // (dort blocken); ein zweiter Angreifer bremst auf 70 %
+    const k = attackers ? 0.7 : 1, meet = Math.max(0.8, cd - P.rausAbst);
+    const nah = !attackers && cd <= P.torraum + P.rausMax + P.rausAbst;
+    const tdist = nah ? 1.0 + Math.max(0, Math.min(P.torraum + P.rausMax, meet) - 1.0) * Math.min(1, 2 * (K.raus ?? 0.5)) // (Stufe 3 halber Weg)
+      : 1.0 + (Math.min((P.torraum - 0.4) * k, meet) - 1.0) * (K.raus ?? 0.5); // Anteil je Stufe
+    // (Stellungsfehler der Stufe wie beim normalen Stellungsspiel)
+    const tx = gx + cdx / cd * tdist, tz = cdz / cd * tdist + (br.posErr || 0);
+    this.moveTo(inp, pl, tx, tz, true, 0.3);
+    inp.speedCap = Math.max(inp.speedCap, 0.95);
+    const inBox = g.rules.inBox(team, pl.x, pl.z);
+    inp.autoCatch = inBox; inp.hand = inBox;
+    // Blocken außerhalb der Hände: Angreifer nah (≤ 2,2 m) → Beine spreizen
+    pl.block = !inBox && Math.hypot(b.p.x - pl.x, b.p.z - pl.z) < 2.2 ? 1 : 0;
+    if (pl.block) { pl.tech = 'blocken'; pl.techT = Math.min(pl.techT, 0.2); }
+    return true;
   }
 
   // Nacht 2e (Peter: „lass den Torwart nicht den Ball so lange in die Hand nehmen“): Ball in der Hand → schnell weiter.

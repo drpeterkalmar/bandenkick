@@ -50,6 +50,7 @@ export class Player {
     this.fall = null;                                // am Boden nach Seit-/Fallrückzieher/Flugkopfball {tech, t, dur}
     this.slide = null;                               // Grätsche {t, dx, dz, kind, stick, phase 'slide'|'ground', done}
     this.stumbleT = 0;                               // stolpert nach einer Grätsche des Gegners (s)
+    this.block = 0;                                  // n7 E1: Tormann blockt draußen mit gespreizten Beinen
     this.holdT = 0;               // Ball in der Hand seit … s
     this.catchCd = -1;            // Spielzeit, ab der wieder gefangen werden darf
   }
@@ -75,7 +76,9 @@ export class Player {
       if (h.t >= T) { h.mode = 'ground'; h.t = 0; }
     } else {
       const f = Math.exp(-dt * 10); this.vx *= f; this.vz *= f;
-      if (h.t >= P.groundT) { h.mode = game.ball.held === this.id ? 'hold' : 'none'; h.t = 0; }
+      // n7 E1: müde steht er langsamer auf
+      const up = game.match && game.rules && game.rules.getUpRate ? game.rules.getUpRate(this.team) : 1;
+      if (h.t >= P.groundT / up) { h.mode = game.ball.held === this.id ? 'hold' : 'none'; h.t = 0; }
     }
     this.x += this.vx * dt; this.z += this.vz * dt;
     const lx = game.cage.hx - P.bodyR, lz = game.cage.hz - P.bodyR;
@@ -835,7 +838,7 @@ export class Player {
         if (c > best) { best = c; to = m.id; }
       }
     }
-    if (game.match) { game.passTo = pd.kind === 'pass' ? to : -1; game.rules.touch(this); if (pd.to !== this.id) game.rules.markKick(this, dx, dz, to); }
+    if (game.match) { game.rules.touch(this); game.passTo = pd.kind === 'pass' ? to : -1; if (pd.to !== this.id) game.rules.markKick(this, dx, dz, to); }
     game.passPlan = null;
     game.events.push({ type: 'kick', kind: pd.kind, tech: techL, player: this.id, human: game.human === this.id, speed, x: ball.p.x, y: ball.p.y, z: ball.p.z, dx, dz, to });
   }
@@ -873,7 +876,7 @@ export class Player {
       planDir: plan.dir ? [plan.dir[0], plan.dir[1]] : null };
     let to = plan.kind === 'pass' ? (plan.to ?? -1) : -1;
     if (to < -1) to = -1; // Challenge-Ziel (virtuell)
-    if (game.match) { game.passTo = to; game.rules.touch(this); if (plan.tech !== 'kopf' && plan.tech !== 'flugkopf' && plan.to !== this.id) game.rules.markKick(this, dx, dz, to); }
+    if (game.match) { game.rules.touch(this); game.passTo = to; if (plan.tech !== 'kopf' && plan.tech !== 'flugkopf' && plan.to !== this.id) game.rules.markKick(this, dx, dz, to); }
     game.passPlan = plan.kind === 'pass' && plan.meet ? { to: plan.to ?? -1, from: this.id, x: plan.meet[0], z: plan.meet[1], t: game.t + (plan.T || 1), chip: !!plan.chip, bank: plan.bank || 0 } : null;
     game.events.push({ type: 'kick', kind: plan.kind === 'air' ? 'shot' : plan.kind, tech: plan.tech, player: this.id, human: game.human === this.id, speed, x: ball.p.x, y: ball.p.y, z: ball.p.z, dx, dz, to, q: plan.q ?? null });
     return plan;
@@ -882,7 +885,9 @@ export class Player {
   // Körper als senkrechter Zylinder (Radius 0,22 m, bis 1,85 m Höhe): Ball prallt weich ab (e = 0,35 relativ
   // zum Spieler). Nur waagrecht – ein Ball kann nie auf einem Spieler liegen bleiben (rutscht vom Kopf ab).
   bodyCollision(game) {
-    const ball = game.ball, r = ball.r, R = 0.22;
+    const ball = game.ball, r = ball.r;
+    // n7 E1: blockender Tormann (Beine gespreizt) – flache Bälle prallen an einem breiteren Körper ab (blockSpreiz m)
+    const R = this.block && ball.p.y < 0.7 && game.rules && game.rules.keeper[this.team] === this.id ? Math.max(0.22, game.P.blockSpreiz / 2) : 0.22;
     if (ball.held >= 0 || ball.p.y > (this.fall ? 0.35 : 1.85 + this.jumpY) + r) return;
     // Über der Bande einen langsamen Ball nicht gegen die Netze drücken (sonst klemmt er dort fest)
     if (ball.p.y > game.cage.bH && ball.v.len() < 2) return;
@@ -899,6 +904,7 @@ export class Player {
       ball.v.x -= j * ux; ball.v.z -= j * uz;
       ball.w.scale(0.6);
       if (-vn > 1.5) game.events.push({ type: 'body', player: this.id, speed: -vn, x: ball.p.x, y: ball.p.y, z: ball.p.z });
+      if (this.block && R > 0.22 && -vn > 3) game.events.push({ type: 'block', player: this.id, speed: -vn, x: ball.p.x, z: ball.p.z }); // n7 E1
     }
   }
 

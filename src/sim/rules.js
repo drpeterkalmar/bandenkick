@@ -27,6 +27,7 @@ export class Rules {
     this.backPass = -1;                 // Nacht 2e: Mannschaft, deren Spieler den Ball zuletzt absichtlich Richtung eigenes Tor gespielt hat
     this.backPassFrom = -1;             // … und wer (der Tormann selbst zählt nicht)
     this.bpTold = false;                // Hinweis „Rückpass – keine Hände“ für diesen Ball schon gemeldet
+    this.energy = [100, 100];           // n7 E1: Tormann-Energie je Mannschaft (Müdigkeit)
   }
 
   // ---------- Geometrie ----------
@@ -97,8 +98,8 @@ export class Rules {
       if (!pl) continue;
       const inp = inputOf(pl.id);
       const ok = this.handsOk(pl);
-      // Hechtsprung auslösen (nur im Torraum, nicht mit Ball in der Hand)
-      if (inp.dive && ok && pl.hand.mode === 'none' && b.held < 0) {
+      // Hechtsprung auslösen (nur im Torraum, nicht mit Ball in der Hand; n7: nicht gestolpert)
+      if (inp.dive && ok && pl.hand.mode === 'none' && b.held < 0 && !(pl.stumbleT > 0)) {
         let dx = inp.diveX ?? inp.mx ?? 0, dz = inp.diveZ ?? inp.mz ?? 0;
         let l = Math.hypot(dx, dz);
         if (l < 0.2) { // Hechtrichtung-Hilfe: zum Ball
@@ -108,6 +109,7 @@ export class Rules {
         g.events.push({ type: 'dive', player: pl.id });
       }
       if (b.held === pl.id) { this.holding(dt, pl, inp); continue; }
+      if (pl.stumbleT > 0) continue; // n7 E1: gestolpert (Heber) – keine Hände
       // Rückpass: Ball kommt in Reichweite der Hände, Hände tabu → einmal Hinweis (kein Freistoß, nur Info)
       if (!this.bpTold && b.held < 0 && this.backPassBlock(pl) && this.keeper[team] === pl.id && this.inBox(team, pl.x, pl.z) && this.inBox(team, b.p.x, b.p.z, 0.4) && this.phase === 'play') {
         const H = this.handReach(pl, inp);
@@ -139,17 +141,21 @@ export class Rules {
         b.v.set(b.v.x * k + out * 1.2, b.v.y * k + 0.8, b.v.z * k);
         b.w.scale(0.5); b.contact = false;
         pl.touchCd = 0.4; pl.catchCd = g.t + 0.35;
+        this.tire(team, pl.hand.mode === 'dive' ? P.muedeHecht : P.muedeAbwehr);
         this.touch(pl, true);
         g.events.push({ type: 'parry', tip: true, player: pl.id, speed: rel, x: b.p.x, y: b.p.y, z: b.p.z });
         continue;
       }
       let parry = rel > (inp.catchRel ?? P.catchMaxRel * (0.8 + 0.2 * skill)) || (inp.fumble && rel > 13);
       // n7 Etappe 0: eine Fanggrenze für alle – scharfe Bälle klatscht er ab, nur direkt auf den Körper ab und zu gefangen
-      if (P.fangMax > 0 && !parry && rel > P.fangMax) {
+      // n7 E1: müde (Energie < muedeFang) → Fanggrenze für mittlere Bälle niedriger
+      const fm = P.fangMax - (P.muede && P.fangMax > 0 ? P.muedeSenk * clamp((P.muedeFang - this.energy[team]) / P.muedeFang, 0, 1) : 0);
+      if (P.fangMax > 0 && !parry && rel > fm) {
         // Körperball: die Ballbahn (relativ zum Tormann) geht höchstens fangKoerper m an der Körpermitte vorbei
         const rx = b.v.x - pl.vx, rz = b.v.z - pl.vz, rl = Math.hypot(rx, rz);
         const body = pl.hand.mode !== 'dive' && (rl > 1 ? Math.abs(dx * rz - dz * rx) / rl : d) <= P.fangKoerper;
-        const pc = body ? P.fangKoerperP * clamp((P.fangKoerperMax - rel) / (P.fangKoerperMax - P.fangMax), 0, 1) : 0;
+        const top = P.fangKoerperMax - (P.fangMax - fm);
+        const pc = body ? P.fangKoerperP * clamp((top - rel) / Math.max(0.5, top - fm), 0, 1) : 0;
         parry = !(pc > 0 && g.rng.next() < pc);
       }
       if (parry) {
@@ -171,12 +177,16 @@ export class Rules {
         b.w.scale(0.3); b.contact = false;
         pl.touchCd = 0.4;
         if (P.fangMax > 0) pl.catchCd = g.t + P.nachfassen; // n7: Abpraller nicht sofort wieder fangen
+        // n7 E1: Glanzparade trotz Müdigkeit → Ereignis für die Action-Momente (n6)
+        if (P.muede && this.energy[team] < P.muedeFang && rel > 14) g.events.push({ type: 'glanzparade', player: pl.id, team, speed: rel, energie: this.energy[team], x: b.p.x, y: b.p.y, z: b.p.z });
+        this.tire(team, pl.hand.mode === 'dive' ? P.muedeHecht : P.muedeAbwehr);
         if (pl.hand.mode !== 'dive') { pl.tech = high ? 'fausten' : 'parade'; pl.techT = 0; } // n7: Parade sichtbar (Arme)
         this.touch(pl, true);
         g.events.push({ type: 'parry', player: pl.id, speed: rel, high, x: b.p.x, y: b.p.y, z: b.p.z });
         continue;
       }
       b.held = pl.id; b.v.set(0, 0, 0); b.w.set(0, 0, 0); b.contact = false;
+      if (rel > 6) this.tire(team, pl.hand.mode === 'dive' ? P.muedeHecht : P.muedeFangK); // (aufgehobene Roller kosten nichts)
       pl.hand.mode = pl.hand.mode === 'dive' ? 'dive' : 'hold';
       pl.holdT = 0; pl.pending = null; pl.charging = false;
       this.touch(pl);
@@ -352,11 +362,46 @@ export class Rules {
   // ich ein reguläres Tor schieße“ – vorher war jedes 3. Tor im Selbstspiel so ein falsches Eigentor).
   touch(pl, deflect = false) {
     if (this.backPass >= 0 && this.keeper[this.backPass] !== pl.id) this.clearBackPass(); // (ein Kick setzt ihn danach neu)
+    // n7: der Empfänger hat den Ball berührt → Pass angekommen (sonst galt er als „unterwegs“, solange der Passgeber den Ball
+    // zufällig weiter berührte – im Selbstspiel klemmten so zwei Mitspieler den Ball 8 s an der Bande ein)
+    if (this.g.passTo === pl.id && this.g.lastTouch !== pl.id) this.g.passTo = -1;
     this.lastTouchTeam = pl.team; this.g.lastTouch = pl.id; this.g.lastTouchT = this.g.t;
     this.lastDeflect = deflect ? pl.id : -1;
     if (!deflect) this.lastPlay = pl.id;
     const pp = this.g.passPlan;
     if (pp && pp.from !== pl.id) this.g.passPlan = null; // Pass angekommen oder abgefangen
+  }
+
+  // ---------- n7 E1: Müdigkeit und Heber-Stolpern ----------
+  tire(team, cost) {
+    if (!this.g.P.muede) return;
+    // Kondition der Stufe (Mensch-Auto-Tormann = 1)
+    const g = this.g, hum = g.human >= 0 && g.players[g.human] && g.players[g.human].team === team;
+    const k = !hum && g.bots && g.bots.K && g.bots.K[team] ? g.bots.K[team].kond ?? 1 : 1;
+    this.energy[team] = Math.max(0, this.energy[team] - cost * k);
+    this.g.events.push({ type: 'energie', team, energy: this.energy[team] });
+  }
+  // Aufsteh-Tempo nach dem Hechtsprung (1 = frisch): zwischen Energie 80 und 20 linear bis muedeAuf
+  getUpRate(team) {
+    const P = this.g.P;
+    return P.muede ? 1 - (1 - P.muedeAuf) * clamp((80 - this.energy[team]) / 60, 0, 1) : 1;
+  }
+  // Heber (Chip) eines Gegners über den Tormann, der im Torraum steht: mit P.stolpern stolpert er (einmal je Ball)
+  chipCheck() {
+    const g = this.g, P = g.P;
+    if (!P.stolpern) return;
+    for (const e of g.events) {
+      if (e.type !== 'kick' || e.tech !== 'chip' || e.player == null) continue;
+      const sh = g.players[e.player], team = 1 - sh.team, kp = g.players[this.keeper[team]];
+      if (!kp || kp.hand.mode !== 'none' || !this.inBox(team, kp.x, kp.z)) continue;
+      // fliegt der Ball über ihn Richtung Tor? Schütze vor dem Tormann, Flugrichtung aufs Tor, Tormann nah an der Flugbahn
+      const gx = this.goalX(team), toGoal = (gx - e.x) * e.dx > 0, dK = Math.abs((kp.x - e.x) * e.dz - (kp.z - e.z) * e.dx);
+      const ahead = (kp.x - e.x) * e.dx + (kp.z - e.z) * e.dz;
+      if (!toGoal || dK > 1.5 || ahead < 1 || ahead > 12) continue;
+      if (g.rng.next() >= P.stolpern) continue;
+      kp.stumbleT = 0.6; kp.tech = 'stolpern'; kp.techT = 0; kp.pending = null;
+      g.events.push({ type: 'stolpern', player: kp.id, team, x: kp.x, z: kp.z });
+    }
   }
 
   // ---------- Ablauf: Tor, Aus, Uhr, Halbzeit, Ende ----------
@@ -425,9 +470,10 @@ export class Rules {
     }
     if (this.phase === 'play') {
       this.clock += dt;
+      if (P.muede) for (let t = 0; t < 2; t++) this.energy[t] = Math.min(100, this.energy[t] + P.muedeErh * dt);
       const end = this.halfLen * 2;
       if (!this.golden && this.half === 1 && this.clock >= this.halfLen) {
-        this.phase = 'halftime'; this.phaseT = 0; this.half = 2;
+        this.phase = 'halftime'; this.phaseT = 0; this.half = 2; this.energy = [100, 100];
         g.events.push({ type: 'halftime', score: [...g.score] });
       } else if (!this.golden && this.half === 2 && this.clock >= end) {
         if (P.golden && g.score[0] === g.score[1]) { this.golden = true; g.events.push({ type: 'golden' }); }
@@ -446,6 +492,6 @@ export class Rules {
   }
 
   snapshot() {
-    return { phase: this.phase, clock: this.clock, half: this.half, keeper: [...this.keeper], golden: this.golden, winner: this.winner };
+    return { phase: this.phase, clock: this.clock, half: this.half, keeper: [...this.keeper], golden: this.golden, winner: this.winner, energy: [...this.energy] };
   }
 }

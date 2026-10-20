@@ -152,3 +152,99 @@ Verluste wieder – das Gefühl am Ball zählt beim Menschen, und dort hält der
 
 Hinweis: Nachschuss-Tore liegen schon nach Etappe 0 über dem E1-Gate (≥ 10 %), weil der Tormann jetzt jeden scharfen Ball
 abklatscht. Die Müdigkeit (E1) verschiebt deshalb vor allem die mittleren Bälle (siehe dort).
+
+---
+
+## Vorlagen-Etappe E1 – Tormann (Release 0.5.1)
+
+Datenblatt #1–#4 (Vorlage A und B), alles für alle Tormänner (CPU-Stufen 1–3 und Peters Auto-Torwart).
+
+### Was neu ist
+- **#1 Müdigkeit** (`?muede=1`): Energie 100 je Mannschaft. Jede Parade kostet – Fangen 8 (aufgehobene Roller nichts),
+  Abklatschen/Fingerspitzen 14, Hechtfang/-abwehr 18 –, pro Sekunde Spielzeit kommt 1 zurück, zur Halbzeit wieder 100. Unter
+  `muedeFang` 60 sinkt die Fanggrenze für mittlere Bälle (13 m/s) linear bis −5 m/s bei Energie 0; die Körperball-Grenze rückt
+  mit. Nach dem Hechten steht er langsamer auf (Energie 80 → 20: Tempo 1 → 0,6). Langsame Bälle fängt er weiter.
+  **Kondition je Stufe:** Kosten × 1,25 (Stufe 1) / × 1 (Stufe 2, Auto-Torwart) / × 0,6 (Stufe 3).
+  Sichtbar: das Leuchten der Handschuhe folgt der Energie (ab 60 deutlich matter, unten grau).
+  Eine Abwehr mit Energie < 60 und > 14 m/s meldet `glanzparade` an die Action-Momente (n6, nur Ereignis, Gewicht 0,78).
+  - Datenblatt-Startwerte (−5/−10/−7, +4/s) gemessen verworfen: die Energie fiel im Spiel kaum unter 85, die Mechanik wäre
+    unsichtbar geblieben. Mit 8/14/18 und +1/s liegt das Minimum je Spiel bei ≈ 47–50 (Ziel 30–60).
+- **#2 Winkelhalbierende** (`?winkel=0.5`): die seitliche Stellung rückt zur Hälfte von der Linie Tormitte → Ball auf die
+  Winkelhalbierende zwischen Ball → linker und Ball → rechter Pfosten (Tiefe wie bisher).
+- **#3 Herauslaufen 1 gegen 1** (`?raus=1`): Wettlauf zum Schusspunkt 5 m vor dem Tor auf dem Weg des Angreifers. Ist kein
+  Verteidiger mindestens 1 m früher dort und kein zweiter Angreifer frei nah am Tor, läuft der Tormann entgegen (Anteil des Wegs
+  je Stufe 0,8/0,4/0,25, Mensch 0,5; ein zweiter Angreifer bremst auf 70 %). Kommt der Angreifer allein bis an die Torraumkante,
+  geht er ihm ganz entgegen (Stufe 3 halb), höchstens 1 m über die Kante; draußen hat er keine Hände und **blockt**: Beine
+  gespreizt (eigene Pose), flache Bälle prallen an 1,0 m Körperbreite ab.
+- **#4 Heber-Stolpern** (`?stolpern=0.25`): ein Heber des Gegners über den Tormann im Torraum (Bahn ≤ 1,5 m neben ihm, 1–12 m
+  vor dem Schützen, Richtung Tor) lässt ihn mit 25 % stolpern: 0,6 s keine Hände, kein Hechtsprung.
+
+### Messung (Bot-Selbstspiel, `n7_probe.mjs`, gleiche Seeds)
+
+„E0-Basis“ = alle vier Regler auf 0 (`?muede=0&winkel=0&raus=0&stolpern=0`) mit sonst gleichem Stand.
+
+| Größe | Datenblatt-Ziel | E0-Basis | E1 |
+|---|---|---|---|
+| Tore je Schuss, Stufe 2 gegen 2 (20 Spiele) | 25–35 %, Unterschied zu `?muede=0` sichtbar | 28,3 % | 28,9 % (`?muede=0`: 30,4 %) |
+| Tore je Spiel st2 / Stufe 1 gegen 3 (10 Spiele) | ± 20 % | 16,1 / 17,4 | 16,4 / 16,7 |
+| Nachschuss-Tore (Anteil aller Tore) st2 / 1 gegen 3 | ≥ 10 % | 24,1 / 16,1 % | 26,3 / 15,6 % |
+| Hechter je Spiel (st2) | ≥ 15 | 23,1 | 20,6 |
+| Tormann-Energie: Minimum je Spiel (st2 / 1 gegen 3) | 30–60 | 100 | 47 / 66 |
+| … Spielzeit unter 60 | 10–25 % bei Dauerdruck | 0 % | 2,7 % (normales Spiel, kein Dauerdruck) |
+| Tore aus spitzem Winkel (Anteil aller Tore, st2) | −30 % gegenüber `?winkel=0` | 15,5 % | 15,6 % (`?winkel=0`: 17,0 %) |
+| 1 gegen 1 vereitelt (je 40 Szenen, Stufe 1/2/3) | 35–50 % | 18 / 38 / 43 % (Ø 33) | 20 / 63 / 63 % (Ø 48) |
+| CPU-Tormann Tore je Schuss Stufe 1/2/3 (`keeper.test`, 48 Spiele) | monoton | 43,4 / – / 25,5 % (E0) | 40,8 / 31,5 / 26,6 % |
+| Schussserie 14–22 m/s, Stufe 3 (`keeper_series`, 200 Schüsse): gefangen / abgewehrt / Tore | „hält nicht mehr fast alles“ | n6: 163 / 17 / 0 | 0 / 179 / 1 |
+| Heber-Stolpern je Spiel | – | 0 | 0,1 |
+| Pässe kommen an (Bot) | ≥ 60 % | 65 % | 62 % |
+| Hänger / Numerik-Fehler (auch 200 Spiele `selfplay.test`) | 0 / 0 | 0 / 0 | 0 / 0 |
+
+Einzeln (st2, 20 Spiele): `?winkel=0` 31,0 % Tore je Schuss, `?raus=0` 28,5 %, `?muede=0` 30,4 % – die Unterschiede liegen im
+Rauschen (± 1,5 Punkte bei ≈ 1100 Schüssen). Alle Regler auf 0 geben genau die Werte ohne E1.
+
+### Bewertung
+- **Erreicht:** Tore je Schuss im Ziel, Nachschuss-Tore weit über 10 %, Hechter ≥ 15, Energie-Minimum 30–60, 1 gegen 1 im Mittel
+  48 % (Stufe 2: +25 Punkte gegenüber ohne Herauslaufen), Stufe 3 fängt in der Schussserie nichts mehr, Hänger 0.
+- **Nicht erreicht – Winkelhalbierende:** Tore aus spitzem Winkel sinken nur um ≈ 8 % statt 30 %. Gemessen mit einer eigenen
+  Serie aus spitzem Winkel (`SPITZ=1 node tests/node/keeper_series.mjs`, |z| 3–4,2 m, 2,5–5,5 m vor dem Tor): an der kurzen Ecke
+  fallen gegen Stufe 2 ≈ 17 % der Schüsse rein, an der langen fast nichts. Die Stellung verschiebt der Tormann aber nur um
+  0,03–0,07 m (er steht schon nahe am kurzen Pfosten); auch `?winkel=1` oder doppelt so weit änderten nichts – die Tore an der
+  kurzen Ecke kommen aus der Reaktionszeit auf 3–5 m, nicht aus der Stellung. Standard bleibt 0,5 (schadet nicht, sieht
+  richtig aus); eine bessere Reaktion des Tormanns würde die Tore je Schuss senken, das wollte die Etappe 0 gerade nicht.
+- **Zeit unter 60 Energie** nur 2,7 % (Ziel 10–25 % bei Dauerdruck): im normalen Bot-Spiel gibt es selten Dauerdruck; stärker
+  getaktet würde der Tormann schon nach zwei, drei Paraden müde – zu viel für Kinderspiele. Im Spiel gegen eine starke
+  Mannschaft (Stufe 1 gegen 3) bleibt die Energie des schwachen Tormanns zeitweise tief.
+- **Blocken** greift im Bot-Spiel praktisch nie (Bots schießen schon aus 6–8 m). Mit einem Skript-Menschen, der bis vor den
+  Tormann dribbelt, blockt Stufe 1 in 3 von 30 Szenen; Stufe 2/3 nehmen ihn vorher im Torraum mit den Händen.
+- **Stufe 3:** Herauslaufen, Winkel und Müdigkeit hoben ihre Tore je Schuss zusammen um ≈ 3–4 Punkte (Herauslaufen allein +4,
+  weil sie im Spiel öfter umspielt bzw. überlupft wird, obwohl sie im reinen 1 gegen 1 besser hält). Deshalb Kondition × 0,6 und
+  nur halbes Entgegenlaufen an der Torraumkante – danach 26,6 % (vorher 25,5 %), die Grenze in `keeper.test` von 26 auf 29 %
+  angehoben (Datenblatt-Gate: Stufe 3 hält nicht mehr „fast alles“), die Stufen bleiben monoton.
+
+### Nebenbei behoben
+- **Ball klemmte zwischen zwei Mitspielern** (Selbstspiel Seed 180, 8 s an der Bande): ein Pass galt für die Bots als „noch
+  unterwegs“, solange der Passgeber den Ball zufällig weiter berührte – der Empfänger blieb „Empfänger-Hilfe“, der Passgeber
+  „sichern“, keiner holte den Ball, und das Abschirmen hielt den Gegner fern. Jetzt ist der Pass angekommen, sobald der Empfänger
+  den Ball berührt (`rules.touch`). Bei einem Kick wird erst die Berührung gezählt, dann das Passziel gesetzt.
+- Das Blocken setzt die Tormann-Logik jeden Takt neu; nur der aktuelle Tormann hat die breiten Beine (wechselt die Rolle, ist es
+  sofort vorbei).
+
+### Tests E1
+- Neu `tests/node/tormann_e1.test.mjs` (21 Prüfungen: Kosten, Erholung, Kondition je Stufe, Aufstehen, Fanggrenze frisch/müde,
+  Roller, `?muede=0`, Winkelhalbierende, 1 gegen 1 je Stufe mit/ohne Herauslaufen, Blocken, Heber-Stolpern, Bot-Spiel).
+  `keeper_series.mjs` kann jetzt `SPITZ=1`. Alle 33 Node-Tests grün (`node tests/node/run_par.mjs 5`), `tests/smoke.py` 0 Fehler.
+- Fotos `tests/shots/n7/e1_tormann_quer.jpg`, `e1_tormann_hoch.jpg` (frisch, müde, blocken, stolpern), Sichtprüfung: frisch
+  leuchten die Handschuhe gelb-grün, müde matt grau-grün; beim Blocken stehen die Beine weit gespreizt, die Arme seitlich; beim
+  Stolpern kippt er nach vorn.
+
+### Offen (E1)
+- Der Bot-Tormann dreht beim Zurücklaufen zur Linie kurz den Rücken zum Ball (aus Etappe 0) – unverändert offen.
+- Herauslaufen und Blocken sind konservativ eingestellt (Datenblatt „offen“: erst am Bild entscheiden) – Peters Eindruck am
+  Handy entscheidet, ob der Tormann weiter herauskommen soll (`?rausMax=2`).
+
+### Handy-Test für Peter (E1)
+1. Viel aufs Tor schießen: nach einigen Paraden leuchten die Handschuhe des Tormanns schwächer und werden grau – dann klatscht er
+   auch mittelscharfe Bälle ab. Zur Halbzeit ist er wieder frisch. Vergleich: `?muede=0`.
+2. Allein aufs Tor zulaufen: der Tormann kommt heraus. Bis an seinen Torraum heran dribbeln – draußen blockt er mit gespreizten
+   Beinen. Zum Vergleich `?raus=0`; weiter heraus: `?rausMax=2`.
+3. Einen Heber (Lupfer) über ihn spielen: manchmal stolpert er. `?stolpern=0` = nie, `?stolpern=0.5` = öfter.

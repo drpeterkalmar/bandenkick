@@ -1042,7 +1042,7 @@ function drawPlayers(dt, a, rf = null) {
     // n5: Wiederholung – nächster Ballkontakt dieses Spielers (≤ 0,12 s), damit der Fuß schon vorher zum Ball greift
     const kickBald = rf && GLATT && VORGRIFF && rp.rec ? rp.rec.naechsterKick(pl.id, rf.t, 0.12, KICKBALD[i] || (KICKBALD[i] = {})) : null;
     if (kickBald) kickBald.rate = rp.rate;
-    f.update(dt, pl, { x, z, keeper, holding: b.held === pl.id, ready, special, specialZeit, armeHoch, t: rf ? rf.t : game.t, face, kickBald, sparen: sparen && !CULL.f.intersectsSphere(CULL.s), ball: BALLPOS });
+    f.update(dt, pl, { x, z, keeper, energie: !rf && R && R.energy && P.muede ? R.energy[pl.team] / 100 : 1, holding: b.held === pl.id, ready, special, specialZeit, armeHoch, t: rf ? rf.t : game.t, face, kickBald, sparen: sparen && !CULL.f.intersectsSphere(CULL.s), ball: BALLPOS });
   }
   if (rf) { marker.visible = false; return; }
   void n;
@@ -1226,6 +1226,7 @@ Object.assign(G, {
   human(i) { game.setHuman(i); },
   bots(on) { if (game.match) game.bots = on ? (game._bots || game.bots) : ((game._bots = game.bots), null); },
   freeze(f = true) { frozen = f; },
+  handschuh(i) { const f = figs[i]; return f && f.gloveMat ? { e: f.gloveMat.emissiveIntensity, c: f.gloveMat.color.getHexString(), gloveE: f.gloveE } : null; }, // n7 E1: Test der Müdigkeits-Anzeige
   frozen() { return frozen; },
   freezeWhen(src) { G.freezeFn = new Function('g', 'return (' + src + ')'); },
   cam(pos, look) { gcam.override = pos ? { pos, look } : null; },

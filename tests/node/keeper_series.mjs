@@ -1,7 +1,7 @@
 // Tormann isoliert (Nacht 2c): feste Schussserie gegen den CPU-Tormann der Stufe K (?tormann=K). Der Ball liegt
 // 7–11 m vor dem Tor, der Tormann stellt sich 1,2 s lang selbst hin, dann ein Schuss 14–22 m/s in eine Ecke
 // (seitlich 0,5–1,3 m, flach oder hoch). Zählt Tore / gefangen / abgewehrt.
-// Aufruf: node tests/node/keeper_series.mjs [Schüsse=120] [Stufen=1,2,3] [Query]   (SPEED=30-40: andere Tempi)
+// Aufruf: node tests/node/keeper_series.mjs [Schüsse=120] [Stufen=1,2,3] [Query]   (SPEED=30-40: andere Tempi, SPITZ=1: spitzer Winkel)
 import { makeParams } from '../../src/sim/params.js';
 import { Game, DT } from '../../src/sim/step.js';
 import { EMPTY_INPUT } from '../../src/sim/player.js';
@@ -10,13 +10,14 @@ import { Rng } from '../../src/sim/rng.js';
 import { pathToFileURL } from 'node:url';
 
 const idle = { ...EMPTY_INPUT, passDown: false, shotDown: false };
-export function keeperSeries(K, n = 120, qs = '', vLo = 14, vHi = 22) {
+export function keeperSeries(K, n = 120, qs = '', vLo = 14, vHi = 22, spitz = false) {
   const g = new Game(makeParams(`${qs}&tormann=${K}`), 9, { match: true, human: 0, perTeam: [1, 1], botLevels: [2, 2] });
   const rng = new Rng(21), gx = g.cage.hx, sh = g.players[0], kp = g.players[1];
   const c = { goal: 0, catch: 0, parry: 0, miss: 0, n: 0, dive: 0, wide: 0, wideDive: 0, diveSave: 0 };
   for (let k = 0; k < n; k++) {
     g.rules.phase = 'play';
-    const d = rng.range(7, 11), z0 = rng.range(-3, 3);
+    // n7 E1: SPITZ=1 – Schüsse aus spitzem Winkel (|z| 3–4,2 m, 2,5–5,5 m vor dem Tor) für die Winkelhalbierende
+    const d = spitz ? rng.range(2.5, 5.5) : rng.range(7, 11), z0 = spitz ? (rng.next() < 0.5 ? -1 : 1) * rng.range(3, 4.2) : rng.range(-3, 3);
     g.ball.place(gx - d, g.ball.r, z0); g.ball.held = -1;
     sh.place(gx - d - 0.5, z0, 0); kp.place(gx - 1, 0, Math.PI); kp.resetHands();
     g.rules.updateKeepers(0, true); g.lastTouch = 0; g.lastTouchT = g.t;
@@ -43,5 +44,5 @@ export function keeperSeries(K, n = 120, qs = '', vLo = 14, vHi = 22) {
 if (import.meta.url === pathToFileURL(process.argv[1]).href) { // Windows-tauglich (file:///C:/…)
   const n = +(process.argv[2] || 120), lv = (process.argv[3] || '1,2,3').split(',').map(Number), qs = process.argv[4] || '';
   const vr = (process.env.SPEED || '14-22').split('-').map(Number); // SPEED=30-40: harte Schüsse (Wucht)
-  for (const K of lv) { const c = keeperSeries(K, n, qs, vr[0], vr[1]); console.log(`Tormann ${K}: Tore ${c.goal}/${c.n} = ${(100 * c.goal / c.n).toFixed(0)} %, gefangen ${c.catch}, abgewehrt ${c.parry}, sonst ${c.miss} | gehechtet ${c.dive} (davon gehalten ${c.diveSave}), Ball ≥ 0,8 m neben ihm: ${c.wideDive}/${c.wide} gehechtet`); }
+  for (const K of lv) { const c = keeperSeries(K, n, qs, vr[0], vr[1], !!+(process.env.SPITZ || 0)); console.log(`Tormann ${K}: Tore ${c.goal}/${c.n} = ${(100 * c.goal / c.n).toFixed(0)} %, gefangen ${c.catch}, abgewehrt ${c.parry}, sonst ${c.miss} | gehechtet ${c.dive} (davon gehalten ${c.diveSave}), Ball ≥ 0,8 m neben ihm: ${c.wideDive}/${c.wide} gehechtet`); }
 }

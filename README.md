@@ -135,6 +135,18 @@ Schuss, sondern klatscht nur ab“)** – gilt für alle Spieler, Mensch und Bot
   Direkte Schüsse ab 58 km/h werden so gut wie nie gefangen, langsame Bälle weiter immer. `?fangMax=0` = alt.
 - Details, Messtabelle vorher/nachher, Regler: [`N7_VORLAGEN_BERICHT.md`](N7_VORLAGEN_BERICHT.md).
 
+**n7 Vorlagen E1 – Tormann (20.10., nach dem Vorlagen-Datenblatt [`VORLAGEN.md`](VORLAGEN.md)):** gilt für alle Tormänner
+(CPU-Stufen und dein Auto-Torwart):
+- **Müdigkeit:** jede Parade kostet Energie (Fangen 8, Abklatschen 14, Hechten 18; Stufe 1 × 1,25, Stufe 3 × 0,6), pro Sekunde
+  kommt 1 zurück, zur Halbzeit ist er wieder frisch. Unter 60 sinkt seine Fanggrenze für mittlere Bälle (bis −5 m/s), nach dem
+  Hechten steht er langsamer auf. **Sichtbar:** die Handschuhe leuchten schwächer und werden grau. Eine Parade trotz Müdigkeit
+  meldet sich als Höhepunkt bei den Action-Momenten.
+- **Stellung:** ein Stück Richtung Winkelhalbierende zwischen Ball → linker und Ball → rechter Pfosten (schließt die kurze Ecke).
+- **Herauslaufen 1 gegen 1:** kommt kein Verteidiger früher an den Schusspunkt, läuft er dem Angreifer entgegen – höchstens 1 m
+  über die Torraumkante; draußen (ohne Hände) **blockt** er mit gespreizten Beinen. Ein zweiter freier Angreifer hält ihn im Tor.
+- **Heber:** wird er überlupft, stolpert er manchmal (25 %).
+- Regler: `?muede=0`, `?winkel=0`, `?raus=0`, `?stolpern=0` (alle zusammen = Verhalten vor E1).
+
 **Ballmagnet (Nacht 2c, Peter: „leichter ballmagnet, sonst kein dribbling“; Nacht 2d: „viel mehr Ballmagnet“ → Stärke 1,2
 statt 0,5, im Sprint 70 % statt 45 %):** zwischen den echten Ballkontakten führt
 eine weiche Feder den Ball, den du zuletzt berührt hast, auf die Linie deines Sticks und bremst ihn, wenn er zu weit
@@ -207,6 +219,10 @@ Ball mit (Sohle/Außenseite). `?zack=0` = altes Gefühl aus Nacht 1 zum Vergleic
 | `?sprint=8`, `?lauf=5.5` | Sprint-/Lauftempo (m/s); mit Sprint-frei wirkt `sprint` nur noch auf die Antrittskurve |
 | `?abschirmen=0`, `?schirmR=1.5`, `?schirmVor=0.3`, `?schirmSeite=0.35`, `?schirmVorlage=0.5`, `?schirmGraetsche=1.2` | n7 Abschirmen aus; Gegner-Abstand zum Ball (m); so viel näher muss der Gegnerfuß sein (m); Ball zur abgewandten Seite (m); kürzere Vorlage (Anteil); Grätsch-Rate der Bots gegen Abschirmer |
 | `?fangMax=13`, `?fangKoerperMax=16`, `?abprallMin=0.25`, `?abprallMax=0.4`, `?nachfassen=0.5` | n7 Fanggrenze aller Tormänner (m/s, `0` = alt); Körperbälle bis (m/s); Abpraller-Tempo (Anteil); Sekunden ohne Nachfassen nach dem Abklatschen |
+| `?muede=0`, `?muedeFang=60`, `?muedeErh=1`, `?muedeSenk=5`, `?muedeAuf=0.6` | n7 E1 Tormann-Müdigkeit aus; Energie-Schwelle, ab der die Fanggrenze sinkt; Erholung je Sekunde; so viel m/s sinkt sie bei Energie 0; Aufsteh-Tempo bei Energie ≤ 20. Kosten je Parade: `?muedeFangK=8`, `?muedeHecht=18`, `?muedeAbwehr=14` |
+| `?winkel=0` … `1` | n7 E1 Tormann-Stellung: Anteil Richtung Winkelhalbierende (Standard 0,5, `0` = alt) |
+| `?raus=0`, `?rausD=5`, `?rausMarge=1`, `?rausMax=1`, `?blockSpreiz=1` | n7 E1 Herauslaufen 1 gegen 1 aus; Schusspunkt vor dem Tor (m); so viel früher muss ein Verteidiger dort sein (m); höchstens so weit über die Torraumkante (m); Körperbreite beim Blocken (m) |
+| `?stolpern=0.25` | n7 E1 Chance, dass der Tormann bei einem Heber über ihn stolpert (`0` = nie) |
 | `?hilfe=0` … `1` | Stärke der Ballführungs-Hilfe (lenkt den Spieler zum Ball) |
 | `?magnet=0` … `2` | Ballmagnet (Standard 1,8 seit n7, davor 1,2; Nacht 2c 0,5; 0 = Ballführung wie Nacht 2b). Feinregler: `?magnetK=112`, `?magnetC=20`, `?magnetAcc=42`, `?magnetLead=0.7`, `?magnetSprint=0.7` (Nacht 2c 0,45), `?magnetOpp=0.5`, `?magnetShield=0.3`, `?magnetTurn0=60`, `?magnetTurn1=120`, `?magnetTurnMin=0.5` (n6 0,25), `?magnetKehr=0.15` (Kehrtwende lässt los), `?magnetSlide=0` (Magnet während einer gegnerischen Grätsche) |
 | `?wucht=1.5` | Endtempo von Vollspann, angeschnittenen Schüssen, Volley und Dropkick (Nacht 2d; `1` = Nacht 2c). `?wuchtDrall=1`: Drall der Banane wächst mit (0 = Drall wie Nacht 2c, die Kurve wird dann kleiner) |
@@ -314,6 +330,9 @@ node tests/node/fanggrenze.test.mjs # n7: Fanggrenze aller Tormänner, Abpraller
 node tests/node/n7_probe.mjs 20 "" st2  # n7-Messwerkzeug: alle Etappe-0-Größen im Bot-Selbstspiel (parallel), Mix alle | st2 | 13
 node tests/node/hold_probe.mjs      # n7: Skript-Mensch dribbelt gegen Stufe-2-Verteidiger (Haltedauer, Verluste)
 node tests/node/keeper_catch_probe.mjs "" 12  # n7: Fangquote erster Torwartkontakt je Schusstempo (alle / direkte Schüsse)
+node tests/node/tormann_e1.test.mjs # n7 E1: Müdigkeit, Kondition je Stufe, Winkelhalbierende, 1 gegen 1, Blocken, Heber-Stolpern, Bot-Spiel
+SPITZ=1 node tests/node/keeper_series.mjs 300  # n7 E1: Schussserie aus spitzem Winkel (Winkelhalbierende)
+python3 tests/n7_e1_bilder.py quer   # n7 E1: Fotos Handschuhe frisch/müde, Blocken, Stolpern
 node tests/node/run_par.mjs 5      # alle Node-Tests parallel (≈ 6 statt 11 min)
 python3 tests/n7_hud.py; python3 tests/n7_parade.py quer flach  # n7: Fotos Knöpfe ohne Sprint, Bildfolge Abklatschen/Fausten
 node tests/node/magnet.test.mjs     # Ballmagnet vorher/nachher: Kinder-Stick (Ball weg je Minute), Parcours, Selbstspiel-Ballverluste, Regeln
@@ -358,6 +377,11 @@ python3 tools/fetch_assets.py && python3 tools/make_assets.py   # Assets neu bau
 Browser-Tests laufen headless über die GPU (ANGLE/Metal), nie zwei Browser gleichzeitig.
 
 ## Änderungen
+- **n7 Vorlagen E1 Tormann (20.10., Version 0.5.1)** – Tormann-Müdigkeit (Paraden kosten Energie, müde fängt er mittlere Bälle
+  seltener und steht langsamer auf, die Handschuhe leuchten schwächer; gute Tormänner haben mehr Kondition), Stellung Richtung
+  Winkelhalbierende, Herauslaufen 1 gegen 1 (vereitelt Stufe 2: 38 → 63 %) mit Blocken außerhalb des Torraums, Stolpern bei
+  Hebern. Dazu behoben: ein Pass galt als „unterwegs“, solange der Passgeber den Ball zufällig weiter berührte (Ball klemmte an
+  der Bande). Bericht: [`N7_VORLAGEN_BERICHT.md`](N7_VORLAGEN_BERICHT.md).
 - **n7 Etappe 0 (14.10./18.10., Version 0.5.0)** – kein Sprint (ein Lauftempo 6,0 m/s), Ballbesitz mit Magnet 1,8 und Abschirmen,
   Tormann klatscht scharfe Schüsse ab (Nachschuss-Tore 3–8 % → 24–28 % aller Tore). Bericht: [`N7_VORLAGEN_BERICHT.md`](N7_VORLAGEN_BERICHT.md).
 - **n6 Fan-Edit und Action-Momente (10.10., Version 0.4.0)** – Peters Wünsche vom 09.10.: Die Tor-Wiederholung ist jetzt ein
