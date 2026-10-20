@@ -248,3 +248,62 @@ Rauschen (± 1,5 Punkte bei ≈ 1100 Schüssen). Alle Regler auf 0 geben genau d
 2. Allein aufs Tor zulaufen: der Tormann kommt heraus. Bis an seinen Torraum heran dribbeln – draußen blockt er mit gespreizten
    Beinen. Zum Vergleich `?raus=0`; weiter heraus: `?rausMax=2`.
 3. Einen Heber (Lupfer) über ihn spielen: manchmal stolpert er. `?stolpern=0` = nie, `?stolpern=0.5` = öfter.
+
+---
+
+## Vorlagen-Etappe E2 – Nachdrall nach dem Schuss (Release 0.5.2)
+
+Datenblatt #5 (Vorlage C, angepasst). Neu `src/sim/nachdrall.js`, eingebunden im Spiel und im freien Training.
+
+### Was neu ist
+- In den ersten **0,25 s** nach dem Schuss gibt der Stick dem fliegenden Ball **zusätzlichen Drall** – die Bahn wird nie
+  verschoben, die Kurve macht die vorhandene Magnus-Physik. **Stick zur Seite** = Seitendrall (die Seite wird beim ersten
+  deutlichen Ausschlag festgelegt), **zurück** = Rückdrall (der Ball steigt), **vor** = Vorwärtsdrall (er senkt sich).
+- Abklingen in zehn gleich langen Abschnitten mit den Gewichten 5-4-3-2-2-2-2-1-1-1: 52 % der Wirkung in den ersten drei,
+  54 % in den ersten 0,08 s.
+- Gezählt wird nur die **Stick-Änderung gegenüber dem Kontakt**: wer zum Zielen den Stick zur Ecke hält und dort lässt, gibt
+  keinen Nachdrall („ohne Eingabe ändert sich nichts“).
+- Stärke × Wucht (voll ab 25 m/s, ein 12-m/s-Schuss bekommt gut die Hälfte). Jede Berührung (Tormann, Spieler), Bande, Pfosten
+  oder Netz beendet das Fenster. Am Ende meldet das Spiel ein Ereignis `nachdrall` (Drall in U/s).
+- **Bots** geben mit der Chance ihrer Stufe Nachdrall (Stufe 1/2/3: 5/15/30 % der Schüsse), immer vom Tormann weg, Stärke
+  30–70 %.
+- Werte: seitlich **14 U/s** bei vollem Stick (Datenblatt-Startwert 8), zurück/vor ± 5 U/s. Warum 14: der Auftrieb sättigt –
+  ein 15-m-Schuss (22 m/s, 7°) bog sich mit 8 U/s nur 1,2 m, mit 12 U/s 1,4 m, mit 14 U/s 1,5 m, mit 20 U/s 1,6 m.
+- Hilfe-Tabelle im Spiel: neue Zeile „gleich nach dem Schuss: Stick zur Seite = Kurve, zurück = steigt, vor = senkt sich“.
+- Regler: `?nachdrall=0` (aus) … `2` (doppelt), `?nachdrallT=0.25`, `?nachdrallSeite=14`, `?nachdrallHoch=5`,
+  `?nachdrallBot=1` (`0` = Bots nie).
+
+### Messung
+
+| Größe | Datenblatt-Ziel | gemessen |
+|---|---|---|
+| 15-m-Schuss (22 m/s, 7°) mit vollem Stick zur Seite: seitlicher Versatz | +1,5 … 3 m | 1,53 m links, 1,54 m rechts |
+| Anteil der Wirkung in den ersten 0,08 s | ≥ 50 % | 54 % |
+| halber Stick | – | halber Drall (Kurve 0,81 ×, Auftrieb sättigt) |
+| Stick zurück (24 m/s, 10°): Höhe nach 15 m | Ball steigt | 0,36 → 1,53 m |
+| Stick vor (24 m/s, 14°): Höhe nach 15 m | Ball senkt sich | 1,37 → 0,50 m |
+| Stick schon beim Kontakt so gehalten / `?nachdrall=0` | keine Kurve | 0,00 m / 0,00 m |
+| Torquote mit − ohne Nachdrall, Bot-Spiel Stufe 2 (20 Spiele) | höchstens +10 Punkte | 31,3 − 28,9 = +2,4 |
+| … Stufe 1 gegen 3 (10 Spiele) / Stufen reihum (12 Spiele) | höchstens +10 Punkte | +0,6 / −3,7 |
+| Nachdrall je Spiel (Bots) st2 / 1 gegen 3 / reihum | – | 4,7 / 4,1 / 6,1 |
+| Hechter, Luftbälle je Spiel (st2) | ≥ 15, ≥ 9 | 21,9, 9,4 |
+| Hänger / Numerik | 0 / 0 | 0 / 0 |
+
+Die Unterschiede der Torquote liegen im Rauschen (± 2–3 Punkte je Lauf): der Nachdrall der Bots ist selten und gleicht sich aus
+– er bringt den Ball vom Tormann weg, aber auch öfter neben das Tor.
+
+### Bilder
+`tests/shots/n7/e2_nachdrall_quer.jpg`, `e2_nachdrall_hoch.jpg` (`python3 tests/n7_e2_bilder.py quer|hoch`): derselbe Schuss
+aus 16 m, Kamera steil über der Bahn, 7 Bilder (0,1 … 0,7 s) hell übereinandergelegt. Links ohne Stick: gerade Spur zur
+Tormitte. Rechts Stick nach links direkt nach dem Kontakt: die Spur biegt sich gleichmäßig nach links (≈ 1,4 m bis zur
+Torraumgrenze). Sichtprüfung: die Kurve ist klar zu sehen, ohne Knick (kein Versetzen, nur Drall).
+
+### Tests E2
+- Neu `tests/node/nachdrall.test.mjs` (17 Prüfungen: Gewichte, Stick-Richtung, Kurve links/rechts, halber Stick, steigen,
+  senken, gehaltener Stick, Regler aus, × Wucht, Bot-Spiel mit/ohne). Alle 34 Node-Tests grün, `tests/smoke.py` 0 Fehler.
+
+### Handy-Test für Peter (E2)
+1. Aus 10–15 m scharf aufs Tor schießen und **sofort danach** mit dem Daumen den Stick zur Seite wischen: der Ball zieht eine
+   Kurve in diese Richtung. Je früher, desto stärker – nach einer Viertelsekunde wirkt nichts mehr.
+2. Direkt nach dem Schuss Stick zurück: der Ball steigt (Achtung Latte!), Stick vor: er senkt sich.
+3. Zu stark/zu schwach? `?nachdrall=0.6` bzw. `?nachdrall=1.5`; aus: `?nachdrall=0`. Bots ohne Nachdrall: `?nachdrallBot=0`.

@@ -147,6 +147,11 @@ Schuss, sondern klatscht nur ab“)** – gilt für alle Spieler, Mensch und Bot
 - **Heber:** wird er überlupft, stolpert er manchmal (25 %).
 - Regler: `?muede=0`, `?winkel=0`, `?raus=0`, `?stolpern=0` (alle zusammen = Verhalten vor E1).
 
+**n7 Vorlagen E2 – Nachdrall (20.10.):** in der ersten Viertelsekunde nach dem Schuss gibt der Stick dem Ball Drall –
+**zur Seite = Kurve** (15-m-Schuss ≈ 1,5 m), **zurück = steigt**, **vor = senkt sich**; die Wirkung klingt schnell ab (gut die
+Hälfte in den ersten 0,08 s), die Kurve macht die echte Ballphysik. Nur die Stick-Änderung nach dem Kontakt zählt. Bots nutzen
+ihn selten (5/15/30 % der Schüsse je Stufe). `?nachdrall=0` = aus.
+
 **Ballmagnet (Nacht 2c, Peter: „leichter ballmagnet, sonst kein dribbling“; Nacht 2d: „viel mehr Ballmagnet“ → Stärke 1,2
 statt 0,5, im Sprint 70 % statt 45 %):** zwischen den echten Ballkontakten führt
 eine weiche Feder den Ball, den du zuletzt berührt hast, auf die Linie deines Sticks und bremst ihn, wenn er zu weit
@@ -223,6 +228,7 @@ Ball mit (Sohle/Außenseite). `?zack=0` = altes Gefühl aus Nacht 1 zum Vergleic
 | `?winkel=0` … `1` | n7 E1 Tormann-Stellung: Anteil Richtung Winkelhalbierende (Standard 0,5, `0` = alt) |
 | `?raus=0`, `?rausD=5`, `?rausMarge=1`, `?rausMax=1`, `?blockSpreiz=1` | n7 E1 Herauslaufen 1 gegen 1 aus; Schusspunkt vor dem Tor (m); so viel früher muss ein Verteidiger dort sein (m); höchstens so weit über die Torraumkante (m); Körperbreite beim Blocken (m) |
 | `?stolpern=0.25` | n7 E1 Chance, dass der Tormann bei einem Heber über ihn stolpert (`0` = nie) |
+| `?nachdrall=0` … `2`, `?nachdrallT=0.25`, `?nachdrallSeite=14`, `?nachdrallHoch=5`, `?nachdrallBot=1` | n7 E2 Nachdrall nach dem Schuss: Stärke (`0` = aus); Fenster (s); Seitendrall bzw. Rück-/Vorwärtsdrall bei vollem Stick (U/s); × Chance der Bots (Stufe 1/2/3: 5/15/30 %) |
 | `?hilfe=0` … `1` | Stärke der Ballführungs-Hilfe (lenkt den Spieler zum Ball) |
 | `?magnet=0` … `2` | Ballmagnet (Standard 1,8 seit n7, davor 1,2; Nacht 2c 0,5; 0 = Ballführung wie Nacht 2b). Feinregler: `?magnetK=112`, `?magnetC=20`, `?magnetAcc=42`, `?magnetLead=0.7`, `?magnetSprint=0.7` (Nacht 2c 0,45), `?magnetOpp=0.5`, `?magnetShield=0.3`, `?magnetTurn0=60`, `?magnetTurn1=120`, `?magnetTurnMin=0.5` (n6 0,25), `?magnetKehr=0.15` (Kehrtwende lässt los), `?magnetSlide=0` (Magnet während einer gegnerischen Grätsche) |
 | `?wucht=1.5` | Endtempo von Vollspann, angeschnittenen Schüssen, Volley und Dropkick (Nacht 2d; `1` = Nacht 2c). `?wuchtDrall=1`: Drall der Banane wächst mit (0 = Drall wie Nacht 2c, die Kurve wird dann kleiner) |
@@ -332,6 +338,8 @@ node tests/node/hold_probe.mjs      # n7: Skript-Mensch dribbelt gegen Stufe-2-V
 node tests/node/keeper_catch_probe.mjs "" 12  # n7: Fangquote erster Torwartkontakt je Schusstempo (alle / direkte Schüsse)
 node tests/node/tormann_e1.test.mjs # n7 E1: Müdigkeit, Kondition je Stufe, Winkelhalbierende, 1 gegen 1, Blocken, Heber-Stolpern, Bot-Spiel
 SPITZ=1 node tests/node/keeper_series.mjs 300  # n7 E1: Schussserie aus spitzem Winkel (Winkelhalbierende)
+node tests/node/nachdrall.test.mjs  # n7 E2: Nachdrall (Abklingen, Kurve/Steigen/Senken nach 15 m, Bot-Spiel mit/ohne)
+python3 tests/n7_e2_bilder.py quer   # n7 E2: Stroboskop-Bild desselben Schusses ohne/mit Nachdrall
 python3 tests/n7_e1_bilder.py quer   # n7 E1: Fotos Handschuhe frisch/müde, Blocken, Stolpern
 node tests/node/run_par.mjs 5      # alle Node-Tests parallel (≈ 6 statt 11 min)
 python3 tests/n7_hud.py; python3 tests/n7_parade.py quer flach  # n7: Fotos Knöpfe ohne Sprint, Bildfolge Abklatschen/Fausten
@@ -377,6 +385,8 @@ python3 tools/fetch_assets.py && python3 tools/make_assets.py   # Assets neu bau
 Browser-Tests laufen headless über die GPU (ANGLE/Metal), nie zwei Browser gleichzeitig.
 
 ## Änderungen
+- **n7 Vorlagen E2 Nachdrall (20.10., Version 0.5.2)** – gleich nach dem Schuss den Stick zur Seite: der Ball zieht über echten
+  Drall eine Kurve (15-m-Schuss ≈ 1,5 m), zurück = steigt, vor = senkt sich; Bots je Stufe 5/15/30 % der Schüsse.
 - **n7 Vorlagen E1 Tormann (20.10., Version 0.5.1)** – Tormann-Müdigkeit (Paraden kosten Energie, müde fängt er mittlere Bälle
   seltener und steht langsamer auf, die Handschuhe leuchten schwächer; gute Tormänner haben mehr Kondition), Stellung Richtung
   Winkelhalbierende, Herauslaufen 1 gegen 1 (vereitelt Stufe 2: 38 → 63 %) mit Blocken außerhalb des Torraums, Stolpern bei

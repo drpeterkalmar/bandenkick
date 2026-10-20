@@ -11,10 +11,11 @@ import { shotFeatures, shotQuality } from './shot.js';
 import { planAir } from './air.js';
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+// nachdrall (n7 E2): Anteil der Schüsse mit Nachdrall vom Tormann weg
 export const LEVELS = {
-  1: { react: 0.36, think: 0.36, speed: 0.8, noise: 2.4, shotNoise: 4.4, aimNoise: 1.1, keeperReact: 0.34, airTry: 0.45, shotPow: -0.05, skill: 1.0, catchSkill: 0.3, fumble: 0.35, err: 0.35, shootMax: 11, keeperMove: 0.8, dive: 0.6, tackle: 1.4, minXg: 0.05, slide: 0.2 },
-  2: { react: 0.16, think: 0.2, speed: 0.88, noise: 1.3, shotNoise: 3.0, aimNoise: 0.85, keeperReact: 0.26, airTry: 0.5, shotPow: 0, skill: 1.15, catchSkill: 0.8, fumble: 0.12, err: 0.12, shootMax: 13, keeperMove: 0.95, dive: 0.9, tackle: 1.0, minXg: 0.06, slide: 0.3 },
-  3: { react: 0.1, think: 0.1, speed: 0.95, noise: 0.7, shotNoise: 2.1, aimNoise: 0.5, keeperReact: 0.19, airTry: 0.65, shotPow: 0.1, skill: 1.5, catchSkill: 1.0, fumble: 0.03, err: 0.04, shootMax: 13, keeperMove: 1.0, dive: 1.0, tackle: 0.85, minXg: 0.07, slide: 0.45 },
+  1: { react: 0.36, think: 0.36, speed: 0.8, noise: 2.4, shotNoise: 4.4, aimNoise: 1.1, keeperReact: 0.34, airTry: 0.45, shotPow: -0.05, skill: 1.0, catchSkill: 0.3, fumble: 0.35, err: 0.35, shootMax: 11, keeperMove: 0.8, dive: 0.6, tackle: 1.4, minXg: 0.05, slide: 0.2, nachdrall: 0.05 },
+  2: { react: 0.16, think: 0.2, speed: 0.88, noise: 1.3, shotNoise: 3.0, aimNoise: 0.85, keeperReact: 0.26, airTry: 0.5, shotPow: 0, skill: 1.15, catchSkill: 0.8, fumble: 0.12, err: 0.12, shootMax: 13, keeperMove: 0.95, dive: 0.9, tackle: 1.0, minXg: 0.06, slide: 0.3, nachdrall: 0.15 },
+  3: { react: 0.1, think: 0.1, speed: 0.95, noise: 0.7, shotNoise: 2.1, aimNoise: 0.5, keeperReact: 0.19, airTry: 0.65, shotPow: 0.1, skill: 1.5, catchSkill: 1.0, fumble: 0.03, err: 0.04, shootMax: 13, keeperMove: 1.0, dive: 1.0, tackle: 0.85, minXg: 0.07, slide: 0.45, nachdrall: 0.3 },
 };
 // Tormann-Stufen (Nacht 2c, Peter: „Cpu goalie ist zu stark“): getrennt von den Feldspielern, Regler ?tormann=1…3
 // (auch Zwischenwerte, z. B. 1.5; 0 = wie die Mannschaft ?bots=). Bis Nacht 2b hingen die Werte an LEVELS

@@ -9,6 +9,7 @@ import { Player, EMPTY_INPUT } from './player.js';
 import { buildCage, goalSide, outOfCage } from './world.js';
 import { Rules } from './rules.js';
 import { Bots, keeperLevel } from './bots.js';
+import { ndStart, ndStep, ndBot } from './nachdrall.js';
 import { newGestures, stepGestures, gestureView } from '../input/gesture.js';
 import { makeChallenge, challengeDef } from './challenges.js';
 
@@ -109,8 +110,11 @@ export class Game {
 
   stepSolo(inputs) {
     const b = this.ball;
-    for (let i = 0; i < this.players.length; i++) this.players[i].step(DT, (i === 0 ? this.humanInput(inputs[i]) : inputs[i]) || EMPTY_INPUT, this);
+    const ins = this._ins || (this._ins = []);
+    for (let i = 0; i < this.players.length; i++) this.players[i].step(DT, (ins[i] = (i === 0 ? this.humanInput(inputs[i]) : inputs[i]) || EMPTY_INPUT), this);
+    if (this.state === 'play') this.nachdrall(ins); // n7 E2
     b.step(DT, this.cage);
+    if (this.nd) this.ndHit();
     this.numerics();
     this.stateT += DT;
     if (this.state === 'play') {
@@ -188,7 +192,9 @@ export class Game {
       this.players[i].step(DT, ins[i], this);
     }
     if (live) R.hands(DT, (i) => ins[i]);
+    if (live) this.nachdrall(ins);
     if (b.held >= 0) R.carry(); else b.step(DT, this.cage);
+    if (this.nd) this.ndHit();
     this.separate();
     this.numerics();
     if (live) {
@@ -202,6 +208,34 @@ export class Game {
     this.state = R.phase === 'goal' ? 'goal' : R.phase === 'out' ? 'out' : 'play';
     this.t += DT; this.tick++;
     return this.events;
+  }
+
+  // n7 E2: Nachdrall nach dem Schuss – neuer Schuss in diesem Takt startet ihn (Mensch: Stick-Änderung, Bot: Chance der Stufe),
+  // danach je Takt zusätzlicher Drall bis zum Ende des Fensters oder der nächsten Berührung
+  nachdrall(ins) {
+    if (!this.P.nachdrall) { this.nd = null; return; }
+    for (const e of this.events) {
+      if (e.type !== 'kick' || e.kind !== 'shot' || e.player == null || e._nd) continue;
+      e._nd = true;
+      const pl = this.players[e.player], hum = e.player === this.human, inp = hum ? ins[this.human] : null;
+      const L = !hum && this.bots ? this.bots.L[pl.team] : null;
+      const bot = hum ? null : ndBot(this, pl, e, L ? (L.nachdrall || 0) * this.P.nachdrallBot : 0);
+      if (!hum && !bot) { this.nd = null; continue; }
+      this.nd = ndStart(this, e, inp ? [inp.mx || 0, inp.mz || 0] : null, bot);
+      if (this.nd) this.nd.human = hum;
+    }
+    const st = this.nd;
+    if (!st) return;
+    const inp = st.human && this.human >= 0 ? ins[this.human] : null;
+    if (!ndStep(this, st, inp, DT)) {
+      if (st.n) this.events.push({ type: 'nachdrall', player: st.pl, human: st.human, side: st.sum, back: st.sumB });
+      this.nd = null;
+    }
+  }
+
+  // Bande, Pfosten oder Netz beenden den Nachdrall
+  ndHit() {
+    for (const e of this.events) if (e.type === 'board' || e.type === 'post' || e.type === 'net') { this.nd = null; return; }
   }
 
   // Nacht 2e: Nach dem eigenen Pass steuert der Mensch den Empfänger. Hält er den Stick weiter in Pass-Richtung (Kinder-

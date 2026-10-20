@@ -308,6 +308,15 @@ export const DEFAULTS = {
   rausD: 5, rausMarge: 1, rausMax: 1, blockSpreiz: 1.0, rausAbst: 2.2, rausVor: 4, // m Abstand zum Angreifer beim Entgegenlaufen; Angreifer höchstens rausD + rausVor m vor dem Tor
   // E1 #4 (Vorlage B, gedämpft): Heber (Chip) über den Tormann – mit dieser Chance stolpert er (0,6 s langsam, keine Hände)
   stolpern: 0.25,         //                                                                         [?stolpern=0]
+  // n7 Vorlagen E2 #5 (Vorlage C, angepasst): Nachdrall nach dem Schuss (src/sim/nachdrall.js). In nachdrallT s nach dem Kontakt
+  // gibt die Stick-Änderung Drall: seitlich bis nachdrallSeite U/s, zurück/vor ± nachdrallHoch U/s (× Wucht: voll ab 25 m/s),
+  // abklingend 5-4-3-2-2-2-2-1-1-1. Bots mit der Chance ihrer Stufe (LEVELS.nachdrall 5/15/30 %) × nachdrallBot. 0 = aus
+  nachdrall: 1,           // Stärke 0 … 2                                                            [?nachdrall=0]
+  nachdrallT: 0.25,       // s Fenster
+  nachdrallSeite: 14,     // U/s seitlich bei vollem Stick (Datenblatt 8: 15-m-Schuss nur 1,2 m Kurve; der Auftrieb sättigt –
+                          // 12 → 1,4 m, 14 → 1,5 m, 20 → 1,6 m)
+  nachdrallHoch: 5,       // U/s Rück-/Vorwärtsdrall bei vollem Stick
+  nachdrallBot: 1,        // × Chance der Bots (0 = Bots nie)
   diveSpeed: 5.2,         // m/s seitlich beim Hechten
   diveT: 0.38,            // s Flugphase des Hechtsprungs
   diveReach: 1.25,        // m Reichweite im Hechtsprung

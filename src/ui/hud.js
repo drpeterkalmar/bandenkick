@@ -96,6 +96,7 @@ export function buildHud(root, canvas) {
     <tr><td><b>tippen</b></td><td>flach in den Laufweg →</td><td>Vollspann ⚡ (nah platziert, weit hart)</td></tr>
     <tr><td><b>doppeltippen</b></td><td>hoch (Flanke, Chip) ⌒</td><td>angeschnitten ↪ Innen- / ↩ Außenrist</td></tr>
     <tr><td><b>Ball in der Luft</b></td><td></td><td>Schuss tippen: Kopfball, Volley, Seitfall-, Fallrückzieher – den besten Moment wählt das Spiel</td></tr>
+    <tr><td><b>gleich nach dem Schuss</b></td><td></td><td>Stick zur Seite = Kurve ↪, zurück = steigt, vor = senkt sich (Nachdrall)</td></tr>
     <tr><td><b>Gegner hat den Ball</b> (bis 2,5 m)</td><td>Grätsche, erobert → Pass</td><td>Grätsche, erobert → Schuss aufs Tor bzw. weg</td></tr></table>
     <p class="small">Kein Aufladen: die Stärke wählt das Spiel. Du darfst schon tippen, bevor der Ball am Fuß ist.</p>
     <ul class="howto"></ul>
