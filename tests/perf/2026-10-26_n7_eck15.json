@@ -1,0 +1,138 @@
+{
+ "datum": "2026-10-26T06:59:28",
+ "stand": "n7_eck15",
+ "wurzel": "/Users/wohnzimmer/dev/bandenkick",
+ "git": "45da338",
+ "profil": {
+  "drossel": 4,
+  "dpr": 2.6,
+  "sek": 10.0,
+  "geraete": "hoch,quer",
+  "gpu": "ANGLE/Metal headless",
+  "start": "open",
+  "vsync": false,
+  "zusatz": ""
+ },
+ "szenen": {
+  "spiel_s1": {
+   "hoch": {
+    "n": 1872,
+    "p50": 4.8,
+    "p95": 8.4,
+    "p99": 12.2,
+    "fps": 187,
+    "calls": 46,
+    "callsMax": 59,
+    "tris": 58634,
+    "tex": 70,
+    "zusatz": {
+     "dpr": 1.5,
+     "size": [
+      618,
+      1372
+     ],
+     "level": 1,
+     "kino": {
+      "level": 1,
+      "name": "Standard",
+      "pipeline": true,
+      "scale": 0.85,
+      "msaa": 0,
+      "stages": [
+       "scale",
+       "aa",
+       "sharpen",
+       "grade",
+       "vignette",
+       "dither",
+       "contact",
+       "dof"
+      ],
+      "grade": "tv",
+      "size": [
+       525,
+       1166
+      ],
+      "licht": "tag",
+      "bloom": [
+       0.97,
+       0.224
+      ],
+      "dof": null,
+      "kontakt": true
+     },
+     "auto": {
+      "on": false,
+      "steps": []
+     },
+     "shadow": {
+      "ext": 15,
+      "texel": 0.0293,
+      "karte": 1024
+     }
+    },
+    "boot_s": 0.9,
+    "fehler": []
+   },
+   "quer": {
+    "n": 1733,
+    "p50": 5.3,
+    "p95": 8.9,
+    "p99": 13,
+    "fps": 173.1,
+    "calls": 50,
+    "callsMax": 63,
+    "tris": 66503,
+    "tex": 70,
+    "zusatz": {
+     "dpr": 1.5,
+     "size": [
+      1372,
+      618
+     ],
+     "level": 1,
+     "kino": {
+      "level": 1,
+      "name": "Standard",
+      "pipeline": true,
+      "scale": 0.85,
+      "msaa": 0,
+      "stages": [
+       "scale",
+       "aa",
+       "sharpen",
+       "grade",
+       "vignette",
+       "dither",
+       "contact",
+       "dof"
+      ],
+      "grade": "tv",
+      "size": [
+       1166,
+       525
+      ],
+      "licht": "tag",
+      "bloom": [
+       0.97,
+       0.224
+      ],
+      "dof": null,
+      "kontakt": true
+     },
+     "auto": {
+      "on": false,
+      "steps": []
+     },
+     "shadow": {
+      "ext": 15.5,
+      "texel": 0.0303,
+      "karte": 1024
+     }
+    },
+    "boot_s": 1.0,
+    "fehler": []
+   }
+  }
+ }
+}

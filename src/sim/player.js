@@ -5,6 +5,7 @@
 // Hilfen ziehen nur, solange der Spieler nichts Deutliches tut.
 import { setKick, passDist } from './kickplan.js';
 import { perfektPass } from './perfekt.js';
+import { clampCorner } from './world.js';
 import { planPass } from './pass.js';
 import { planShot } from './shot.js';
 import { planAir, planAirHelp, stepAir, stepFall } from './air.js';
@@ -84,6 +85,7 @@ export class Player {
     this.x += this.vx * dt; this.z += this.vz * dt;
     const lx = game.cage.hx - P.bodyR, lz = game.cage.hz - P.bodyR;
     this.x = clamp(this.x, -lx, lx); this.z = clamp(this.z, -lz, lz);
+    clampCorner(game.cage, this, P.bodyR); // n7 E5: Eck-Schräge
     this.speed = Math.hypot(this.vx, this.vz);
     this.plant = 0;
   }
@@ -262,6 +264,10 @@ export class Player {
     if (this.x < -lx) { this.x = -lx; if (this.vx < 0) this.vx = 0; }
     if (this.z > lz) { this.z = lz; if (this.vz > 0) this.vz = 0; }
     if (this.z < -lz) { this.z = -lz; if (this.vz < 0) this.vz = 0; }
+    if (clampCorner(game.cage, this, P.bodyR)) { // n7 E5: an der Eck-Schräge den Anteil in die Wand nehmen
+      const nx = -Math.sign(this.x) * Math.SQRT1_2, nz = -Math.sign(this.z) * Math.SQRT1_2, vn = this.vx * nx + this.vz * nz;
+      if (vn < 0) { this.vx -= vn * nx; this.vz -= vn * nz; }
+    }
     this.speed = Math.hypot(this.vx, this.vz);
     if (this.speed > 1e-6) { this.hx = this.vx / this.speed; this.hz = this.vz / this.speed; }
     // Blickrichtung: Stemmschritt → Körper dreht schon in die neue Richtung; läuft → Laufrichtung;
@@ -465,6 +471,8 @@ export class Player {
     const dx = want ? sx : Math.cos(this.face), dz = want ? sz : Math.sin(this.face);
     // an der Bande nicht in die Bande ziehen (sonst klemmt der Ball dort fest)
     if ((Math.abs(b.p.x) > game.cage.hx - 0.5 && dx * Math.sign(b.p.x) > 0.3) || (Math.abs(b.p.z) > game.cage.hz - 0.5 && dz * Math.sign(b.p.z) > 0.3)) return;
+    const ck = game.cage.ecke; // n7 E5: ebenso an der Eck-Schräge
+    if (ck && Math.abs(b.p.x) + Math.abs(b.p.z) > game.cage.hx + game.cage.hz - ck - 0.7 && (dx * Math.sign(b.p.x) + dz * Math.sign(b.p.z)) * Math.SQRT1_2 > 0.3) return;
     // Abschirmen: Gegner ≤ 1,2 m (n7: schirmR) am Ball → Soll-Vorlage bis magnetShield (n7: schirmSeite) m zur abgewandten Seite
     // (Körper dazwischen), n7 zusätzlich kürzer vor dem Fuß
     const R = P.abschirmen ? P.schirmR : 1.2, shM = P.abschirmen ? P.schirmSeite : P.magnetShield;
@@ -476,7 +484,8 @@ export class Player {
     }
     const L = (0.15 + 0.05 * this.speed) * (P.abschirmen ? 1 - P.schirmVorlage * near : 1); // Vorlage: Stand 0,15 m, 5 m/s 0,4 m
     // Zielpunkt nie in der Bande (Abschirmen an der Bande entlang würde den Ball sonst dagegen drücken)
-    const tx = clamp(fx + dx * L - dz * sh, -game.cage.hx + 0.4, game.cage.hx - 0.4), tz = clamp(fz + dz * L + dx * sh, -game.cage.hz + 0.4, game.cage.hz - 0.4);
+    let tx = clamp(fx + dx * L - dz * sh, -game.cage.hx + 0.4, game.cage.hx - 0.4), tz = clamp(fz + dz * L + dx * sh, -game.cage.hz + 0.4, game.cage.hz - 0.4);
+    if (game.cage.ecke) { const T = { x: tx, z: tz }; if (clampCorner(game.cage, T, 0.4)) { tx = T.x; tz = T.z; } } // n7 E5: nicht in die Eck-Schräge
     const ex = tx - b.p.x, ez = tz - b.p.z;
     // Kein Tragen: längs zur Stick-Richtung zieht der Magnet nur zurück (Ball zu weit vorn bzw. schneller als der
     // Spieler) – nach vorn bringt ihn weiter der Fuß (echte Kontakte). Quer führt er ihn auf die Linie des Sticks.
@@ -704,6 +713,7 @@ export class Player {
     this.x += this.vx * dt; this.z += this.vz * dt;
     const lx = game.cage.hx - P.bodyR, lz = game.cage.hz - P.bodyR;
     this.x = clamp(this.x, -lx, lx); this.z = clamp(this.z, -lz, lz);
+    clampCorner(game.cage, this, P.bodyR); // n7 E5
     this.speed = Math.hypot(this.vx, this.vz);
     this.gait += this.speed * dt / 1.1;
     // flach am Boden: nur tiefe Bälle prallen am Körper ab (wie nach dem Seitfallzieher)

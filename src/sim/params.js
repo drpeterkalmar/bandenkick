@@ -336,6 +336,8 @@ export const DEFAULTS = {
   stickruhe: 0,           // s, 0 = aus                                                               [?stickruhe=0.1]
   ruheMin: 1.8, ruheKehr: 25, // ° (Datenblatt 117°)
   wechselGlatt: 0.3,      // s, 0 = aus                                                               [?wechselGlatt=0]
+  // n7 Vorlagen E5 #10 (Vorlage D, angepasst): abgeschrägte Käfig-Ecken (45°-Bande + Netz) mit diesem Schenkel, 0 = eckig
+  eckschraege: 1.5,       // m (Datenblatt 1,0, unsicher: Ballkontakte in den Ecken 1,0 m −23 %, 1,5 m −39 %, Ziel −30 %; Bild ok) [?eckschraege=0]
   laufT: 2, ggTakt: 0.5, ggSchwelle: 0.5, ggBonus: 0.15, // (Datenblatt-Bonus +0,3: gemessen kaum Wirkung, Bot-Pässe 59 statt 60 %)
   diveSpeed: 5.2,         // m/s seitlich beim Hechten
   diveT: 0.38,            // s Flugphase des Hechtsprungs

@@ -161,6 +161,9 @@ in den freien Raum Richtung Tor (**Geben und Gehen**), die Bots spielen ihn gern
 auf deinen Stick (kein Ruck). Pass und Schuss zielen immer mit dem echten Stick. `?wechselGlatt=0` = aus; `?stickruhe=0.1` glättet
 zusätzlich das Daumen-Zittern (Standard aus, weil gemessen ohne Nutzen und in Kurven träger).
 
+**n7 Vorlagen E5 – Eck-Schrägen (26.10.):** die vier Käfig-Ecken sind mit einer 45°-Bande (Schenkel 1,5 m) abgeschrägt, Netz und
+Gestell folgen. Der Ball klemmt nicht mehr zwischen zwei Banden, sondern springt zurück ins Feld. `?eckschraege=0` = eckig.
+
 **Ballmagnet (Nacht 2c, Peter: „leichter ballmagnet, sonst kein dribbling“; Nacht 2d: „viel mehr Ballmagnet“ → Stärke 1,2
 statt 0,5, im Sprint 70 % statt 45 %):** zwischen den echten Ballkontakten führt
 eine weiche Feder den Ball, den du zuletzt berührt hast, auf die Linie deines Sticks und bremst ihn, wenn er zu weit
@@ -237,6 +240,7 @@ Ball mit (Sohle/Außenseite). `?zack=0` = altes Gefühl aus Nacht 1 zum Vergleic
 | `?winkel=0` … `1` | n7 E1 Tormann-Stellung: Anteil Richtung Winkelhalbierende (Standard 0,5, `0` = alt) |
 | `?raus=0`, `?rausD=5`, `?rausMarge=1`, `?rausMax=1`, `?blockSpreiz=1` | n7 E1 Herauslaufen 1 gegen 1 aus; Schusspunkt vor dem Tor (m); so viel früher muss ein Verteidiger dort sein (m); höchstens so weit über die Torraumkante (m); Körperbreite beim Blocken (m) |
 | `?stolpern=0.25` | n7 E1 Chance, dass der Tormann bei einem Heber über ihn stolpert (`0` = nie) |
+| `?eckschraege=1.5` | n7 E5 Käfig-Ecken: Schenkel der 45°-Schräge (m), `0` = eckig |
 | `?wechselGlatt=0.3`, `?stickruhe=0.1`, `?ruheKehr=25` | n7 E4 Kinder-Steuerung: nach dem Spielerwechsel so lange halb Schwung → ganz Stick (s, `0` = aus); Stick-Ruhe (Standard aus): Zeitkonstante (s) gegen Daumen-Zittern, ab so vielen Grad sofort |
 | `?perfekt=0`, `?perfektD=7`, `?perfektQ=0.4`, `?perfektWucht=1.1`, `?perfektBot=1` | n7 E3 Traumpass aus; höchstens so weit vor dem Tor (m); Direktabnahme: Qualität +, Wucht ×; Chance, dass Bots ihn direkt nehmen |
 | `?gebengehen=0`, `?laufT=2`, `?ggSchwelle=0.5`, `?ggBonus=0.15` | n7 E3 Geben und Gehen aus; Laufzeit (s); Mindest-Wertung des Raums; Rückpass-Bonus der Bots |
@@ -350,6 +354,8 @@ node tests/node/hold_probe.mjs      # n7: Skript-Mensch dribbelt gegen Stufe-2-V
 node tests/node/keeper_catch_probe.mjs "" 12  # n7: Fangquote erster Torwartkontakt je Schusstempo (alle / direkte Schüsse)
 node tests/node/tormann_e1.test.mjs # n7 E1: Müdigkeit, Kondition je Stufe, Winkelhalbierende, 1 gegen 1, Blocken, Heber-Stolpern, Bot-Spiel
 SPITZ=1 node tests/node/keeper_series.mjs 300  # n7 E1: Schussserie aus spitzem Winkel (Winkelhalbierende)
+node tests/node/eckschraege.test.mjs  # n7 E5: Eck-Schrägen (Geometrie, Abprall, harte Schüsse, Spieler, Bot-Spiel)
+python3 tests/n7_e5_bilder.py quer   # n7 E5: Fotos eckig / 1 m / 1,5 m
 node tests/node/kinderstick.test.mjs  # n7 E4: Wechsel-Glättung, Stick-Ruhe (Regler), Zielen mit rohem Stick, Kinderhand
 node tests/node/traumpass.test.mjs  # n7 E3: Traumpass (Wertung, Direktabnahme), Geben und Gehen, Bot-Spiel
 python3 tests/n7_e3_bilder.py quer   # n7 E3: Fotos goldener Ring, goldene Spur, Direktschuss
@@ -400,6 +406,8 @@ python3 tools/fetch_assets.py && python3 tools/make_assets.py   # Assets neu bau
 Browser-Tests laufen headless über die GPU (ANGLE/Metal), nie zwei Browser gleichzeitig.
 
 ## Änderungen
+- **n7 Vorlagen E5 Eck-Schrägen (26.10., Version 0.5.5)** – die Käfig-Ecken sind 1,5 m abgeschrägt (Bande, Netz, Gestell): der Ball
+  springt aus der Ecke zurück ins Feld, Ballkontakte in den Ecken −39 %.
 - **n7 Vorlagen E4 Kinder-Steuerung (26.10., Version 0.5.4)** – nach dem Spielerwechsel kein Ruck mehr (0,3 s Übergang vom Schwung
   zum Stick); Stick-Ruhe gegen Daumen-Zittern gemessen ohne Nutzen und träger → nur Regler `?stickruhe=0.1`.
 - **n7 Vorlagen E3 Traumpass und Geben und Gehen (20.10., Version 0.5.3)** – Pass auf einen freien Mitspieler bis 7 m vor dem Tor:

@@ -8,6 +8,12 @@ import { report } from './report.mjs';
 const rows = [];
 const check = (name, value, lo, hi, unit, target, note = '') => { const ok = value >= lo && value <= hi; rows.push({ name, value, lo, hi, unit, target, ok, note }); return ok; };
 
+// n7 E5: Startpunkt hinter einer Eck-Schräge (außerhalb des Feldes) auf die Schräge minus 0,5 m zurückschieben
+function inCorner(f) {
+  const e = makeParams('').eckschraege, c = makeParams('').fieldL / 2 + makeParams('').fieldW / 2 - e - 0.5;
+  const ax = Math.abs(f[0]), az = Math.abs(f[2]);
+  if (e > 0 && ax + az > c) { const d = (ax + az - c) / 2; f[0] -= Math.sign(f[0]) * d; f[2] -= Math.sign(f[2]) * d; }
+}
 function shot(P, { from = [0, 0.11, 0], v = [0, 0, 0], w = [0, 0, 0], T = 6, seed = 1 }) {
   const g = new Game(P, seed);
   g.players.length = 0; // nur der Ball
@@ -96,6 +102,7 @@ function netCOR(P) {
     const from = [rng.range(-hx + 0.5, hx - 0.5), 0.11, rng.range(-hz + 0.5, hz - 0.5)];
     const v = [sp * Math.cos(el) * Math.cos(az), sp * Math.sin(el), sp * Math.cos(el) * Math.sin(az)];
     const w = [rng.gauss() * 20, rng.gauss() * 40, rng.gauss() * 20];
+    inCorner(from); // n7 E5: Start nicht hinter einer Eck-Schräge
     const s = shot(P, { from, v, w, T: 5, seed: i });
     if (s.out) outs++;
     faults += s.g.faults;
@@ -140,6 +147,7 @@ function netCOR(P) {
   for (let i = 0; i < n; i++) {
     const sp = rng.range(30, 52), el = rng.range(0, 85) * Math.PI / 180, az = rng.range(0, 2 * Math.PI);
     const from = [rng.range(-hx + 0.5, hx - 0.5), 0.11, rng.range(-hz + 0.5, hz - 0.5)];
+    inCorner(from);
     const s = shot(P, { from, v: [sp * Math.cos(el) * Math.cos(az), sp * Math.sin(el), sp * Math.cos(el) * Math.sin(az)], w: [rng.gauss() * 20, rng.gauss() * 90, rng.gauss() * 20], T: 4, seed: i });
     if (s.out) outs++;
     faults += s.g.faults;

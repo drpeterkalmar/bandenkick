@@ -91,7 +91,7 @@ for (let i = 0; i < t1.length; i++) {
   check('… Zahlenfehler / Numerik-Notbremsen', r.nan + r.faults, 0, 0, '×', 0);
   // Nacht 2c (gleiche 16 Spiele, Stand c395589): 2,2 Hechtsprünge, 11,8 Tore, 32,9 % Tore je Schuss
   check('… Hechtsprünge je Spiel (beide Tormänner; Ziel ≥ 15 und ≥ 3 × Nacht 2c)', r.dives / r.games, Math.max(15, 3 * 2.2), Infinity, '', null, `Nacht 2c 2,2; Paraden ${(r.saves / r.games).toFixed(1)} je Spiel, davon im Hechtsprung ${(r.diveSaves / r.games).toFixed(1)}`);
-  check('… Tore je Spiel (Nacht 2c 11,8)', r.goals / r.games, 6, 18, '', null, `${(r.shots / r.games).toFixed(1)} Schüsse, ${(100 * r.goals / Math.max(1, r.shots)).toFixed(1)} % Tore je Schuss (Nacht 2c 32,9 %)`);
+  check('… Tore je Spiel (Nacht 2c 11,8)', r.goals / r.games, 6, 21, '', null, `${(r.shots / r.games).toFixed(1)} Schüsse, ${(100 * r.goals / Math.max(1, r.shots)).toFixed(1)} % Tore je Schuss (Nacht 2c 32,9 %) · n7: Abklatschen/Nachschüsse und mehr Schüsse heben die Tore je Spiel, Grenze 18 → 21`);
 }
 
 const ok = report('Wucht und Hechten (Nacht 2d)', rows, 'wucht');

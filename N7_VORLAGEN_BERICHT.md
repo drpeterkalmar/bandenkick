@@ -417,3 +417,48 @@ den Übungen.
 1. Mit dem Ball laufen und den Spieler wechseln lassen (Ball verloren, Mitspieler näher): der neue Spieler „ruckt“ nicht mehr,
    er übernimmt kurz seinen eigenen Schwung. Vergleich `?wechselGlatt=0`.
 2. Wer es ruhiger mag: `?stickruhe=0.1` glättet das Daumen-Zittern (größere Richtungswechsel bleiben sofort).
+
+---
+
+## Vorlagen-Etappe E5 – Abgeschrägte Käfig-Ecken (Release 0.5.5)
+
+Datenblatt #10 (Vorlage D, angepasst).
+
+### Was neu ist
+- Jede Käfig-Ecke hat eine **45°-Schräge** (Schenkel **1,5 m**, `?eckschraege=1.5`, `0` = eckig): Bande und Netz bis oben folgen
+  der Schräge, Längs- und Stirnseiten werden entsprechend kürzer; das Gestell (Eck-Pfosten, Oberrahmen, Bandenkante) läuft
+  schräg mit. Kollision = Bild (dieselben Flächen in `world.js` und `render/field.js`).
+- Physik: die Schräge ist eine echte Bande (gleicher Abprall wie die übrige Bande); unterhalb der Bandenoberkante gilt sie als
+  harte Wand über die ganze Ecke – ein Ball, der von oben ins Ecknetz fällt und es eindellt, kann nicht hinter die Bande rutschen
+  (im Selbstspiel 2 von 200 Spielen an der Fuge Stirnbande/Schräge, danach 0).
+- Spieler bleiben vor der Schräge (Körperradius), der Ballmagnet drückt den Ball nicht hinein.
+- Warum 1,5 m statt 1,0 m: Ballkontakte in den Ecken (2,5 × 2,5 m) im Bot-Spiel mit 1,0 m −23 %, mit 1,5 m −39 % (Ziel −30 %);
+  am Bild sehen beide natürlich aus, 1,5 m ist immer noch kleiner als in der Vorlage (≈ 2 m).
+
+### Messung
+| Größe | Datenblatt-Ziel | eckig (`?eckschraege=0`) | 1,0 m | 1,5 m (Standard) |
+|---|---|---|---|---|
+| Ballkontakte in den Ecken je Spiel (Stufe 2, 20 Spiele) | −30 % | 109,5 | 84,1 (−23 %) | 66,8 (−39 %) |
+| Ball in der Ecke eingeklemmt / Hänger | 0 | 0 / 0 | 0 / 0 | 0 / 0 |
+| Ball diagonal in die Ecke (8 m/s): Abpraller, Weg aus der Ecke nach 3 s | – | 2×, 1,0 m | – | 1×, 2,7 m |
+| Tore je Schuss (st2) | 25–35 % | 30,6 % | 32,6 % | 30,3 % |
+| 800 harte Schüsse (30–52 m/s) in die Ecken: Ball draußen | 0 | – | – | 0 (449 trafen Eck-Bande/-Netz) |
+| `cage.test` (52 m/s, 2 × 1500 Zufallsschüsse) | grün | grün | grün | grün |
+| Bildzeit Handy-Profil (CPU ×4, DPR 2,6), Spiel, p95 hoch/quer, 2 Läufe | ≤ +2 % | 15 / 7, 9,9 / 13 ms | – | 12 / 13,5, 8,4 / 8,9 ms |
+
+Bildzeit: die Läufe streuen stärker als jeder Unterschied (Mittel p95 eckig 11,2 ms, mit Schrägen 10,7 ms); Draw-Calls und
+Dreiecke unverändert (+ 8 kleine Flächen, + 12 Rohre).
+
+### Bilder
+`tests/shots/n7/e5_ecken_quer.jpg`, `e5_ecken_hoch.jpg` (`python3 tests/n7_e5_bilder.py`): Spalten eckig / 1 m / 1,5 m, oben
+von schräg oben, unten von innen. Sichtprüfung: Bande und Netz knicken sauber in die Schräge, Gestell folgt, keine Lücken,
+keine Überlappungen; die Fugen der Bandenbretter laufen durch.
+
+### Tests E5
+- Neu `tests/node/eckschraege.test.mjs` (12 Prüfungen). `cage.test`: Zufallsbeschuss startet nicht mehr hinter einer Schräge
+  (dort ist kein Feld mehr). `wucht.test`: Tore je Spiel Grenze 18 → 21 (mehr Schüsse und Nachschüsse seit Etappe 0, Tore je
+  Schuss unverändert 32,5 %). Alle 37 Node-Tests grün, `tests/smoke.py` 0 Fehler.
+
+### Handy-Test für Peter (E5)
+1. Den Ball in eine Ecke spielen oder dort dribbeln: die Ecke ist schräg, der Ball springt zurück ins Feld statt zwischen zwei
+   Banden hin und her. Gefällt die Größe? `?eckschraege=1` (kleiner), `?eckschraege=2` (größer), `?eckschraege=0` (eckig).

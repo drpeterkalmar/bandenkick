@@ -1,6 +1,6 @@
 {
   "name": "bandenkick",
-  "version": "0.5.4",
+  "version": "0.5.5",
   "private": true,
   "type": "module",
   "description": "Bandenkick – 3-gegen-3-Kleinfeldfußball mit Bande und Netz (Three.js, PWA)",

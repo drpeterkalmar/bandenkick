@@ -147,6 +147,7 @@ export class Ball {
 
     // --- harte Kontakte: Bande, Pfosten/Latte ---
     for (const R of cage.rects) if (R.kind === 'board') this.hitBoard(R);
+    if (cage.ecke) this.hitCorner(cage);
     for (const B of cage.bars) this.hitBar(B);
 
     // --- Boden ---
@@ -224,6 +225,23 @@ export class Ball {
     if (vn < -P.vRest) {
       this.impact(_n, P.boardEn, P.boardEx, P.boardMu);
       this.emit('board', -vn, R.tag);
+    } else if (vn < 0) this.v.addScaled(_n, -vn);
+  }
+
+  // n7 E5: Eck-Schräge als harte Halbebene bis Bandenhöhe – auch ein Ball, der von oben ins Ecknetz fällt und es eindellt
+  // (Ballmitte schon hinter der Ebene), landet nie hinter der Bande (Selbstspiel: 2 von 200 Spielen an der Fuge Stirn/Schräge)
+  hitCorner(cage) {
+    const P = this.P, p = this.p, r = this.r;
+    if (p.y > cage.bH + r) return;
+    const sx = p.x < 0 ? -1 : 1, sz = p.z < 0 ? -1 : 1, c = Math.SQRT1_2;
+    const inside = (cage.hx + cage.hz - cage.ecke - Math.abs(p.x) - Math.abs(p.z)) * c; // Abstand Ballmitte ↔ Schräge (+ = im Feld)
+    if (inside >= r || inside < -1.5) return;
+    _n.set(-sx * c, 0, -sz * c);
+    p.addScaled(_n, r - inside);
+    const vn = this.v.dot(_n);
+    if (vn < -P.vRest) {
+      this.impact(_n, P.boardEn, P.boardEx, P.boardMu);
+      this.emit('board', -vn, 'corner');
     } else if (vn < 0) this.v.addScaled(_n, -vn);
   }
 

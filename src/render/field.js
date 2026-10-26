@@ -260,23 +260,34 @@ export function buildField(P, cage, tex, renderer, opts = {}) {
     g.applyMatrix4(new THREE.Matrix4().compose(va.clone().add(vb).multiplyScalar(0.5), q, new THREE.Vector3(1, 1, 1)));
     list.push(g);
   };
+  // n7 E5: mit Eck-Schrägen (Schenkel ek) enden Längs- und Stirnseite ek vor der Ecke, dazwischen läuft das Gestell schräg
+  const ek = cage.ecke || 0, ox = hx + off - ek, oz = hz + off - ek;
   for (let i = 0; i <= nL; i++) {
     const x = -hx + (2 * hx) * i / nL;
+    if (Math.abs(x) > hx - ek + 1e-6) continue;
     tube(sideGeos[0], [x, 0, hz + off], [x, top, hz + off], 0.038);
     tube(sideGeos[1], [x, 0, -hz - off], [x, top, -hz - off], 0.038);
   }
   for (let j = 1; j < nW; j++) {
     const z = -hz + (2 * hz) * j / nW;
-    if (Math.abs(z) < cage.gw + 0.3) continue; // nicht im Tor
+    if (Math.abs(z) < cage.gw + 0.3 || Math.abs(z) > hz - ek - 0.2) continue; // nicht im Tor, nicht in der Schräge
     tube(sideGeos[2], [hx + off, 0, z], [hx + off, top, z], 0.038);
     tube(sideGeos[3], [-hx - off, 0, z], [-hx - off, top, z], 0.038);
   }
-  tube(sideGeos[0], [-hx - off, top, hz + off], [hx + off, top, hz + off], 0.03);
-  tube(sideGeos[1], [-hx - off, top, -hz - off], [hx + off, top, -hz - off], 0.03);
-  tube(sideGeos[2], [hx + off, top, -hz - off], [hx + off, top, hz + off], 0.03);
-  tube(sideGeos[3], [-hx - off, top, -hz - off], [-hx - off, top, hz + off], 0.03);
-  tube(sideGeos[0], [-hx, P.boardH + 0.02, hz + T / 2], [hx, P.boardH + 0.02, hz + T / 2], 0.03);
-  tube(sideGeos[1], [-hx, P.boardH + 0.02, -hz - T / 2], [hx, P.boardH + 0.02, -hz - T / 2], 0.03);
+  tube(sideGeos[0], [-ox, top, hz + off], [ox, top, hz + off], 0.03);
+  tube(sideGeos[1], [-ox, top, -hz - off], [ox, top, -hz - off], 0.03);
+  tube(sideGeos[2], [hx + off, top, -oz], [hx + off, top, oz], 0.03);
+  tube(sideGeos[3], [-hx - off, top, -oz], [-hx - off, top, oz], 0.03);
+  tube(sideGeos[0], [-hx + ek, P.boardH + 0.02, hz + T / 2], [hx - ek, P.boardH + 0.02, hz + T / 2], 0.03);
+  tube(sideGeos[1], [-hx + ek, P.boardH + 0.02, -hz - T / 2], [hx - ek, P.boardH + 0.02, -hz - T / 2], 0.03);
+  if (ek > 0) for (const sx of [1, -1]) for (const sz of [1, -1]) {
+    // Eck-Pfosten an beiden Enden der Schräge + Oberrahmen schräg (gehört zur Längsseite: wird mit ihr ausgeblendet)
+    const L = sideGeos[sz > 0 ? 0 : 1], a = [sx * ox, 0, sz * (hz + off)], b = [sx * (hx + off), 0, sz * oz];
+    tube(L, a, [a[0], top, a[2]], 0.038); tube(L, b, [b[0], top, b[2]], 0.038);
+    tube(L, [a[0], top, a[2]], [b[0], top, b[2]], 0.03);
+    const d = T / 2 * Math.SQRT1_2;
+    tube(L, [sx * (hx - ek + d), P.boardH + 0.02, sz * (hz + d)], [sx * (hx + d), P.boardH + 0.02, sz * (hz - ek + d)], 0.03);
+  }
   if (cage.roof) for (let i = 1; i < 4; i++) { const x = -hx + 2 * hx * i / 4; tube(sideGeos[4], [x, top, -hz - off], [x, top, hz + off], 0.015); }
   const frames = sideGeos.map((list, i) => {
     if (!list.length) return null;
