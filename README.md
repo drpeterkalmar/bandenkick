@@ -406,6 +406,8 @@ python3 tools/fetch_assets.py && python3 tools/make_assets.py   # Assets neu bau
 Browser-Tests laufen headless über die GPU (ANGLE/Metal), nie zwei Browser gleichzeitig.
 
 ## Änderungen
+- **n7 Abschluss (26.10., Version 0.6.0)** – Endmessung aller Vorlagen-Etappen, Gesamttabelle Ziel/vorher/nachher, alle Regler und
+  Handy-Testhinweise in [`N7_VORLAGEN_BERICHT.md`](N7_VORLAGEN_BERICHT.md).
 - **n7 Vorlagen E5 Eck-Schrägen (26.10., Version 0.5.5)** – die Käfig-Ecken sind 1,5 m abgeschrägt (Bande, Netz, Gestell): der Ball
   springt aus der Ecke zurück ins Feld, Ballkontakte in den Ecken −39 %.
 - **n7 Vorlagen E4 Kinder-Steuerung (26.10., Version 0.5.4)** – nach dem Spielerwechsel kein Ruck mehr (0,3 s Übergang vom Schwung

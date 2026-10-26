@@ -462,3 +462,72 @@ keine Überlappungen; die Fugen der Bandenbretter laufen durch.
 ### Handy-Test für Peter (E5)
 1. Den Ball in eine Ecke spielen oder dort dribbeln: die Ecke ist schräg, der Ball springt zurück ins Feld statt zwischen zwei
    Banden hin und her. Gefällt die Größe? `?eckschraege=1` (kleiner), `?eckschraege=2` (größer), `?eckschraege=0` (eckig).
+
+---
+
+## Abschluss n7 (Release 0.6.0)
+
+### Gesamtmessung: Datenblatt-Ziel / vorher / nachher
+Bot-Selbstspiel Stufe 2 gegen 2, 20 Spiele (Seeds 1–20), und Stufe 1 gegen 3, 10 Spiele. „vorher“ = alle Vorlagen-Regler auf 0
+(`?muede=0&winkel=0&raus=0&stolpern=0&nachdrall=0&perfekt=0&gebengehen=0&wechselGlatt=0&eckschraege=0`) mit sonst gleichem
+Stand (= Etappe 0 / Release 0.5.0 plus die nebenbei behobenen Fehler), „nachher“ = Release 0.6.0.
+
+| # | Messgröße | Datenblatt-Ziel | vorher st2 / 1:3 | nachher st2 / 1:3 | erreicht |
+|---|---|---|---|---|---|
+| 1 | Tore je Schuss | 25–35 %, Unterschied zu `?muede=0` sichtbar | 28,3 / 35,7 % | 32,6 / 33,8 % | ja |
+| 2 | Nachschuss-Tore (Anteil aller Tore) | ≥ 10 % | 24,1 / 16,1 % | 23,4 / 13,0 % | ja (kommt aus Etappe 0) |
+| 3 | Tormann-Energie: Minimum je Spiel; Zeit unter 60 | 30–60; 10–25 % bei Dauerdruck | 100; 0 % | 47 / 71; 3,3 % | Minimum ja, Dauerdruck-Zeit nein (siehe E1) |
+| 4 | Tore aus spitzem Winkel | −30 % gegenüber `?winkel=0` | 15,5 / 19,0 % | 14,9 / 18,8 % | nein (≈ −5 %, siehe E1) |
+| 5 | 1 gegen 1 vereitelt (je 40 Szenen, Stufe 1/2/3) | 35–50 % | Ø 33 % | Ø 48 % (20/63/63 %) | ja |
+| 6 | Nachdrall: 15-m-Schuss, voller Stick; Anteil in 0,08 s | +1,5 … 3 m; ≥ 50 % | – | 1,53 m; 54 % | ja |
+| 7 | Torquote mit − ohne Nachdrall | ≤ +10 Punkte | – | +2,4 / +0,6 / −3,7 Punkte | ja |
+| 8 | Traumpässe je Spiel; Tore danach | 2–5; 40–55 % | 0 | 3,6 / 3,6; 39 / 50 % (40 Spiele: 3,3; 42 %) | ja (Stichprobe streut) |
+| 9 | Geben und Gehen; Doppelpässe; Bot-Pässe kommen an | 30–50 %; ≥ 3; ≥ 60 % | 19,6 / 28,3 %; 19,9 / 17,8; 64,9 / 63,9 % | 32,3 / 37,2 %; 25,9 / 20,9; 63,8 / 62,6 % | ja |
+| 10 | Kinder-Stick-Ballverluste je Minute | ≤ 3,5 (n6: 4,9) | 3,48 | 3,48 (Stick-Ruhe ohne Nutzen → aus) | ja (dank Etappe 0) |
+| 11 | Pässe im Lauf (Weg frei) | ≥ 90 % | 87 % | 87 % | nein (unverändert) |
+| 12 | Ball in der Ecke eingeklemmt; Ballkontakte in den Ecken | 0; −30 % | 0; 111 / 95 | 0; 66 / 63 (−40 / −33 %) | ja |
+| 13 | Hechter ≥ 15, Luftbälle ≥ 9 je Spiel, Tore je Spiel ± 20 % | – | 23,1, 9,7, 16,1 | 25,1, 9,7, 18,1 (+12 %) | ja (Luftbälle 1:3: 7,4) |
+| 14 | Regler auf 0 → Werte wie E0 (± 5 %) | – | E0: 28,0 % / 15,8 / 22,6 Hechter / 20,1 Doppelpässe | aus: 28,3 % / 16,1 / 23,1 / 19,9 | ja (Nachschuss-Anteil 24 statt 28 % – Rauschen und der Pass-Fix aus E1) |
+| – | Hänger / Numerik-Fehler (auch 200 Spiele `selfplay.test`) | 0 / 0 | 0 / 0 | 0 / 0 | ja |
+
+Nicht erreicht: #3 Zeit unter 60 Energie (im Bot-Spiel kein Dauerdruck), #4 spitzer Winkel (die Tore an der kurzen Ecke kommen aus
+der Reaktionszeit, nicht aus der Stellung), #11 Pässe im Lauf (keine der Vorlagen-Mechaniken setzt dort an). Ballbesitz am Fuß im
+Bot-Spiel 4,6 s/min (Etappe-0-Ziel 5, siehe dort).
+
+### Releases
+0.5.0 Etappe 0 · 0.5.1 E1 Tormann · 0.5.2 E2 Nachdrall · 0.5.3 E3 Traumpass + Geben und Gehen · 0.5.4 E4 Kinder-Steuerung ·
+0.5.5 E5 Eck-Schrägen · 0.6.0 Abschluss (Bericht, Endmessung).
+
+### Alle neuen Regler (0 bzw. aus = vorheriges Verhalten)
+| Regler | Standard | Wirkung |
+|---|---|---|
+| `?sprintfrei=0`, `?ein=`, `?trab=` | an, 6,0 m/s, 0,83 | Etappe 0: Sprint, Lauftempo, Bot-Trab |
+| `?abschirmen=0`, `?magnet=` | an, 1,8 | Etappe 0: Abschirmen, Ballmagnet |
+| `?fangMax=0`, `?nachfassen=` | 13 m/s, 0,5 s | Etappe 0: Fanggrenze, Abklatschen |
+| `?muede=0`, `?muedeFang=`, `?muedeErh=`, `?muedeSenk=` | an, 60, 1/s, 5 m/s | E1 Tormann-Müdigkeit |
+| `?winkel=0` | 0,5 | E1 Winkelhalbierende |
+| `?raus=0`, `?rausMax=` | an, 1 m | E1 Herauslaufen und Blocken |
+| `?stolpern=0` | 0,25 | E1 Heber-Stolpern |
+| `?nachdrall=0`, `?nachdrallSeite=`, `?nachdrallBot=0` | 1, 14 U/s, 1 | E2 Nachdrall |
+| `?perfekt=0`, `?perfektD=`, `?perfektQ=` | an, 7 m, 0,4 | E3 Traumpass |
+| `?gebengehen=0`, `?laufT=` | an, 2 s | E3 Geben und Gehen |
+| `?wechselGlatt=0`, `?stickruhe=0.1` | 0,3 s, aus | E4 Kinder-Steuerung |
+| `?eckschraege=0` | 1,5 m | E5 Eck-Schrägen |
+
+### Handy-Test für Peter (alles auf einen Blick)
+1. **Laufen und Ballbesitz:** ein Tempo, kein Sprint-Knopf; der Gegner kommt nicht durch dich durch an den Ball.
+2. **Tormann:** klatscht scharfe Schüsse ab (hinterher!), wird nach vielen Paraden müde (Handschuhe grau), kommt beim 1 gegen 1
+   heraus und blockt, stolpert manchmal bei einem Heber.
+3. **Nachdrall:** direkt nach dem Schuss den Stick zur Seite wischen → Kurve; zurück → steigt, vor → senkt sich.
+4. **Traumpass:** goldener Ring unter dem freien Mitspieler vor dem Tor → sofort Schuss tippen (Direktschuss, härter, genauer).
+   Nach deinem Pass läuft der abgegebene Spieler nach vorn → Doppelpass.
+5. **Spielerwechsel** ohne Ruck; **Ecken** schräg, der Ball kommt zurück ins Feld.
+Zum Vergleichen jeweils den Regler auf 0 setzen (Tabelle oben).
+
+### Offen
+- Der Bot-Tormann dreht beim Zurücklaufen zur Linie kurz den Rücken zum Ball (seit Etappe 0 bekannt).
+- Herauslaufen/Blocken konservativ – Peters Eindruck entscheidet (`?rausMax=2`).
+- Eck-Schräge 1,5 m – Peter entscheidet nach Sicht (`?eckschraege=1` / `2`).
+- Pässe im Lauf 87 % (Ziel 90 %) – Thema fürs Passsystem, nicht für die Vorlagen.
+- Fan-Edit/Wiederholung wurden nicht angefasst; neue Höhepunkte (Glanzparade, Traumpass-Direktschuss) gehen nur als Ereignis an
+  die Action-Momente.
