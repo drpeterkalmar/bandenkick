@@ -143,13 +143,16 @@ export class Player {
     const want = mag > 0.12;
     const sx = want ? mx / mag : 0, sz = want ? mz / mag : 0; // Stick-Richtung
     this.sprinting = !P.sprintfrei && !!inp.sprint && want; // n7: ?sprintfrei=1 → nie Sprint (Knopf, Rand, Shift, Bots)
+    // n7 E4: Zielen (Pass/Schuss) mit dem ungefilterten Stick – Stick-Ruhe und Wechsel-Glättung gelten nur fürs Laufen
+    const zl = inp.zielX !== undefined ? Math.hypot(inp.zielX, inp.zielZ) : -1;
+    const zw = zl >= 0 ? zl > 0.12 : want, zx = zl > 0.12 ? inp.zielX / zl : sx, zz = zl > 0.12 ? inp.zielZ / zl : sz;
     const aimDir = () => {
       if (inp.aim && (inp.aimX || inp.aimZ)) { const l = Math.hypot(inp.aimX, inp.aimZ); return [inp.aimX / l, inp.aimZ / l]; }
-      if (want) return [sx, sz];
+      if (zw) return [zx, zz];
       if (inp.recvAim) return inp.recvAim; // Nacht 2e: Empfänger-Sperre – der Stick zielt nur (Direktpass)
       return [Math.cos(this.face), Math.sin(this.face)];
     };
-    const stick = () => (inp.aim && (inp.aimX || inp.aimZ) ? aimDir() : want ? [sx, sz] : inp.recvAim || null);
+    const stick = () => (inp.aim && (inp.aimX || inp.aimZ) ? aimDir() : zw ? [zx, zz] : inp.recvAim || null);
     if (inp.gest) this.gestures(inp, game, aimDir, stick);
     else { // Flanken (Tests, alte Eingabe): Pass = Einzeltipp, Schuss halten/loslassen = Standard
       if (inp.pass) { this.pending = { kind: 'pass', mode: inp.mode || 'std', power: null, stick: stick(), dir: aimDir(), age: 0 }; this.clearT = 0; }

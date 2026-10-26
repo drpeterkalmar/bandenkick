@@ -113,7 +113,7 @@ export class Game {
   stepSolo(inputs) {
     const b = this.ball;
     const ins = this._ins || (this._ins = []);
-    for (let i = 0; i < this.players.length; i++) this.players[i].step(DT, (ins[i] = (i === 0 ? this.humanInput(inputs[i]) : inputs[i]) || EMPTY_INPUT), this);
+    for (let i = 0; i < this.players.length; i++) this.players[i].step(DT, (ins[i] = (i === 0 ? this.kinderStick(this.humanInput(inputs[i])) : inputs[i]) || EMPTY_INPUT), this);
     if (this.state === 'play') this.nachdrall(ins); // n7 E2
     b.step(DT, this.cage);
     if (this.nd) this.ndHit();
@@ -153,7 +153,7 @@ export class Game {
     R.updateKeepers(DT);
     if (this.bots) this.bots.update();
     const ins = this._ins || (this._ins = []);
-    for (let i = 0; i < n; i++) ins[i] = i === this.human ? (this.humanInput(inputs[i]) || EMPTY_INPUT) : C.input(i);
+    for (let i = 0; i < n; i++) ins[i] = i === this.human ? (this.kinderStick(this.humanInput(inputs[i])) || EMPTY_INPUT) : C.input(i);
     const off = this.tick % n;
     for (let k = 0; k < n; k++) { const i = (k + off) % n; this.players[i].step(DT, ins[i], this); }
     R.hands(DT, (i) => ins[i]);
@@ -179,7 +179,7 @@ export class Game {
     for (let i = 0; i < n; i++) {
       // Torjubel: erst 1,2 s stehen und jubeln, dann (wie in der Halbzeit) zurück in die eigene Hälfte
       if (!live) ins[i] = this.bots && !(R.phase === 'goal' && R.phaseT < 1.2) ? this.bots.formation(i) : EMPTY_INPUT;
-      else if (inputs[i] && (i === this.human || !this.bots)) ins[i] = i === this.human ? this.humanInput(this.latchInput(inputs[i])) : inputs[i]; // Mensch (ohne Bots: alle)
+      else if (inputs[i] && (i === this.human || !this.bots)) ins[i] = i === this.human ? this.kinderStick(this.humanInput(this.latchInput(inputs[i]))) : inputs[i]; // Mensch (ohne Bots: alle)
       else ins[i] = this.bots ? this.bots.input(i) : EMPTY_INPUT;
     }
     // Auto-Torwart (Nacht 2c): ist der Mensch die letzte Hand, übernimmt die Tormann-Logik der Bots die Hände
@@ -233,6 +233,36 @@ export class Game {
       if (st.n) this.events.push({ type: 'nachdrall', player: st.pl, human: st.human, side: st.sum, back: st.sumB });
       this.nd = null;
     }
+  }
+
+  // n7 Vorlagen E4 (Vorlage A/B): Kinder-Steuerung für den Stick des Menschen.
+  //  #9 Wechsel-Glättung: nach einem Spielerwechsel zuerst halb Schwung des neuen Spielers, halb Stick, in wechselGlatt s ganz
+  //     Stick (nicht bei der Empfänger-Sperre nach dem eigenen Pass, die regelt das selbst).
+  //  #8 Stick-Ruhe: die Stick-Richtung folgt mit stickruhe s Zeitkonstante (Zittern des Daumens wird geglättet, kleine
+  //     Richtungswechsel kommen kurz verzögert); unter ruheMin° sofort, echte Kehrtwenden ab ruheKehr° sofort. Die Stärke
+  //     (wie weit der Stick ausschlägt) bleibt ungefiltert. Loslassen oder Spielerwechsel setzen den Filter zurück.
+  kinderStick(inp) {
+    const P = this.P;
+    if (!inp || (!(P.stickruhe > 0) && !(P.wechselGlatt > 0))) return inp;
+    let mx = inp.mx || 0, mz = inp.mz || 0;
+    const pl = this.players[this.human];
+    if (P.wechselGlatt > 0 && pl && this.switchT < P.wechselGlatt && !this.recvLatch) {
+      const w = 0.5 + 0.5 * this.switchT / P.wechselGlatt, vt = P.vTop || 6;
+      mx = (1 - w) * pl.vx / vt + w * mx; mz = (1 - w) * pl.vz / vt + w * mz;
+    }
+    const m = Math.hypot(mx, mz);
+    if (P.stickruhe > 0) {
+      const S = this.sr || (this.sr = { x: 0, z: 0, id: -1 });
+      if (S.id !== this.human || m < 0.2 || this.switchT === 0) { S.x = m > 1e-6 ? mx / m : 0; S.z = m > 1e-6 ? mz / m : 0; S.id = this.human; }
+      else {
+        const ux = mx / m, uz = mz / m, sl = Math.hypot(S.x, S.z) || 1;
+        const a = Math.acos(Math.max(-1, Math.min(1, (S.x * ux + S.z * uz) / sl))) * 180 / Math.PI;
+        if (a < P.ruheMin || a > P.ruheKehr || sl < 0.5) { S.x = ux; S.z = uz; }
+        else { const k = 1 - Math.exp(-DT / P.stickruhe); S.x += (ux - S.x) * k; S.z += (uz - S.z) * k; const l = Math.hypot(S.x, S.z) || 1; S.x /= l; S.z /= l; }
+        mx = S.x * m; mz = S.z * m;
+      }
+    }
+    return mx === inp.mx && mz === inp.mz ? inp : { ...inp, mx, mz, zielX: inp.mx || 0, zielZ: inp.mz || 0 };
   }
 
   // Bande, Pfosten oder Netz beenden den Nachdrall

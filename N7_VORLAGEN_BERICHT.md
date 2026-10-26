@@ -372,3 +372,48 @@ ist der Ring weg.
    härter und genauer. Aus: `?perfekt=0`; leichter auszulösen: `?perfektD=8`.
 2. Nach deinem Pass läuft der Spieler, den du gerade abgegeben hast, nach vorn – spiel ihn zurück an (Doppelpass). Vergleich:
    `?gebengehen=0`.
+
+---
+
+## Vorlagen-Etappe E4 – Kinder-Steuerung (Release 0.5.4)
+
+Datenblatt #8 (Stick-Ruhe), #9 (Wechsel-Glättung); #11 („Sprint mit Ball dreht schlechter“) entfällt seit Etappe 0.
+Umsetzung als Filter auf den Stick des Menschen (`Game.kinderStick` in `src/sim/step.js`), im Spiel, im freien Training und in
+den Übungen.
+
+### Was neu ist
+- **#9 Wechsel-Glättung** (`?wechselGlatt=0.3`, Standard an): nach einem Spielerwechsel läuft der neue Spieler im ersten Takt
+  halb mit seinem eigenen Schwung, halb nach dem Stick; in 0,3 s gilt ganz der Stick. Kein Ruck mehr, wenn der Daumen noch in
+  die Richtung des alten Spielers zeigt. Nicht bei der Empfänger-Sperre nach dem eigenen Pass (die regelt das schon).
+- **#8 Stick-Ruhe** (`?stickruhe=0.1`, **Standard aus**): die Laufrichtung folgt dem Stick mit 0,1 s Zeitkonstante; Zucken
+  unter 1,8° und Richtungswechsel ab 25° gehen sofort durch, die Stärke bleibt ungefiltert.
+- **Zielen immer mit dem rohen Stick:** Pass- und Schussrichtung nehmen den ungefilterten Stick (`zielX/zielZ`), die Filter
+  wirken nur aufs Laufen.
+
+### Messung und Entscheidung
+| Größe | Datenblatt-Ziel | ohne E4 | Standard (Wechsel-Glättung) | mit `?stickruhe=0.1` |
+|---|---|---|---|---|
+| Kinderhand-Führen allein, Ball weg je Minute (120 × 60 s) | ≤ 3,5 (n6: 4,9) | 3,48 | 3,48 (kein Wechsel) | 3,64 (Schwelle 117°), 3,20 (25°) |
+| … gegen Stufe-2-Bot | – | 6,18 | 6,18 | 6,34 (117°), 6,30 (25°) |
+| … Tempo mit Ball | – | 4,07 m/s | 4,07 m/s | 4,27 m/s (117°) |
+| Pässe im Lauf kommen an, Weg frei (500 je Variante, Tipp / Halten) | ≥ 90 % (heute 88 %) | 87 / 85 % | 87 / 85 % | erst 75 / 75 % – Zielen mit gefiltertem Stick; mit rohem Stick 87 / 85 % |
+| Dribbel-Parcours Skript | nicht langsamer | 11,5 s | 11,5 s | 16,4 s mit 117°, unverändert mit 25° |
+| Kurvenradius bei 2 m/s (`player.test`) | 0,2–0,45 m | 0,28 m | 0,28 m | 0,79 m mit 25° (Daumen dreht gleichmäßig 15° voraus) |
+
+- **Stick-Ruhe: kein messbarer Nutzen, aber träger.** Mit der Datenblatt-Schwelle (117°) wurden auch gewollte Richtungswechsel
+  verzögert: Slalom 11,5 → 16,4 s, Kurven bei langsamem Tempo fast dreimal so weit. Mit 25° glättet sie das Zittern
+  (± 8° → ± 0,7°), verlangsamt aber gleichmäßige Kurven; mit 10° glättet sie kaum noch. Die Ballverluste mit dem zappeligen
+  Kinder-Stick ändern sich in keiner Variante über das Rauschen hinaus (± 0,2 je Minute). Peters „zackig“ hat Vorrang → aus,
+  zum Ausprobieren `?stickruhe=0.1`.
+- **Wechsel-Glättung:** Pässe, Kinderhand, Parcours und Selbstspiel unverändert (die Bots nutzen sie nicht), der Wechsel
+  wirkt nur weicher – bleibt an.
+- Das Ziel „Pässe im Lauf ≥ 90 %“ erreicht E4 nicht (87 %); die Ziele dafür liegen beim Passsystem, nicht beim Stick.
+
+### Tests E4
+- Neu `tests/node/kinderstick.test.mjs` (13 Prüfungen: Zittern, 45°-Wechsel und Kehrtwende sofort, Zielen roh, Wechsel halb/
+  0,15 s/0,3 s, Regler aus, Kinderhand allein/gegen Bot/Tempo). Alle 36 Node-Tests grün, `tests/smoke.py` 0 Fehler.
+
+### Handy-Test für Peter (E4)
+1. Mit dem Ball laufen und den Spieler wechseln lassen (Ball verloren, Mitspieler näher): der neue Spieler „ruckt“ nicht mehr,
+   er übernimmt kurz seinen eigenen Schwung. Vergleich `?wechselGlatt=0`.
+2. Wer es ruhiger mag: `?stickruhe=0.1` glättet das Daumen-Zittern (größere Richtungswechsel bleiben sofort).

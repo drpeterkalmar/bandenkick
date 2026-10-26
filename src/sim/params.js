@@ -329,6 +329,13 @@ export const DEFAULTS = {
   // ggTakt s, ob vor ihm Raum ist (Wertung ≥ ggSchwelle), und läuft dann laufT s Richtung Tor; der Empfänger-Bot spielt ihn
   // bevorzugt an (Rückpass-Wert × 1 + ggBonus). 0 = aus
   gebengehen: 1,          //                                                                         [?gebengehen=0]
+  // n7 Vorlagen E4 (Vorlage A/B): Kinder-Steuerung (step.js kinderStick). #8 Stick-Ruhe: Richtung folgt mit stickruhe s, unter
+  // ruheMin° und ab ruheKehr° sofort; #9 Wechsel-Glättung: nach dem Wechsel halb Schwung, in wechselGlatt s ganz Stick.
+  // Stick-Ruhe gemessen ohne Nutzen (Kinderhand-Führen 120 × 60 s: Ballverluste allein 3,48 → 3,64, gegen Bot 6,18 → 6,34 je
+  // Minute; mit der Datenblatt-Schwelle 117° Slalom 11,5 → 16,4 s und Kurve bei 2 m/s 0,3 → 0,8 m) → Standard aus, nur Regler
+  stickruhe: 0,           // s, 0 = aus                                                               [?stickruhe=0.1]
+  ruheMin: 1.8, ruheKehr: 25, // ° (Datenblatt 117°)
+  wechselGlatt: 0.3,      // s, 0 = aus                                                               [?wechselGlatt=0]
   laufT: 2, ggTakt: 0.5, ggSchwelle: 0.5, ggBonus: 0.15, // (Datenblatt-Bonus +0,3: gemessen kaum Wirkung, Bot-Pässe 59 statt 60 %)
   diveSpeed: 5.2,         // m/s seitlich beim Hechten
   diveT: 0.38,            // s Flugphase des Hechtsprungs

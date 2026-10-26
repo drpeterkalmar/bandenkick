@@ -157,6 +157,10 @@ Schuss- und Passweg frei), leuchtet unter ihm ein **goldener Ring** und der Ball
 **direkt** (Schuss tippen, bevor er den Ball annimmt), kommt der Schuss genauer und härter. Nach einem Pass läuft der Passgeber
 in den freien Raum Richtung Tor (**Geben und Gehen**), die Bots spielen ihn gern zurück an. `?perfekt=0`, `?gebengehen=0` = aus.
 
+**n7 Vorlagen E4 – Kinder-Steuerung (26.10.):** wechselt das Spiel deinen Spieler, übernimmt der neue in 0,3 s vom eigenen Schwung
+auf deinen Stick (kein Ruck). Pass und Schuss zielen immer mit dem echten Stick. `?wechselGlatt=0` = aus; `?stickruhe=0.1` glättet
+zusätzlich das Daumen-Zittern (Standard aus, weil gemessen ohne Nutzen und in Kurven träger).
+
 **Ballmagnet (Nacht 2c, Peter: „leichter ballmagnet, sonst kein dribbling“; Nacht 2d: „viel mehr Ballmagnet“ → Stärke 1,2
 statt 0,5, im Sprint 70 % statt 45 %):** zwischen den echten Ballkontakten führt
 eine weiche Feder den Ball, den du zuletzt berührt hast, auf die Linie deines Sticks und bremst ihn, wenn er zu weit
@@ -233,6 +237,7 @@ Ball mit (Sohle/Außenseite). `?zack=0` = altes Gefühl aus Nacht 1 zum Vergleic
 | `?winkel=0` … `1` | n7 E1 Tormann-Stellung: Anteil Richtung Winkelhalbierende (Standard 0,5, `0` = alt) |
 | `?raus=0`, `?rausD=5`, `?rausMarge=1`, `?rausMax=1`, `?blockSpreiz=1` | n7 E1 Herauslaufen 1 gegen 1 aus; Schusspunkt vor dem Tor (m); so viel früher muss ein Verteidiger dort sein (m); höchstens so weit über die Torraumkante (m); Körperbreite beim Blocken (m) |
 | `?stolpern=0.25` | n7 E1 Chance, dass der Tormann bei einem Heber über ihn stolpert (`0` = nie) |
+| `?wechselGlatt=0.3`, `?stickruhe=0.1`, `?ruheKehr=25` | n7 E4 Kinder-Steuerung: nach dem Spielerwechsel so lange halb Schwung → ganz Stick (s, `0` = aus); Stick-Ruhe (Standard aus): Zeitkonstante (s) gegen Daumen-Zittern, ab so vielen Grad sofort |
 | `?perfekt=0`, `?perfektD=7`, `?perfektQ=0.4`, `?perfektWucht=1.1`, `?perfektBot=1` | n7 E3 Traumpass aus; höchstens so weit vor dem Tor (m); Direktabnahme: Qualität +, Wucht ×; Chance, dass Bots ihn direkt nehmen |
 | `?gebengehen=0`, `?laufT=2`, `?ggSchwelle=0.5`, `?ggBonus=0.15` | n7 E3 Geben und Gehen aus; Laufzeit (s); Mindest-Wertung des Raums; Rückpass-Bonus der Bots |
 | `?nachdrall=0` … `2`, `?nachdrallT=0.25`, `?nachdrallSeite=14`, `?nachdrallHoch=5`, `?nachdrallBot=1` | n7 E2 Nachdrall nach dem Schuss: Stärke (`0` = aus); Fenster (s); Seitendrall bzw. Rück-/Vorwärtsdrall bei vollem Stick (U/s); × Chance der Bots (Stufe 1/2/3: 5/15/30 %) |
@@ -345,6 +350,7 @@ node tests/node/hold_probe.mjs      # n7: Skript-Mensch dribbelt gegen Stufe-2-V
 node tests/node/keeper_catch_probe.mjs "" 12  # n7: Fangquote erster Torwartkontakt je Schusstempo (alle / direkte Schüsse)
 node tests/node/tormann_e1.test.mjs # n7 E1: Müdigkeit, Kondition je Stufe, Winkelhalbierende, 1 gegen 1, Blocken, Heber-Stolpern, Bot-Spiel
 SPITZ=1 node tests/node/keeper_series.mjs 300  # n7 E1: Schussserie aus spitzem Winkel (Winkelhalbierende)
+node tests/node/kinderstick.test.mjs  # n7 E4: Wechsel-Glättung, Stick-Ruhe (Regler), Zielen mit rohem Stick, Kinderhand
 node tests/node/traumpass.test.mjs  # n7 E3: Traumpass (Wertung, Direktabnahme), Geben und Gehen, Bot-Spiel
 python3 tests/n7_e3_bilder.py quer   # n7 E3: Fotos goldener Ring, goldene Spur, Direktschuss
 node tests/node/nachdrall.test.mjs  # n7 E2: Nachdrall (Abklingen, Kurve/Steigen/Senken nach 15 m, Bot-Spiel mit/ohne)
@@ -394,6 +400,8 @@ python3 tools/fetch_assets.py && python3 tools/make_assets.py   # Assets neu bau
 Browser-Tests laufen headless über die GPU (ANGLE/Metal), nie zwei Browser gleichzeitig.
 
 ## Änderungen
+- **n7 Vorlagen E4 Kinder-Steuerung (26.10., Version 0.5.4)** – nach dem Spielerwechsel kein Ruck mehr (0,3 s Übergang vom Schwung
+  zum Stick); Stick-Ruhe gegen Daumen-Zittern gemessen ohne Nutzen und träger → nur Regler `?stickruhe=0.1`.
 - **n7 Vorlagen E3 Traumpass und Geben und Gehen (20.10., Version 0.5.3)** – Pass auf einen freien Mitspieler bis 7 m vor dem Tor:
   goldener Ring + goldene Ballspur, Direktschuss besser und härter (Tore danach 42 %); nach dem Pass läuft der Passgeber in die
   Tiefe (Doppelpässe 20,6 → 24,4 je Spiel).
