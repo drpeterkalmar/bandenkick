@@ -423,7 +423,7 @@ python3 tools/fetch_assets.py && python3 tools/make_assets.py   # Assets neu bau
 Browser-Tests laufen headless über die GPU (ANGLE/Metal), nie zwei Browser gleichzeitig.
 
 ## Änderungen
-- **n8 Etappe 1 (27.10., Version VERSION_N8E1)** – Peter 26.10.: Halbzeit 2 statt 4 min, Lauftempo 7,0 statt 6,0 m/s (Antritt wächst mit),
+- **n8 Etappe 1 (27.10., Version 0.6.1)** – Peter 26.10.: Halbzeit 2 statt 4 min, Lauftempo 7,0 statt 6,0 m/s (Antritt wächst mit),
   Schuss-/Pass-Knopf 128/104 px statt 100/80, ⇄-Knopf weg (Spielerwechsel automatisch, belegt). Bericht: [`N8_BERICHT.md`](N8_BERICHT.md).
 - **n7 Abschluss (26.10., Version 0.6.0)** – Endmessung aller Vorlagen-Etappen, Gesamttabelle Ziel/vorher/nachher, alle Regler und
   Handy-Testhinweise in [`N7_VORLAGEN_BERICHT.md`](N7_VORLAGEN_BERICHT.md).

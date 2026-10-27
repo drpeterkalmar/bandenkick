@@ -8,7 +8,7 @@ Knöpfe, Wechsel (schnell live); Etappe 2 = Pässe (erst messen, dann reparieren
 
 ---
 
-## Etappe 1 – Release VERSION_N8E1
+## Etappe 1 – Release 0.6.1
 
 ### Halbzeit 2 min
 `P.dauer` 4 → 2 (`?dauer=4` = alt). Die Bot-Messwerkzeuge (`selfplay.mjs`, `n7_probe`, `wucht_probe`, `botpass_probe`,
