@@ -117,7 +117,7 @@ Ball führt oder ein Tipp vorgemerkt ist), beim Ball in der Hand des eigenen Tor
 
 ---
 
-## Etappe 2 – Pässe „gehen irgendwohin“ – Release VERSION_N8E2
+## Etappe 2 – Pässe „gehen irgendwohin“ – Release 0.6.2
 
 ### Messwerkzeuge (neu bzw. erweitert)
 - `tests/node/stickbild.mjs` – Stick im Bild ↔ auf dem Feld mit der echten Spielkamera (three.js in Node), hoch 412 × 915 und quer
