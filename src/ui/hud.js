@@ -6,7 +6,7 @@ const h = (tag, cls, html) => { const e = document.createElement(tag); if (cls) 
 export function buildHud(root, canvas) {
   root.innerHTML = '';
   const top = h('div', 'hud-top');
-  const score = h('div', 'score', '<span class="t0">Orange</span> 0 : 0 <span class="t1">Blau</span><small>1. Halbzeit · 4:00</small>');
+  const score = h('div', 'score', '<span class="t0">Orange</span> 0 : 0 <span class="t1">Blau</span><small>1. Halbzeit · 2:00</small>');
   const kick = h('div', 'kickinfo');
   const menuBtn = h('button', 'iconbtn', '☰'); menuBtn.setAttribute('aria-label', 'Menü');
   top.append(score, kick, h('div', 'spacer'), menuBtn);
@@ -146,16 +146,17 @@ export function buildHud(root, canvas) {
   root.append(amEl, top, banner, charge, hold, touch, dbg, start, menu, credits, train, hint, result, help, replay, clipAgain, tds, warm);
 
   // n7: ohne Sprint (sprintfrei) kein Hinweis auf Sprint-Knopf, Stick-Rand, Shift oder LB/RB
-  const howto = (touchUI, frei) => touchUI
-    ? `<li><b>Stick links:</b> laufen${frei ? ' (ein Tempo für alle, kein Sprint)' : ' · ganz außen oder Knopf = Sprint'} · <b>⇄</b> Spieler wechseln (sonst automatisch)</li>
+  // n8: ohne ⇄-Knopf (Standard) wechselt der Spieler nur automatisch
+  const howto = (touchUI, frei, wechsel) => touchUI
+    ? `<li><b>Stick links:</b> laufen${frei ? ' (ein Tempo für alle, kein Sprint)' : ' · ganz außen oder Knopf = Sprint'} · ${wechsel ? '<b>⇄</b> Spieler wechseln (sonst automatisch)' : 'du steuerst automatisch den Spieler am nächsten zum Ball, nach deinem Pass den Empfänger'}</li>
        <li><b>Pass/Schuss:</b> tippen = flach/Vollspann, <b>doppeltippen</b> = hoch/angeschnitten (Ring zeigt den Modus)</li>
        <li><b>Torwart</b> (letzte Hand im Torraum): fängt und hechtet von selbst. Mit Ball: Pass = <b>Abwurf</b>, Schuss = <b>Abschlag</b> – sonst wirft er nach 1 s selbst ab</li>`
     : `<li><b>WASD / Pfeile:</b> laufen${frei ? '' : ', <b>Shift:</b> Sprint'}, <b>C / Tab:</b> Spieler wechseln</li>
        <li><b>J / Enter / Linksklick:</b> Pass · <b>Leertaste / K / Rechtsklick:</b> Schuss – tippen = flach/Vollspann, <b>doppeltippen</b> = hoch/angeschnitten; Maus zielt</li>
        <li><b>Torwart</b> (letzte Hand im Torraum): fängt und hechtet von selbst; mit Ball J = Abwurf, Leertaste = Abschlag (sonst nach 1 s von selbst)</li>
        <li><b>Gamepad:</b> Stick laufen, A Pass/Abwurf, X/RT Schuss/Abschlag, Y Wechsel${frei ? '' : ', LB/RB Sprint'}</li>`;
-  let frei0 = false;
-  const setHowto = (touchUI, frei = frei0) => { frei0 = frei; root.querySelectorAll('.howto').forEach((u) => { u.innerHTML = howto(touchUI, frei); }); };
+  let frei0 = false, wechsel0 = false;
+  const setHowto = (touchUI, frei = frei0, wechsel = wechsel0) => { frei0 = frei; wechsel0 = wechsel; root.querySelectorAll('.howto').forEach((u) => { u.innerHTML = howto(touchUI, frei, wechsel); }); };
 
   let bannerT = 0, kickT = 0, lastScore = '', lastKeeper = '', lastCharge = null, lastStatus = '';
   const clock = (sec) => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, '0')}`;

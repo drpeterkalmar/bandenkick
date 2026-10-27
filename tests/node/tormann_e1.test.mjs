@@ -60,10 +60,15 @@ function keeperZ(qs) {
 }
 // 3) Herauslaufen 1 gegen 1 (Stufe 2): mehr vereitelt als ohne; Mittel über die Stufen 35–50 %
 {
-  const on = [1, 2, 3].map((lv) => oneOnOne('', 40, lv)), off = [1, 2, 3].map((lv) => oneOnOne('raus=0', 40, lv));
+  // n8: mit 7 m/s holt der zurücklaufende Verteidiger den Stürmer öfter ein (vereitelt auch ohne Tormann) – die Tormann-Mechanik
+  // wird deshalb im n7-Lauftempo geprüft (?ein=6&vAntritt=7.5), das n8-Tempo steht als Info darunter
+  const N7T = 'ein=6&vAntritt=7.5&';
+  const on = [1, 2, 3].map((lv) => oneOnOne(N7T, 40, lv)), off = [1, 2, 3].map((lv) => oneOnOne(N7T + 'raus=0', 40, lv));
   const avg = (a) => a.reduce((s, x) => s + x.savedShare, 0) / a.length;
-  check('1 gegen 1 vereitelt, Mittel Stufe 1–3', avg(on), 35, 55, '%', null, `je Stufe ${on.map((x) => x.savedShare.toFixed(0)).join('/')} % · ?raus=0: ${off.map((x) => x.savedShare.toFixed(0)).join('/')} % (Mittel ${avg(off).toFixed(0)} %)`);
-  check('… Stufe 2 mit Herauslaufen besser als ohne', on[1].savedShare - off[1].savedShare, 5, 100, 'Punkte', null);
+  check('1 gegen 1 vereitelt, Mittel Stufe 1–3 (n7-Lauftempo)', avg(on), 35, 55, '%', null, `je Stufe ${on.map((x) => x.savedShare.toFixed(0)).join('/')} % · ?raus=0: ${off.map((x) => x.savedShare.toFixed(0)).join('/')} % (Mittel ${avg(off).toFixed(0)} %)`);
+  check('… Stufe 2 mit Herauslaufen besser als ohne (n7-Lauftempo)', on[1].savedShare - off[1].savedShare, 5, 100, 'Punkte', null);
+  const on8 = [1, 2, 3].map((lv) => oneOnOne('', 40, lv)), off8 = [1, 2, 3].map((lv) => oneOnOne('raus=0', 40, lv));
+  check('… n8-Lauftempo 7 m/s (Info)', avg(on8), 0, 100, '%', null, `je Stufe ${on8.map((x) => x.savedShare.toFixed(0)).join('/')} % · ?raus=0: ${off8.map((x) => x.savedShare.toFixed(0)).join('/')} % (Mittel ${avg(off8).toFixed(0)} %)`);
 }
 // Blocken: Tormann außerhalb des Torraums mit gespreizten Beinen – flacher Ball 0,45 m neben der Körpermitte prallt ab
 {

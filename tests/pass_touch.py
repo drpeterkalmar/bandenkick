@@ -50,7 +50,9 @@ with Server() as srv, sync_playwright() as pw:
                 tx, ty = sx0 + u / l * 45, sy0 - v / l * 45   # Stick 45 px Richtung Mitspieler (Bildschirm)
                 touch(cdp, 'touchStart', [(0, (sx0, sy0))]); touch(cdp, 'touchMove', [(0, (tx, ty))])
                 time.sleep(0.12)
-                touch(cdp, 'touchStart', [(0, (tx, ty)), (1, (bx, by))]); time.sleep(0.06); touch(cdp, 'touchEnd', [(0, (tx, ty))])
+                # n8: touchEnd nennt die Finger, die losgelassen werden (CDP) – bis n7 ließ der Test hier den Stick-Finger los, der
+                # Pass-Knopf blieb bis zum Ende „gehalten“ (passDown 1 s, Pass erst beim Loslassen, Ball oft schon beim Gegner)
+                touch(cdp, 'touchStart', [(0, (tx, ty)), (1, (bx, by))]); time.sleep(0.06); touch(cdp, 'touchEnd', [(1, (bx, by))])
                 if k == 0:  # Foto: Ring am Empfänger, während der Ball rollt
                     try: s.pg.wait_for_function("__game.game.passPlan && __game.game.passPlan.to >= 0", timeout=4000); s.frames(4); s.shot(f'n2e_pass_unterwegs_{form}', 'final')
                     except Exception: pass

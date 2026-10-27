@@ -8,7 +8,7 @@ import { pathToFileURL } from 'node:url';
 export function botPassProbe(qs = '', games = 6, seed0 = 1) {
   const c = { n: 0, ok: 0, inter: 0, other: 0, self: 0, none: 0 };
   for (let s = 0; s < games; s++) {
-    const g = new Game(makeParams(qs), 'bp' + (seed0 + s), { match: true, human: -1 });
+    const g = new Game(makeParams('dauer=4&' + qs), 'bp' + (seed0 + s), { match: true, human: -1 }); // n8: Messbasis 2 × 4 min
     let open = null;
     while (g.rules.phase !== 'end' && g.t < g.rules.halfLen * 2 + 300) {
       for (const e of g.step([])) {

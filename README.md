@@ -29,7 +29,7 @@ Als App installierbar (PWA), läuft offline.
   1 s ohne Eingabe ab (vorher 2 s). `?halten=0` = Nacht 2d, `?halten=1.5` = etwas länger (Sekunden bis zum Abwurf).
 - **Nach einem Tor:** kurzer Jubel, alle laufen in ihre Hälfte, dann **Anstoß in der Mitte** (seit 30.09.;
   `?anstoss=0` = Schnellstart: der Tormann der Mannschaft, die das Tor bekommen hat, hat den Ball in der Hand).
-- **Spielzeit** 2 × 4 min (`?dauer=`), Anzeige Spielstand und Restzeit, Pfiffe zu Halbzeit und Ende,
+- **Spielzeit** 2 × 2 min (n8, Peter 26.10.: „Halbzeitlänge halbieren“; bis n7 2 × 4 min, `?dauer=4`), Anzeige Spielstand und Restzeit, Pfiffe zu Halbzeit und Ende,
   **Golden Goal** bei Gleichstand mit `?golden=1`.
 - **Menschen:** sechs Rocketbox-Avatare (Microsoft, MIT) mit echten Lauf-, Sprint-, Jubel- und Klatsch-Bewegungen;
   die Laufzyklen laufen phasengleich mit dem gemessenen Schrittweg (kein Fußgleiten), Stemmschritt sichtbar.
@@ -46,7 +46,7 @@ Als App installierbar (PWA), läuft offline.
 ## Steuerung
 | | |
 |---|---|
-| **Handy** | **Stick links** (Finger irgendwo in der linken Hälfte): laufen – **ein Tempo für alle, kein Sprint** (n7). **Pass** und **Schuss** tippen oder doppeltippen (Tabelle unten), der Ring um den Knopf zeigt den Modus. **⇄** Spieler wechseln (sonst automatisch zum ballnächsten, nach deinem Pass zum Empfänger). |
+| **Handy** | **Stick links** (Finger irgendwo in der linken Hälfte): laufen – **ein Tempo für alle, kein Sprint** (n7). **Pass** und **Schuss** tippen oder doppeltippen (Tabelle unten), der Ring um den Knopf zeigt den Modus. Den Spieler wechselt das Spiel **automatisch** (zum ballnächsten, nach deinem Pass zum Empfänger) – der ⇄-Knopf ist seit n8 weg (`?wechsel=1` = Knopf wie bisher). |
 | **Als letzte Hand im eigenen Torraum** | **Auto-Torwart (Nacht 2c):** Fangen und Hechten macht er selbst – so sicher wie ein Bot-Tormann der alten Stufe 2. Laufen darfst du selbst (der Stick gewinnt; lässt du ihn los, stellt er sich hin). Mit Ball: Pass-Knopf = **Abwurf** (auf den Stick bzw. den freiesten Mitspieler), Schuss-Knopf = **Abschlag**; ohne Eingabe wirft er nach 1 s selbst ab (Nacht 2e; ohne freien Mitspieler nach 2 s weiter Abschlag). `?autotorwart=0` = alte grüne Knöpfe (Schuss = Fangen, Pass = Hechten). In den drei Torwart-Übungen im Training bleiben die Knöpfe, dort ist Fangen die Aufgabe. |
 | **Tastatur/Maus** | WASD/Pfeile laufen, **C/Tab** Wechsel. Maus zielt. **J/Enter/Linksklick = Pass-Knopf**, **Leertaste/K/Rechtsklick = Schuss-Knopf** – gleiche Gesten wie am Handy (Tormann mit Ball: Abwurf bzw. Abschlag). Esc Pause. |
 | **Gamepad** | Linker Stick laufen, A = Pass-Knopf, X oder RT = Schuss-Knopf (Gesten wie am Handy), **Y Wechsel**. |
@@ -164,6 +164,19 @@ zusätzlich das Daumen-Zittern (Standard aus, weil gemessen ohne Nutzen und in K
 **n7 Vorlagen E5 – Eck-Schrägen (26.10.):** die vier Käfig-Ecken sind mit einer 45°-Bande (Schenkel 1,5 m) abgeschrägt, Netz und
 Gestell folgen. Der Ball klemmt nicht mehr zwischen zwei Banden, sondern springt zurück ins Feld. `?eckschraege=0` = eckig.
 
+**n8 Etappe 1 (27.10., Peter 26.10.: „Halbzeitlänge halbieren, Laufgeschwindigkeit erhöhen, Buttons größer machen, und was macht
+dieser komische Pfeil-Knopf?“ – „Spielerwechsel braucht keiner“):**
+- **Halbzeit 2 min** statt 4 (`?dauer=4` = alt).
+- **Lauftempo 7,0 m/s** statt 6,0 für alle (Mensch und Bots); der Antritt wächst mit (0 → 4 m/s in 0,53 s statt 0,60, Höchsttempo
+  nach 1,8 s), sonst wäre man auf den kurzen Wegen im Käfig kaum schneller. Wenden wie bisher (Kurve 13 m/s², Stemmschritt).
+  `?ein=6&vAntritt=7.5` = genau wie n7.
+- **Größere Knöpfe:** Schuss 128 px (vorher 100), Pass 104 px (vorher 80). Hochformat: Schuss unten rechts in der Ecke, Pass schräg
+  darüber auf dem Platz des alten Wechsel-Knopfs; Querformat: Pass links neben dem Schuss. Nichts überlappt, der Stick bleibt frei.
+- **Kein ⇄-Knopf mehr:** der „komische Pfeil-Knopf“ war der Spielerwechsel. Das Spiel wechselt ohnehin automatisch – zum
+  Mitspieler, der am schnellsten am Ball ist, und nach deinem Pass sofort zum Empfänger (gemessen: in ganzen Spielen ohne Knopf
+  ist der Gesteuerte in 90 % der Zeit der ballnächste, nie länger als 0,6 s ein anderer klar näher). `?wechsel=1` = Knopf zurück.
+- Details und Messungen: [`N8_BERICHT.md`](N8_BERICHT.md).
+
 **Ballmagnet (Nacht 2c, Peter: „leichter ballmagnet, sonst kein dribbling“; Nacht 2d: „viel mehr Ballmagnet“ → Stärke 1,2
 statt 0,5, im Sprint 70 % statt 45 %):** zwischen den echten Ballkontakten führt
 eine weiche Feder den Ball, den du zuletzt berührt hast, auf die Linie deines Sticks und bremst ihn, wenn er zu weit
@@ -214,7 +227,7 @@ Ball mit (Sohle/Außenseite). `?zack=0` = altes Gefühl aus Nacht 1 zum Vergleic
 - **Käfig:** 24 × 15 m (Nacht 2c, vorher 20 × 13 = `?feld=20x13`), Tore 3 × 2 m in der Bande, Bande 1 m, Ballfangnetz, Dachnetz auf 5 m. Mit Dach reicht das
   Seitennetz bis zum Dach (sonst Spalt zwischen 3 und 5 m). Ohne Dach (`?dach=0`) ist das Netz 2 m hoch
   (Oberkante 3 m); fliegt der Ball darüber, gibt es „Aus“ und der Ball kommt zurück.
-- **Spieler:** n7: ein Lauftempo 6,0 m/s (bis n6: Sprint 7,5 m/s, Laufen 5,2 m/s, `?sprintfrei=0`), 0 → 4 m/s in 0,60 s, 0 → 7 m/s in 2,5 s; Kurve r = v²/13 m/s²
+- **Spieler:** n8: ein Lauftempo 7,0 m/s, 0 → 4 m/s in 0,53 s, 7 m/s nach 1,8 s (n7: 6,0 m/s, 0 → 4 m/s in 0,60 s; bis n6: Sprint 7,5 m/s, Laufen 5,2 m/s, `?sprintfrei=0`); Kurve r = v²/13 m/s²
   (4,3 m im Sprint), Stemmschritt 16 m/s². Ballführung mit echten Ballkontakten und Ballmagnet, kein Klebeball;
   im Sprint längere Vorlagen. Körper als Zylinder (Ball prallt ab, kann aber nie auf einem Spieler liegen bleiben), Spieler schieben
   sich gegenseitig weg (Zweikampf).
@@ -224,7 +237,7 @@ Ball mit (Sohle/Außenseite). `?zack=0` = altes Gefühl aus Nacht 1 zum Vergleic
 |---|---|
 | `?solo=1` | Training allein (Ball und Käfig wie Nacht 1) |
 | `?bots=1` … `3` | Stärke der Bots (Reaktion, Tempo, Streuung, Fangsicherheit, Fehlerquote), Standard 2 |
-| `?dauer=4`, `?golden=1`, `?anstoss=0` | Minuten je Halbzeit, Golden Goal bei Gleichstand, Schnellstart statt Anstoß nach Tor |
+| `?dauer=4`, `?golden=1`, `?anstoss=0` | Minuten je Halbzeit (Standard 2 seit n8, vorher 4), Golden Goal bei Gleichstand, Schnellstart statt Anstoß nach Tor |
 | `?torraum=4`, `?fanghilfe=0` | Radius des Torraums (m), Fanghilfe für den menschlichen Tormann aus (nur mit `?autotorwart=0`) |
 | `?autotorwart=0`, `?autowurf=1` | Auto-Torwart aus (grüne Knöpfe wie Nacht 2b); Sekunden ohne Eingabe bis zum automatischen Abwurf (Nacht 2e: 1, vorher 2) |
 | `?rueckpass=1` | Rückpass wie bis Nacht 2d erlaubt (Tormann als Pass-Empfänger, fängt den Ball vom Mitspieler) |
@@ -232,7 +245,9 @@ Ball mit (Sohle/Außenseite). `?zack=0` = altes Gefühl aus Nacht 1 zum Vergleic
 | `?tormann=1` … `3` | Stärke der CPU-Tormänner getrennt von den Feldspielern (Zwischenwerte wie `1.5` erlaubt; ohne Regler wie `?bots=`). Standard 2 lässt ≈ 30 % der Schüsse rein (Nacht 2b: 14 %) |
 | `?zack=0` | altes Bewegungsmodell aus Nacht 1 (A/B-Vergleich) |
 | `?wende=13`, `?stemm=16`, `?bremse=9`, `?kurve=20`, `?antritt=0.672` | Kurven-Querbeschleunigung, Stemmschritt-Bremsung, Abbremsen (m/s²), Winkel bis zur reinen Kurve (°), Antritts-Zeitkonstante (s) |
-| `?sprintfrei=0`, `?ein=6`, `?trab=0.83` | n7: alter Sprint (Knopf/Rand/Shift/LB-RB); das eine Lauftempo (m/s); Anteil, mit dem Bots ohne Eile laufen |
+| `?sprintfrei=0`, `?ein=7`, `?trab=0.83` | n7: alter Sprint (Knopf/Rand/Shift/LB-RB); das eine Lauftempo (m/s, n8: 7,0, n7: 6,0); Anteil, mit dem Bots ohne Eile laufen |
+| `?antrittF=1.15`, `?vAntritt=7.5` | n8: Ziel der Antrittskurve = Faktor × Lauftempo bzw. fest in m/s (`?ein=6&vAntritt=7.5` = Laufen genau wie n7) |
+| `?wechsel=1` | n8: ⇄-Knopf am Handy wie bis n7 (Standard: nur automatischer Spielerwechsel; Tastatur C/Tab und Gamepad Y gehen immer) |
 | `?sprint=8`, `?lauf=5.5` | Sprint-/Lauftempo (m/s); mit Sprint-frei wirkt `sprint` nur noch auf die Antrittskurve |
 | `?abschirmen=0`, `?schirmR=1.5`, `?schirmVor=0.3`, `?schirmSeite=0.35`, `?schirmVorlage=0.5`, `?schirmGraetsche=1.2` | n7 Abschirmen aus; Gegner-Abstand zum Ball (m); so viel näher muss der Gegnerfuß sein (m); Ball zur abgewandten Seite (m); kürzere Vorlage (Anteil); Grätsch-Rate der Bots gegen Abschirmer |
 | `?fangMax=13`, `?fangKoerperMax=16`, `?abprallMin=0.25`, `?abprallMax=0.4`, `?nachfassen=0.5` | n7 Fanggrenze aller Tormänner (m/s, `0` = alt); Körperbälle bis (m/s); Abpraller-Tempo (Anteil); Sekunden ohne Nachfassen nach dem Abklatschen |
@@ -356,6 +371,8 @@ node tests/node/tormann_e1.test.mjs # n7 E1: Müdigkeit, Kondition je Stufe, Win
 SPITZ=1 node tests/node/keeper_series.mjs 300  # n7 E1: Schussserie aus spitzem Winkel (Winkelhalbierende)
 node tests/node/eckschraege.test.mjs  # n7 E5: Eck-Schrägen (Geometrie, Abprall, harte Schüsse, Spieler, Bot-Spiel)
 python3 tests/n7_e5_bilder.py quer   # n7 E5: Fotos eckig / 1 m / 1,5 m
+node tests/node/wechsel.test.mjs   # n8: Spielerwechsel automatisch (ballnächster, Pass-Empfänger), ganze Spiele ohne Wechsel-Eingabe
+python3 tests/n8_hud.py              # n8: Knöpfe 128/104 px hoch/quer/schmal, Rechtecke, Abstände, Stick frei, Fotos tests/shots/n8/
 node tests/node/kinderstick.test.mjs  # n7 E4: Wechsel-Glättung, Stick-Ruhe (Regler), Zielen mit rohem Stick, Kinderhand
 node tests/node/traumpass.test.mjs  # n7 E3: Traumpass (Wertung, Direktabnahme), Geben und Gehen, Bot-Spiel
 python3 tests/n7_e3_bilder.py quer   # n7 E3: Fotos goldener Ring, goldene Spur, Direktschuss
@@ -406,6 +423,8 @@ python3 tools/fetch_assets.py && python3 tools/make_assets.py   # Assets neu bau
 Browser-Tests laufen headless über die GPU (ANGLE/Metal), nie zwei Browser gleichzeitig.
 
 ## Änderungen
+- **n8 Etappe 1 (27.10., Version VERSION_N8E1)** – Peter 26.10.: Halbzeit 2 statt 4 min, Lauftempo 7,0 statt 6,0 m/s (Antritt wächst mit),
+  Schuss-/Pass-Knopf 128/104 px statt 100/80, ⇄-Knopf weg (Spielerwechsel automatisch, belegt). Bericht: [`N8_BERICHT.md`](N8_BERICHT.md).
 - **n7 Abschluss (26.10., Version 0.6.0)** – Endmessung aller Vorlagen-Etappen, Gesamttabelle Ziel/vorher/nachher, alle Regler und
   Handy-Testhinweise in [`N7_VORLAGEN_BERICHT.md`](N7_VORLAGEN_BERICHT.md).
 - **n7 Vorlagen E5 Eck-Schrägen (26.10., Version 0.5.5)** – die Käfig-Ecken sind 1,5 m abgeschrägt (Bande, Netz, Gestell): der Ball

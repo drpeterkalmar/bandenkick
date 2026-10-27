@@ -43,7 +43,8 @@ const inp = (o = {}) => ({ mx: 0, mz: 0, sprint: false, pass: false, shootHeld: 
   const a = run({}), b = run({ sprint: true });
   check('Ein Lauftempo: Höchsttempo = vEin', a.v, P.vEin - 0.05, P.vEin + 0.02, 'm/s', P.vEin, `?ein=${P.vEin}`);
   check('Sprint-Eingang (Knopf, Stick-Rand, Shift, LB/RB → inp.sprint) ändert das Tempo nicht', Math.abs(b.v - a.v), 0, 1e-9, 'm/s', 0, `mit „Sprint“ ${b.v.toFixed(3)} m/s, Spieler.sprinting = ${b.sprinting}`);
-  check('Antritt bleibt spritzig: 0 → 6 m/s', a.t6, 1.2, 1.9, 's', null, 'Antrittskurve wie bisher (läuft gegen 7,5 m/s), endet bei vEin');
+  check('Antritt bleibt spritzig: 0 → 6 m/s', a.t6, 1.0, 1.9, 's', null, `n8: Antrittskurve läuft gegen ${P.vAcc.toFixed(2)} m/s (1,15 × vEin), endet bei vEin; n7 1,38 s`);
+  check('n8 ?ein=6&vAntritt=7.5 = Antritt wie n7: 0 → 6 m/s', run({}, makeParams('ein=6&vAntritt=7.5')).t6, 1.3, 1.45, 's', 1.38);
   check('?ein=5.8 wirkt', run({}, makeParams('ein=5.8')).v, 5.75, 5.82, 'm/s', 5.8);
 }
 // 2) Kurve tempoabhängig: Stick 15° neben der Laufrichtung (unter der Kurven-Grenze) → r = v²/aLat

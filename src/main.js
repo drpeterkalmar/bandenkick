@@ -68,6 +68,7 @@ if (isTouch) document.body.classList.add('touch');
 if (DEKO) document.body.classList.add('deko');
 if (P.treffpunkt) document.body.classList.add('treffpunkt');
 if (P.sprintfrei) document.body.classList.add('sprintfrei'); // n7: kein Sprint-Knopf, Knöpfe neu angeordnet
+if (P.wechsel) document.body.classList.add('wechselknopf'); // n8: ⇄-Knopf nur noch mit ?wechsel=1
 if (qs.has('debug')) document.body.classList.add('debug');
 Avatar.ikMessen = qs.has('debug'); // n5: IK-Zeitmessung nur im Debug (kostet je Bild)
 const urlSolo = qs.has('solo') || qs.get('modus') === 'training';
@@ -76,7 +77,7 @@ document.body.classList.toggle('solo', solo);
 
 const canvas = document.getElementById('c');
 const hud = buildHud(document.getElementById('ui'), canvas);
-hud.setHowto(isTouch, !!P.sprintfrei);
+hud.setHowto(isTouch, !!P.sprintfrei, !!P.wechsel);
 const loadMsg = document.createElement('div');
 loadMsg.style.cssText = 'position:fixed;inset:0;display:grid;place-items:center;font:600 18px system-ui;color:#fff;background:#10251a';
 loadMsg.textContent = 'Bandenkick lädt …';

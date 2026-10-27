@@ -57,15 +57,18 @@ function lauf(qs) {
   a.place(hx - 14, -1, 0); m.place(hx - 9, 3, 0); g.ball.place(hx - 13.6, g.ball.r, -1);
   g.lastTouch = 0; g.lastTouchT = g.t; a.lastTouchT = g.t;
   a.kickAt({ kind: 'pass', lead: true, to: 1, noise: 0 });
-  const x0 = a.x; let gg = 0, kicked = false;
-  for (let i = 0; i < 2.5 / DT; i++) for (const e of g.step([])) { if (e.type === 'gebengehen' && e.player === 0) gg++; if (e.type === 'kick' && e.player === 0) kicked = true; }
-  return { dx: a.x - x0, gg, kicked };
+  const x0 = a.x, tr = []; let gg = 0, kicked = false;
+  for (let i = 0; i < 2.5 / DT; i++) { for (const e of g.step([])) { if (e.type === 'gebengehen' && e.player === 0) gg++; if (e.type === 'kick' && e.player === 0) kicked = true; } tr.push(a.x - x0); }
+  return { dx: a.x - x0, gg, kicked, tr };
 }
 {
   const on = lauf(''), off = lauf('gebengehen=0');
   check('Geben und Gehen: Passgeber startet einen Lauf', on.gg, 1, 1, '', 1, on.kicked ? '' : 'Pass nicht gespielt!');
   check('… läuft in 2,5 s nach vorn', on.dx, 4, 20, 'm', null, `?gebengehen=0: ${off.dx.toFixed(1)} m`);
-  check('… deutlich weiter als ohne', on.dx - off.dx, 2, 20, 'm', null);
+  // n8: mit 7 m/s ist der Lauf (Ziel 4,5–7,5 m vor ihm) nach ≈ 2 s am Ziel, ohne Geben und Gehen holt er bis 2,5 s auf – gemessen
+  // wird deshalb der größte Vorsprung während der 2,5 s (n7: am Ende 2,0 m)
+  const lead = Math.max(...on.tr.map((x, i) => x - off.tr[i]));
+  check('… deutlich weiter als ohne (größter Vorsprung in 2,5 s)', lead, 2, 20, 'm', null, `nach 2,5 s ${(on.dx - off.dx).toFixed(1)} m`);
 }
 
 // Bot-Spiel Stufe 2 (20 Spiele): Datenblatt-Messgrößen 8 und 9

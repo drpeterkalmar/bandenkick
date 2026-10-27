@@ -11,7 +11,7 @@ import { pathToFileURL } from 'node:url';
 export function dribbleLosses(qs = '', n = 20, seed0 = 500) {
   const r = { games: 0, minutes: 0, losses: 0, duel: 0, free: 0, keeps: 0, touches: 0, dribbleT: 0, tackles: 0, tackleBall: 0 };
   for (let s = 1; s <= n; s++) {
-    const g = new Game(makeParams(qs), seed0 + s, { match: true, human: -1, botLevels: [((s - 1) % 3) + 1, (Math.floor((s - 1) / 3) % 3) + 1] });
+    const g = new Game(makeParams('dauer=4&' + qs), seed0 + s, { match: true, human: -1, botLevels: [((s - 1) % 3) + 1, (Math.floor((s - 1) / 3) % 3) + 1] });
     let dr = -1, drT = 0, duel = false;
     const lose = () => { r.losses++; if (duel) r.duel++; else r.free++; };
     const oppDist = (p) => { let m = 9; for (const o of g.players) if (o.team !== p.team) m = Math.min(m, Math.hypot(o.x - g.ball.p.x, o.z - g.ball.p.z)); return m; };

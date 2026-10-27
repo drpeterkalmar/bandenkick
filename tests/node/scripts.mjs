@@ -69,7 +69,10 @@ export function makeScript(id, opts = {}) {
         const ab = Math.atan2(b.p.z - me.z, b.p.x - me.x);
         let d = a - ab; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI;
         if (bd > 0.35 && !opts.naive) a = ab + Math.max(-0.52, Math.min(0.52, d));
-        return H({ mx: Math.cos(a) * (opts.naive ? 1 : m), mz: Math.sin(a) * (opts.naive ? 1 : m), sprint: !!opts.sprint });
+        // n8: das Skript führt mit festem Tempo (¾ Stick bei n7-Lauftempo 6,0 = 4,5 m/s), nicht mit fester Stick-Stellung –
+        // mit 7,0 m/s und ¾ Stick verpasste es sonst Slalom-Tore (ein Mensch nimmt den Daumen etwas zurück); opts.voll = ¾ Stick
+        const mm = opts.naive ? 1 : opts.voll ? m : m * Math.min(1, 6.0 / g.P.vRun);
+        return H({ mx: Math.cos(a) * mm, mz: Math.sin(a) * mm, sprint: !!opts.sprint });
       };
       if (gate) return steer(gate.x + (opts.naive ? 0.2 : 0.4), gate.z, 0.75); // Nacht 2c: 0,4 statt 1,0 m hinter dem Tor (verpasste sonst 2 Tore)
       // alle Tore durch: aufs Tor, schießen sobald nah genug

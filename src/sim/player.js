@@ -395,10 +395,11 @@ export class Player {
     if (this.speed > 1e-6) { this.hx = vx / this.speed; this.hz = vz / this.speed; }
   }
 
-  // Antrittskurve: dv/dt = (vSprint − v)/τ(v) mit τ(v) = τ0 + τ1·v/vSprint (erste Schritte spritzig)
+  // Antrittskurve: dv/dt = (vA − v)/τ(v) mit τ(v) = τ0 + τ1·v/vA (erste Schritte spritzig); vA = vSprint, n8 ohne Sprint
+  // 1,15 × Lauftempo (P.vAcc)
   accel(v) {
-    const P = this.P;
-    return Math.max(0, P.vSprint - v) / (P.tauAcc0 + P.tauAcc1 * Math.max(0, v) / P.vSprint);
+    const P = this.P, vA = P.vAcc || P.vSprint;
+    return Math.max(0, vA - v) / (P.tauAcc0 + P.tauAcc1 * Math.max(0, v) / vA);
   }
 
   // Weg in T Sekunden ab Tempo v0, Antrittskurve bis vd (Stärke der Ballkontakte)

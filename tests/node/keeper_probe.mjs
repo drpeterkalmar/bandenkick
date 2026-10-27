@@ -12,7 +12,7 @@ import { pathToFileURL } from 'node:url';
 export function probe(K, n, qs = '', keeperOnly = false, seed0 = 100) {
   const r = { K, shots: 0, goals: 0, goalsAll: 0, catch: 0, parry: 0, dive: 0, rollers: 0, rollerGoals: 0, onTarget: 0, onGoals: 0, games: 0, bySpeed: {} };
   for (let s = 1; s <= n; s++) {
-    const g = new Game(makeParams(qs), seed0 + s, { match: true, human: -1, botLevels: keeperOnly ? [2, 2] : [2, K] });
+    const g = new Game(makeParams('dauer=4&' + qs), seed0 + s, { match: true, human: -1, botLevels: keeperOnly ? [2, 2] : [2, K] });
     if (keeperOnly) g.bots.K[1] = keeperLevel(g.P, K); // nur der Tormann von Blau wechselt die Stufe
     let open = null; // laufender Schuss von Mannschaft 0
     const close = (res) => {

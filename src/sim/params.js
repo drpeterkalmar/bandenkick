@@ -82,7 +82,14 @@ export const DEFAULTS = {
   // Gamepad, auch nicht für Bots. Alle laufen mit einem Tempo vEin; Antritt und Wenden bleiben „zackig“ wie beim Laufen.
   // Sprint-Sonderwerte (magnetSprint, touchLeadSprint, touchExtraSprint, Streuung im Sprint) entfallen damit.
   sprintfrei: 1,          // 0 = alt (Sprint per Knopf/Stick-Rand/Shift/Gamepad, Laufen vRun)       [?sprintfrei=0]
-  vEin: 6.0,              // m/s das eine Lauftempo (Startwert 6,3; gemessen 6,0: Pässe im Lauf wie vorher, siehe N7_VORLAGEN_BERICHT.md) [?ein=]
+  // n8 (Peter 26.10.: „Laufgeschwindigkeit erhöhen“): 7,0 statt 6,0 (+17 %). Die Antrittskurve wächst mit (vAntritt), sonst
+  // brauchte er bis 7 m/s fast doppelt so lange und war auf den kurzen Wegen im Käfig kaum schneller (siehe N8_BERICHT.md).
+  vEin: 7.0,              // m/s das eine Lauftempo (n7: 6,0)                                         [?ein=]
+  // Ziel der Antrittskurve ohne Sprint: 0 = automatisch antrittF × vEin (7,0 → 8,05 m/s: 0 → 4 m/s in 0,54 s statt 0,60, Höchst-
+  // tempo nach 1,8 s; mit 1,25 wäre alles genau 17 % schneller, aber der erste Schritt mit 0,47 s sehr hektisch, Bots pressen
+  // härter). ?vAntritt=7.5 = Kurve wie n7 (gleicher Antritt, 7 m/s erst nach 2,4 s). Mit ?sprintfrei=0 gilt vSprint.
+  vAntritt: 0,            // m/s                                                                      [?vAntritt=]
+  antrittF: 1.15,         //                                                                          [?antrittF=]
   // Bots laufen ohne Eile (wo sie früher nicht sprinteten) nur mit diesem Anteil des Lauftempos (6,0 × 0,83 ≈ 5 m/s wie das
   // alte Laufen); eilt es, laufen sie voll (6,0 statt 7,5 m/s). Sonst stehen die Verteidiger überall schneller und fangen mehr
   // Pässe ab. Gilt nur mit sprintfrei; der Mensch regelt sein Tempo mit dem Stick.
@@ -250,7 +257,7 @@ export const DEFAULTS = {
   // ---------------- Spiel 3 gegen 3 (Plan: „letzte Hand“, Schnellstart, Spielzeit) ----------------
   perTeam: 3,             // Spieler je Mannschaft
   botLevel: 2,            // Stärke der Bots 1 (leicht) … 3 (stark)                  [?bots=]
-  dauer: 4,               // min je Halbzeit (2 Halbzeiten)                           [?dauer=]
+  dauer: 2,               // min je Halbzeit (2 Halbzeiten); n8 (Peter 26.10.: „Halbzeitlänge halbieren“): 2 statt 4 [?dauer=]
   golden: 0,              // 1 = bei Gleichstand Golden Goal statt Unentschieden      [?golden=]
   anstoss: 1,             // Anstoß in der Mitte nach Tor (Peter 30.09.; war 0 = Schnellstart, Tormann hat den Ball) [?anstoss=0]
   // „Letzte Hand“: hinterster Spieler (kleinster Abstand zur eigenen Torlinie), Wechsel erst, wenn ein anderer
@@ -355,6 +362,9 @@ export const DEFAULTS = {
   punt: 21,               // m/s Abschlag aus der Hand
   celebrateT: 2.6,        // s Jubel nach dem Tor, dann Anstoß (bzw. Schnellstart mit ?anstoss=0)
   switchT: 0.6,           // s Mindestabstand zwischen automatischen Spielerwechseln
+  // n8 (Peter 26.10.: „Spielerwechsel braucht keiner“): kein ⇄-Knopf am Handy – der Spieler wechselt automatisch (zum
+  // ballnächsten, nach deinem Pass zum Empfänger). Tastatur C/Tab und Gamepad Y bleiben. 1 = Knopf wie bis n7  [?wechsel=1]
+  wechsel: 0,
 };
 
 // Kurzformen für Peter (deutsch) → interne Namen
@@ -414,6 +424,8 @@ export function makeParams(overrides = {}) {
   if (P.sprintfrei && !set.has('vRun')) P.vRun = P.vEin;
   if (P.sprintfrei) for (const [k, v] of Object.entries(SPRINTFREI1)) if (!set.has(k)) P[k] = v;
   P.vTop = P.sprintfrei ? P.vRun : P.vSprint;
+  // n8: Ziel der Antrittskurve (player.accel); ohne Sprint wächst sie mit dem Lauftempo, mit Sprint bleibt sie vSprint
+  P.vAcc = P.sprintfrei ? (P.vAntritt > 0 ? P.vAntritt : P.antrittF * P.vEin) : P.vSprint;
   P.roof = P.roof ? 1 : 0;
   P.goalW = clamp(P.goalW, 1, P.fieldW - 2);
   P.goalH = clamp(P.goalH, 0.8, 3);

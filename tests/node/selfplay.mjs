@@ -6,7 +6,8 @@ import { pathToFileURL } from 'node:url';
 
 // onStep(g, ev) (n7): wird nach jedem Takt mit den Ereignissen aufgerufen (Messwerkzeuge, z. B. n7_probe.mjs)
 export function playGame(seed, { qs = '', levels = null, maxT = null, onStep = null } = {}) {
-  const P = makeParams(qs);
+  // n8: Spielzeit seit 26.10. 2 × 2 min – Messbasis der Bot-Spiele bleibt 2 × 4 min (Werte „je Spiel“ vergleichbar mit n7); ?dauer= übersteuert
+  const P = makeParams('dauer=4&' + qs);
   const g = new Game(P, seed, { match: true, human: -1, botLevels: levels });
   const cage = g.cage;
   const st = { seed, goals: [0, 0], events: {}, stuck: [], faults: 0, holdMax: 0, t: 0, keeperSwitches: 0, touches: 0, kicks: {}, air: {}, airGoals: {}, tech: {} };

@@ -51,7 +51,7 @@ export function shotTable(qs = '') {
 export function selfplay(qs = '', n = 4, seed0 = 300) {
   const r = { games: n, shots: 0, goals: 0, dives: 0, vmax: 0, out: 0, nan: 0, faults: 0, minutes: 0, saves: 0, diveSaves: 0 };
   for (let s = 1; s <= n; s++) {
-    const g = new Game(makeParams(qs), seed0 + s, { match: true, human: -1, botLevels: [2, 2] });
+    const g = new Game(makeParams('dauer=4&' + qs), seed0 + s, { match: true, human: -1, botLevels: [2, 2] }); // n8: Messbasis 2 × 4 min
     const hx = g.cage.hx + 0.6, hz = g.cage.hz + 0.6;
     while (g.rules.phase !== 'end' && g.t < g.rules.halfLen * 2 + 300) {
       for (const e of g.step([])) {

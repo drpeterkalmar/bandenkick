@@ -96,6 +96,23 @@ body.sprintfrei #bSprint { display: none; }
 body.sprintfrei.hoch #bShot { right: calc(env(safe-area-inset-right, 0px) + 24px); bottom: calc(env(safe-area-inset-bottom, 0px) + 72px); }
 body.sprintfrei.hoch #bPass { right: calc(env(safe-area-inset-right, 0px) + 146px); bottom: calc(env(safe-area-inset-bottom, 0px) + 28px); }
 body.sprintfrei.hoch #bSwitch { right: calc(env(safe-area-inset-right, 0px) + 156px); bottom: calc(env(safe-area-inset-bottom, 0px) + 136px); }
+/* n8 (Peter 26.10.: „Buttons größer machen“, „Spielerwechsel braucht keiner“): Schuss 100 → 128 px, Pass 80 → 104 px (+28 / +30 %),
+   der ⇄-Knopf fällt weg (nur noch mit ?wechsel=1). Hoch: Schuss ganz in der Ecke, Pass schräg darüber auf dem frei gewordenen Platz
+   des Wechsel-Knopfs, leicht nach links versetzt (die untere Mitte bleibt dem Stick); quer: Pass links neben dem Schuss wie bisher.
+   Rechtecke überlappen nicht, Abstand der Knopfränder ≥ 18 px (Aufladering 9 px je Knopf). */
+body:not(.wechselknopf) #bSwitch { display: none; }
+#bShot { width: 128px; height: 128px; }
+#bPass { width: 104px; height: 104px; }
+.tb { font-size: 17px; }
+.tb .sym { font-size: 38px; }
+body:not(.treffpunkt) #bShot::before { font-size: 40px; }
+.tb .lbl { font-size: 13px; }
+body.sprintfrei.hoch #bShot { right: calc(env(safe-area-inset-right, 0px) + 12px); bottom: calc(env(safe-area-inset-bottom, 0px) + 28px); }
+body.sprintfrei.hoch #bPass { right: calc(env(safe-area-inset-right, 0px) + 60px); bottom: calc(env(safe-area-inset-bottom, 0px) + 172px); }
+body.sprintfrei.quer #bShot { right: calc(env(safe-area-inset-right, 0px) + 20px); bottom: calc(env(safe-area-inset-bottom, 0px) + 40px); }
+body.sprintfrei.quer #bPass { right: calc(env(safe-area-inset-right, 0px) + 162px); bottom: calc(env(safe-area-inset-bottom, 0px) + 14px); }
+body.sprintfrei.wechselknopf.hoch #bSwitch { right: calc(env(safe-area-inset-right, 0px) + 184px); bottom: calc(env(safe-area-inset-bottom, 0px) + 40px); }
+body.sprintfrei.wechselknopf.quer #bSwitch { right: calc(env(safe-area-inset-right, 0px) + 36px); bottom: calc(env(safe-area-inset-bottom, 0px) + 186px); }
 
 /* --- Karten (Start, Menü, Credits) --- */
 .overlay { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; padding: 16px; pointer-events: auto;

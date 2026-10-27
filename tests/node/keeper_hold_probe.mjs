@@ -13,7 +13,7 @@ export function holdProbe(qs = '', games = 6, seed0 = 1) {
   const holds = [], kinds = { throw: 0, punt: 0, sixsec: 0 };
   let rel = 0, inter = 0, interGoal = 0, backPass = 0, backCatch = 0, passes = 0, catches = 0, goals = 0, faults = 0;
   for (let s = 0; s < games; s++) {
-    const g = new Game(makeParams(qs), 'halten' + (seed0 + s), { match: true, human: -1 });
+    const g = new Game(makeParams('dauer=4&' + qs), 'halten' + (seed0 + s), { match: true, human: -1 });
     const R = g.rules;
     let t0 = -1, holder = -1, watch = null, lastKick = null;
     while (R.phase !== 'end' && g.t < R.halfLen * 2 + 300) {
