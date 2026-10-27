@@ -12,7 +12,7 @@ export function botPassProbe(qs = '', games = 6, seed0 = 1) {
     let open = null;
     while (g.rules.phase !== 'end' && g.t < g.rules.halfLen * 2 + 300) {
       for (const e of g.step([])) {
-        if (open && ['touch', 'kick', 'control', 'catch', 'parry'].includes(e.type) && e.player != null && g.t > open.t + 0.02) {
+        if (open && ['touch', 'kick', 'control', 'catch', 'parry', 'body', 'block', 'air'].includes(e.type) && e.player != null && g.t > open.t + 0.02) {
           const pl = g.players[e.player];
           c[e.player === open.to ? 'ok' : e.player === open.from ? 'self' : pl.team === open.team ? 'other' : 'inter']++;
           open = null;

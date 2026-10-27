@@ -32,8 +32,8 @@ function ownGoalRisk(game, pl, from, ad, D) {
 
 // Hoch = Nacht 2c feste Flanke (?flanke=): bei 8 m 24°, ab 15 m 14°, 2,5 U/s Rückdrall; kurz bleibt der Chip steil.
 // Laufweg des Empfängers: läuft mit seinem Tempo weiter (höchstens ~2,2 s), bleibt 0,7 m vor der Bande
-export function runPath(cage, r0, rv, T) {
-  const tt = Math.min(T, 2.2);
+export function runPath(cage, r0, rv, T, maxT = 2.2) {
+  const tt = Math.min(T, maxT);
   const lx = cage.hx - 0.7, lz = cage.hz - 0.7;
   return [clamp(r0[0] + rv[0] * tt, -lx, lx), clamp(r0[1] + rv[1] * tt, -lz, lz)];
 }
@@ -41,11 +41,14 @@ export function runPath(cage, r0, rv, T) {
 // Flacher Pass in den Laufweg. Auto-Stärke: Ankunftszeit T so, dass der Ball mit angenehmem Tempo ankommt
 // (4,3 m/s + 0,12 m/s je Meter, Relativtempo zum Empfänger ≤ 8 m/s). Mit fester Stärke (Halten): T so, dass der Ball
 // den Laufweg genau trifft. Gibt {T, u, meet, vArr, D} zurück.
-export function leadFlat(P, cage, b0, r0, rv, { speedMul = 1, maxSpeed = P.passMaxSpeed } = {}) {
+// n8: aim/maxDev – nur Treffpunkte höchstens maxDev° neben der Stick-Richtung (Richtungstreue); keiner möglich → null
+export function leadFlat(P, cage, b0, r0, rv, { speedMul = 1, maxSpeed = P.passMaxSpeed, aim = null, maxDev = 180 } = {}) {
   let best = null;
+  const cMax = Math.cos(maxDev * DEG);
   for (let T = 0.25; T <= 3.6; T += 0.02) {
-    const R = runPath(cage, r0, rv, T);
+    const R = runPath(cage, r0, rv, T, P.vorhaltMax);
     const D = Math.hypot(R[0] - b0[0], R[1] - b0[1]);
+    if (aim && D > 0.5 && ((R[0] - b0[0]) * aim[0] + (R[1] - b0[1]) * aim[1]) / D < cMax) continue;
     const u = passSpeedFor(P, D, T);
     if (u == null || u > maxSpeed) continue;
     const vA = passSpeedAt(P, u, T);
@@ -57,6 +60,7 @@ export function leadFlat(P, cage, b0, r0, rv, { speedMul = 1, maxSpeed = P.passM
     const cost = ((vA - vIdeal) / 1.2) ** 2 + (T > 2.4 ? (T - 2.4) * 2 : 0) + (rel > 8 ? (rel - 8) ** 2 : 0) + (vA < 1.2 ? 4 : 0);
     if (!best || cost < best.cost) best = { cost, T, u, meet: R, vArr: vA, D };
   }
+  if (!best && aim) return null;
   if (!best) { // zu weit: so hart wie erlaubt Richtung Laufweg
     const R = runPath(cage, r0, rv, 1.5), D = Math.hypot(R[0] - b0[0], R[1] - b0[1]);
     best = { T: passTimeTo(P, maxSpeed, D), u: maxSpeed, meet: R, vArr: 0, D };
@@ -175,11 +179,15 @@ export function passCandidates(game, pl, aim, from, cone = game.P.passCone) {
 function pickReceiver(game, pl, ad, from, prefer = null, stickAim = true) {
   const list = passCandidates(game, pl, ad, from, 60);
   const cone = game.P.passCone;
+  // n8 Richtungstreue (mit Stick): kein Bandenpass ohne Mitspieler im Kegel, dessen Abspielrichtung mehr als passTreue° neben dem
+  // Stick liegt
+  const tr = stickAim && game.P.passTreue > 0 ? game.P.passTreue : 180;
   const direct = list.filter((c) => !c.bank).sort((a, b) => a.ang - b.ang);
-  const banks = list.filter((c) => c.bank && c.ang <= cone && c.lane >= 0.8).sort((a, b) => a.ang - b.ang);
+  const banks = list.filter((c) => c.bank && c.ang <= Math.min(cone, tr) && c.lane >= 0.8).sort((a, b) => a.ang - b.ang);
   let pick = null;
   if (prefer && prefer.to != null && prefer.to !== -1) {
     pick = list.find((c) => c.id === prefer.to && c.bank === (prefer.bank || 0)) || direct.find((c) => c.id === prefer.to) || null;
+    // (der beim Tipp gewählte Empfänger bleibt, auch wenn er sich bis zum Kontakt aus dem Kegel bewegt – er war gemeint)
   }
   if (!pick && direct.length && direct[0].ang <= cone) {
     pick = direct[0];
@@ -191,6 +199,7 @@ function pickReceiver(game, pl, ad, from, prefer = null, stickAim = true) {
   }
   if (pick) {
     if (!pick.bank && pick.lane < 0.6) { // direkter Weg zu: über die Bande zum selben Mitspieler, wenn dort frei
+      // (Umweg über die Bande zum GEMEINTEN – der Ball kommt bei ihm an, deshalb auch weiter als passTreue neben dem Stick)
       const bk = list.filter((c) => c.bank && c.id === pick.id && c.lane >= 1.0).sort((a, b) => a.ang - b.ang)[0];
       if (bk) return bk;
     }
@@ -210,7 +219,7 @@ export function planPass(game, pl, opts = {}) {
   const ad = [aim[0] / al, aim[1] / al];
   const chip = opts.mode === 'var';
   const power = opts.power;
-  let cand = null;
+  let cand = null, freeD = null;
   if (opts.to != null && opts.to >= 0) {
     const m = game.players[opts.to];
     cand = { id: m.id, x: m.x, z: m.z, vx: m.vx, vz: m.vz, bank: 0 };
@@ -219,8 +228,22 @@ export function planPass(game, pl, opts = {}) {
     // Nacht 2e: zeigt der Stick (ohne Mitspieler im Kegel) aufs eigene Tor, geht der Pass zum nächstbesten Mitspieler im
     // erweiterten Kegel (±70°) oder seitlich in den freien Raum – nie aufs eigene Tor zu
     if (!cand && ownGoalRisk(game, pl, from, ad, power == null ? P.passFree : 18)) {
-      cand = passCandidates(game, pl, ad, from, 70)[0] || null;
-      if (!cand) {
+      // (n8 Richtungstreue mit Stick: kein Ausweichen auf Mitspieler bis ±70° – die Suche nahm dabei sogar Bandenpässe in jedem
+      // Winkel, gemessen 127° neben dem Stick; stattdessen unten kürzer in Stick-Richtung bzw. höchstens passTreue° gedreht)
+      const treu = P.passTreue > 0 && !!(opts.aim || opts.stick);
+      cand = treu ? null : passCandidates(game, pl, ad, from, 70)[0] || null;
+      // n8 Richtungstreue: erst kürzer in Stick-Richtung (bis 3 m), dann um höchstens passTreue° drehen – erst dann wie bisher
+      let kurz = 0;
+      if (!cand && P.passTreue > 0 && power == null) {
+        for (let D = P.passFree - 1; D >= 3 && !kurz; D -= 1) if (!ownGoalRisk(game, pl, from, ad, D)) kurz = D;
+        const a0 = Math.atan2(ad[1], ad[0]);
+        for (let k = 1; k * 10 <= P.passTreue && !kurz; k++) for (const sg of [1, -1]) {
+          const d = [Math.cos(a0 + sg * k * 10 * DEG), Math.sin(a0 + sg * k * 10 * DEG)];
+          if (!kurz && !ownGoalRisk(game, pl, from, d, P.passFree)) { ad[0] = d[0]; ad[1] = d[1]; kurz = P.passFree; }
+        }
+      }
+      if (kurz) freeD = kurz;
+      else if (!cand) {
         const a0 = Math.atan2(ad[1], ad[0]);
         for (let k = 1; k <= 18; k++) {
           const opt = [1, -1].map((sg) => [Math.cos(a0 + sg * k * 10 * DEG), Math.sin(a0 + sg * k * 10 * DEG)]).filter((d) => !ownGoalRisk(game, pl, from, d, power == null ? P.passFree : 18));
@@ -241,12 +264,20 @@ export function planPass(game, pl, opts = {}) {
       plan = { to: cand.id, bank: 0, target: c.meet, meet: c.meet, T: c.T, u: c.u, el: c.el, back: chipBack(P), chip: true, apex: c.apex, virtual: !!cand.virtual };
     }
     if (!plan) {
-      const f = leadFlat(P, cage, from, r0, rv, { speedMul: power == null ? 1 : 0.8 + 0.7 * power });
-      plan = { to: cand.id, bank: 0, target: f.meet, meet: f.meet, T: f.T, u: f.u, el: 1.5, back: -0.3 * f.u / b.r, vArr: f.vArr, virtual: !!cand.virtual };
+      // n8 Richtungstreue (Mensch mit Stick): Treffpunkt im Laufweg höchstens passTreue° neben dem Stick; geht das nicht, zum
+      // Mitspieler, wo er jetzt steht (wenn der dort liegt) – sonst in den freien Raum in Stick-Richtung (cand = null unten)
+      const treu = (opts.aim || opts.stick) && opts.to == null && P.passTreue > 0 && P.treueVorhalt > 0 && !cand.virtual;
+      let f = leadFlat(P, cage, from, r0, rv, { speedMul: power == null ? 1 : 0.8 + 0.7 * power, ...(treu ? { aim: ad, maxDev: P.passTreue } : {}) });
+      if (!f && treu) {
+        const dx = r0[0] - from[0], dz = r0[1] - from[1], D = Math.hypot(dx, dz) || 1;
+        if ((dx * ad[0] + dz * ad[1]) / D >= Math.cos(P.passTreue * DEG)) f = leadFlat(P, cage, from, r0, [0, 0], { speedMul: power == null ? 1 : 0.8 + 0.7 * power });
+      }
+      if (f) plan = { to: cand.id, bank: 0, target: f.meet, meet: f.meet, T: f.T, u: f.u, el: 1.5, back: -0.3 * f.u / b.r, vArr: f.vArr, virtual: !!cand.virtual };
     }
-  } else {
+  }
+  if (!plan) {
     // freier Raum in Zielrichtung: Tipp 7 m, Halten 4 … 18 m
-    const D = power == null ? P.passFree : 4 + 14 * power;
+    const D = freeD ?? (power == null ? P.passFree : 4 + 14 * power);
     const tx = from[0] + ad[0] * D, tz = from[1] + ad[1] * D;
     if (chip) {
       const el = chipElev(P, D), u = chipSpeedFor(P, el, D) ?? 18;

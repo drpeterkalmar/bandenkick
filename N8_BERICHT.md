@@ -114,3 +114,111 @@ Ball führt oder ein Tipp vorgemerkt ist), beim Ball in der Hand des eigenen Tor
    erreichbar, nichts liegt auf dem Stick?
 3. Ohne ⇄: Steuerst du immer den Richtigen? (Nach deinem Pass sofort den Empfänger, sonst den, der am schnellsten am Ball ist.)
    Falls doch gewünscht: `?wechsel=1`.
+
+---
+
+## Etappe 2 – Pässe „gehen irgendwohin“ – Release VERSION_N8E2
+
+### Messwerkzeuge (neu bzw. erweitert)
+- `tests/node/stickbild.mjs` – Stick im Bild ↔ auf dem Feld mit der echten Spielkamera (three.js in Node), hoch 412 × 915 und quer
+  915 × 412, Mitspieler 4–12 m entfernt und im Bild.
+- `tests/node/pass_probe.mjs` – wie n7 (stehend/laufend/voller Stick, Tipp/Halten, Daumen los/gehalten), dazu `BILD=1`: im **Bild**
+  zielen (hoch/quer, Daumen-Fehler σ 8° im Bild) und `dreh` (stehend, Blick in beliebige Richtung: Pässe zur Seite und nach hinten).
+- `tests/node/passspiel_probe.mjs` – **ganze Spiele** (2 × 4 min, Bots Stufe 2): ein Skript-Mensch führt und passt nach 0,4–1,5 s,
+  zielt im Bild auf einen Mitspieler (80 %) oder irgendwohin (20 %), Daumen bleibt bis zum Abspiel drauf. Je Pass: Stick ↔
+  Abspielrichtung, Mitspieler dort (±30°), Art (Mitspieler/Bande/freier Raum), wer als Nächster am Ball ist.
+- Zählfehler der Proben behoben: ein Abpraller am **Körper** (`body`) und ein Gegner, der **im selben Takt** gegen den Ball tritt,
+  zählten nicht als Berührung – der Pass galt dann später als „Passgeber selbst“ oder „angekommen“. Deshalb weichen die Werte
+  „vorher“ unten leicht von Etappe 1 ab (gleicher Spielstand, richtige Zählung).
+
+### Befunde (vorher = n8 Etappe 1)
+| Mögliche Ursache | gemessen | Urteil |
+|---|---|---|
+| **Gegner tritt den Ball im selben Takt weg** | Im Spiel gingen 79 % der gezielten Pässe zum Gegner, 2/3 davon **0,01 s** nach dem Abspiel, 0,1 m vom Fuß: der pressende Gegner hatte den Ball noch in seiner Reichweite (0,48 m) und spielte ihn im nächsten Takt – ohne jede Reaktionszeit | **Hauptursache** → Reaktionszeit |
+| **Bot-Verteidiger lesen jeden Pass sofort** | Bots rechneten die neue Ballbahn im selben Takt und liefen mit 7 m/s in den Passweg | Ursache → „Pass lesen“ mit Stufen-Reaktionszeit |
+| **Kamera-relative Richtung** | Stick ging linear über die Bodenachsen aufs Feld; durch die schräge Kamera zeigt er quer im Mittel 8,9° (p90 16,7°, max 21,7°, in 14 % > 15°) neben den Mitspieler, auf den das Kind im Bild zeigt; hoch 4,8° / 7,5° / 10,2° | Ursache (quer) → Stick bildschirmtreu |
+| **Rückpass-Umweg** | Zeigte der Stick Richtung eigenes Tor ohne Mitspieler dort, nahm die Ausweichsuche (±70°) auch Bandenpässe in **jedem** Winkel (gemessen 127° neben dem Stick) | Fehler → Richtungstreue |
+| Steuerung springt nach dem Pass zum Passgeber zurück | vermutet (Auto-Wechsel nach 0,6 s zum ballnächsten), die „Passgeber selbst“-Fälle waren aber fast alle Körper-Abpraller am Gegner (Zählfehler) | selten → Empfänger-Treue als Absicherung |
+| Zielwahl `passCone`/`passInnenDeg`/`passHackeDeg` | Empfänger = gemeint stehend 99 %, im Lauf 90–93 %; Technik zu 95 % Innenseite | keine Ursache |
+| Kegel bei hohem Lauftempo, Ball vor dem Fuß | Ball ↔ Fuß beim Tipp p50 0,66 m bei 6,0 und 7,0 m/s gleich | keine Ursache |
+| Zielvorhersage des laufenden Empfängers (Vorhalt) | Abspielrichtung ↔ Empfänger p50 16° (Pass in den Laufweg); Vorhalt auf 0,7 s begrenzt: ±1 Punkt | keine Ursache (Regler `?vorhaltMax=`) |
+| Passtempo | `?passArr=6.5/7.5/8.5`: ±1–2 Punkte | keine Ursache |
+| Stick-Glättung aus n7 E4 | Zielen läuft seit E4 mit dem rohen Stick, Wechsel-Glättung nur fürs Laufen | keine Ursache |
+
+### Änderungen (alle für Mensch und Bots, jede mit Regler)
+1. **Reaktionszeit** (`?reaktion=0.15`, `?reaktionR=0.25`): ein eben vom **Gegner** gespielter Ball (Pass, Schuss, Befreiung) zählt
+   0,15 s lang für den Fuß nur, wenn er direkt auf ihn läuft (≤ 0,25 m). Der Körper blockt weiter, die Grätsche ist ausgenommen, der
+   eigene Mitspieler (Empfänger) erwartet den Ball und ist nicht betroffen. `?reaktion=0` = alt.
+2. **Bots lesen Pässe mit Verzögerung** (`?passLesen=1`): spielt ein Gegner den Ball, laufen die Feld-Bots noch ihre Reaktionszeit
+   (Stufe 1/2/3: 0,36/0,16/0,1 s – dieselben Werte wie beim Schuss) auf die alte Ballbahn. `?passLesen=0` = alt.
+3. **Stick bildschirmtreu** (`?stickBild=1`): vom eigenen Spieler im Bild ein kleiner Schritt in Stick-Richtung, dieser Bildpunkt
+   zurück auf den Boden (`GameCamera.stickWelt`). Gerade Linien bleiben im Bild gerade – der Stick zeigt auf dem Feld genau auf den
+   Mitspieler, auf den das Kind im Bild zeigt (gilt auch fürs Laufen und für die Tastatur). `?stickBild=0` = Bodenachsen wie bisher.
+4. **Richtungstreue** (`?passTreue=30`): mit Stick kein Ausweichen mehr auf Mitspieler bis ±70° bzw. Bandenpässe in jedem Winkel,
+   wenn der Stick aufs eigene Tor zeigt – der Pass geht kürzer in Stick-Richtung (bis 3 m) oder höchstens 30° gedreht; ein Bandenpass
+   ohne Mitspieler im Kegel nur, wenn sein Spiegelbild ≤ 30° neben dem Stick liegt. Unverändert erlaubt: Pass in den Laufweg und der
+   Banden-Umweg **zum gemeinten** Mitspieler bei zugestelltem Weg (der Ball geht dorthin, wo er ist bzw. sein wird).
+   `?treueVorhalt=1` begrenzt auch den Vorhalt auf 30° (gemessen: kostet 2–8 Punkte Ankünfte, deshalb aus). `?passTreue=0` = alt.
+5. **Empfänger-Treue** (`?empfTreue=1`): nach dem eigenen Pass bleibt die Steuerung beim Empfänger, bis der Ball angekommen ist
+   (geplante Ankunft + 1 s) oder ein anderer ihn berührt hat. `?empfTreue=0` = alt.
+
+### Messtabellen vorher (n8 E1) / nachher (n8 E2)
+
+**Ganze Spiele wie am Handy** (`passspiel_probe.mjs`, 16 Spiele je Format, ≈ 700–830 gezielte Pässe; im 3 gegen 3 gegen 7-m/s-Bots ist
+der Passgeber fast immer gepresst – nur 1–2 % der Pässe hatten einen „freien Weg“ im Sinn der Pass-Probe):
+
+| Format | gezielte Pässe kommen beim Gemeinten an | zum Gegner | > 30° neben dem Stick ohne Mitspieler dort | Stick ↔ Abspielrichtung p50 |
+|---|---|---|---|---|
+| quer | 14,8 → **35,2 %** | 79,1 → **57,2 %** | 2,9 → 3,0 % | 15,9° → 20,3° |
+| hoch | 15,4 → **40,0 %** | 77,3 → **52,5 %** | 1,4 → 1,8 % | 19,5° → 18,7° |
+
+„Mitspieler dort“ = ein Mitspieler steht ±30° um den Stick oder der Pass ging zum gemeinten (Vorhalt in seinen Laufweg, Bande zu ihm,
+beim Tipp gemerkter Empfänger). Die verbleibenden 2–3 % sind fast alle Bandenpässe (Stick zeigt zur Bande, Spiegelbild des Mitspielers
+dort) und Pässe zu einem Mitspieler, der 30–35° neben dem Stick steht (Kegel ±35°). Der Median 16–20° zwischen Stick und Abspiel ist
+der Vorhalt in den Laufweg (Empfänger läuft mit 4,5 m/s).
+
+**Pass-Probe** (500 je Variante, n7-Methode, „Weg frei beim Abspiel“ = kein Gegner ≤ 1,5 m an der Strecke, Empfänger ≥ 1,5 m frei):
+
+| | n7 (6,0 m/s) | n8 E1 | **n8 E2** | Ziel |
+|---|---|---|---|---|
+| stehend, Weg frei | 92,6 % | 91,5 % | **93,0 %** | ≥ 90 % ✅ |
+| laufend (Stick ¾), Weg frei | 86,1 % | 83,0 % | **83,9 %** | ≥ 90 % ❌ |
+| voller Stick, Weg frei | 84,1 % | 79,3 % | **80,7 %** | ≥ 90 % ❌ |
+| alle Pässe (auch Weg zu) | 75,5 % | 72,4 % | **75,7 %** | – |
+| abgefangen (alle) | 19,5 % | 22,9 % | **19,5 %** | – |
+| Empfänger = gemeint | 96,0 % | 94,7 % | 94,9 % | – |
+
+**Im Bild zielen** (`BILD=1 pass_probe.mjs 400`, Weg frei): quer voller Stick 70 → **78 %** (Empfänger = gemeint 80 → 88 %), quer
+laufend 80 → **82 %**, hoch voller Stick 76 → **79 %**; zur Seite/nach hinten (`dreh`) 90 → **92–93 %**.
+
+**Bot-Selbstspiel** Stufe 2 gegen 2 (40 Spiele à 2 × 4 min): Bot-Pässe kommen an 65 → 63 %, abgefangen 30 → 32 %; Tore je Schuss
+32,2 → 29,9 % (Datenblatt 25–38 %); Schüsse/Tore je Spiel 59,8/19,3 → 53,9/16,1; Pässe je Spiel 94,5 → 91,5; Grätschen mit Ballgewinn
+61 → 54 %; Hänger/Numerik 0/0. Die Bots wählen ihre Pässe selbst (mit Weg-Prüfung) – die Reaktionszeit hilft ihnen nicht messbar,
+sie nimmt den Verteidigern aber das sofortige Wegtreten von Schüssen und Pässen.
+
+### Ziele – erreicht?
+- **≥ 90 % der gemeinten Pässe kommen an:** im Stand ja (93 %), im Lauf **nein** (84 % mit Stick ¾, 81 % mit vollem Stick bei freiem
+  Weg). Im echten Spiel kommt mehr als doppelt so viel an wie vorher (35–40 % statt 15 %), weil kaum ein Pass mehr im selben Takt am
+  Fuß des Pressenden hängen bleibt. Was im Lauf fehlt, sind vor allem Pässe, die ein Verteidiger 1,5–3 m neben der Bahn mit 7 m/s noch
+  erläuft (abgefangen bei der Hälfte des Wegs, 0,5 s nach dem Abspiel) – das ist das höhere Lauftempo aus Etappe 1. Weitere Hebel
+  wären langsamere Bots (`?trab=`, Stufe 1) oder ein niedrigeres Lauftempo (`?ein=6.5`); beides habe ich nicht ohne Peter geändert.
+- **Keine Pässe > 30° neben dem Stick ohne Mitspieler dort:** der Fehler (127° beim Rückpass-Umweg) ist behoben; übrig sind 2–3 % der
+  Pässe, fast alle gewollte Bandenpässe und Mitspieler am Kegelrand. `?treueVorhalt=1` drückt sie auf ≈ 1 % (gemessen, quer 12 Spiele),
+  kostet aber Ankünfte (−2 bis −8 Punkte); `?kegel=30` (Kegel ±30°) habe ich nicht gemessen.
+
+### Tests Etappe 2
+- Neu `tests/node/n8_paesse.test.mjs`: Stick bildschirmtreu (hoch/quer, Fehler 0°), Reaktionszeit (Pass am pressenden Gegner vorbei;
+  `?reaktion=0`: Gegner zuerst), Empfänger-Treue, Richtungstreue (Stick aufs eigene Tor: 0° statt 127°), ganze Spiele hoch und quer
+  (gezielte Pässe ≥ 12 Punkte besser als E1, > 30° ohne Mitspieler ≤ 4 %).
+- `passsystem.test`: Grenzen laufend/voller Stick 80/77 % (E1 vorübergehend 75/72 %, n7 85/80 %).
+- Browser: `pass_touch.py` zielt jetzt **im Bild** auf den Mitspieler (wie ein Kind) und kurz vor dem Tipp auf die aktuelle Lage;
+  während der Pass-Serie stehen die Bots (mit 7 m/s liefen sie je nach Browser-Takt 2–3 m weiter, der hinterste als Tormann sogar
+  in den Torraum – dorthin ist Passen tabu). Ergebnis hoch 11/12, quer 11/12 (Ausfall: Pass schräg nach hinten, wenn CDP den
+  Pass-Knopf 0,2–0,4 s „hält“).
+
+### Handy-Test für Peter (Etappe 2)
+1. **Querformat**, mit dem Stick im Bild auf einen Mitspieler zeigen (auch schräg nach hinten) und Pass tippen: geht der Ball zu ihm?
+   Zum Vergleich `?stickBild=0` (alte Stick-Richtung).
+2. Unter Druck passen (ein Gegner direkt neben dir): bleibt der Pass seltener am Gegner hängen? Alt: `?reaktion=0&passLesen=0`.
+3. Stick Richtung eigenes Tor, kein Mitspieler dort: der Pass geht kurz in diese Richtung statt quer übers Feld. Alt: `?passTreue=0`.
+4. Pässe im Lauf sind mit 7 m/s schwerer als im Stand – ist das zu schwer? Dann `?ein=6.5` probieren und Bescheid geben.

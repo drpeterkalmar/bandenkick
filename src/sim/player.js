@@ -297,7 +297,13 @@ export class Player {
     const cut = this.plant > 0.3 && want && bd < P.cutReach;
     // Tipp-Kick (Nacht 2c): ein langer Schritt reicht (+kickLunge), damit der Kick nicht auf die nächste Vorlage wartet
     const lunge = this.pending && this.pending.tap && !this.pending.locked ? P.kickLunge : 0;
-    const inReach = (fd < P.reach + lunge || cut) && ball.p.y < P.reachH && this.stumbleT <= 0;
+    // n8 Etappe 2 (Peter 26.10.: „Pässe gehen irgendwohin“): Reaktionszeit. Ein eben vom Gegner gespielter Ball (Pass, Schuss,
+    // Befreiung, ≤ reaktion s) zählt für den Fuß nur, wenn er direkt auf ihn läuft (≤ reaktionR m) – niemand reagiert in 0,01 s auf
+    // einen Pass. Gemessen in ganzen Spielen trat der pressende Gegner 80 % der Pässe im selben bis nächsten Takt weg, weil der Ball
+    // beim Abspiel noch in seiner Reichweite (0,48 m) lag. Der Körper blockt weiter (bodyCollision), die Grätsche ist ausgenommen.
+    const kk = P.reaktion > 0 && game.lastTouch >= 0 && game.lastTouch !== this.id ? game.players[game.lastTouch] : null;
+    const frisch = kk && kk.team !== this.team && kk.kickT < P.reaktion && !kk.selfKick && !this.slide; // (Mitspieler erwarten den Ball)
+    const inReach = (frisch ? fd < P.reaktionR : (fd < P.reach + lunge || cut)) && ball.p.y < P.reachH && this.stumbleT <= 0;
     const rvx = ball.v.x - this.vx, rvz = ball.v.z - this.vz;
     const rel = Math.hypot(rvx, ball.v.y, rvz);
     let touched = false;

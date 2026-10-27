@@ -16,6 +16,7 @@ import { EMPTY_INPUT } from '../../src/sim/player.js';
 import { Rng } from '../../src/sim/rng.js';
 import { planPass } from '../../src/sim/pass.js';
 import { pathToFileURL } from 'node:url';
+import { kamera, folgen, stickImBild, stickWelt } from './stickbild.mjs';
 
 const DEG = Math.PI / 180;
 const H = (o = {}) => ({ ...EMPTY_INPUT, mx: 0, mz: 0, passDown: false, shotDown: false, ...o });
@@ -23,7 +24,10 @@ const angDiff = (a, b) => { let d = a - b; while (d > Math.PI) d -= 2 * Math.PI;
 const segDist = (px, pz, ax, az, bx, bz) => { const ex = bx - ax, ez = bz - az, L2 = ex * ex + ez * ez || 1; const t = Math.max(0, Math.min(1, ((px - ax) * ex + (pz - az) * ez) / L2)); return Math.hypot(px - ax - ex * t, pz - az - ez * t); };
 
 // Eine Pass-Situation → Ergebnis-Objekt
-export function onePass(P, seed, { move = 'steh', gest = 'tipp', thumb = 'los' } = {}) {
+// n8 Etappe 2: bild = 'hoch' | 'quer' – das Kind zeigt im BILD auf den Mitspieler (echte Spielkamera, Daumen-Fehler im Bild), der
+// Stick geht wie im Spiel auf den Boden (P.stickBild: 1 = bildschirmtreu, 0 = Bodenachsen wie bis n8 E1); ohne bild: Welt-Richtung.
+// move 'dreh' (n8): steht, Blick in beliebige Richtung – Pässe zur Seite und nach hinten (bei 'steh' blickt er immer zum Empfänger).
+export function onePass(P, seed, { move = 'steh', gest = 'tipp', thumb = 'los', bild = null } = {}) {
   const R = new Rng('lage' + seed);
   const g = new Game(P, 'pp' + seed, { match: true, human: 1, botLevel: 2 });
   g.rules.phase = 'play'; g.rules.phaseT = 5;
@@ -61,7 +65,7 @@ export function onePass(P, seed, { move = 'steh', gest = 'tipp', thumb = 'los' }
   mates[0].place(pos[0][0], pos[0][1], 0); mates[1].place(pos[1][0], pos[1][1], 0);
   opps.forEach((o, i) => o.place(pos[2 + i][0], pos[2 + i][1], Math.PI));
   const a0 = Math.atan2(pos[want][1] - pz, pos[want][0] - px);
-  const runA = move === 'lauf' || move === 'sprint' ? a0 + R.range(-70, 70) * DEG : a0 + (move === 'ohne' ? R.gauss() * 10 * DEG : 0);
+  const runA = move === 'lauf' || move === 'sprint' ? a0 + R.range(-70, 70) * DEG : move === 'dreh' ? a0 + R.range(-180, 180) * DEG : a0 + (move === 'ohne' ? R.gauss() * 10 * DEG : 0);
   me.place(px, pz, runA);
   g.ball.place(px + Math.cos(runA) * 0.4, 0.11, pz + Math.sin(runA) * 0.4);
   g.lastTouch = me.id; g.lastTouchT = 0; me.lastTouchT = 0; g.rules.lastTouchTeam = 0;
@@ -69,8 +73,10 @@ export function onePass(P, seed, { move = 'steh', gest = 'tipp', thumb = 'los' }
   const mag = move === 'sprint' ? 1 : move === 'lauf' ? 0.75 : 0.5;
   const tRun = move === 'lauf' || move === 'sprint' ? R.range(0.8, 1.4) : 0.1;
   const thumbErr = R.gauss() * 8 * DEG;
+  const cam = bild ? kamera(bild, g.cage) : null;
+  if (cam) folgen(cam, { x: g.ball.p.x, z: g.ball.p.z, vx: 0, vz: 0 }, me, 2);
   const press = gest === 'tipp' ? 0.07 : 0.4;
-  let rueck = false, tPress = -1, stickA = null, kick = null, res = null, preview = null, intended = null, freeLane = null, minD = 99, steps = 0;
+  let pre = null, bdPress = -1, rueck = false, tPress = -1, stickA = null, kick = null, res = null, preview = null, intended = null, freeLane = null, minD = 99, steps = 0;
   const T = tRun + 5;
   while (g.t < T && !res) {
     const t = g.t;
@@ -78,11 +84,16 @@ export function onePass(P, seed, { move = 'steh', gest = 'tipp', thumb = 'los' }
     if (t < tRun) inp = move === 'lauf' || move === 'sprint' ? H({ mx: Math.cos(runA) * mag, mz: Math.sin(runA) * mag, sprint: move === 'sprint' }) : H();
     else {
       if (tPress < 0) {
-        tPress = t;
+        tPress = t; bdPress = Math.hypot(g.ball.p.x - me.x, g.ball.p.z - me.z);
         // Gemeint: Stick (bzw. ohne Stick der Blick) zeigt zum Mitspieler – gemessen ab dem Ball
         stickA = move === 'ohne' ? null : aimAt() + thumbErr;
         const dirA = stickA ?? me.face;
         let best = 99; for (const m of mates) { const d = angDiff(Math.atan2(m.z - g.ball.p.z, m.x - g.ball.p.x), dirA); if (d < best) { best = d; intended = m.id; } }
+        if (cam && stickA != null) { // im Bild zielen: Daumen-Fehler im Bild, gemeint = im Bild am genauesten getroffen
+          const s0 = stickImBild(cam, me, mates[want]), a = Math.atan2(s0[1], s0[0]) + thumbErr, sb = [Math.cos(a), Math.sin(a)];
+          best = 99; for (const m of mates) { const t = stickImBild(cam, me, m), d = angDiff(Math.atan2(t[1], t[0]), a); if (d < best) { best = d; intended = m.id; } }
+          const w = stickWelt(cam, me, sb, !!P.stickBild); stickA = Math.atan2(w[1], w[0]);
+        }
         const im = g.players[intended];
         rueck = g.rules.isBackPassTarget(im); // gemeint ist der eigene Tormann im Torraum (Rückpass – seit Nacht 2e tabu)
         let lane = 9, open = 9;
@@ -101,7 +112,10 @@ export function onePass(P, seed, { move = 'steh', gest = 'tipp', thumb = 'los' }
     }
     const ins = []; ins[g.human] = inp;
     const ev = g.step(ins); steps++;
+    if (cam) cam.update(DT, { x: g.ball.p.x, z: g.ball.p.z, vx: g.ball.v.x, vz: g.ball.v.z }, g.players[g.human], 'play');
     for (const e of ev) {
+      // (n8: wer kam vor dem eigenen Pass an den Ball? → Grund für „kein Pass“)
+      if (!kick && !pre && tPress >= 0 && e.player != null && e.player !== me.id && ['touch', 'kick', 'control', 'catch', 'parry', 'tackle'].includes(e.type)) pre = { who: g.players[e.player].team === me.team ? 'mit' : 'geg', type: e.type, dt: g.t - tPress, bd: Math.hypot(g.ball.p.x - me.x, g.ball.p.z - me.z) };
       if (!kick && e.type === 'kick' && e.player === me.id && intended != null) {
         const lk = me.lastKick;
         let laneK = 9, openK = 9; const im = g.players[intended];
@@ -109,7 +123,7 @@ export function onePass(P, seed, { move = 'steh', gest = 'tipp', thumb = 'los' }
         kick = { freeKick: laneK >= 1.5 && openK >= 1.5, t: g.t, dx: e.dx, dz: e.dz, to: lk.to, bank: lk.bank, chip: lk.chip, planDir: lk.planDir, prev: preview, tech: lk.tech, bx: e.x, bz: e.z, mx: lk.meet ? lk.meet[0] : e.x, mz: lk.meet ? lk.meet[1] : e.z, T: lk.T, speed: lk.speed };
         continue;
       }
-      if (kick && !res && ['touch', 'kick', 'control', 'catch', 'parry'].includes(e.type) && e.player != null && g.t > kick.t + 0.02) {
+      if (kick && !res && ['touch', 'kick', 'control', 'catch', 'parry', 'body', 'block', 'air'].includes(e.type) && e.player != null && (g.t > kick.t + 0.02 || e.player !== me.id)) { // n8: Gegner, der sofort dagegen tritt, zählt auch
         if (e.player === me.id) res = 'selbst';
         else if (e.player === intended) res = 'ok';
         else if (g.players[e.player].team === me.team) res = 'falsch';
@@ -120,7 +134,7 @@ export function onePass(P, seed, { move = 'steh', gest = 'tipp', thumb = 'los' }
     if (kick && g.t > kick.t + 4) break;
   }
   if (rueck) return { move, gest, thumb, kicked: false, rueck: true, res: 'Rückpass gemeint', freeLane };
-  if (!kick) return { move, gest, thumb, kicked: false, res: 'kein Pass', freeLane };
+  if (!kick) return { move, gest, thumb, kicked: false, res: 'kein Pass', freeLane, pre, bdPress, pend: me.pending ? me.pending.kind : null };
   const la = Math.atan2(kick.dz, kick.dx);
   const prevA = kick.prev ? Math.atan2(kick.prev.dir[1], kick.prev.dir[0]) : la;
   const planA = kick.planDir ? Math.atan2(kick.planDir[1], kick.planDir[0]) : la;
@@ -158,13 +172,20 @@ export const VARIANTS = [
   ['lauf', 'tipp', 'los'], ['lauf', 'tipp', 'halten'], ['lauf', 'halten', 'halten'],
   ['sprint', 'tipp', 'los'], ['sprint', 'tipp', 'halten'], ['sprint', 'halten', 'halten'],
 ];
+// n8 Etappe 2: wie am Handy – im Bild zielen (hoch/quer), auch zur Seite und nach hinten
+export const VARIANTS_BILD = [
+  ['dreh', 'tipp', 'los'], ['dreh', 'tipp', 'los', 'hoch'], ['dreh', 'tipp', 'los', 'quer'],
+  ['steh', 'tipp', 'los', 'hoch'], ['steh', 'tipp', 'los', 'quer'],
+  ['lauf', 'tipp', 'los', 'hoch'], ['lauf', 'tipp', 'los', 'quer'], ['lauf', 'tipp', 'halten', 'quer'],
+  ['sprint', 'tipp', 'los', 'hoch'], ['sprint', 'tipp', 'los', 'quer'],
+];
 export function runProbe(qs = '', n = 200, seed0 = 1, variants = VARIANTS) {
   const P = makeParams(qs);
   const out = [];
-  for (const [move, gest, thumb] of variants) {
+  for (const [move, gest, thumb, bild = null] of variants) {
     const rs = [];
-    for (let k = 0; k < n; k++) rs.push(onePass(P, `${seed0}_${move}_${gest}_${thumb}_${k}`, { move, gest, thumb }));
-    out.push({ move, gest, thumb, rs, s: summarize(rs) });
+    for (let k = 0; k < n; k++) rs.push(onePass(P, `${seed0}_${move}_${gest}_${thumb}_${k}`, { move, gest, thumb, bild }));
+    out.push({ move, gest, thumb, bild, rs, s: summarize(rs) });
   }
   return out;
 }
@@ -175,7 +196,7 @@ export function table(out) {
     '|---|---|---|---|---|---|---|---|---|---|---|---|---|---|'];
   for (const o of out) {
     const s = o.s;
-    lines.push(`| ${o.move} · ${o.gest} · Daumen ${o.thumb} | ${s.kicked}/${s.n} | ${f(s.okFreeK)} % (${s.nFreeK}) | ${f(s.okFree)} % (${s.nFree}) | ${f(s.ok)} % | ${f(s.sel)} % | ${f(s.abgefangen)} % | ${f(s.falsch)} % | ${f(s.niemand)} % | ${f(s.bank)} % | ${f(s.free)} % | ${f(s.errPrev50, 1)}° / ${f(s.errPrev90, 1)}° | ${f(s.errPlan50, 1)}° / ${f(s.errPlan90, 1)}° | ${f(s.minD50, 2)} m |`);
+    lines.push(`| ${o.move} · ${o.gest} · Daumen ${o.thumb}${o.bild ? ' · im Bild ' + o.bild : ''} | ${s.kicked}/${s.n} | ${f(s.okFreeK)} % (${s.nFreeK}) | ${f(s.okFree)} % (${s.nFree}) | ${f(s.ok)} % | ${f(s.sel)} % | ${f(s.abgefangen)} % | ${f(s.falsch)} % | ${f(s.niemand)} % | ${f(s.bank)} % | ${f(s.free)} % | ${f(s.errPrev50, 1)}° / ${f(s.errPrev90, 1)}° | ${f(s.errPlan50, 1)}° / ${f(s.errPlan90, 1)}° | ${f(s.minD50, 2)} m |`);
   }
   return lines.join('\n');
 }
@@ -183,7 +204,7 @@ export function table(out) {
 if (import.meta.url === pathToFileURL(process.argv[1]).href) { // Windows-tauglich (file:///C:/…)
   const n = +(process.argv[2] || 200), qs = process.argv[3] || '';
   const t0 = Date.now();
-  const out = runProbe(qs, n);
+  const out = runProbe(qs, n, 1, process.env.BILD ? VARIANTS_BILD : VARIANTS); // BILD=1: im Bild zielen (n8)
   console.log(`\n### Pass-Probe ${qs || '(Standard)'} – ${n} je Variante\n`);
   console.log(table(out));
   const all = summarize(out.flatMap((o) => o.rs));

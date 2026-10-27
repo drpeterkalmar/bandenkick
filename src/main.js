@@ -371,6 +371,11 @@ function keeperMode() {
 function worldInput(inp) {
   const ax = gcam.groundAxes();
   let mx = inp.sx * ax.rx + inp.sy * ax.fx, mz = inp.sx * ax.rz + inp.sy * ax.fz;
+  // n8 Etappe 2: Stick bildschirmtreu – zeigt auf dem Feld dorthin, wohin er im Bild vom eigenen Spieler aus zeigt (?stickBild=0 = alt)
+  if (P.stickBild && (inp.sx || inp.sy) && !gcam.override && game.human >= 0) {
+    const pl0 = me(), w = gcam.stickWelt(pl0.x, pl0.z, inp.sx, inp.sy);
+    if (w) { mx = w[0]; mz = w[1]; }
+  }
   if (inp.wx !== undefined) { mx = inp.wx; mz = inp.wz; } // Tests: Richtung direkt in Weltkoordinaten
   // Knopf-Pegel → Gesten im Spieltakt (halten / tipp + halten); cx/cy nur für ?treffpunkt=1
   const o = { mx, mz, sprint: inp.sprint, passDown: !!inp.passDown, shotDown: !!inp.shotDown, cx: inp.cx, cy: inp.cy, aim: false, aimX: 0, aimZ: 0, switch: !!inp.switch };

@@ -25,8 +25,15 @@ SETUP = """(k) => { const g = __game.game, hx = g.cage.hx, hz = g.cage.hz; g.rul
   g.players[0].place(L[2], L[3], 0); g.players[2].place(L[4], L[5], 0);
   const opp = [[hx - 1.5, 0], [0, hz - 1], [-hx + 6, -hz + 1]]; g.players.slice(3).forEach((o, i) => o.place(opp[i][0], opp[i][1], Math.PI));
   g.lastTouch = 1; g.lastTouchT = g.t; me.lastTouchT = g.t; g.rules.updateKeepers(0, true); g.passPlan = null; g.passTo = -1;
-  __game.human(1); window.__ev = []; const want = k % 2 ? 2 : 0; const m = g.players[want];
+  // (n8: Bots stehen während der Pass-Serie – mit 7 m/s liefen sie in den 0,3–0,5 s Spielzeit bis zum Tipp je nach Takt des Browsers
+  // 2–3 m weiter, der hinterste als Tormann sogar in den Torraum, dorthin ist Passen tabu; die Bot-Dynamik messen die Node-Proben)
+  __game.bots(false); __game.human(1); window.__ev = []; const want = k % 2 ? 2 : 0; const m = g.players[want];
   return { want, dx: m.x - g.ball.p.x, dz: m.z - g.ball.p.z }; }"""
+
+# n8: Bildrichtung (rechts, oben; Länge 1) vom gesteuerten Spieler zum Mitspieler want – wie das Kind ihn auf dem Bildschirm sieht
+BILD = """(want) => { const g = __game.game, c = __game.gcam.cam, V = c.position.constructor, me = g.players[g.human], m = g.players[want];
+  const a = new V(me.x, 0, me.z).project(c), b = new V(m.x, 0, m.z).project(c); const u = (b.x - a.x) * c.aspect, v = b.y - a.y, l = Math.hypot(u, v) || 1;
+  return [u / l, v / l]; }"""
 
 with Server() as srv, sync_playwright() as pw:
     s = Session(pw, srv.base, 'hoch')
@@ -44,12 +51,15 @@ with Server() as srv, sync_playwright() as pw:
                 s.ev(HOOK)
                 sc = s.ev(SETUP, k)
                 s.frames(2)
-                ax = s.ev("(() => { const a = __game.gcam.groundAxes(); return [a.rx, a.rz, a.fx, a.fz]; })()")
-                d = math.hypot(sc['dx'], sc['dz']); wx, wz = sc['dx'] / d, sc['dz'] / d
-                u, v = wx * ax[0] + wz * ax[1], wx * ax[2] + wz * ax[3]; l = math.hypot(u, v) or 1
-                tx, ty = sx0 + u / l * 45, sy0 - v / l * 45   # Stick 45 px Richtung Mitspieler (Bildschirm)
+                # n8: wie ein Kind im BILD zielen – Stick in Bildrichtung vom eigenen Spieler zum Mitspieler
+                u, v = s.ev(BILD, sc['want'])
+                tx, ty = sx0 + u * 45, sy0 - v * 45   # Stick 45 px Richtung Mitspieler (Bildschirm)
                 touch(cdp, 'touchStart', [(0, (sx0, sy0))]); touch(cdp, 'touchMove', [(0, (tx, ty))])
                 time.sleep(0.12)
+                # n8: direkt vor dem Tipp noch einmal auf die AKTUELLE Lage zielen (die Bot-Mitspieler laufen mit 7 m/s in 0,3 s
+                # Spielzeit 2 m weiter; ein Kind zielt dorthin, wo es den Mitspieler jetzt sieht)
+                u, v = s.ev(BILD, sc['want']); tx, ty = sx0 + u * 45, sy0 - v * 45
+                touch(cdp, 'touchMove', [(0, (tx, ty))])
                 # n8: touchEnd nennt die Finger, die losgelassen werden (CDP) – bis n7 ließ der Test hier den Stick-Finger los, der
                 # Pass-Knopf blieb bis zum Ende „gehalten“ (passDown 1 s, Pass erst beim Loslassen, Ball oft schon beim Gegner)
                 touch(cdp, 'touchStart', [(0, (tx, ty)), (1, (bx, by))]); time.sleep(0.06); touch(cdp, 'touchEnd', [(1, (bx, by))])
@@ -66,13 +76,12 @@ with Server() as srv, sync_playwright() as pw:
                 nxt = next((e['player'] for e in ev[kk + 1:] if e['player'] != 1), None) if kk >= 0 else None
                 res.append((sc['want'], ev[kk]['to'] if kk >= 0 else None, nxt))
                 if nxt == sc['want']: hits += 1
+            s.ev("__game.bots(true)")
             ok(hits >= math.ceil(N * 0.8), f'Touch: Stick zum Mitspieler + Pass tippen, Daumen bleibt 1 s drauf → kommt an {hits}/{N} (gemeint, gewählt, erster am Ball: {res})')
             # Foto: Vorschau-Ring beim Führen (Stick zum Mitspieler, noch nicht getippt)
             s.ev(HOOK); sc = s.ev(SETUP, 1); s.frames(2)
-            ax = s.ev("(() => { const a = __game.gcam.groundAxes(); return [a.rx, a.rz, a.fx, a.fz]; })()")
-            d = math.hypot(sc['dx'], sc['dz']); wx, wz = sc['dx'] / d, sc['dz'] / d
-            u, v = wx * ax[0] + wz * ax[1], wx * ax[2] + wz * ax[3]; l = math.hypot(u, v) or 1
-            touch(cdp, 'touchStart', [(0, (sx0, sy0))]); touch(cdp, 'touchMove', [(0, (sx0 + u / l * 20, sy0 - v / l * 20))])
+            u, v = s.ev(BILD, sc['want'])
+            touch(cdp, 'touchStart', [(0, (sx0, sy0))]); touch(cdp, 'touchMove', [(0, (sx0 + u * 20, sy0 - v * 20))])
             s.frames(6)
             vis = s.ev("(() => { const g = __game.game, r = __game.scene.children.find(o => o.geometry && o.geometry.type === 'RingGeometry' && o.geometry.parameters.innerRadius === 0.42); const m = g.players[%d]; return { ring: !!r && r.visible && Math.hypot(r.position.x - m.x, r.position.z - m.z) < 0.3 }; })()" % sc['want'])
             s.shot(f'n2e_pass_vorschau_{form}', 'final')

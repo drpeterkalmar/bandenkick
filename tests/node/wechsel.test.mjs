@@ -91,7 +91,9 @@ function scriptGame(seed) {
     }
     const h = g.players[g.human];
     const own = g.lastTouch >= 0 && g.players[g.lastTouch].team === h.team && Math.hypot(b.p.x - g.players[g.lastTouch].x, b.p.z - g.players[g.lastTouch].z) < 2.2;
-    if (g.rules.phase === 'play' && b.held < 0 && !own && h.hand.mode !== 'dive' && h.hand.mode !== 'ground') {
+    // (n8 E2 Empfänger-Treue: solange der eigene Pass zum Gesteuerten unterwegs ist, bleibt er gewollt gesteuert – zählt nicht)
+    const flug = g.recvHold && g.recvHold.id === g.human && g.lastTouch === g.recvHold.from;
+    if (g.rules.phase === 'play' && b.held < 0 && !own && !flug && h.hand.mode !== 'dive' && h.hand.mode !== 'ground') {
       const th = ttb(g, h), tm = Math.min(...g.players.filter((p) => p.team === h.team && p.id !== h.id).map((p) => ttb(g, p)));
       r.tot += DT; if (th <= tm + 0.2) r.near += DT;
       if (tm < th - 0.5) { r.cur += DT; r.worst = Math.max(r.worst, r.cur); } else r.cur = 0;

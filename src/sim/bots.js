@@ -76,7 +76,23 @@ export class Bots {
   update() {
     const g = this.g, b = g.ball, P = g.P;
     this.predict();
-    for (const p of g.players) this.ttb[p.id] = this.timeToBall(p, this.L[p.team]);
+    // n8 Etappe 2 (Peter 26.10.: „Pässe gehen irgendwohin“): Pass lesen braucht Zeit. Spielt ein Gegner den Ball (Pass, Schuss,
+    // Befreiung), laufen die Feld-Bots noch L.react·passLesen s (Stufe 1/2/3: 0,36/0,16/0,1 s) auf die alte Bahn des Balls und
+    // reagieren erst dann auf die neue – vorher lasen sie jeden Pass im selben Takt (mit 7 m/s fingen sie Pässe im Lauf ab).
+    const kk = g.lastTouch >= 0 ? g.players[g.lastTouch] : null;
+    if (P.passLesen > 0 && kk && kk.kickT === 0 && !kk.selfKick && this.prevBall) {
+      if (!this.oldX) { this.oldX = new Float32Array(NP); this.oldY = new Float32Array(NP); this.oldZ = new Float32Array(NP); }
+      this.predict(this.prevBall, this.oldX, this.oldY, this.oldZ);
+      this.oldT = g.t; this.oldTeam = kk.team;
+    }
+    const alt = this.oldX && this.oldTeam != null && b.held < 0 && g.lastTouch >= 0 && g.players[g.lastTouch].team === this.oldTeam ? g.t - this.oldT : 99;
+    for (const p of g.players) {
+      const L = this.L[p.team];
+      this.ttb[p.id] = p.team !== this.oldTeam && alt < L.react * P.passLesen && p.id !== g.rules.keeper[p.team]
+        ? this.timeToBall(p, L, this.oldX, this.oldY, this.oldZ, Math.min(NP - 1, Math.round(alt / PDT)))
+        : this.timeToBall(p, L);
+    }
+    this.prevBall = { p: { x: b.p.x, y: b.p.y, z: b.p.z }, v: { x: b.held >= 0 ? 0 : b.v.x, y: b.held >= 0 ? 0 : b.v.y, z: b.held >= 0 ? 0 : b.v.z } };
     let owner = -1;
     this.flight = P.passfix ? this.passInFlight() : -1;
     if (b.held >= 0) owner = b.held;
@@ -108,13 +124,14 @@ export class Bots {
     return to;
   }
 
-  predict() {
-    const g = this.g, b = g.ball, P = g.P, cage = g.cage, r = P.ballR;
+  // st = {p, v} (Ballzustand) und Ziel-Felder (n8: auch für die „alte“ Bahn vor einem Pass, siehe update)
+  predict(st = null, ox = this.px, oy = this.py, oz = this.pz) {
+    const g = this.g, b = st || g.ball, P = g.P, cage = g.cage, r = P.ballR;
     let x = b.p.x, y = b.p.y, z = b.p.z, vx = b.v.x, vy = b.v.y, vz = b.v.z;
-    if (b.held >= 0) { vx = vy = vz = 0; }
+    if (!st && b.held >= 0) { vx = vy = vz = 0; }
     const hx = cage.hx - r, hz = cage.hz - r;
     for (let k = 0; k < NP; k++) {
-      this.px[k] = x; this.py[k] = y; this.pz[k] = z;
+      ox[k] = x; oy[k] = y; oz[k] = z;
       const h = PDT;
       if (y > r + 0.02 || vy > 0.4) {
         vy -= P.g * h;
@@ -133,16 +150,17 @@ export class Bots {
   }
 
   // Frühester Zeitpunkt, zu dem der Spieler den (vorhergesagten) Ball am Fuß haben kann
-  timeToBall(p, L) {
+  // (n8: k0 = Versatz in der alten Bahn, die vor k0·PDT s begann)
+  timeToBall(p, L, px = this.px, py = this.py, pz = this.pz, k0 = 0) {
     const vmax = this.g.P.vTop * L.speed;
-    for (let k = 0; k < NP; k++) {
-      if (this.py[k] > 1.0) continue;
-      const t = k * PDT;
-      const d = Math.hypot(this.px[k] - p.x, this.pz[k] - p.z) - 0.5;
-      if (vmax * Math.max(0, t - 0.12) + 0.4 * Math.min(t, 0.3) * p.speed >= d) return { t, x: this.px[k], z: this.pz[k] };
+    for (let k = k0; k < NP; k++) {
+      if (py[k] > 1.0) continue;
+      const t = (k - k0) * PDT;
+      const d = Math.hypot(px[k] - p.x, pz[k] - p.z) - 0.5;
+      if (vmax * Math.max(0, t - 0.12) + 0.4 * Math.min(t, 0.3) * p.speed >= d) return { t, x: px[k], z: pz[k] };
     }
-    const d = Math.hypot(this.px[NP - 1] - p.x, this.pz[NP - 1] - p.z);
-    return { t: 2 + d / vmax, x: this.px[NP - 1], z: this.pz[NP - 1] };
+    const d = Math.hypot(px[NP - 1] - p.x, pz[NP - 1] - p.z);
+    return { t: 2 + d / vmax, x: px[NP - 1], z: pz[NP - 1] };
   }
 
   roles(team) {

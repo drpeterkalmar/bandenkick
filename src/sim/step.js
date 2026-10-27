@@ -343,7 +343,18 @@ export class Game {
       // Nacht 2e: der gehaltene Daumen (Stick in Pass-Richtung) steuert den Empfänger nicht vom Ball weg (recvLatch)
       const mag = inp ? Math.hypot(inp.mx || 0, inp.mz || 0) : 0;
       this.recvLatch = P.passfix ? { id: this.passTo, t: this.t, dir: mag > 0.12 ? [inp.mx / mag, inp.mz / mag] : null } : null;
+      // n8: Empfänger-Treue – bis der Pass angekommen ist (geplante Ankunft + empfTreue s), bleibt die Steuerung beim Empfänger
+      const pp = this.passPlan;
+      this.recvHold = P.empfTreue > 0 ? { id: this.passTo, from: me.id, until: (pp && pp.to === this.passTo ? pp.t : this.t + 1.2) + P.empfTreue } : null;
       this.setHuman(this.passTo); this.passTo = -1; return;
+    }
+    // n8 (Peter 26.10.: „Pässe gehen irgendwohin“): Gemessen in ganzen Spielen holte der Auto-Wechsel 0,6 s nach dem Pass oft den
+    // Passgeber zurück, weil er dem rollenden Ball näher war – der Daumen lenkte dann den Passgeber seinem eigenen Pass hinterher
+    // (2/3 der Fälle „Passgeber spielt den Ball wieder selbst“). Solange niemand sonst den Ball berührt hat, bleibt der Empfänger.
+    const rh = this.recvHold;
+    if (rh) {
+      if (rh.id === me.id && this.lastTouch === rh.from && this.t < rh.until && b.held < 0) return;
+      this.recvHold = null;
     }
     if (this.switchT < P.switchT) return;
     // Nacht 2e: Pass/Schuss vorgemerkt (Tipp), Ball noch erreichbar → nicht wegwechseln (sonst verfällt der Pass: beim
@@ -361,6 +372,7 @@ export class Game {
     const old = this.players[this.human];
     if (old) { old.pending = null; old.charging = false; old.charge = 0; }
     this.human = id; this.switchT = 0;
+    if (this.recvHold && this.recvHold.id !== id) this.recvHold = null;
     this.events.push({ type: 'switch', player: id });
   }
 

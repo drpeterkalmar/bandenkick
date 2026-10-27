@@ -177,6 +177,18 @@ dieser komische Pfeil-Knopf?“ – „Spielerwechsel braucht keiner“):**
   ist der Gesteuerte in 90 % der Zeit der ballnächste, nie länger als 0,6 s ein anderer klar näher). `?wechsel=1` = Knopf zurück.
 - Details und Messungen: [`N8_BERICHT.md`](N8_BERICHT.md).
 
+**n8 Etappe 2 (27.10., Peter 26.10.: „Pässe gehen irgendwohin“):** gemessen in ganzen Spielen wie am Handy blieb fast jeder Pass am
+Fuß des Gegners hängen, der presste – er spielte den Ball im selben Takt, in dem er den Fuß verließ. Jetzt (für alle Spieler):
+- **Reaktionszeit:** ein eben vom Gegner gespielter Ball zählt 0,15 s lang nur, wenn er direkt auf den Fuß läuft (der Körper blockt
+  weiter, die Grätsche geht immer). `?reaktion=0` = alt.
+- **Bots lesen Pässe mit Verzögerung** (Stufe 1/2/3: 0,36/0,16/0,1 s), vorher sahen sie jede neue Ballbahn sofort. `?passLesen=0`.
+- **Stick bildschirmtreu:** der Stick zeigt auf dem Feld dorthin, wohin er im Bild zeigt (quer lag er vorher im Mittel 9°, oft über
+  15° daneben). `?stickBild=0` = alt.
+- **Richtungstreue:** zeigt der Stick aufs eigene Tor und dort ist niemand, geht der Pass kürzer in diese Richtung statt quer übers
+  Feld (vorher bis 127° daneben). `?passTreue=0`. Nach dem Pass bleibt die Steuerung beim Empfänger, bis der Ball da ist (`?empfTreue=0`).
+- Ergebnis im Spiel: gezielte Pässe kommen 35–40 % statt 15 % an, zum Gegner 53–57 % statt 78 %; Pass-Probe bei freiem Weg stehend
+  93 %, im Lauf 84/81 % (Ziel 90 % im Lauf nicht erreicht – 7-m/s-Verteidiger). Details: [`N8_BERICHT.md`](N8_BERICHT.md).
+
 **Ballmagnet (Nacht 2c, Peter: „leichter ballmagnet, sonst kein dribbling“; Nacht 2d: „viel mehr Ballmagnet“ → Stärke 1,2
 statt 0,5, im Sprint 70 % statt 45 %):** zwischen den echten Ballkontakten führt
 eine weiche Feder den Ball, den du zuletzt berührt hast, auf die Linie deines Sticks und bremst ihn, wenn er zu weit
@@ -248,6 +260,7 @@ Ball mit (Sohle/Außenseite). `?zack=0` = altes Gefühl aus Nacht 1 zum Vergleic
 | `?sprintfrei=0`, `?ein=7`, `?trab=0.83` | n7: alter Sprint (Knopf/Rand/Shift/LB-RB); das eine Lauftempo (m/s, n8: 7,0, n7: 6,0); Anteil, mit dem Bots ohne Eile laufen |
 | `?antrittF=1.15`, `?vAntritt=7.5` | n8: Ziel der Antrittskurve = Faktor × Lauftempo bzw. fest in m/s (`?ein=6&vAntritt=7.5` = Laufen genau wie n7) |
 | `?wechsel=1` | n8: ⇄-Knopf am Handy wie bis n7 (Standard: nur automatischer Spielerwechsel; Tastatur C/Tab und Gamepad Y gehen immer) |
+| `?stickBild=0`, `?reaktion=0`, `?reaktionR=0.25`, `?passLesen=0`, `?passTreue=0`, `?treueVorhalt=1`, `?empfTreue=0`, `?vorhaltMax=2.2` | n8 Etappe 2 Pässe: Stick über Bodenachsen statt bildschirmtreu; Reaktionszeit (s) / Radius (m) für einen eben vom Gegner gespielten Ball; Bots lesen Pässe sofort; Richtungstreue aus (°) bzw. auch für den Vorhalt; Empfänger-Treue aus (s); Vorhalt in den Laufweg (s) |
 | `?sprint=8`, `?lauf=5.5` | Sprint-/Lauftempo (m/s); mit Sprint-frei wirkt `sprint` nur noch auf die Antrittskurve |
 | `?abschirmen=0`, `?schirmR=1.5`, `?schirmVor=0.3`, `?schirmSeite=0.35`, `?schirmVorlage=0.5`, `?schirmGraetsche=1.2` | n7 Abschirmen aus; Gegner-Abstand zum Ball (m); so viel näher muss der Gegnerfuß sein (m); Ball zur abgewandten Seite (m); kürzere Vorlage (Anteil); Grätsch-Rate der Bots gegen Abschirmer |
 | `?fangMax=13`, `?fangKoerperMax=16`, `?abprallMin=0.25`, `?abprallMax=0.4`, `?nachfassen=0.5` | n7 Fanggrenze aller Tormänner (m/s, `0` = alt); Körperbälle bis (m/s); Abpraller-Tempo (Anteil); Sekunden ohne Nachfassen nach dem Abklatschen |
@@ -372,6 +385,10 @@ SPITZ=1 node tests/node/keeper_series.mjs 300  # n7 E1: Schussserie aus spitzem 
 node tests/node/eckschraege.test.mjs  # n7 E5: Eck-Schrägen (Geometrie, Abprall, harte Schüsse, Spieler, Bot-Spiel)
 python3 tests/n7_e5_bilder.py quer   # n7 E5: Fotos eckig / 1 m / 1,5 m
 node tests/node/wechsel.test.mjs   # n8: Spielerwechsel automatisch (ballnächster, Pass-Empfänger), ganze Spiele ohne Wechsel-Eingabe
+node tests/node/n8_paesse.test.mjs  # n8 E2: Stick bildschirmtreu, Reaktionszeit, Empfänger-/Richtungstreue, ganze Spiele hoch/quer
+node tests/node/passspiel_probe.mjs 8 "" quer  # n8 E2: Pässe in ganzen Spielen wie am Handy (im Bild gezielt)
+BILD=1 node tests/node/pass_probe.mjs 400   # n8 E2: Pass-Probe im Bild zielen (hoch/quer), auch zur Seite/nach hinten
+node tests/node/stickbild.mjs       # n8 E2: Stick im Bild ↔ auf dem Feld (alte Bodenachsen gegen bildschirmtreu)
 python3 tests/n8_hud.py              # n8: Knöpfe 128/104 px hoch/quer/schmal, Rechtecke, Abstände, Stick frei, Fotos tests/shots/n8/
 node tests/node/kinderstick.test.mjs  # n7 E4: Wechsel-Glättung, Stick-Ruhe (Regler), Zielen mit rohem Stick, Kinderhand
 node tests/node/traumpass.test.mjs  # n7 E3: Traumpass (Wertung, Direktabnahme), Geben und Gehen, Bot-Spiel
@@ -423,6 +440,8 @@ python3 tools/fetch_assets.py && python3 tools/make_assets.py   # Assets neu bau
 Browser-Tests laufen headless über die GPU (ANGLE/Metal), nie zwei Browser gleichzeitig.
 
 ## Änderungen
+- **n8 Etappe 2 (27.10., Version VERSION_N8E2)** – Pässe „gehen irgendwohin“: Reaktionszeit für den Gegner, Bots lesen Pässe mit
+  Verzögerung, Stick bildschirmtreu, Richtungstreue, Empfänger-Treue – gezielte Pässe im Spiel 15 → 35–40 %. Bericht: [`N8_BERICHT.md`](N8_BERICHT.md).
 - **n8 Etappe 1 (27.10., Version 0.6.1)** – Peter 26.10.: Halbzeit 2 statt 4 min, Lauftempo 7,0 statt 6,0 m/s (Antritt wächst mit),
   Schuss-/Pass-Knopf 128/104 px statt 100/80, ⇄-Knopf weg (Spielerwechsel automatisch, belegt). Bericht: [`N8_BERICHT.md`](N8_BERICHT.md).
 - **n7 Abschluss (26.10., Version 0.6.0)** – Endmessung aller Vorlagen-Etappen, Gesamttabelle Ziel/vorher/nachher, alle Regler und

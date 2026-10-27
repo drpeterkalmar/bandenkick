@@ -195,6 +195,21 @@ export const DEFAULTS = {
                           // 15 % Timing-Wert (0 = strenges Timing wie Nacht 2b)                       [?timinghilfe=0]
   treffpunkt: 0,          // 1 = Profi: alte Treffpunkt-Steuerung (Fingerlage/Q E R F, freie Richtung) [?treffpunkt=1]
   // Pass: Ziel im Kegel um die Stick-Richtung, in den Laufweg (Roll-/Chip-Tabelle aus ball.js)
+  // n8 Etappe 2: Reaktionszeit – ein eben gespielter Ball zählt für andere Füße erst nach reaktion s voll (vorher nur direkt auf den
+  // Fuß, ≤ reaktionR m). Vorher trat der pressende Gegner die meisten Pässe im selben Takt weg (player.js). 0 = aus  [?reaktion=0]
+  // n8 Etappe 2: Richtungstreue – mit Stick geht ein Pass höchstens so weit neben die Stick-Richtung, außer ein Mitspieler steht dort
+  // (Vorhalt in den Laufweg, Bandenpass-Umweg, Rückpass-Umweg wurden begrenzt). 0 = aus (bis n8 E1)          [?passTreue=0]
+  passTreue: 30,          // °
+  treueVorhalt: 0,        // 1 = auch der Vorhalt in den Laufweg bleibt in passTreue (kostet Ankünfte, gemessen; Standard aus) [?treueVorhalt=1]
+  vorhaltMax: 2.2,        // s: so lange läuft der Empfänger im Pass-Vorhalt (flacher Pass) höchstens weiter    [?vorhaltMax=]
+  // n8 Etappe 2: Feld-Bots lesen einen Pass/Schuss des Gegners erst nach ihrer Reaktionszeit (Stufe 1/2/3: 0,36/0,16/0,1 s × passLesen)
+  // und laufen bis dahin auf die alte Bahn des Balls; 0 = sofort wie bis n8 E1                                     [?passLesen=0]
+  passLesen: 1,
+  reaktion: 0.15,         // s
+  reaktionR: 0.25,        // m
+  // n8 Etappe 2 (Peter 26.10.: „Pässe gehen irgendwohin“): Stick bildschirmtreu (render/camera.js stickWelt) – der Stick zeigt auf
+  // dem Feld dorthin, wohin er im Bild zeigt (quer bis n8 E1 im Mittel 8,6°, jeder zehnte Fall > 16° daneben). 0 = Bodenachsen alt
+  stickBild: 1,           //                                                                          [?stickBild=0]
   passCone: 35,           // ° halber Kegel um die Stick-/Blickrichtung                              [?kegel=]
   passInnenDeg: 60,       // ° bis hier Innenseite/Vorfuß, darüber Außenrist …                       [?innen=]
   passHackeDeg: 120,      // ° … ab hier Hacke (wenn der Ball nah am Standbein ist)                  [?hacke=]
@@ -365,6 +380,9 @@ export const DEFAULTS = {
   // n8 (Peter 26.10.: „Spielerwechsel braucht keiner“): kein ⇄-Knopf am Handy – der Spieler wechselt automatisch (zum
   // ballnächsten, nach deinem Pass zum Empfänger). Tastatur C/Tab und Gamepad Y bleiben. 1 = Knopf wie bis n7  [?wechsel=1]
   wechsel: 0,
+  // n8 Etappe 2: nach dem eigenen Pass bleibt die Steuerung beim Empfänger, bis der Ball angekommen ist (geplante Ankunft + so viele
+  // s) bzw. ein anderer ihn berührt – kein Zurückspringen zum Passgeber, der dem Ball näher ist. 0 = aus (bis n8 E1)  [?empfTreue=0]
+  empfTreue: 1.0,
 };
 
 // Kurzformen für Peter (deutsch) → interne Namen

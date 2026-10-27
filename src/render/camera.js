@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 
 const damp = (a, b, k, dt) => a + (b - a) * (1 - Math.exp(-k * dt));
+const _v = new THREE.Vector3(), _n = new THREE.Vector3();
 
 export class GameCamera {
   constructor(aspect, cage) {
@@ -43,6 +44,23 @@ export class GameCamera {
     let fx = -e[8], fz = -e[10];
     const lr = Math.hypot(rx, rz) || 1, lf = Math.hypot(fx, fz) || 1;
     return { rx: rx / lr, rz: rz / lr, fx: fx / lf, fz: fz / lf };
+  }
+
+  // n8 (Peter 26.10.: „Pässe gehen irgendwohin“): Stick bildschirmtreu. Die Bodenachsen oben bilden den Stick linear auf den Boden ab –
+  // durch die schräge Kamera ist ein Mitspieler, der im Bild „rechts oben“ steht, auf dem Feld aber steiler/flacher (die Tiefe ist
+  // im Bild gestaucht, nach hinten laufen die Linien zusammen; quer bis 15° daneben, gemessen in tests/node/stickbild.test.mjs).
+  // Hier: vom Spieler im Bild einen kleinen Schritt in Stick-Richtung gehen und diesen Bildpunkt auf den Boden zurückwerfen – gerade
+  // Linien bleiben im Bild gerade, also zeigt der Stick genau auf den Mitspieler, auf den das Kind im Bild zeigt. Stärke bleibt.
+  // sx = rechts, sy = oben (Bildschirm); gibt [x, z] in Weltkoordinaten oder null (Strahl über dem Horizont).
+  stickWelt(px, pz, sx, sy) {
+    const m = Math.hypot(sx, sy);
+    if (m < 1e-6) return [0, 0];
+    const c = this.cam, v = _v.set(px, 0, pz).project(c), k = 0.05; // Schritt = 5 % der Bildhöhe
+    _n.set(v.x + 2 * k * sx / m / c.aspect, v.y + 2 * k * sy / m, 0.5).unproject(c);
+    const o = c.position, dy = _n.y - o.y;
+    if (dy > -1e-6) return null;
+    const t = -o.y / dy, hx = o.x + (_n.x - o.x) * t - px, hz = o.z + (_n.z - o.z) * t - pz, l = Math.hypot(hx, hz);
+    return l > 1e-6 ? [hx / l * m, hz / l * m] : null;
   }
 
   update(dt, ball, player, state) {
