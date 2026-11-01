@@ -18,6 +18,16 @@ export const TEAM_COLORS = [0xff6a13, 0x1f6fff];   // Leibchen: Orange / Blau (a
 export const TEAM_NAMES = ['Orange', 'Blau'];
 // Aufstellung: je Mannschaft drei Figuren (Mannschaft 0 = links, Mensch)
 export const ROSTER = [['Sports_Male_02', 'Sports_Female_02', 'Male_Adult_10'], ['Sports_Male_03', 'Female_Adult_12', 'Sports_Male_04']];
+// n9 (Peter 01.11.2026: „ersetze alle menschen (auch spieler) durch kuscheltiere“): Stofftiere auf denselben Skeletten
+// (tools/build_kuscheltiere.mjs). Name → Bewegungs-Satz der Rocketbox-Vorlage. Orange = warme Felle (Teddy, Fuchs, Katze),
+// Blau = kühle Felle (Hase, Panda, Elefant). ?figuren=menschen = Rocketbox-Menschen wie bis 0.6.x
+export const KUSCHELTIERE = { Teddy: 'm', Fuchs: 'f', Katze: 'm', Hase: 'm', Panda: 'f', Elefant: 'm' };
+export const SAETZE = {
+  menschen: { roster: ROSTER, ordner: 'assets/avatars', boundR: 1.25 },
+  kuscheltiere: { roster: [['Teddy', 'Fuchs', 'Katze'], ['Hase', 'Panda', 'Elefant']], ordner: 'assets/kuscheltiere', boundR: 1.4 },
+};
+export function figurenSatz(wert) { return wert === 'menschen' ? 'menschen' : 'kuscheltiere'; }
+export const istKuscheltier = (name) => name in KUSCHELTIERE;
 const LOCO = ['walk', 'jog', 'run', 'sprint'];
 export const BOUND_R = 1.25; // m: Begrenzungskugel der Figuren um die Hüfte (Node-Test: schlimmste Pose füllt ~84 %)
 const TORSO = new Set(['Bip01_Spine', 'Bip01_Spine1', 'Bip01_Spine2', 'Bip01_L_Clavicle', 'Bip01_R_Clavicle', 'Bip01_Pelvis']);
@@ -59,10 +69,12 @@ async function ktx2Lader(renderer) {
 }
 export async function loadAvatarAssets(onProgress = () => {}, opts = {}) {
   const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
-  const names = [...new Set(ROSTER.flat())];
+  const satz = SAETZE[opts.satz] ? opts.satz : 'menschen';
+  const names = [...new Set(SAETZE[satz].roster.flat())];
+  const pfad = (n) => `${SAETZE[satz].ordner}/${n}.glb`;
   let ktx = null;
   if (KTX2_AVATARE && opts.ktx !== false && opts.renderer) { try { ktx = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).setKTX2Loader(await ktx2Lader(opts.renderer)); } catch (e) { ktx = null; } }
-  const ladeFigur = (n) => (ktx && KTX2_AVATARE[n] ? ktx.loadAsync(KTX2_AVATARE[n]).then((g) => ((g.userData.ktx2 = true), g)).catch(() => loader.loadAsync(`assets/avatars/${n}.glb`)) : loader.loadAsync(`assets/avatars/${n}.glb`));
+  const ladeFigur = (n) => (ktx && KTX2_AVATARE[n] ? ktx.loadAsync(KTX2_AVATARE[n]).then((g) => ((g.userData.ktx2 = true), g)).catch(() => loader.loadAsync(pfad(n))) : loader.loadAsync(pfad(n)));
   let done = 0;
   const tick = () => onProgress(++done / (names.length + 2));
   const [anims, meta, avatars] = await Promise.all([
@@ -70,7 +82,8 @@ export async function loadAvatarAssets(onProgress = () => {}, opts = {}) {
     Promise.all(['m', 'f'].map((s) => fetch(`assets/anims/${s}.json`).then((r) => r.json()))),
     Promise.all(names.map((n) => ladeFigur(n).then((g) => (tick(), [n, g])))),
   ]);
-  const A = { avatars: Object.fromEntries(avatars), clips: {}, meta: { m: meta[0], f: meta[1] }, phase: {} };
+  const A = { avatars: Object.fromEntries(avatars), clips: {}, meta: { m: meta[0], f: meta[1] }, phase: {}, satz, roster: SAETZE[satz].roster };
+  if (satz === 'kuscheltiere') for (const g of Object.values(A.avatars)) plueschMaterial(g.scene, opts);
   A.ktx2 = avatars.filter(([, g]) => g.userData.ktx2).length;
   ['m', 'f'].forEach((s, i) => { A.clips[s] = Object.fromEntries(anims[i].animations.map((c) => [c.name, c])); });
   // Phase der Laufzyklen einmal je Geschlecht messen: Zeitpunkt, an dem der linke Fuß am weitesten vorn ist
@@ -98,12 +111,81 @@ export async function loadAvatarAssets(onProgress = () => {}, opts = {}) {
   return A;
 }
 
-export function sexOf(name) { return /Female/.test(name) ? 'f' : 'm'; }
+// n9 Plüsch: ein gemeinsames Material für alle Kuscheltiere (1 Shader). Farben stecken in den Punkten (build_kuscheltiere.mjs):
+// color.rgb = Stoff außen, color.a = Plüsch-Anteil (+0,5 = Naht an der Fleck-Kante), _innen.rgb = Farbe des aufgenähten
+// Flecks (Wurzel-kodiert), _innen.a = Abstand zur Fleck-Kante (±5 cm). Im Shader: scharfe Kante + dunkle Nahtrille, Fell-
+// Struktur (kleine Normalen-Kachel, dreiachsig im Ruhe-Raum, nur ab Stufe mittel), samtiger Randschimmer (Sheen-Näherung:
+// heller am Umriss, in der Mitte etwas matter) und glänzende Knopfaugen (Plüsch-Anteil 0 → glatt).
+let _plMat = null, _fellTex = null;
+function fellTextur() { // Fasern als Höhenfeld → Normalen (RG) + Helligkeit (B), kachelbar
+  if (_fellTex) return _fellTex;
+  const N = 64, hgt = new Float32Array(N * N);
+  let seed = 7; const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  for (let f = 0; f < 900; f++) { // kurze, leicht gebogene Fasern
+    let x = rnd() * N, y = rnd() * N, a = rnd() * 6.283; const h = 0.4 + rnd() * 0.6, l = 3 + rnd() * 5;
+    for (let t = 0; t < l; t += 0.5) { const i = ((Math.floor(x) % N) + N) % N, j = ((Math.floor(y) % N) + N) % N; hgt[j * N + i] = Math.max(hgt[j * N + i], h * (1 - t / l * 0.5)); x += Math.cos(a) * 0.5; y += Math.sin(a) * 0.5; a += (rnd() - 0.5) * 0.4; }
+  }
+  const data = new Uint8Array(N * N * 4);
+  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
+    const H = (u, v) => hgt[((v + N) % N) * N + ((u + N) % N)];
+    const dx = (H(i + 1, j) - H(i - 1, j)) * 1.6, dy = (H(i, j + 1) - H(i, j - 1)) * 1.6;
+    const k = (j * N + i) * 4;
+    data[k] = Math.round((0.5 - dx * 0.5) * 255); data[k + 1] = Math.round((0.5 - dy * 0.5) * 255); data[k + 2] = Math.round(H(i, j) * 255); data[k + 3] = 255;
+  }
+  _fellTex = new THREE.DataTexture(data, N, N);
+  _fellTex.wrapS = _fellTex.wrapT = THREE.RepeatWrapping; _fellTex.magFilter = THREE.LinearFilter; _fellTex.minFilter = THREE.LinearMipmapLinearFilter;
+  _fellTex.generateMipmaps = true; _fellTex.needsUpdate = true;
+  return _fellTex;
+}
+export function plueschMaterial(scene, opts = {}) {
+  if (!_plMat) {
+    const billig = !!opts.billig;
+    const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1, metalness: 0, name: 'plush_body' });
+    mat.onBeforeCompile = (sh) => {
+      sh.uniforms.uFell = { value: fellTextur() };
+      sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute vec4 _innen; varying vec4 vInnen; varying vec3 vRest; varying vec3 vRestN;')
+        .replace('#include <begin_vertex>', '#include <begin_vertex>\nvInnen = _innen; vRest = position; vRestN = normal;');
+      sh.fragmentShader = sh.fragmentShader.replace('#include <common>', `#include <common>
+          uniform sampler2D uFell; varying vec4 vInnen; varying vec3 vRest; varying vec3 vRestN; float plFell;`)
+        .replace('#include <color_fragment>', `
+          float plA = vColor.a; float plNaht = step(0.475, plA); plFell = clamp((plA - 0.5 * plNaht) / 0.45, 0.0, 1.0);
+          float plD = (vInnen.a - 0.5) * 0.1;                   // Abstand zur Fleck-Kante in m
+          float plW = fwidth(plD) + 1e-5;
+          vec3 plCol = mix(vColor.rgb, vInnen.rgb * vInnen.rgb, 1.0 - smoothstep(-plW, plW, plD));
+          float plLinie = plNaht * (1.0 - smoothstep(0.0009, 0.0009 + plW * 1.5, abs(plD)));
+          plCol *= 1.0 - 0.5 * plLinie;
+          ${billig ? '' : `vec3 plB = abs(vRestN); plB = plB * plB; plB = plB * plB; plB /= dot(plB, vec3(1.0));
+          vec3 plP = vRest * 22.0;
+          vec4 plX = texture2D(uFell, plP.zy), plY = texture2D(uFell, plP.xz), plZ = texture2D(uFell, plP.xy);
+          float plH = plX.b * plB.x + plY.b * plB.y + plZ.b * plB.z;
+          plCol *= mix(1.0, 0.86 + 0.26 * plH, plFell);`}
+          diffuseColor.rgb *= plCol;`)
+        .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = mix(0.16, 1.0, plFell);')
+        .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
+          ${billig ? '' : `{ vec2 plN = (plX.rg * plB.x + plY.rg * plB.y + plZ.rg * plB.z) * 2.0 - 1.0;
+            vec3 plT = normalize(cross(normal, vec3(0.0, 1.0, 0.13)));
+            normal = normalize(normal + plFell * 0.35 * (plT * plN.x + cross(normal, plT) * plN.y)); }`}`)
+        .replace('#include <lights_fragment_end>', `#include <lights_fragment_end>
+          { float plV = clamp(dot(normal, normalize(vViewPosition)), 0.0, 1.0);
+            float plRand = pow(1.0 - plV, 2.4);
+            vec3 plIrr = (reflectedLight.directDiffuse + reflectedLight.indirectDiffuse) / max(diffuseColor.rgb, vec3(0.03));
+            vec3 plSheen = mix(diffuseColor.rgb, vec3(1.0), 0.45);
+            reflectedLight.directDiffuse *= mix(1.0, 0.86 + 0.14 * plRand, plFell);
+            reflectedLight.indirectDiffuse += plFell * plRand * 0.5 * plSheen * min(plIrr, vec3(4.0)) * 0.6; }`);
+    };
+    mat.customProgramCacheKey = () => 'pluesch' + (billig ? '0' : '1');
+    _plMat = mat;
+  }
+  scene.traverse((o) => { if ((o.isSkinnedMesh || o.isMesh) && o.material.name !== 'leibchen') o.material = _plMat; });
+}
+
+export function sexOf(name) { return KUSCHELTIERE[name] || (/Female/.test(name) ? 'f' : 'm'); }
 function boneMap(root) { const b = {}; root.traverse((o) => { if (o.isBone) b[o.name] = o; }); return b; }
 
 // Trainingsleibchen aus dem Körpermesh: Dreiecke mit überwiegend Rumpf-Gewichten, 2 cm entlang der Normalen.
 // Deko: num = Rückennummer (zylindrische Koordinaten um den Rumpf, Rücken = −z in der Ruhepose)
-function makeBib(body, color, num = 0) {
+function makeBib(body, color, num = 0, fertig = null) {
+  if (fertig) return bibAusFertig(fertig, color, num);
   const geo = body.geometry, pos = geo.attributes.position, nrm = geo.attributes.normal;
   const si = geo.attributes.skinIndex, sw = geo.attributes.skinWeight, bones = body.skeleton.bones;
   const n = pos.count;
@@ -129,7 +211,7 @@ function makeBib(body, color, num = 0) {
       if (TORSO.has(nm)) torso += w;
       else if (/UpperArm|Forearm|Hand|Finger/.test(nm)) arm += w;
       else if (/Thigh|Calf|Foot|Toe/.test(nm)) leg += w;
-      else if (/Neck|Head/.test(nm)) head += w;
+      else if (/Neck|Head|Ohr|Schwanz/.test(nm)) head += w; // n9: Ohren/Schwanz der Kuscheltiere nie ins Leibchen
     }
     const y = world[i * 3 + 1];
     keep[i] = torso >= 0.62 && arm <= 0.22 && leg <= 0.3 && head <= 0.25 && y > pelvisY - 0.1 && y < neckY - 0.02 ? 1 : 0;
@@ -169,9 +251,47 @@ function makeBib(body, color, num = 0) {
   g.setAttribute('skinIndex', new THREE.BufferAttribute(SI, 4));
   g.setAttribute('skinWeight', new THREE.BufferAttribute(SW, 4));
   g.setIndex(tri.map((v) => map.get(v)));
+  if (NUM) g.setAttribute('aNum', new THREE.BufferAttribute(NUM, 2));
+  const bib = new THREE.SkinnedMesh(g, bibMaterial(color, num));
+  bib.name = 'bib';
+  bib.position.copy(body.position); bib.quaternion.copy(body.quaternion); bib.scale.copy(body.scale);
+  bib.bind(body.skeleton, body.bindMatrix);
+  bib.frustumCulled = false;
+  return bib;
+}
+
+// n9: Leibchen der Kuscheltiere liegt fertig im GLB (tools/build_kuscheltiere.mjs: Hülle über dem Rumpf mit sauberem Saum) –
+// hier nur Stoff-Muster (zylindrisch um den Rumpf) und Rückennummer wie oben
+function bibAusFertig(mesh, color, num) {
+  const g = mesh.geometry, n = g.attributes.position.count;
+  let top = mesh; while (top.parent) top = top.parent;
+  top.updateMatrixWorld(true);
+  const bones = mesh.skeleton.bones;
+  const pelvisY = bones.find((b) => b.name === 'Bip01_Pelvis').getWorldPosition(_w).y;
+  const neckY = bones.find((b) => b.name === 'Bip01_Neck').getWorldPosition(_w).y;
+  const world = new Float32Array(n * 3);
+  let cxm = 0, czm = 0;
+  for (let i = 0; i < n; i++) { mesh.getVertexPosition(i, _v).applyMatrix4(mesh.matrixWorld); world.set([_v.x, _v.y, _v.z], i * 3); cxm += _v.x; czm += _v.z; }
+  cxm /= n || 1; czm /= n || 1;
+  const UV = new Float32Array(n * 2), NUM = num ? new Float32Array(n * 2) : null, yNum = (pelvisY + neckY) / 2 + 0.05;
+  for (let i = 0; i < n; i++) {
+    const x = world[i * 3], y = world[i * 3 + 1], z = world[i * 3 + 2];
+    UV[i * 2] = Math.atan2(x, z) / (2 * Math.PI) * 5.5; UV[i * 2 + 1] = y / 0.12;
+    if (NUM) {
+      let th = Math.atan2(x - cxm, z - czm) - Math.PI; while (th < -Math.PI) th += 2 * Math.PI;
+      NUM[i * 2] = 0.5 + th / 1.0; NUM[i * 2 + 1] = (y - (yNum - 0.13)) / 0.26;
+    }
+  }
+  g.setAttribute('uv', new THREE.BufferAttribute(UV, 2));
+  if (NUM) g.setAttribute('aNum', new THREE.BufferAttribute(NUM, 2));
+  mesh.material = bibMaterial(color, num);
+  mesh.name = 'bib';
+  return mesh;
+}
+
+function bibMaterial(color, num) {
   const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.82, metalness: 0, map: bibTexture(), side: THREE.DoubleSide });
-  if (NUM) {
-    g.setAttribute('aNum', new THREE.BufferAttribute(NUM, 2));
+  if (num) {
     const numTex = numberTexture(num);
     mat.onBeforeCompile = (sh) => {
       sh.uniforms.uNum = { value: numTex };
@@ -179,16 +299,11 @@ function makeBib(body, color, num = 0) {
         .replace('#include <uv_vertex>', '#include <uv_vertex>\nvNum = aNum;');
       sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform sampler2D uNum; varying vec2 vNum;')
         .replace('#include <map_fragment>', `#include <map_fragment>
-          if (vNum.x > 0.0 && vNum.x < 1.0 && vNum.y > 0.0 && vNum.y < 1.0) diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.92), texture2D(uNum, vNum).a * 0.95);`);
+          if (vNum.x > 0.0 && vNum.x < 1.0 && vNum.y > 0.0 && vNum.y < 1.0 && fwidth(vNum.x) < 0.25) diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.92), texture2D(uNum, vNum).a * 0.95);`);
     };
     mat.customProgramCacheKey = () => 'bibNum';
   }
-  const bib = new THREE.SkinnedMesh(g, mat);
-  bib.name = 'bib';
-  bib.position.copy(body.position); bib.quaternion.copy(body.quaternion); bib.scale.copy(body.scale);
-  bib.bind(body.skeleton, body.bindMatrix);
-  bib.frustumCulled = false;
-  return bib;
+  return mat;
 }
 
 // Rückennummer als kleine Textur (weiß, Rest durchsichtig)
@@ -239,20 +354,37 @@ export class Avatar {
     this.tilt.add(this.model); this.root.add(this.tilt);
     this.bones = boneMap(this.model);
     this.meshes = [];
-    this.model.traverse((o) => { if (o.isSkinnedMesh) { this.meshes.push(o); o.frustumCulled = false; } });
+    let leib = null;
+    this.model.traverse((o) => { if (o.isSkinnedMesh) { if (o.material.name === 'leibchen') leib = o; else this.meshes.push(o); o.frustumCulled = false; } });
     this.cull = opts.cull !== false; // n4 (Audit #8): Sichtbarkeitsprüfung wieder an, ?cull=0 = aus wie bisher
     const body = this.meshes.find((m) => /body/.test(m.material.name)) || this.meshes[0];
-    this.bib = makeBib(body, TEAM_COLORS[team], opts.deko && opts.deko.num);
-    body.parent.add(this.bib);
+    this.bib = makeBib(body, TEAM_COLORS[team], opts.deko && opts.deko.num, leib);
+    if (!leib) body.parent.add(this.bib);
     this.meshes.push(this.bib);
     // Tormann: leuchtende Handschuhe + Bodenring
     const gm = new THREE.MeshStandardMaterial({ color: 0xe8ff6a, emissive: 0xa8f000, emissiveIntensity: 1.25, roughness: 0.6 });
     this.gloveMat = gm;
+    this.kuschel = istKuscheltier(name);
     this.gloves = ['Bip01_L_Hand', 'Bip01_R_Hand'].map((b) => {
       const s = new THREE.Mesh(new THREE.SphereGeometry(4.2, 12, 8), gm); // Knochen-Raum ist in cm (Skalierung 0,01)
-      s.scale.set(1.55, 0.7, 1.15); s.position.set(6.5, 0, 0); // flach wie eine Hand mit Handschuh
+      if (this.kuschel) { s.scale.set(1.75, 1.6, 1.62); s.position.set(5.6, 0, 0); } // n9: dicker Fäustling über der Pfote
+      else { s.scale.set(1.55, 0.7, 1.15); s.position.set(6.5, 0, 0); } // flach wie eine Hand mit Handschuh
       this.bones[b].add(s); s.visible = false; return s;
     });
+    // n9: Ohren und Schwanz der Kuscheltiere wackeln beim Laufen (eigene Knochen, keine Animation fasst sie an).
+    // Drehachsen einmal in der Ruhepose aus dem Figuren-Raum in den Knochen-Raum umrechnen.
+    this.dicke = this.kuschel ? 0.07 : 0; // liegend: Plüsch ist dicker als der Mensch → Körper etwas höher (kein Einsinken)
+    this.wackel = [];
+    if (this.kuschel) {
+      this.root.updateMatrixWorld(true);
+      for (const [n, art] of [['Ohr_L', 1], ['Ohr_R', -1], ['Schwanz', 0]]) {
+        const b = this.bones[n]; if (!b) continue;
+        const qw = b.getWorldQuaternion(new THREE.Quaternion()).invert();
+        const ax = (v) => new THREE.Vector3(...v).applyQuaternion(qw).normalize();
+        this.wackel.push({ b, art, ruhe: b.quaternion.clone(), a1: ax(art ? [0, 0, 1] : [0, 1, 0]), a2: ax([1, 0, 0]), ph: Math.random() * 6.28 });
+      }
+    }
+    this.wT = Math.random() * 10;
     const rm = new THREE.MeshBasicMaterial({ color: 0xd9ff3a, transparent: true, opacity: 0.75, depthWrite: false });
     this.ring = new THREE.Mesh(new THREE.RingGeometry(0.55, 0.68, 40).rotateX(-Math.PI / 2), rm);
     this.ring.position.y = 0.014; this.ring.renderOrder = 3; this.ring.visible = false;
@@ -305,7 +437,7 @@ export class Avatar {
   // n4 (Audit #8): Begrenzungskugel je Teil-Mesh aus der Ruhepose, auf mindestens BOUND_R Meter (Welt) vergrößert, damit
   // Hechtsprung, Fallrückzieher und ausgestreckte Beine nicht abgeschnitten werden; danach prüft three.js je Bild (auch
   // für die Schattenkarte) per Kugel statt die Figur immer zu zeichnen. Die Kugel dreht und springt mit der Figur mit.
-  setBounds(R = BOUND_R) {
+  setBounds(R = this.kuschel ? SAETZE.kuscheltiere.boundR : BOUND_R) {
     this.root.updateMatrixWorld(true);
     for (const m of this.meshes) {
       m.computeBoundingSphere();
@@ -455,6 +587,7 @@ export class Avatar {
     if (st.keeper) this.ring.material.opacity = 0.55 + 0.25 * Math.sin(performance.now() / 180);
     this.blob.scale.setScalar(1 + this.dive * 0.8);
     if (this.shadowYaw !== null) { this.blob.rotation.y = this.shadowYaw - this.root.rotation.y; this.blob.position.y = 0.006 - this.root.position.y; }
+    if (this.wackel.length) this.wackeln(dt, vEff);
     this.procN += proc ? 1 : 0; this.bildN++;
     if (!proc) { this.tilt.rotation.set(0, 0, 0); this.tilt.position.y = 0.95; if (this.glatt) { this.ikNull(); if (this.traeg && this.procVor) this.traegheit(dt, ds === 1); else { this.trNeu = true; this.trAn = 0; } } this.procVor = false; return; }
     this.procVor = true;
@@ -492,6 +625,8 @@ export class Avatar {
       pitch = pitch * (1 - tw) + T.pitch * tw; roll = roll * (1 - tw) + T.roll * tw;
       this.tilt.position.y = this.tilt.position.y * (1 - tw) + (0.95 + T.drop) * tw;
     }
+    // n9: liegend (Hechtsprung, Grätsche, Fallrückzieher) den dickeren Plüsch-Körper anheben, damit er nicht im Rasen steckt
+    if (this.dicke) this.tilt.position.y += this.dicke * Math.min(1, Math.max(0, (Math.max(Math.abs(pitch), Math.abs(roll)) - 0.45) / 0.8));
     this.tilt.rotation.set(pitch, 0, roll, 'YXZ');
     // n5: nur Kette root → tilt → model und den Knochenbaum aktualisieren – die Meshes (Körper, Leibchen, Handschuhe,
     // Schatten) braucht hier niemand, das erledigt das Zeichnen ohnehin (spart je Bild mit Zusatzschichten die Hälfte)
@@ -662,6 +797,19 @@ export class Avatar {
       this.ikN++;
     }
     if (t0) this.ikZeit += performance.now() - t0;
+  }
+
+  // n9: Ohren wippen im Laufschritt (2 Schläge je Zyklus) und wehen nach hinten, der Schwanz wedelt; im Stand leises Schaukeln.
+  // Nur Zier – setzt die Knochen absolut (Ruhe × Drehung), nichts sammelt sich auf.
+  wackeln(dt, v) {
+    this.wT += dt;
+    const k = Math.min(1, v / 4), ph = this.phase * Math.PI * 4;
+    for (const w of this.wackel) {
+      let a1, a2;
+      if (w.art) { a1 = w.art * (0.07 * Math.sin(this.wT * 1.7 + w.ph) * (1 - k) + 0.16 * k * Math.sin(ph + 0.6)); a2 = -0.1 * Math.sin(this.wT * 1.3 + w.ph) * (1 - k) - k * (0.22 + 0.1 * Math.sin(ph + 1.2)); }
+      else { a1 = 0.25 * Math.sin(this.wT * 2.2 + w.ph) * (1 - k) + 0.35 * k * Math.sin(ph * 0.5); a2 = -0.12 * k; }
+      w.b.quaternion.copy(w.ruhe).multiply(_q2.setFromAxisAngle(w.a1, a1)).multiply(_q.setFromAxisAngle(w.a2, a2));
+    }
   }
 
   // Knochen um eine Achse im Figuren-Raum drehen (unabhängig von den lokalen Achsen des Biped-Skeletts):

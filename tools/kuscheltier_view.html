@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<base href="../">
+<title>Bandenkick – Kuscheltier-Prüfstand</title>
+<style>html,body{margin:0;height:100%;background:#8aa;overflow:hidden}canvas{display:block}#l{position:fixed;left:6px;top:4px;font:13px system-ui;color:#000;white-space:pre}</style>
+<script type="importmap">{ "imports": { "three": "./lib/three/three.module.min.js", "three/addons/": "./lib/three/addons/" } }</script>
+</head>
+<body>
+<div id="l"></div>
+<script type="module">
+// n9 Prüfstand: alle sechs Figuren (echte Avatar-Klasse aus src/render/avatars.js, mit Leibchen, Handschuhen, Wackel-Ohren)
+// nebeneinander in einer Pose. ?figuren=kuscheltiere|menschen  ?pose=stehen|laufen|sprint|schuss|pass|graetsche|hecht|
+// halten|jubel|klatschen|fallrueck|kopf  ?yaw=Grad  ?nah=1 (Köpfe)  ?q=0 (billiger Plüsch)  ?tormann=1  ?t=Sekunden
+import * as THREE from 'three';
+import { HDRLoader } from 'three/addons/loaders/HDRLoader.js';
+import { loadAvatarAssets, Avatar, figurenSatz } from './src/render/avatars.js';
+
+const qs = new URLSearchParams(location.search);
+const satz = figurenSatz(qs.get('figuren'));
+const pose = qs.get('pose') || 'stehen';
+const yawDeg = +(qs.get('yaw') || 25), nah = qs.get('nah') === '1', T = +(qs.get('t') || 1.2);
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(innerWidth, innerHeight); renderer.setPixelRatio(1);
+renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.shadowMap.enabled = true;
+document.body.append(renderer.domElement);
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xa9c3cf);
+const env = await new HDRLoader().loadAsync('assets/hdri/env_1k.hdr');
+env.mapping = THREE.EquirectangularReflectionMapping;
+const pm = new THREE.PMREMGenerator(renderer); scene.environment = pm.fromEquirectangular(env).texture;
+const sun = new THREE.DirectionalLight(0xfff2dd, 2.2); sun.position.set(4, 8, 6); sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048); Object.assign(sun.shadow.camera, { left: -8, right: 8, top: 4, bottom: -2 }); scene.add(sun);
+const boden = new THREE.Mesh(new THREE.PlaneGeometry(40, 20).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0x2f7d34, roughness: 0.95 }));
+boden.receiveShadow = true; scene.add(boden);
+const A = await loadAvatarAssets(() => {}, { satz, renderer, billig: qs.get('q') === '0' });
+const R = A.roster.flat();
+const sp = (o = {}) => ({ face: Math.PI / 2, speed: 0, vx: 0, vz: 0, plant: 0, kickT: 9, kickFoot: 1, techT: 9, tech: '', hand: { mode: 'none', dx: 0, dz: 0, t: 0, T: 0.38 }, jumpY: 0, air: null, fall: null, slide: null, P: { slideGroundT: 0.6 }, ...o });
+const POSEN = {
+  stehen: [sp(), {}], laufen: [sp({ speed: 3, vz: 3 }), {}], sprint: [sp({ speed: 7, vz: 7 }), {}],
+  wende: [sp({ speed: 5, vz: 5, plant: 1 }), {}],
+  schuss: [sp({ speed: 3, vz: 3, kickT: 0.16, techT: 0.18, tech: 'vollspann' }), {}],
+  pass: [sp({ speed: 2, vz: 2, kickT: 0.16, techT: 0.18, tech: 'innen' }), {}],
+  graetsche: [sp({ slide: { phase: 'slide', t: 0.2 } }), {}],
+  hecht: [sp({ hand: { mode: 'dive', dx: 1, dz: 0, t: 0.19, T: 0.38 } }), { keeper: true }],
+  boden: [sp({ hand: { mode: 'ground', dx: 1, dz: 0, t: 0.1, T: 0.38 } }), { keeper: true }],
+  halten: [sp(), { holding: true, keeper: true, ready: true }],
+  bereit: [sp(), { keeper: true, ready: true }],
+  jubel: [sp(), { special: 'cheer' }], jubel2: [sp(), { special: 'cheer2', armeHoch: 1 }], klatschen: [sp(), { special: 'clap' }],
+  fallrueck: [sp({ jumpY: 0.4, air: { go: true, tech: 'fallrueck', t0: 0, tc: 0.4, cy: 1.7 } }), { t: 0.4 }],
+  kopf: [sp({ jumpY: 0.2, air: { go: true, tech: 'kopf', t0: 0, tc: 0.4, cy: 2.0 } }), { t: 0.4 }],
+};
+const [pl, st] = POSEN[pose];
+const figs = R.map((n, i) => {
+  const av = new Avatar(A, n, i < 3 ? 0 : 1, { shadows: true, deko: { sunDir: new THREE.Vector3(0.4, 0.8, 0.6).normalize(), num: [7, 10, 4, 9, 5, 11][i] } });
+  scene.add(av.root); return av;
+});
+const gap = nah ? 0.62 : 1.25;
+const n = Math.round(T * 60);
+for (let k = 0; k < n; k++) figs.forEach((av, i) => av.update(1 / 60, pl, { x: (i - 2.5) * gap, z: 0, keeper: !!st.keeper || qs.get('tormann') === '1', t: st.t ?? k / 60, ball: [0, 0.11, 0.6], ...st }));
+const W = R.length * gap;
+const yaw = yawDeg * Math.PI / 180;
+const cam = new THREE.PerspectiveCamera(nah ? 24 : 30, innerWidth / innerHeight, 0.1, 100);
+const dist = nah ? 4.2 : Math.max(5, W * 1.15), ty = nah ? 1.62 : 0.95;
+cam.position.set(Math.sin(yaw) * dist, ty + (nah ? 0.15 : 0.6), Math.cos(yaw) * dist);
+cam.lookAt(0, ty, 0);
+renderer.render(scene, cam);
+document.getElementById('l').textContent = `${satz} · ${pose} · ${R.join(', ')}`;
+window.__ready = true;
+window.__info = { calls: renderer.info.render.calls, tris: renderer.info.render.triangles };
+</script>
+</body>
+</html>

@@ -13,7 +13,7 @@ import { makeSkyDeko } from './render/stimmung.js';
 import { Deko } from './render/deko.js';
 import { buildField } from './render/field.js';
 import { makeBall, makeBlob, poseBlob, makePlayer, posePlayer, Granulate } from './render/actors.js';
-import { loadAvatarAssets, Avatar, ROSTER, TEAM_NAMES } from './render/avatars.js';
+import { loadAvatarAssets, Avatar, SAETZE, figurenSatz, TEAM_NAMES } from './render/avatars.js';
 import { GameCamera } from './render/camera.js';
 import { Input } from './input/input.js';
 import { buildHud } from './ui/hud.js';
@@ -34,6 +34,8 @@ const qs = new URLSearchParams(location.search);
 const P = makeParams(location.search);
 // Verschönerung (Deko, ab 06.10.): ?deko=0 = Aussehen wie Nacht 2e (A/B)
 const DEKO = !!P.deko;
+// n9: Figuren-Satz – Standard Kuscheltiere, ?figuren=menschen = Rocketbox-Menschen wie bis 0.6.x
+const FIGUREN = figurenSatz(qs.get('figuren'));
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 let deko = null;
 // Deko-Licht: Tag oder Abend mit Flutlicht. 'auto' = nach Uhrzeit (ab kurz vor Sonnenuntergang, Mitteleuropa, bis 6:30),
@@ -182,7 +184,7 @@ function startChallenge(id) {
   document.body.classList.add('challenge');
   game = newGame(); resetPrev(); challengeDone = false;
   if (props) props.dispose();
-  props = new TrainingProps(scene);
+  props = new TrainingProps(scene, { kuschel: FIGUREN === 'kuscheltiere' });
   setMode('play');
 }
 function leaveChallenge() {
@@ -266,7 +268,7 @@ let field, ballMesh, blob, gran, marker, figs = [], capsule = null, figSlot = nu
 async function boot() {
   const texLoader = new THREE.TextureLoader();
   const tl = (u) => texLoader.loadAsync(u);
-  const avatarsP = qs.get('figur') === 'kapsel' ? Promise.resolve(null) : loadAvatarAssets((p) => { loadMsg.textContent = `Bandenkick lädt … Spieler ${Math.round(p * 100)} %`; }, { renderer, ktx: qs.get('ktx') !== '0' }).catch((e) => { window.__errors.push('Avatare: ' + e.message); return null; });
+  const avatarsP = qs.get('figur') === 'kapsel' ? Promise.resolve(null) : loadAvatarAssets((p) => { loadMsg.textContent = `Bandenkick lädt … Spieler ${Math.round(p * 100)} %`; }, { renderer, ktx: qs.get('ktx') !== '0', satz: FIGUREN, billig: quality.level < 1 }).catch((e) => { window.__errors.push('Avatare: ' + e.message); return null; });
   const [env, skyTex, skyInfo, turfColor, turfNormal, grassColor, grassNormal, A] = await Promise.all([
     loadEnvironment(renderer), tl('assets/hdri/sky.jpg'), fetch('assets/hdri/sky.json').then((r) => r.json()),
     tl('assets/tex/turf_color.jpg'), tl('assets/tex/turf_normal.jpg'), tl('assets/tex/grass_color.jpg'), tl('assets/tex/grass_normal.jpg'), avatarsP,
@@ -296,7 +298,8 @@ async function boot() {
   scene.add(goldRing);
   if (A) {
     for (let team = 0; team < 2; team++) for (let i = 0; i < 3; i++) {
-      const av = new Avatar(A, ROSTER[team][i % ROSTER[team].length], team, { shadows: quality.avatarShadows, cull: AV_CULL, ik: AV_IK, glatt: GLATT, traeg: qs.get('traeg') === '1' /* n5: Sicherheitsnetz nur auf Wunsch (Bildrate) */, deko: DEKO ? { sunDir, num: BIB_NUMS[team][i], extShadow: true } : null });
+      const R = A.roster || SAETZE.menschen.roster;
+      const av = new Avatar(A, R[team][i % R[team].length], team, { shadows: quality.avatarShadows, cull: AV_CULL, ik: AV_IK, glatt: GLATT, traeg: qs.get('traeg') === '1' /* n5: Sicherheitsnetz nur auf Wunsch (Bildrate) */, deko: DEKO ? { sunDir, num: BIB_NUMS[team][i], extShadow: true } : null });
       figs.push(av); scene.add(av.root);
     }
   } else {

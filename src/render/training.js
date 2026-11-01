@@ -31,19 +31,25 @@ function buildMachine() {
   return { g, head, wheels };
 }
 
-function buildDummy() {
+function buildDummy(kuschel = false) {
   const g = new THREE.Group(); g.name = 'puppe';
-  const m = mat(0x1b3a8c, { roughness: 0.7 });
+  const m = mat(0x1b3a8c, { roughness: kuschel ? 1 : 0.7 });
   const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.2, 1.05, 6, 14), m); body.position.y = 0.2 + 0.52 + 0.2; body.scale.set(1, 1, 0.55); g.add(body);
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.13, 14, 10), m); head.position.y = 1.62; g.add(head);
+  const head = new THREE.Mesh(new THREE.SphereGeometry(kuschel ? 0.16 : 0.13, 14, 10), m); head.position.y = kuschel ? 1.64 : 1.62; g.add(head);
+  if (kuschel) { // n9: Stoff-Puppe mit runden Bärenohren und Knopfaugen statt Menschen-Silhouette
+    for (const sg of [1, -1]) {
+      const ohr = new THREE.Mesh(new THREE.SphereGeometry(0.065, 12, 8), m); ohr.scale.set(1, 1, 0.45); ohr.position.set(0.035, 1.77, sg * 0.12); g.add(ohr);
+      const auge = new THREE.Mesh(new THREE.SphereGeometry(0.022, 10, 8), mat(0x0d0b0a, { roughness: 0.2 })); auge.position.set(0.145, 1.67, sg * 0.055); g.add(auge);
+    }
+  }
   const foot = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.22, 8), mat(0x444444)); foot.position.y = 0.11; g.add(foot);
   g.traverse((o) => { if (o.isMesh) o.castShadow = true; });
   return g;
 }
 
 export class TrainingProps {
-  constructor(scene) {
-    this.scene = scene;
+  constructor(scene, opts = {}) {
+    this.scene = scene; this.kuschel = !!opts.kuschel;
     this.group = new THREE.Group(); this.group.name = 'training';
     scene.add(this.group);
     this.machine = null; this.targets = []; this.cones = null; this.dummies = []; this.zones = []; this.gateMark = null;
@@ -82,7 +88,7 @@ export class TrainingProps {
       this.gateMark = new THREE.Mesh(new THREE.PlaneGeometry(0.12, 1).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xffe14a, transparent: true, opacity: 0.6, depthWrite: false }));
       this.gateMark.position.y = 0.012; this.group.add(this.gateMark);
     }
-    for (const d of C.dummies) { const m = buildDummy(); m.position.set(d.x, 0, d.z); m.rotation.y = Math.PI / 2; this.group.add(m); this.dummies.push(m); }
+    for (const d of C.dummies) { const m = buildDummy(this.kuschel); m.position.set(d.x, 0, d.z); m.rotation.y = Math.PI / 2; this.group.add(m); this.dummies.push(m); }
     for (const z of C.zones) {
       const g = new THREE.Group(); g.position.set(z.x, 0.013, z.z);
       const ring = new THREE.Mesh(new THREE.RingGeometry(z.r - 0.09, z.r, 56).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xffe14a, transparent: true, opacity: 0.85, depthWrite: false }));

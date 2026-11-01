@@ -5,8 +5,12 @@
 import * as THREE from 'three';
 import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 import { mulberry32 } from './stimmung.js';
+import { sexOf } from './avatars.js';
 
 export const FANS = ['Sports_Male_02', 'Female_Adult_12', 'Male_Adult_10', 'Sports_Female_02', 'Sports_Male_04', 'Sports_Male_03'];
+// n9: Kuscheltiere als Zuschauer (Satz aus loadAvatarAssets: A.satz); größere Zellen – Hasenohren, Elefantenohren
+export const FANS_KUSCHEL = ['Teddy', 'Panda', 'Katze', 'Fuchs', 'Elefant', 'Hase'];
+const ZELLE = { menschen: [0.95, 1.95], kuscheltiere: [1.2, 2.3] };
 // Posen je Geschlecht: [Clip, Zeit-Anteil], Blick (1 vorn, −1 hinten) – Zeitpunkte aus Prüfbildern gewählt
 // (tests/deko_atlas.py): Hände zusammen/auseinander, Jubel mit erhobenem Arm bzw. Fäusten oben
 export const POSES = [
@@ -18,13 +22,16 @@ export const POSES = [
   { m: ['wait', 0.12], f: ['wait', 0.12], view: -1 },   // 5 von hinten: stehen
   { m: ['wave', 0.5], f: ['cheer', 0.44], view: -1 },   // 6 von hinten: Jubel
 ];
-const CW_M = 0.95, CH_M = 1.95, CPX = 96; // Zelle in Metern / Pixel je Zellbreite
+const CPX = 96; // Pixel je Zellbreite (Zelle in Metern: ZELLE)
 
 // Atlas rendern (einmal, kurz nach dem Start). A = loadAvatarAssets(). Gerendert wird in der Hauptszene (alles andere kurz
 // ausgeblendet) mit deren Sonne und Umgebungslicht. Je Person eine Kopie; je Pose ein Durchgang (alle Personen
 // gleichzeitig in ihrer Zeile). Zweistufig: prepare() übersetzt die Shader – wenn möglich parallel im Hintergrund
 // (compileAsync) –, render() zeichnet danach in wenigen Millisekunden.
-export function spectatorBake(A, renderer, scene, poses = POSES, fans = FANS) {
+export function spectatorBake(A, renderer, scene, poses = POSES, fans = null) {
+  const kt = A.satz === 'kuscheltiere';
+  fans = fans || (kt ? FANS_KUSCHEL : FANS);
+  const [CW_M, CH_M] = ZELLE[kt ? 'kuscheltiere' : 'menschen'];
   const cols = poses.length, rows = fans.length;
   const W = cols * CPX, H = Math.round(rows * CPX * CH_M / CW_M);
   const rt = new THREE.WebGLRenderTarget(W, H, { samples: 4, depthBuffer: true });
@@ -34,9 +41,9 @@ export function spectatorBake(A, renderer, scene, poses = POSES, fans = FANS) {
   const figs = [];
   fans.forEach((name, r) => {
     const src = A.avatars[name]; if (!src) return;
-    const sex = /Female/.test(name) ? 'f' : 'm';
+    const sex = sexOf(name);
     const model = SkeletonUtils.clone(src.scene);
-    model.traverse((o) => { if (o.isSkinnedMesh) { o.frustumCulled = false; o.castShadow = false; } });
+    model.traverse((o) => { if (o.isSkinnedMesh) { o.frustumCulled = false; o.castShadow = false; if (o.material.name === 'leibchen') o.visible = false; } }); // n9: Zuschauer ohne Leibchen
     model.position.y = 0.015;
     const holder = new THREE.Group(); holder.add(model); root.add(holder);
     figs.push({ model, holder, sex, r, mixer: new THREE.AnimationMixer(model), act: null });
@@ -78,13 +85,13 @@ export function spectatorBake(A, renderer, scene, poses = POSES, fans = FANS) {
     count: poses.length,
     finish() {
       for (const f of figs) { f.mixer.stopAllAction(); f.model.traverse((o) => { if (o.isSkinnedMesh && o.skeleton) o.skeleton.dispose(); }); }
-      return { tex: rt.texture, rt, cols, rows, W, H };
+      return { tex: rt.texture, rt, cols, rows, W, H, zelle: [CW_M, CH_M] };
     },
     render() { for (let c = 0; c < poses.length; c++) this.pose(c); return this.finish(); },
   };
 }
 // Einfacher Aufruf (Tests/Prüfbilder): sofort übersetzen und rendern
-export function bakeSpectators(A, renderer, scene, poses = POSES, fans = FANS) { return spectatorBake(A, renderer, scene, poses, fans).render(); }
+export function bakeSpectators(A, renderer, scene, poses = POSES, fans = null) { return spectatorBake(A, renderer, scene, poses, fans).render(); }
 
 // Plätze: Gruppen mittig hinter den Toren (hinter der Fan-Cam; hochkant nicht hinter Spielstand und Menüknopf), an den
 // Längsseiten außerhalb des Spielbilds (nur Menü und Wiederholung). Kinder kleiner.
@@ -105,7 +112,7 @@ export class Zuschauer {
     SPOTS.forEach((s, i) => {
       pos.set([s.x, 0, s.z], i * 3);
       const face = Math.atan2(-s.x * 0.8, -s.z); // Blick ungefähr zur Feldmitte
-      const who = Math.floor(rnd() * FANS.length);
+      const who = Math.floor(rnd() * atlas.rows);
       a.set([face, who, rnd() * 10, rnd() < 0.55 ? 1 : 0], i * 4);   // Blick, Person, Phase, Jubler (1) oder Klatscher (0)
       b.set([s.kid ? 0.66 : 0.93 + rnd() * 0.12, rnd() < 0.5 ? 1 : -1, 0.86 + rnd() * 0.22, rnd() * 0.35], i * 4); // Größe, Spiegel, Helligkeit, Reaktionszeit
     });
@@ -116,7 +123,7 @@ export class Zuschauer {
     g.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, 1, 0), 24);
     const u = THREE.UniformsUtils.merge([THREE.UniformsLib.fog, {
       uMap: { value: null }, uTime: { value: 0 }, uEx: { value: 0 }, uExT: { value: 99 }, uClap: { value: 0 },
-      uGrid: { value: new THREE.Vector2(atlas.cols, atlas.rows) }, uSize: { value: new THREE.Vector2(CW_M, CH_M) },
+      uGrid: { value: new THREE.Vector2(atlas.cols, atlas.rows) }, uSize: { value: new THREE.Vector2(...(atlas.zelle || ZELLE.menschen)) },
       uLight: { value: new THREE.Color(1, 1, 1) }, uCalm: { value: opts.calm ? 1 : 0 }, uAppear: { value: 0 }, uHideX: { value: -1e4 },
     }]);
     u.uMap.value = atlas.tex;
