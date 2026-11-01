@@ -25,7 +25,7 @@ with sync_playwright() as pw:
         build = pg.evaluate("__game.build")
         ok(build == local, f'Version live {build} = lokal {local}')
         st = pg.evaluate("__game.state()")
-        ok(st['match'] and st['avatars'] and len(st['players']) == 6, f"3 gegen 3 mit Rocketbox-Menschen live ({len(st['players'])} Spieler, Avatare {st['avatars']})")
+        ok(st['match'] and st['avatars'] and len(st['players']) == 6, f"3 gegen 3 mit Figuren (Kuscheltiere) live ({len(st['players'])} Spieler, Avatare {st['avatars']})")
         ok(pg.evaluate("__game.sound.ctx === null && !!__game.sound.silent"), 'Ton aus (stummer Stub, kein AudioContext)')
         pg.evaluate("__game.start()")
         pg.evaluate("__game.placePlayer(-4, 0, 0); __game.placeBall(-3.6, 0.11, 0)")
