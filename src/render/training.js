@@ -2,6 +2,7 @@
 // Torwand-Zielscheiben, Hütchen, Freistoß-Puppen, Zielkreise. Dazu Anzeigehilfen beim Aufladen: Empfänger-Ring,
 // Treffpunkt im Laufweg, Zielpunkt im Tor mit 1-σ-Streuung (fachlich aus denselben Planern wie der Kick).
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 const MACHINE_H = 0.75;
 const mat = (color, o = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.55, metalness: 0.1, ...o });
@@ -35,14 +36,16 @@ function buildDummy(kuschel = false) {
   const g = new THREE.Group(); g.name = 'puppe';
   const m = mat(0x1b3a8c, { roughness: kuschel ? 1 : 0.7 });
   const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.2, 1.05, 6, 14), m); body.position.y = 0.2 + 0.52 + 0.2; body.scale.set(1, 1, 0.55); g.add(body);
-  const head = new THREE.Mesh(new THREE.SphereGeometry(kuschel ? 0.16 : 0.13, 14, 10), m); head.position.y = kuschel ? 1.64 : 1.62; g.add(head);
-  if (kuschel) { // n9: Stoff-Puppe mit runden Bärenohren und Knopfaugen statt Menschen-Silhouette
-    for (const sg of [1, -1]) {
-      const ohr = new THREE.Mesh(new THREE.SphereGeometry(0.065, 12, 8), m); ohr.scale.set(1, 1, 0.45); ohr.position.set(0.035, 1.77, sg * 0.12); g.add(ohr);
-      const auge = new THREE.Mesh(new THREE.SphereGeometry(0.022, 10, 8), mat(0x0d0b0a, { roughness: 0.2 })); auge.position.set(0.145, 1.67, sg * 0.055); g.add(auge);
-    }
+  // n9: Stoff-Puppe mit runden Bärenohren und Knopfaugen statt Menschen-Silhouette – Ohren im Kopf-, Augen im Fuß-Mesh
+  // (gleiche Zahl Draw-Calls wie die alte Puppe)
+  const kopf = [new THREE.SphereGeometry(kuschel ? 0.16 : 0.13, 14, 10).translate(0, kuschel ? 1.64 : 1.62, 0)];
+  const fuss = [new THREE.CylinderGeometry(0.06, 0.06, 0.22, 8).translate(0, 0.11, 0)];
+  if (kuschel) for (const sg of [1, -1]) {
+    kopf.push(new THREE.SphereGeometry(0.065, 12, 8).scale(0.45, 1, 1).translate(0.035, 1.77, sg * 0.12));
+    fuss.push(new THREE.SphereGeometry(0.022, 10, 8).translate(0.145, 1.67, sg * 0.055));
   }
-  const foot = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.22, 8), mat(0x444444)); foot.position.y = 0.11; g.add(foot);
+  const head = new THREE.Mesh(kuschel ? mergeGeometries(kopf) : kopf[0], m); g.add(head);
+  const foot = new THREE.Mesh(kuschel ? mergeGeometries(fuss) : fuss[0], mat(kuschel ? 0x141210 : 0x444444, kuschel ? { roughness: 0.3 } : {})); g.add(foot);
   g.traverse((o) => { if (o.isMesh) o.castShadow = true; });
   return g;
 }

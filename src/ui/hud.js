@@ -66,14 +66,17 @@ export function buildHud(root, canvas) {
       <li><b>Himmel/Licht:</b> „Suburban Football Field“ von Grzegorz Wronkowski, <a href="https://polyhaven.com/a/suburban_football_field" target="_blank" rel="noopener">Poly Haven</a>, CC0.</li>
       <li><b>Rasen-Texturen:</b> Grass004 und Grass005 von <a href="https://ambientcg.com" target="_blank" rel="noopener">ambientCG</a>, CC0 (Kunstrasen umgefärbt, Faser-Normalmap selbst erzeugt).</li>
       <li><b>3D-Bibliothek:</b> <a href="https://threejs.org" target="_blank" rel="noopener">three.js</a> r186, MIT.</li>
-      <li><b>Menschen und Bewegungen:</b> <a href="https://github.com/microsoft/Microsoft-Rocketbox" target="_blank" rel="noopener">Microsoft Rocketbox</a>
+      <li><b>Kuscheltiere</b> (Teddy, Fuchs, Katze, Hase, Panda, Elefant): eigene Arbeit – aus weichen Grundformen gebaut, mit
+        Plüsch-Stoff, Nähten und Knopfaugen, auf die Skelette der Rocketbox-Figuren gesetzt.</li>
+      <li><b>Bewegungen und Skelette</b> (und mit <code>?figuren=menschen</code> die Menschen):
+        <a href="https://github.com/microsoft/Microsoft-Rocketbox" target="_blank" rel="noopener">Microsoft Rocketbox</a>
         (Sports_Male_02/03/04, Sports_Female_02, Male_Adult_10, Female_Adult_12 und 16 Bewegungen), MIT-Lizenz, © 2020 Microsoft.
         Umgerechnet mit Blender; Leibchen, Handschuhe und Posen für Tormann/Schuss eigene Arbeit.</li>
       <li><b>Physik-Quellen:</b> Hong &amp; Asai 2014 (Sci. Rep. 4:5068), Asai et al. 2007 (Sports Eng. 10), Goff &amp; Carré 2009/2010,
         FIFA Quality Programme for Football Turf – Handbook of Test Methods 2015, Test Manual 2024.</li>
     </ul>
     <p class="small">Ball, Käfig, Figur, Linien, Netze, Physik und Code: eigene Arbeit. Keine Vereins- oder Markenlogos.</p>
-    <p class="small deko-only">Umgebung, Bäume, Konfetti, Flutlicht und Abendhimmel: eigene Arbeit, zur Laufzeit gemalt. Die Zuschauer werden beim Start aus den Rocketbox-Menschen gerendert.</p>
+    <p class="small deko-only">Umgebung, Bäume, Konfetti, Flutlicht und Abendhimmel: eigene Arbeit, zur Laufzeit gemalt. Die Zuschauer werden beim Start aus den Kuscheltieren gerendert.</p>
     <div class="row"><button class="btn" data-act="back">Zurück</button></div>
   </div>`;
   // Training: Challenges je Gruppe, Hinweis vor dem Start, Ergebnis mit Sternen, Steuerungskarte

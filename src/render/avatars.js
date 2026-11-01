@@ -589,6 +589,7 @@ export class Avatar {
     if (this.shadowYaw !== null) { this.blob.rotation.y = this.shadowYaw - this.root.rotation.y; this.blob.position.y = 0.006 - this.root.position.y; }
     if (this.wackel.length) this.wackeln(dt, vEff);
     this.procN += proc ? 1 : 0; this.bildN++;
+    if (!proc) this.rlZiel = 0;
     if (!proc) { this.tilt.rotation.set(0, 0, 0); this.tilt.position.y = 0.95; if (this.glatt) { this.ikNull(); if (this.traeg && this.procVor) this.traegheit(dt, ds === 1); else { this.trNeu = true; this.trAn = 0; } } this.procVor = false; return; }
     this.procVor = true;
     let roll = 0, pitch = 0;
@@ -626,7 +627,10 @@ export class Avatar {
       this.tilt.position.y = this.tilt.position.y * (1 - tw) + (0.95 + T.drop) * tw;
     }
     // n9: liegend (Hechtsprung, Grätsche, Fallrückzieher) den dickeren Plüsch-Körper anheben, damit er nicht im Rasen steckt
-    if (this.dicke) this.tilt.position.y += this.dicke * Math.min(1, Math.max(0, (Math.max(Math.abs(pitch), Math.abs(roll)) - 0.45) / 0.8));
+    if (this.dicke) {
+      this.tilt.position.y += this.dicke * Math.min(1, Math.max(0, (Math.max(Math.abs(pitch), Math.abs(roll)) - 0.45) / 0.8));
+      this.rlZiel = Math.min(1, Math.max(0, (-pitch - 0.35) / 0.45)); // Rückenlage: Schwanz zieht sich ein (wackeln)
+    }
     this.tilt.rotation.set(pitch, 0, roll, 'YXZ');
     // n5: nur Kette root → tilt → model und den Knochenbaum aktualisieren – die Meshes (Körper, Leibchen, Handschuhe,
     // Schatten) braucht hier niemand, das erledigt das Zeichnen ohnehin (spart je Bild mit Zusatzschichten die Hälfte)
@@ -804,10 +808,11 @@ export class Avatar {
   wackeln(dt, v) {
     this.wT += dt;
     const k = Math.min(1, v / 4), ph = this.phase * Math.PI * 4;
+    this.rl = (this.rl || 0) + ((this.rlZiel || 0) - (this.rl || 0)) * Math.min(1, dt * 12);
     for (const w of this.wackel) {
       let a1, a2;
       if (w.art) { a1 = w.art * (0.07 * Math.sin(this.wT * 1.7 + w.ph) * (1 - k) + 0.16 * k * Math.sin(ph + 0.6)); a2 = -0.1 * Math.sin(this.wT * 1.3 + w.ph) * (1 - k) - k * (0.22 + 0.1 * Math.sin(ph + 1.2)); }
-      else { a1 = 0.25 * Math.sin(this.wT * 2.2 + w.ph) * (1 - k) + 0.35 * k * Math.sin(ph * 0.5); a2 = -0.12 * k; }
+      else { a1 = (0.25 * Math.sin(this.wT * 2.2 + w.ph) * (1 - k) + 0.35 * k * Math.sin(ph * 0.5)) * (1 - this.rl); a2 = -0.12 * k; w.b.scale.setScalar(1 - 0.7 * this.rl); } // Rückenlage: Schwanz zieht sich ein (sonst steckt er im Rasen)
       w.b.quaternion.copy(w.ruhe).multiply(_q2.setFromAxisAngle(w.a1, a1)).multiply(_q.setFromAxisAngle(w.a2, a2));
     }
   }
