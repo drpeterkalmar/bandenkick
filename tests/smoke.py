@@ -1,9 +1,10 @@
 # Rauchtest im Browser (Pixel 7 hoch/quer, Desktop): Laden ohne Fehler, Spielstart, Führen, Pass, Schuss,
-# Schüsse gegen Bande und ins Dachnetz (Ball bleibt im Käfig), Tor. Aufruf: python3 tests/smoke.py
+# Schüsse gegen Bande und ins Dachnetz (Ball bleibt im Käfig), Tor. Aufruf: python3 tests/smoke.py [url-zusatz, z. B. "&figuren=menschen"]
 import sys, time, json
 sys.path.insert(0, 'tests')
 from util import *
 fails = []
+ZUSATZ = sys.argv[1] if len(sys.argv) > 1 else ''  # n9: z. B. &figuren=menschen
 def ok(cond, msg):
     print(('  ✅ ' if cond else '  ❌ ') + msg, flush=True)
     if not cond: fails.append(msg)
@@ -13,7 +14,7 @@ with Server() as srv, sync_playwright() as pw:
     for i, form in enumerate(['hoch', 'quer', 'desktop']):
         if i: s.new_context(form)
         print(form)
-        s.open('?nosw&solo=1&seed=11&q=' + ('2' if form == 'desktop' else '1'))
+        s.open('?nosw&solo=1&seed=11&q=' + ('2' if form == 'desktop' else '1') + ZUSATZ)
         ok(any(n in str(s.gl) for n in GPU_NAME), f'WebGL auf der GPU ({s.gl})')
         ok(s.boot_s < 15, f'Boot {s.boot_s:.1f} s')
         s.tap('[data-act="play"]')
@@ -70,7 +71,7 @@ with Server() as srv, sync_playwright() as pw:
         print('  info', json.dumps(info))
         ok(s.small_buttons() == [], f'Knöpfe ≥ 48 px, im Bild: {s.small_buttons()}')
         # ---- 3 gegen 3 (Standard) ----
-        s.open('?nosw&seed=11&play&q=' + ('2' if form == 'desktop' else '1'))
+        s.open('?nosw&seed=11&play&q=' + ('2' if form == 'desktop' else '1') + ZUSATZ)
         st = s.state()
         ok(st['match'] and st['avatars'] and len(st['players']) == 6, f"3 gegen 3 mit Rocketbox-Menschen: {len(st['players'])} Spieler, Avatare {st['avatars']}")
         ok(st['rules']['keeper'] == [0, 3], f"letzte Hand zum Anstoß: {st['rules']['keeper']}")

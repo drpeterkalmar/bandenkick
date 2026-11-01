@@ -31,7 +31,13 @@ Als App installierbar (PWA), läuft offline.
   `?anstoss=0` = Schnellstart: der Tormann der Mannschaft, die das Tor bekommen hat, hat den Ball in der Hand).
 - **Spielzeit** 2 × 2 min (n8, Peter 26.10.: „Halbzeitlänge halbieren“; bis n7 2 × 4 min, `?dauer=4`), Anzeige Spielstand und Restzeit, Pfiffe zu Halbzeit und Ende,
   **Golden Goal** bei Gleichstand mit `?golden=1`.
-- **Menschen:** sechs Rocketbox-Avatare (Microsoft, MIT) mit echten Lauf-, Sprint-, Jubel- und Klatsch-Bewegungen;
+- **Kuscheltiere (n9, Peter 01.11.: „ersetze alle menschen (auch spieler) durch kuscheltiere“):** Orange spielt mit warmen
+  Fellen – **Teddy** (du), **Fuchs**, **Katze** –, Blau mit kühlen – **Hase**, **Panda**, **Elefant**. Weicher Plüsch mit
+  samtigem Randschimmer, feiner Fell-Struktur, aufgenähten Flecken mit Nähten, Knopfaugen und gesticktem Mund; Ohren und
+  Schwanz wippen beim Laufen. Leibchen mit Rückennummer, der Tormann trägt Fäustlinge über den Pfoten. Auch die Zuschauer
+  sind Kuscheltiere, die Trainingspuppe ist eine Stoffpuppe mit Bärenohren. Spiel, Physik, Bots und Bewegungen sind
+  unverändert (dieselben Rocketbox-Skelette und -Bewegungen). **`?figuren=menschen`** = die Rocketbox-Menschen wie bis 0.6.x.
+- **Bewegungen:** Rocketbox (Microsoft, MIT) mit echten Lauf-, Sprint-, Jubel- und Klatsch-Bewegungen;
   die Laufzyklen laufen phasengleich mit dem gemessenen Schrittweg (kein Fußgleiten), Stemmschritt sichtbar.
 - **Bots** (Utility-KI, 3 Stärken `?bots=1…3`): Rollen Ballführer / Anspielstation / Absicherung (letzte Hand),
   beim Gegner am Ball Angreifer (stellt zu) / Decker; sie spielen Pässe, **Bandenpässe** (auch zu sich selbst),
@@ -111,7 +117,7 @@ Als App installierbar (PWA), läuft offline.
   - **Licht:** freundlicher Himmel mit richtigen Farben, Kunstrasen mit Mähstreifen je Blickrichtung, Faserglanz und
     abgetretenen Torräumen, weiche Schatten in Sonnenrichtung.
   - **Anlage:** Betonweg, Flutlichtmasten, Bänke mit Taschen, Vereinsheim, Geländer, gemalte Herbstbäume.
-  - **Zuschauer:** 22 Zuschauer, beim Start aus den Rocketbox-Menschen gerendert; sie jubeln bei Toren.
+  - **Zuschauer:** 22 Zuschauer, beim Start aus den Figuren gerendert (seit n9 Kuscheltiere); sie jubeln bei Toren.
   - **Tor und Aktion:** Konfetti, leuchtendes TOR!, Blitzlichter; Ballspur bei harten Schüssen; Rasenfetzen und
     Rutschspuren bei Grätsche und Hechtsprung; Rückennummern.
   - **Training:** Sterne und Konfetti bei der Ergebniskarte.
@@ -289,7 +295,8 @@ Ball mit (Sohle/Außenseite). `?zack=0` = altes Gefühl aus Nacht 1 zum Vergleic
 | `?kino=0`, `?look=0/1/2`, `?kl=-bloom,+ssao`, `?skala=0.85` | n4 Kino-Look aus (direktes Zeichnen wie n3) / Kino-Stufe erzwingen / einzelne Stufen des Endbilds (`scale aa sharpen ssao bloom grade vignette dither contact dof`) / feste Renderskala |
 | `?schattenkam=0`, `?schatten2=1024` | Schattenkarte über den ganzen Käfig wie bisher (sonst folgt sie dem Bildausschnitt) / Stufe 2 mit 1024er- statt 2048er-Karte |
 | `?cull=0`, `?ik=0`, `?ktx=0` | Figuren immer zeichnen und jedes Bild animieren / ohne Fuß-IK / ohne KTX2-Texturen (erst wirksam, wenn erzeugt) |
-| `?figur=kapsel` | Kapsel-Figuren statt Rocketbox-Menschen (Rückfall) |
+| `?figuren=menschen` | n9: Rocketbox-Menschen statt Kuscheltiere (Aussehen bis 0.6.x; Standard `kuscheltiere`) |
+| `?figur=kapsel` | Kapsel-Figuren statt Kuscheltieren/Menschen (Rückfall) |
 | `?seed=4711`, `?debug`, `?play` | fester Zufall, Anzeige Bildrate/Draw-Calls, Startbildschirm überspringen |
 | `?doppel=0.11`, `?tipp=0.2` | Gesten: Fenster für den 2. Druck nach dem Loslassen (s; Kinder mit langsamem Doppeltipp: `0.15`), längster Tipp (s) |
 | `?laden=1` | Profi: Aufladen per Haltedauer, tipp + halten = Variante (Gesten aus Nacht 2b) |
@@ -340,7 +347,7 @@ Ball mit (Sohle/Außenseite). `?zack=0` = altes Gefühl aus Nacht 1 zum Vergleic
   (Bandenkick-Stufen, TV-Farbkorrektur, Kontaktschatten unter Ball und Figuren in einem Draw-Call, Tiefenschärfe nur im
   Replay), `grafik.js` (Autopilot-Anschluss), `schatten.js` (Schattenkamera folgt dem Bildausschnitt), `ik.js`
   (Zwei-Knochen-Fuß-IK: Boden + Ballkontakt). Mess-Gate: `tests/perf_gate.py --szenen tests/perf_szenen.json`.
-- `src/render/` – Szene, Käfig, Ball/Granulat, `avatars.js` (Rocketbox-Menschen, Lauf-Blend, Leibchen, Posen), Kamera
+- `src/render/` – Szene, Käfig, Ball/Granulat, `avatars.js` (Kuscheltiere/Rocketbox-Menschen, Plüsch-Material, Lauf-Blend, Leibchen, Posen), Kamera
   je Format. `src/audio/sound.js` – **stumm** seit Nacht 2e (Stub mit alter Schnittstelle, kein AudioContext).
   `src/input/` – Touch, Tastatur/Maus, Gamepad.
 - **Menschen-Pipeline:** `tools/fetch_rocketbox.py` (nur benötigte Dateien, Rohdaten in `assets_src/`, gitignored) →
@@ -434,12 +441,19 @@ python3 tests/deko_atlas.py && python3 tests/deko_collage.py   # Prüfbilder der
 python3 tests/shots.py final    # Fotos Training (Nacht 1) nach tests/shots/final/
 python3 tests/shots2.py final   # Fotos 3 gegen 3: Anstoß, Zweikampf, Tormann mit Ball, Hechtsprung, Tor-Jubel, Pause
 python3 tests/avatar_view.py    # Avatar-Prüfstand: Clips nebeneinander, Füße/Blickrichtung gemessen
+node tools/build_kuscheltiere.mjs [Name …]   # n9: Kuscheltiere bauen (Formen/Farben: tools/kuscheltiere_formen.mjs)
+python3 tests/kuscheltier_view.py [pose[:yaw[:zusatz]] …]   # n9: Prüfstand aller sechs Tiere in einer Pose
+python3 tests/kuscheltiere_bilder.py [hoch quer] [--bewegung]  # n9: Vergleichsfotos Menschen/Kuscheltiere, Bewegungs-Kontaktabzug
 python3 tools/fetch_rocketbox.py && Blender -b --python tools/rb_to_glb.py -- avatar <Name …> && … -- anims m Sports_Male_02 && … -- anims f Sports_Female_02 && node tools/pack_avatars.mjs
 python3 tools/fetch_assets.py && python3 tools/make_assets.py   # Assets neu bauen
 ```
 Browser-Tests laufen headless über die GPU (ANGLE/Metal), nie zwei Browser gleichzeitig.
 
 ## Änderungen
+- **n9 Kuscheltiere (01.11., Version VERSION_N9)** – alle Menschen (Spieler, Tormann, Zuschauer, Trainingspuppe) sind
+  Kuscheltiere: Teddy, Fuchs, Katze gegen Hase, Panda, Elefant, selbst gebaut auf den Rocketbox-Skeletten (alle Bewegungen,
+  Fuß-IK, Schuss und Tormann-Posen wie bisher). Plüsch-Shader mit Sheen-Näherung, Nähten und Knopfaugen; Figuren-Download
+  1,7 MB → 0,6 MB, 2 statt 3 Draw-Calls je Figur. `?figuren=menschen` = altes Aussehen. Bericht: [`N9_KUSCHELTIERE_BERICHT.md`](N9_KUSCHELTIERE_BERICHT.md).
 - **n8 Etappe 2 (27.10., Version 0.6.2)** – Pässe „gehen irgendwohin“: Reaktionszeit für den Gegner, Bots lesen Pässe mit
   Verzögerung, Stick bildschirmtreu, Richtungstreue, Empfänger-Treue – gezielte Pässe im Spiel 15 → 35–40 %. Bericht: [`N8_BERICHT.md`](N8_BERICHT.md).
 - **n8 Etappe 1 (27.10., Version 0.6.1)** – Peter 26.10.: Halbzeit 2 statt 4 min, Lauftempo 7,0 statt 6,0 m/s (Antritt wächst mit),
@@ -487,7 +501,8 @@ Browser-Tests laufen headless über die GPU (ANGLE/Metal), nie zwei Browser glei
 ## Credits
 - **Himmel/Licht:** „Suburban Football Field“ von Grzegorz Wronkowski, Poly Haven, CC0.
 - **Rasen-Texturen:** Grass004 und Grass005, ambientCG, CC0 (Kunstrasen umgefärbt, Faser-Normalmap selbst erzeugt).
-- **Menschen und Bewegungen:** Microsoft Rocketbox Avatar Library (MIT, © 2020 Microsoft) – Sports_Male_02/03/04,
+- **Kuscheltiere:** eigene Arbeit (MIT), gebaut auf den Skeletten der Rocketbox-Avatare.
+- **Bewegungen, Skelette, Menschen (`?figuren=menschen`):** Microsoft Rocketbox Avatar Library (MIT, © 2020 Microsoft) – Sports_Male_02/03/04,
   Sports_Female_02, Male_Adult_10, Female_Adult_12 und 16 Bewegungen je Geschlecht.
 - **Bibliothek:** three.js (MIT), meshoptimizer-Decoder (MIT).
 - **Physik-Quellen:** Hong & Asai 2014; Asai et al. 2007; Goff & Carré 2009/2010; Cross 2002; FIFA Quality Programme
@@ -495,5 +510,5 @@ Browser-Tests laufen headless über die GPU (ANGLE/Metal), nie zwei Browser glei
 
 Details: [`LICENSES.md`](LICENSES.md). Code, Käfig, Ball, Leibchen, Posen, Physik, Bots: eigene Arbeit (MIT). Verschönerung
 (Bäume, Anlage, Konfetti, Flutlicht, Abendhimmel): eigene Arbeit, zur Laufzeit gemalt; die Zuschauer werden aus den
-Rocketbox-Menschen gerendert (MIT).
+Kuscheltieren gerendert (mit `?figuren=menschen` aus den Rocketbox-Menschen).
 Keine Vereins- oder Markenlogos, keine echten Spielernamen.

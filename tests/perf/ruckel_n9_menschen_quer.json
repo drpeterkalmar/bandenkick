@@ -1,0 +1,463 @@
+{
+ "gruppen": {
+  "live": {
+   "bilder": 4251,
+   "sek": 71.29,
+   "bild_ms_p50": 16.7,
+   "bild_ms_p95": 18.2,
+   "figur_bilder": 23606,
+   "haenger": 2,
+   "sichtbar_gespart": 3,
+   "pose_ruck_p50": 0.022,
+   "pose_ruck_p99": 5.764,
+   "pose_ruck_max": 26.14,
+   "pose_spruenge": 678,
+   "pose_spruenge_je_min": 103.4,
+   "grosse_spruenge": 70,
+   "fussgleiten_cm_s": 136.6,
+   "fussgleiten_p90": 306.6,
+   "dreh_spruenge": 230,
+   "gewicht_unter_1": 0,
+   "gewicht_min": 1.0,
+   "cam_lage_p50": 0.031,
+   "cam_lage_p99": 6.829,
+   "cam_lage_max": 1302.82,
+   "cam_lage_ausreisser": 198,
+   "cam_blick_p99": 0.0,
+   "cam_blick_max": 20.61,
+   "cam_blick_ausreisser": 18,
+   "cam_ruck_summe": 4846.1,
+   "schnitte": 3,
+   "fov_spruenge": 4,
+   "tempo_spruenge": 3,
+   "ursachen": {
+    "sonst": 341,
+    "stemmschritt": 131,
+    "sonderbewegung": 85,
+    "technik": 60,
+    "schuss": 37,
+    "tempo": 24
+   }
+  },
+  "replay": {
+   "bilder": 1084,
+   "sek": 18.07,
+   "bild_ms_p50": 16.7,
+   "bild_ms_p95": 18.2,
+   "figur_bilder": 4470,
+   "haenger": 0,
+   "sichtbar_gespart": 0,
+   "pose_ruck_p50": 0.028,
+   "pose_ruck_p99": 5.465,
+   "pose_ruck_max": 20.02,
+   "pose_spruenge": 74,
+   "pose_spruenge_je_min": 59.6,
+   "grosse_spruenge": 11,
+   "fussgleiten_cm_s": 140.2,
+   "fussgleiten_p90": 317.8,
+   "dreh_spruenge": 27,
+   "gewicht_unter_1": 0,
+   "gewicht_min": 1.0,
+   "cam_lage_p50": 0.018,
+   "cam_lage_p99": 0.382,
+   "cam_lage_max": 0.41,
+   "cam_lage_ausreisser": 0,
+   "cam_blick_p99": 0.008,
+   "cam_blick_max": 0.01,
+   "cam_blick_ausreisser": 0,
+   "cam_ruck_summe": 79.2,
+   "schnitte": 9,
+   "fov_spruenge": 9,
+   "tempo_spruenge": 0,
+   "ursachen": {
+    "sonst": 30,
+    "technik": 18,
+    "stemmschritt": 14,
+    "schuss": 10,
+    "tempo": 1,
+    "sonderbewegung": 1
+   }
+  },
+  "r_aufbau": {
+   "bilder": 426,
+   "sek": 7.1,
+   "bild_ms_p50": 16.7,
+   "bild_ms_p95": 18.1,
+   "figur_bilder": 2036,
+   "haenger": 0,
+   "sichtbar_gespart": 0,
+   "pose_ruck_p50": 0.03,
+   "pose_ruck_p99": 6.755,
+   "pose_ruck_max": 20.02,
+   "pose_spruenge": 52,
+   "pose_spruenge_je_min": 91.9,
+   "grosse_spruenge": 11,
+   "fussgleiten_cm_s": 140.2,
+   "fussgleiten_p90": 317.8,
+   "dreh_spruenge": 27,
+   "gewicht_unter_1": 0,
+   "gewicht_min": 1.0,
+   "cam_lage_p50": 0.043,
+   "cam_lage_p99": 0.395,
+   "cam_lage_max": 0.41,
+   "cam_lage_ausreisser": 0,
+   "cam_blick_p99": 0.002,
+   "cam_blick_max": 0.0,
+   "cam_blick_ausreisser": 0,
+   "cam_ruck_summe": 36.1,
+   "schnitte": 3,
+   "fov_spruenge": 3,
+   "tempo_spruenge": 0,
+   "ursachen": {
+    "sonst": 22,
+    "stemmschritt": 14,
+    "schuss": 9,
+    "technik": 6,
+    "tempo": 1
+   }
+  },
+  "r_kontakt": {
+   "bilder": 308,
+   "sek": 5.13,
+   "bild_ms_p50": 16.7,
+   "bild_ms_p95": 18.27,
+   "figur_bilder": 606,
+   "haenger": 0,
+   "sichtbar_gespart": 0,
+   "pose_ruck_p50": 0.067,
+   "pose_ruck_p99": 0.884,
+   "pose_ruck_max": 3.21,
+   "pose_spruenge": 1,
+   "pose_spruenge_je_min": 5.9,
+   "grosse_spruenge": 0,
+   "fussgleiten_cm_s": null,
+   "fussgleiten_p90": null,
+   "dreh_spruenge": 0,
+   "gewicht_unter_1": 0,
+   "gewicht_min": 1.0,
+   "cam_lage_p50": 0.031,
+   "cam_lage_p99": 0.374,
+   "cam_lage_max": 0.38,
+   "cam_lage_ausreisser": 0,
+   "cam_blick_p99": 0.009,
+   "cam_blick_max": 0.01,
+   "cam_blick_ausreisser": 0,
+   "cam_ruck_summe": 36.0,
+   "schnitte": 3,
+   "fov_spruenge": 3,
+   "tempo_spruenge": 0,
+   "ursachen": {
+    "schuss": 1
+   }
+  },
+  "r_fancam": {
+   "bilder": 350,
+   "sek": 5.83,
+   "bild_ms_p50": 16.7,
+   "bild_ms_p95": 18.3,
+   "figur_bilder": 1828,
+   "haenger": 0,
+   "sichtbar_gespart": 0,
+   "pose_ruck_p50": 0.005,
+   "pose_ruck_p99": 1.329,
+   "pose_ruck_max": 7.98,
+   "pose_spruenge": 21,
+   "pose_spruenge_je_min": 41.4,
+   "grosse_spruenge": 0,
+   "fussgleiten_cm_s": null,
+   "fussgleiten_p90": null,
+   "dreh_spruenge": 0,
+   "gewicht_unter_1": 0,
+   "gewicht_min": 1.0,
+   "cam_lage_p50": 0.004,
+   "cam_lage_p99": 0.008,
+   "cam_lage_max": 0.01,
+   "cam_lage_ausreisser": 0,
+   "cam_blick_p99": 0.003,
+   "cam_blick_max": 0.0,
+   "cam_blick_ausreisser": 0,
+   "cam_ruck_summe": 7.0,
+   "schnitte": 3,
+   "fov_spruenge": 3,
+   "tempo_spruenge": 0,
+   "ursachen": {
+    "technik": 12,
+    "sonst": 8,
+    "sonderbewegung": 1
+   }
+  }
+ },
+ "schlimm_figur": [
+  {
+   "i": 279,
+   "ab": "live",
+   "fig": 1,
+   "cm": 26.14,
+   "spielT": 4.85,
+   "ursache": "stemmschritt"
+  },
+  {
+   "i": 263,
+   "ab": "live",
+   "fig": 2,
+   "cm": 21.3,
+   "spielT": 4.583,
+   "ursache": "technik"
+  },
+  {
+   "i": 1418,
+   "ab": "live",
+   "fig": 1,
+   "cm": 21.26,
+   "spielT": 18.075,
+   "ursache": "sonst"
+  },
+  {
+   "i": 1993,
+   "ab": "r_aufbau",
+   "fig": 1,
+   "cm": 20.02,
+   "spielT": 23.992,
+   "ursache": "stemmschritt"
+  },
+  {
+   "i": 4834,
+   "ab": "live",
+   "fig": 0,
+   "cm": 19.13,
+   "spielT": 62.625,
+   "ursache": "sonst"
+  },
+  {
+   "i": 278,
+   "ab": "live",
+   "fig": 5,
+   "cm": 19.04,
+   "spielT": 4.833,
+   "ursache": "schuss"
+  },
+  {
+   "i": 919,
+   "ab": "live",
+   "fig": 2,
+   "cm": 16.89,
+   "spielT": 15.517,
+   "ursache": "technik"
+  },
+  {
+   "i": 278,
+   "ab": "live",
+   "fig": 1,
+   "cm": 16.54,
+   "spielT": 4.833,
+   "ursache": "stemmschritt"
+  },
+  {
+   "i": 1548,
+   "ab": "live",
+   "fig": 5,
+   "cm": 16.24,
+   "spielT": 20.242,
+   "ursache": "technik"
+  },
+  {
+   "i": 4554,
+   "ab": "live",
+   "fig": 1,
+   "cm": 16.14,
+   "spielT": 57.958,
+   "ursache": "schuss"
+  },
+  {
+   "i": 1051,
+   "ab": "r_aufbau",
+   "fig": 1,
+   "cm": 16.07,
+   "spielT": 14.192,
+   "ursache": "schuss"
+  },
+  {
+   "i": 1068,
+   "ab": "r_aufbau",
+   "fig": 1,
+   "cm": 15.95,
+   "spielT": 14.475,
+   "ursache": "technik"
+  },
+  {
+   "i": 2946,
+   "ab": "live",
+   "fig": 0,
+   "cm": 15.94,
+   "spielT": 37.125,
+   "ursache": "sonst"
+  },
+  {
+   "i": 920,
+   "ab": "live",
+   "fig": 2,
+   "cm": 15.44,
+   "spielT": 15.533,
+   "ursache": "technik"
+  },
+  {
+   "i": 4833,
+   "ab": "live",
+   "fig": 0,
+   "cm": 14.78,
+   "spielT": 62.608,
+   "ursache": "sonst"
+  },
+  {
+   "i": 839,
+   "ab": "live",
+   "fig": 1,
+   "cm": 14.5,
+   "spielT": 14.183,
+   "ursache": "schuss"
+  },
+  {
+   "i": 307,
+   "ab": "live",
+   "fig": 4,
+   "cm": 14.44,
+   "spielT": 5.317,
+   "ursache": "technik"
+  },
+  {
+   "i": 1032,
+   "ab": "r_aufbau",
+   "fig": 5,
+   "cm": 14.22,
+   "spielT": 13.874,
+   "ursache": "sonst"
+  },
+  {
+   "i": 1418,
+   "ab": "live",
+   "fig": 2,
+   "cm": 13.71,
+   "spielT": 18.075,
+   "ursache": "sonst"
+  },
+  {
+   "i": 533,
+   "ab": "live",
+   "fig": 0,
+   "cm": 13.48,
+   "spielT": 9.083,
+   "ursache": "stemmschritt"
+  }
+ ],
+ "schlimm_kamera": [],
+ "schwellen": {
+  "huelle": {
+   "Bip01_Pelvis": [
+    0.6,
+    0.4
+   ],
+   "Bip01_L_Foot": [
+    1.0,
+    1.8
+   ],
+   "Bip01_R_Foot": [
+    1.0,
+    1.8
+   ],
+   "Bip01_L_Hand": [
+    0.6,
+    1.0
+   ],
+   "Bip01_R_Hand": [
+    0.6,
+    1.0
+   ],
+   "Bip01_Head": [
+    0.6,
+    0.45
+   ]
+  },
+  "reserve": 1.25,
+  "dreh_grad": 1.5,
+  "cam_cm": 1.0,
+  "cam_grad": 0.25
+ },
+ "meta": {
+  "name": "n9_menschen",
+  "form": "quer",
+  "query": "?nosw&seed=3&q=2&nohelp&play&startprobe=0&edit=0&figuren=menschen",
+  "drossel": 1,
+  "tore": [
+   {
+    "art": "klassisch",
+    "edit": null,
+    "active": true,
+    "wait": -1,
+    "phase": "aufbau",
+    "frac": 0.007545454718851377,
+    "real": 0.016600000381473023,
+    "total": 6.361007418701379,
+    "label": "Orange 2 (du) · Vollspann · 90 km/h",
+    "held": false,
+    "contact": {
+     "t": 24.774999999999235,
+     "x": 4.203372650851454,
+     "y": 0.112,
+     "z": 2.3426620076844746,
+     "dx": 23.96433830261487,
+     "dz": -5.838397979736339,
+     "speed": 25.07485328717349,
+     "tech": "vollspann",
+     "player": 1,
+     "type": "kick"
+    },
+    "recCount": 1200,
+    "segs": [
+     "aufbau",
+     "kontakt",
+     "fancam"
+    ],
+    "szene": "querpass"
+   },
+   {
+    "art": "klassisch",
+    "edit": null,
+    "active": true,
+    "wait": -1,
+    "phase": "aufbau",
+    "frac": 0.007500000000000275,
+    "real": 0.01649999999999352,
+    "total": 5.972118529812171,
+    "label": "Orange 2 (du) · Vollspann · 134 km/h",
+    "held": false,
+    "contact": {
+     "t": 50.37499999999778,
+     "x": 4.216055456733645,
+     "y": 0.112,
+     "z": 3.452028947174456,
+     "dx": 35.366779327397,
+     "dz": -10.72011280060267,
+     "speed": 37.16732345467614,
+     "tech": "vollspann",
+     "player": 1,
+     "type": "kick"
+    },
+    "recCount": 1200,
+    "segs": [
+     "aufbau",
+     "kontakt",
+     "fancam"
+    ],
+    "szene": "querpass"
+   }
+  ],
+  "gl": "ANGLE (Apple, ANGLE Metal Renderer: Apple M1, Unspecified Version)",
+  "fehler": [
+   "PAGEERROR Cannot read properties of null (reading 'phase')",
+   "PAGEERROR Cannot read properties of null (reading 'phase')",
+   "PAGEERROR Cannot read properties of null (reading 'phase')",
+   "PAGEERROR Cannot read properties of null (reading 'phase')",
+   "PAGEERROR Cannot read properties of null (reading 'phase')"
+  ]
+ }
+}

@@ -46,7 +46,7 @@ def fotos(s, f, var, extra):
     s.ev("__game.challenge('bande')"); s.frames(20)
     d = s.ev("(() => { const C = __game.game.challenge; return C && C.dummies && C.dummies.length ? [C.dummies[0].x, C.dummies[0].z] : null; })()")
     if d:
-        s.ev(f"__game.cam([{d[0] - 2.2}, 1.6, {d[1] + 1.6}], [{d[0]}, 1.0, {d[1]}])"); s.frames(4)
+        s.ev(f"__game.cam([{d[0] - 1.8}, 1.6, {d[1] - 2.4}], [{d[0]}, 1.1, {d[1]}])"); s.frames(4)  # Puppen schauen nach −z
     S.hide_cards(s); s.frames(2); shot('07_training'); S.hide_cards(s, False); s.ev("__game.cam(null)")
     return s.ev("__game.info()")
 

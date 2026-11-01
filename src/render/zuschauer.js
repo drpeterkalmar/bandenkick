@@ -85,7 +85,7 @@ export function spectatorBake(A, renderer, scene, poses = POSES, fans = null) {
     count: poses.length,
     finish() {
       for (const f of figs) { f.mixer.stopAllAction(); f.model.traverse((o) => { if (o.isSkinnedMesh && o.skeleton) o.skeleton.dispose(); }); }
-      return { tex: rt.texture, rt, cols, rows, W, H, zelle: [CW_M, CH_M] };
+      return { tex: rt.texture, rt, cols, rows, W, H, zelle: [CW_M, CH_M], reihum: kt };
     },
     render() { for (let c = 0; c < poses.length; c++) this.pose(c); return this.finish(); },
   };
@@ -112,7 +112,8 @@ export class Zuschauer {
     SPOTS.forEach((s, i) => {
       pos.set([s.x, 0, s.z], i * 3);
       const face = Math.atan2(-s.x * 0.8, -s.z); // Blick ungefähr zur Feldmitte
-      const who = Math.floor(rnd() * atlas.rows);
+      let who = Math.floor(rnd() * atlas.rows);
+      if (atlas.reihum) who = (i * 5 + 2) % atlas.rows; // n9: Tiere reihum – jede Gruppe hat fünf verschiedene (Zufallsfolge bleibt gleich)
       a.set([face, who, rnd() * 10, rnd() < 0.55 ? 1 : 0], i * 4);   // Blick, Person, Phase, Jubler (1) oder Klatscher (0)
       b.set([s.kid ? 0.66 : 0.93 + rnd() * 0.12, rnd() < 0.5 ? 1 : -1, 0.86 + rnd() * 0.22, rnd() * 0.35], i * 4); // Größe, Spiegel, Helligkeit, Reaktionszeit
     });

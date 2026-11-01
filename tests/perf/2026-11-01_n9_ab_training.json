@@ -1,0 +1,85 @@
+{
+ "datum": "2026-11-01T21:59:26",
+ "stand": "n9_ab_training",
+ "modus": "ab",
+ "runden": 3,
+ "varianten": [
+  {
+   "name": "vorher",
+   "wurzel": "/Users/wohnzimmer/dev/bandenkick",
+   "zusatz": ""
+  },
+  {
+   "name": "nachher",
+   "wurzel": "/Users/wohnzimmer/dev/.wt/bandenkick-bandenkick-n9-kuscheltiere",
+   "zusatz": ""
+  }
+ ],
+ "profil": {
+  "drossel": 4,
+  "dpr": 2.6,
+  "sek": 10,
+  "start": "open",
+  "vsync": false
+ },
+ "szenen": {
+  "training_s1": {
+   "hoch": {
+    "vorher": {
+     "p50": 3.6,
+     "p95": 5.2,
+     "fps": 264.7,
+     "calls": 67,
+     "tris": 32134,
+     "runden_p95": [
+      4.8,
+      5.2,
+      6.2
+     ],
+     "fehler": []
+    },
+    "nachher": {
+     "p50": 3.6,
+     "p95": 4.9,
+     "fps": 272.5,
+     "calls": 66,
+     "tris": 31712,
+     "runden_p95": [
+      5,
+      4.8,
+      4.9
+     ],
+     "fehler": []
+    }
+   },
+   "quer": {
+    "vorher": {
+     "p50": 3.6,
+     "p95": 4.8,
+     "fps": 275.2,
+     "calls": 68,
+     "tris": 31560,
+     "runden_p95": [
+      4.8,
+      4.8,
+      4.9
+     ],
+     "fehler": []
+    },
+    "nachher": {
+     "p50": 3.6,
+     "p95": 5,
+     "fps": 272,
+     "calls": 67,
+     "tris": 31162,
+     "runden_p95": [
+      5.1,
+      5,
+      4.8
+     ],
+     "fehler": []
+    }
+   }
+  }
+ }
+}

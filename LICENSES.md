@@ -1,6 +1,6 @@
 # Lizenzen und Quellen
 
-Alle fremden Dateien im Repo, mit Quelle, Autor und Lizenz. Code, Käfig-Geometrie, Ball-Textur, Kapsel-Figur,
+Alle fremden Dateien im Repo, mit Quelle, Autor und Lizenz. Code, Kuscheltiere (n9), Käfig-Geometrie, Ball-Textur, Kapsel-Figur,
 Linien, Netz-Texturen, Faser-Normalmap, Icons, Physik, Trainingsleibchen (aus dem Avatar-Mesh erzeugt),
 Tormann-Handschuhe und prozedurale Posen sind eigene Arbeit (MIT, siehe unten; das Spiel hat seit Nacht 2e keinen Ton mehr). Nicht im Repo: Rocketbox-Rohdateien (FBX/TGA) liegen nur lokal in
 `assets_src/` (gitignored), geladen mit `tools/fetch_rocketbox.py`.
@@ -14,6 +14,17 @@ Tormann-Handschuhe und prozedurale Posen sind eigene Arbeit (MIT, siehe unten; d
 | `lib/three/addons/libs/meshopt_decoder.module.js` | meshoptimizer (über three.js r186) | Arseny Kapoulkine | MIT | https://github.com/zeux/meshoptimizer |
 | `assets/avatars/*.glb` – Sports_Male_02, Sports_Male_03, Sports_Male_04, Sports_Female_02, Male_Adult_10, Female_Adult_12 (umgerechnet: FBX → GLB, Texturen verkleinert als WebP, Geometrie quantisiert) | Microsoft Rocketbox Avatar Library | Microsoft | MIT (© 2020 Microsoft, Lizenztext: `assets/avatars/ROCKETBOX_LICENSE.txt`) | https://github.com/microsoft/Microsoft-Rocketbox |
 | `assets/anims/m.glb`, `assets/anims/f.glb` – 16 Bewegungen je Geschlecht (idle_breathe_01, walk_neutral_01, run_slow_01, run_neutral_01, run_fast_01, run_start, run_stop, turn_left_90/180, turn_right_90, cheer_01, cheer_03, claphands_01, idle_waiting_01, crouch_idle, wave_01; auf das Skelett der Referenz-Avatare umgerechnet, Wurzelbewegung entfernt, teils gekürzt) | Microsoft Rocketbox Avatar Library | Microsoft | MIT (wie oben) | https://github.com/microsoft/Microsoft-Rocketbox |
+
+**Kuscheltiere (n9, November 2026): eigene Arbeit (MIT), keine fremden Dateien.** `assets/kuscheltiere/*.glb` (Teddy, Fuchs,
+Katze, Hase, Panda, Elefant) baut `tools/build_kuscheltiere.mjs` aus selbst definierten weichen Grundformen
+(`tools/kuscheltiere_formen.mjs`); Farben, Nähte, Fleck-Kanten, Knopfaugen und Fell-Struktur sind Punktfarben bzw. ein zur
+Laufzeit erzeugtes Muster. Übernommen werden nur Skelett und Hautgewichte der oben genannten Rocketbox-Avatare (MIT, wie oben),
+damit die Rocketbox-Bewegungen passen. Recherchiert und verworfen (01.11.2026): Sketchfab (Suche „plush/teddy rigged“, nur
+herunterladbar: mit CC0 keine Treffer; CC-BY-Teddys wie „Lil' Bear“, „Mister Bear“, „Sugar Teddy Bear“ sind Chibi-Figuren mit
+eigenem Skelett, oft Fan-Art fremder Marken), Quaternius (Tierpakete nur Vierbeiner, Hasen auf Poly Pizza CC0, aber Chibi mit
+eigenem Rig), Kenney (Tiere nur 2D bzw. Würfel-Haustiere), Poly Pizza (statische Modelle), OpenGameArt („Bunny Plush“ CC0 ohne
+menschliches Skelett, „Detective Bunny“/„Penguin“ CC0 mit eigenem Rig). Keines passt zum menschlichen Biped-Skelett „Bip01“ mit
+Fußball-Bewegungen, deshalb selbst gebaut.
 
 Reserve-HDRI (nicht verwendet): „Suburban Soccer Park“ (Dimitrios Savva, Jarod Guest), Poly Haven, CC0.
 

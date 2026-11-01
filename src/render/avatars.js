@@ -279,7 +279,8 @@ function bibAusFertig(mesh, color, num) {
     UV[i * 2] = Math.atan2(x, z) / (2 * Math.PI) * 5.5; UV[i * 2 + 1] = y / 0.12;
     if (NUM) {
       let th = Math.atan2(x - cxm, z - czm) - Math.PI; while (th < -Math.PI) th += 2 * Math.PI;
-      NUM[i * 2] = 0.5 + th / 1.0; NUM[i * 2 + 1] = (y - (yNum - 0.13)) / 0.26;
+      // vorn springt der Winkel von +π auf −π – dort y weit außerhalb, sonst zöge die Nummer einen Streifen über die Brust
+      NUM[i * 2] = 0.5 + th / 1.0; NUM[i * 2 + 1] = Math.abs(th) > 1.5 ? -5 : (y - (yNum - 0.13)) / 0.26;
     }
   }
   g.setAttribute('uv', new THREE.BufferAttribute(UV, 2));
@@ -367,7 +368,7 @@ export class Avatar {
     this.kuschel = istKuscheltier(name);
     this.gloves = ['Bip01_L_Hand', 'Bip01_R_Hand'].map((b) => {
       const s = new THREE.Mesh(new THREE.SphereGeometry(4.2, 12, 8), gm); // Knochen-Raum ist in cm (Skalierung 0,01)
-      if (this.kuschel) { s.scale.set(1.75, 1.6, 1.62); s.position.set(5.6, 0, 0); } // n9: dicker Fäustling über der Pfote
+      if (this.kuschel) { s.scale.set(2.3, 1.95, 1.95); s.position.set(6.4, 0, 0); } // n9: dicker Fäustling über der Pfote
       else { s.scale.set(1.55, 0.7, 1.15); s.position.set(6.5, 0, 0); } // flach wie eine Hand mit Handschuh
       this.bones[b].add(s); s.visible = false; return s;
     });
