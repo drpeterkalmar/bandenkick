@@ -1,4 +1,4 @@
-# Bandenkick n9 – Kuscheltiere statt Menschen (01.11.2026, Version VERSION_N9)
+# Bandenkick n9 – Kuscheltiere statt Menschen (01.11.2026, Version 0.7.0)
 
 Peters Wunsch: „bandenkick: ersetze alle menschen (auch spieler) durch kuscheltiere“. Erledigt: Spieler, Tormänner (auch
 deine Figur), Zuschauer und die Trainingspuppe sind jetzt Kuscheltiere. Spiel, Physik, Bots, Bewegungen und Bestwerte sind

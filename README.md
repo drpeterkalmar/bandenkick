@@ -450,7 +450,7 @@ python3 tools/fetch_assets.py && python3 tools/make_assets.py   # Assets neu bau
 Browser-Tests laufen headless über die GPU (ANGLE/Metal), nie zwei Browser gleichzeitig.
 
 ## Änderungen
-- **n9 Kuscheltiere (01.11., Version VERSION_N9)** – alle Menschen (Spieler, Tormann, Zuschauer, Trainingspuppe) sind
+- **n9 Kuscheltiere (01.11., Version 0.7.0)** – alle Menschen (Spieler, Tormann, Zuschauer, Trainingspuppe) sind
   Kuscheltiere: Teddy, Fuchs, Katze gegen Hase, Panda, Elefant, selbst gebaut auf den Rocketbox-Skeletten (alle Bewegungen,
   Fuß-IK, Schuss und Tormann-Posen wie bisher). Plüsch-Shader mit Sheen-Näherung, Nähten und Knopfaugen; Figuren-Download
   1,7 MB → 0,6 MB, 2 statt 3 Draw-Calls je Figur. `?figuren=menschen` = altes Aussehen. Bericht: [`N9_KUSCHELTIERE_BERICHT.md`](N9_KUSCHELTIERE_BERICHT.md).
