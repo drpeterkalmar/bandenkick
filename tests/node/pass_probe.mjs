@@ -77,8 +77,9 @@ export function onePass(P, seed, { move = 'steh', gest = 'tipp', thumb = 'los', 
   if (cam) folgen(cam, { x: g.ball.p.x, z: g.ball.p.z, vx: 0, vz: 0 }, me, 2);
   const press = gest === 'tipp' ? 0.07 : 0.4;
   let pre = null, bdPress = -1, rueck = false, tPress = -1, stickA = null, kick = null, res = null, preview = null, intended = null, freeLane = null, minD = 99, steps = 0;
+  let okT = -1, annLost = false, annKick = false, annTyp = null; // n10: Annahme – 0,8 s nach der Ankunft: Ball noch beim Empfänger, kein Gegner dran?
   const T = tRun + 5;
-  while (g.t < T && !res) {
+  while (g.t < T && (!res || (res === 'ok' && g.t < okT + 0.8))) {
     const t = g.t;
     let inp;
     if (t < tRun) inp = move === 'lauf' || move === 'sprint' ? H({ mx: Math.cos(runA) * mag, mz: Math.sin(runA) * mag, sprint: move === 'sprint' }) : H();
@@ -123,16 +124,19 @@ export function onePass(P, seed, { move = 'steh', gest = 'tipp', thumb = 'los', 
         kick = { freeKick: laneK >= 1.5 && openK >= 1.5, t: g.t, dx: e.dx, dz: e.dz, to: lk.to, bank: lk.bank, chip: lk.chip, planDir: lk.planDir, prev: preview, tech: lk.tech, bx: e.x, bz: e.z, mx: lk.meet ? lk.meet[0] : e.x, mz: lk.meet ? lk.meet[1] : e.z, T: lk.T, speed: lk.speed };
         continue;
       }
+      if (res === 'ok' && e.player != null && g.players[e.player].team !== me.team && ['touch', 'kick', 'control', 'catch', 'parry', 'body', 'block', 'air', 'tackle'].includes(e.type)) annLost = true;
+      if (res === 'ok' && !annLost && e.type === 'kick' && e.player != null && g.players[e.player].team === me.team) annKick = true;
       if (kick && !res && ['touch', 'kick', 'control', 'catch', 'parry', 'body', 'block', 'air'].includes(e.type) && e.player != null && (g.t > kick.t + 0.02 || e.player !== me.id)) { // n8: Gegner, der sofort dagegen tritt, zählt auch
         if (e.player === me.id) res = 'selbst';
-        else if (e.player === intended) res = 'ok';
+        else if (e.player === intended) { res = 'ok'; okT = g.t; annTyp = e.type; }
         else if (g.players[e.player].team === me.team) res = 'falsch';
         else { res = 'abgefangen'; const dx = g.ball.p.x - kick.bx, dz = g.ball.p.z - kick.bz, L = Math.hypot(kick.mx - kick.bx, kick.mz - kick.bz) || 1; kick.interFrac = (dx * (kick.mx - kick.bx) + dz * (kick.mz - kick.bz)) / (L * L); kick.interT = g.t - kick.t; kick.interRecvD = Math.hypot(g.ball.p.x - g.players[intended].x, g.ball.p.z - g.players[intended].z); kick.passT = kick.T; }
       }
     }
     if (kick && intended != null && g.ball.p.y < 1.2) minD = Math.min(minD, Math.hypot(g.ball.p.x - g.players[intended].x, g.ball.p.z - g.players[intended].z));
-    if (kick && g.t > kick.t + 4) break;
+    if (kick && g.t > kick.t + 4 && res !== 'ok') break;
   }
+  const annOk = res === 'ok' ? !annLost && (annKick || Math.hypot(g.ball.p.x - g.players[intended].x, g.ball.p.z - g.players[intended].z) < 1.5) : null;
   if (rueck) return { move, gest, thumb, kicked: false, rueck: true, res: 'Rückpass gemeint', freeLane };
   if (!kick) return { move, gest, thumb, kicked: false, res: 'kein Pass', freeLane, pre, bdPress, pend: me.pending ? me.pending.kind : null };
   const la = Math.atan2(kick.dz, kick.dx);
@@ -142,6 +146,7 @@ export function onePass(P, seed, { move = 'steh', gest = 'tipp', thumb = 'los', 
     move, gest, thumb, kicked: true, res: res || 'niemand', freeLane, freeKick: kick.freeKick, cands: kick.cands, intended, to: kick.to, bank: !!kick.bank, free: kick.to < 0,
     selOk: kick.to === intended, prevOk: kick.prev ? kick.prev.to === kick.to : true,
     interFrac: kick.interFrac, interT: kick.interT, interRecvD: kick.interRecvD, passT: kick.T, speed: kick.speed,
+    tArr: res === 'ok' ? okT - kick.t : null, annOk, annTyp,
     errPrev: angDiff(la, prevA) / DEG, errPlan: angDiff(planA, prevA) / DEG, errNoise: angDiff(la, planA) / DEG, minD, tech: kick.tech,
   };
 }
@@ -160,6 +165,8 @@ export function summarize(rs0) {
     sel: share(kicked, (r) => r.selOk), prevSame: share(kicked, (r) => r.prevOk),
     abgefangen: share(kicked, (r) => r.res === 'abgefangen'), falsch: share(kicked, (r) => r.res === 'falsch'), niemand: share(kicked, (r) => r.res === 'niemand'), selbst: share(kicked, (r) => r.res === 'selbst'),
     bank: share(kicked, (r) => r.bank), free: share(kicked, (r) => r.free),
+    tArr50: pctl(kicked.filter((r) => r.res === 'ok').map((r) => r.tArr), 0.5), annOk: share(kicked.filter((r) => r.res === 'ok'), (r) => r.annOk),
+    speed50: pctl(kicked.map((r) => r.speed), 0.5),
     errPrev50: pctl(kicked.map((r) => r.errPrev), 0.5), errPrev90: pctl(kicked.map((r) => r.errPrev), 0.9),
     errPlan50: pctl(kicked.map((r) => r.errPlan), 0.5), errPlan90: pctl(kicked.map((r) => r.errPlan), 0.9),
     noise50: pctl(kicked.map((r) => r.errNoise), 0.5), noise90: pctl(kicked.map((r) => r.errNoise), 0.9),
@@ -209,6 +216,8 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) { // Windows-taugli
   console.log(table(out));
   const all = summarize(out.flatMap((o) => o.rs));
   console.log(`\nGesamt: kommt an ${f(all.ok)} % (Weg frei beim Abspiel: ${f(all.okFreeK)} %, ${all.nFreeK} Pässe; beim Tipp: ${f(all.okFree)} %), kein Pass ${f(all.noKick)} %, abgefangen ${f(all.abgefangen)} %, falscher Mitspieler ${f(all.falsch)} %, niemand ${f(all.niemand)} %, selbst ${f(all.selbst)} %, Empfänger = gemeint ${f(all.sel)} %, Bande ${f(all.bank)} %, Freiraum ${f(all.free)} %`);
+  console.log(`n10: Abspieltempo p50 ${f(all.speed50, 1)} m/s · Ballzeit bis zum Mitspieler p50 ${f(all.tArr50, 2)} s · Annahme gelingt ${f(all.annOk)} % (0,8 s nach der Ankunft kein Gegner dran und Ball ≤ 1,5 m beim Empfänger oder von seinem Team weitergespielt)`);
+  if (process.env.JSON) console.log(JSON.stringify({ all, rows: out.map((o) => ({ move: o.move, gest: o.gest, thumb: o.thumb, s: o.s })) }));
   if (process.env.DETAIL) for (const o of out) console.log(o.move, o.gest, o.thumb, JSON.stringify(o.rs.filter((r) => r.res !== 'ok').slice(0, 6).map((r) => ({ res: r.res, sel: r.selOk, to: r.to, int: r.intended, bank: r.bank, d: +r.minD.toFixed(2), e: +r.errPrev.toFixed(1), free: r.freeLane }))));
   console.log(`(${((Date.now() - t0) / 1000).toFixed(0)} s)`);
 }

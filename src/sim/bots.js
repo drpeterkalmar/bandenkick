@@ -6,6 +6,7 @@
 // der gemessenen Abprall-Kennzahl der echten Ballphysik (Bande + Rollspin + Effet), einmal beim Start gemessen.
 // Stärken ?bots=1…3: Reaktion, Tempo, Streuung, Fangsicherheit, Fehlerquote.
 import { passSpeedFor } from './player.js';
+import { passScharf } from './kickplan.js';
 import { bankRatio } from './kickplan.js';
 import { shotFeatures, shotQuality } from './shot.js';
 import { planAir } from './air.js';
@@ -611,7 +612,8 @@ export class Bots {
       if (lane1 < 0.8 || lane2 < 0.8) continue;
       const L1 = Math.hypot(a, d1), L2 = Math.hypot(tx - wx, d2);
       // Tempo: nach dem Abprall (Anteil keep) soll er noch ~4 m/s haben
-      const speed = clamp(passSpeedFor(g.P, L1) + (passSpeedFor(g.P, L2, 4) - 3.5) / Math.max(0.4, this.bank.keep), 8, 18);
+      const sch = passScharf(g.P); // n10: schärfere Pässe (?pass=)
+      const speed = clamp(passSpeedFor(g.P, L1, 3.5 * sch) + (passSpeedFor(g.P, L2, 4 * sch) - 3.5 * sch) / Math.max(0.4, this.bank.keep), 8, 18 * sch);
       const score = Math.min(lane1, lane2) - (L1 + L2) * 0.05;
       if (!best || score > best.score) best = { aim: [wx, zw + s * 0.3], speed, score };
     }

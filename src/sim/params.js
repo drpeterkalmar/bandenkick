@@ -133,7 +133,10 @@ export const DEFAULTS = {
   // im Sprint 70 % statt 45 %. ?magnet=0.5&magnetSprint=0.45 = Nacht 2c
   // n7 Etappe 0 (Peter 14.10.: „besserer Ballbesitz, mehr Magnet“): 1,8 statt 1,2 – Feder, Dämpfung und Kappung wachsen mit
   // (magnetK·m, magnetC·m, magnetAcc·m), Vorlage/Genauigkeit sind bei 1 ausgereizt. ?magnet=1.2&abschirmen=0&magnetTurnMin=0.25&magnetC=20 = n6
-  magnet: 1.8,            // Stärke 0…2                                                             [?magnet=]
+  // n10 (Peter 02.11.: „mehr ballmagnet“): 2,4 statt 1,8 – darüber wächst nicht nur die Feder, sie zieht den Ball auch enger vor den
+  // Fuß (magnetEng), dazu schärferes Abschirmen (schirmVor 0,6 statt 0,3). Mehr Feder allein (2,4 / 3,0) änderte die Ballverluste
+  // nicht (1,66 → 1,66 / 1,67 je Minute), magnet 3 verpasste im Skript-Parcours ein Slalom-Tor mehr. ?magnet=1.8 = 0.7.0 (auch schirmVor)
+  magnet: 2.4,            // Stärke 0…3                                                             [?magnet=]
   magnetK: 112,           // 1/s² Federkonstante quer zur Stick-Richtung bei Stärke 1 (0,3 m daneben → 17 m/s² bei 0,5)
   magnetC: 30,            // 1/s Dämpfung (Tempo des Balls quer ans Tempo des Spielers angleichen); n7: 30 statt 20 – mit Stärke
                           // 1,8 schwang der Ball sonst quer nach (Skript-Parcours 9,5 → 12 s mit verpassten Slalom-Toren, mit 30: 8 s)
@@ -148,6 +151,9 @@ export const DEFAULTS = {
   magnetLead: 0.7,        // Vorlagen beim Führen kürzer: Zeit und Weg × (1 − magnetLead · Stärke)
   magnetShield: 0.3,      // m: Gegner nah → Ball zur abgewandten Seite (Abschirmen), 0 = aus
   magnetSlide: 0,         // Nacht 2d: Anteil, solange ein Gegner in ≤ 3 m am Ball grätscht (0 = Magnet aus, Grätsche erobert)
+  magnetEng: 1.15,        // n10: Soll-Vorlage der Feder × (1 − magnetEng · (Stärke − magnetEng0)), bei 2,4 × 0,31  [?magnetEng=0 = aus]
+  magnetEng0: 1.8,        // n10: ab dieser Stärke (0.7.0-Wert; ?magnet=1.8 = 0.7.0)
+  magnetEngMin: 0.25,     // n10: höchstens so eng
   magnetOpp: 0.5,         // Anteil, wenn ein Gegner ≤ 0,4 m am Ball ist (ab 1 m voll) – Tackles bleiben möglich
   // n7 Etappe 0: Abschirmen. Fast alle Ballverluste beim Führen passierten im Zweikampf (3,56 von 3,8 je Minute) – mehr Magnet
   // allein half kaum (−10 %). Steht ein Gegner ≤ schirmR m am Ball, legt der Führende kürzer vor (Vorlage × 1 − schirmVorlage
@@ -158,7 +164,7 @@ export const DEFAULTS = {
   schirmR: 1.5,           // m Gegner am Ball
   schirmVorlage: 0.5,     // Vorlage kürzer, Anteil bei Gegner ganz nah (≤ 0,5 m)
   schirmSeite: 0.35,      // m Ball zur abgewandten Seite
-  schirmVor: 0.3,         // m: so viel näher muss der Fuß des Gegners am Ball sein (Startwert 0,15; gemessen 0,3)
+  schirmVor: 0.6,         // m: so viel näher muss der Fuß des Gegners am Ball sein (Startwert 0,15; n7 gemessen 0,3; n10: 0,6)
   schirmNah: 0.9,         // m: Ball höchstens so weit vom Fuß des Führenden, sonst ist er frei
   schirmT: 1.0,           // s seit dem letzten Kontakt des Führenden
   // Bots wissen davon: Ball behalten ist mit Abschirmen sicherer (Gegner zählt erst ab schirmKeep m weniger als bisher), und gegen
@@ -169,7 +175,9 @@ export const DEFAULTS = {
   assistReturn: 0.5,      // s Zeitkonstante: sanft zurück
   assistAngle: 35,        // ° Abweichung Stick ↔ Ball, ab der die Eingabe „deutlich“ ist
   // Pass und Schuss
-  passSpeed: 10.5,        // m/s flacher Pass (Tippen)
+  // n10 (Peter 02.11.: „schärfere Pässe“): 13,5 statt 10,5 m/s (+29 %). Typisches Abspieltempo eines flachen Passes; alle flachen Pässe
+  // (Tipp, Direktpass, Doppelpass, Bande, Bots) werden im selben Verhältnis schärfer (kickplan.js passScharf). ?pass=10.5 = 0.7.0
+  passSpeed: 13.5,        // m/s                                                                     [?pass=]
   shotMin: 6,             // m/s
   shotMax: 30,            // m/s ≈ 108 km/h (Profi-Maximum) – Grundtempo; Vollspann/angeschnitten zusätzlich × wucht [?schuss=]
   // Nacht 2d (Peter: „jeweils 1,5x härterer Vollspannschuss und Effetschuss“): Endtempo von Vollspann und angeschnittenen
@@ -215,6 +223,9 @@ export const DEFAULTS = {
   passHackeDeg: 120,      // ° … ab hier Hacke (wenn der Ball nah am Standbein ist)                  [?hacke=]
   hackeNear: 0.6,         // m Ball ↔ Körpermitte für einen Hackenpass
   passMaxSpeed: 22,       // m/s härtester Pass
+  passScharfD0: 2,        // n10: m bis hier wird ein Pass nicht schärfer …
+  passScharfD1: 8,        // … ab hier voll (?pass=)
+  passRelMax: 12,         // n10: m/s höchstes Relativtempo beim Empfänger, das die Pass-Planung anstrebt (0.7.0: 8, wächst mit ?pass=)
   passFree: 7,            // m Pass in den freien Raum (Tipp, kein Mitspieler im Kegel)
   // Nacht 2e (Peter: „repariere das Passsystem, die Pässe gehen irgendwo hin“), gemessen mit tests/node/pass_probe.mjs:
   // Empfänger steuert der gehaltene Daumen nicht vom Ball weg, Empfänger läuft dem Pass entgegen, Bots jagen den eigenen
@@ -403,6 +414,8 @@ const ZACK0_ALIAS = { antritt: 'tauAcc' };
 // n7 ?sprintfrei=1 (Standard): die Grätsche rutscht schneller los als früher aus dem Sprint (sonst −12 % Grätschen mit
 // Ballgewinn, gemessen in 48 Bot-Spielen), sofern nicht ausdrücklich übersteuert
 const SPRINTFREI1 = { slideSpeed: 8 };
+// n10: ?magnet= bis 1,8 (0.7.0-Wert) = Ballmagnet wie 0.7.0, auch das Abschirmen (schirmVor), sofern nicht ausdrücklich übersteuert
+const MAGNET07 = { schirmVor: 0.3 };
 
 // Liest Overrides aus einem Query-String (oder Objekt) und gibt ein vollständiges Parameter-Objekt zurück.
 export function makeParams(overrides = {}) {
@@ -435,6 +448,7 @@ export function makeParams(overrides = {}) {
   if (zack0) for (const [k, v] of Object.entries(ZACK0)) if (!set.has(k)) P[k] = v;
   if (P.laden) for (const [k, v] of Object.entries(LADEN1)) if (!set.has(k)) P[k] = v;
   if (!P.halten) for (const [k, v] of Object.entries(HALTEN0)) if (!set.has(k)) P[k] = v;
+  if (set.has('magnet') && P.magnet <= P.magnetEng0) for (const [k, v] of Object.entries(MAGNET07)) if (!set.has(k)) P[k] = v;
   P.zack = P.zack ? 1 : 0;
   // n7: ein Lauftempo (vEin) statt Laufen/Sprint, ?lauf= übersteuert weiter ausdrücklich. vTop = höchstes Lauftempo, das
   // ein Spieler erreichen kann (Vorhersagen, Abfangen, Empfänger-Lauf); die Antrittskurve läuft weiter gegen vSprint.

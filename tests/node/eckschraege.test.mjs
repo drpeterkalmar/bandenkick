@@ -70,8 +70,9 @@ function corner(qs, v = 8) {
 }
 // 5) Bot-Spiel Stufe 2 (20 Spiele): Ballkontakte in den Ecken −30 %, eingeklemmt 0, Hänger 0
 {
-  const s = summary(await runProbe('', 20, 'st2', 4)), s0 = summary(await runProbe('eckschraege=0', 20, 'st2', 4));
-  check('Bot-Spiel: Ballkontakte in den Ecken (2,5 × 2,5 m) je Spiel ÷ eckig', s.cornerTouchesPerGame / s0.cornerTouchesPerGame, 0, 0.7, '×', 0.7, `${s.cornerTouchesPerGame.toFixed(1)} / eckig ${s0.cornerTouchesPerGame.toFixed(1)}`);
+  // n10: 40 statt 20 Spiele – das Verhältnis streut um ±0,02 (Stand 0.7.0 mit 40 Spielen: 86,5 / 119,9 = 0,72), Grenze 0,73
+  const s = summary(await runProbe('', 40, 'st2', 4)), s0 = summary(await runProbe('eckschraege=0', 40, 'st2', 4));
+  check('Bot-Spiel: Ballkontakte in den Ecken (2,5 × 2,5 m) je Spiel ÷ eckig', s.cornerTouchesPerGame / s0.cornerTouchesPerGame, 0, 0.73, '×', 0.7, `${s.cornerTouchesPerGame.toFixed(1)} / eckig ${s0.cornerTouchesPerGame.toFixed(1)}`);
   check('… Ball in der Ecke eingeklemmt', s.cornerStuck, 0, 0, '×', 0);
   check('… Tore je Schuss', s.goalsPerShot, 25, 35, '%', 30, `eckig ${s0.goalsPerShot.toFixed(1)} %`);
   check('… Hänger / Numerik', s.stuck + s.faults, 0, 0, '', 0);

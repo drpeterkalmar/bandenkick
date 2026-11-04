@@ -1,0 +1,5 @@
+n10-Probe (tests/node/n10_probe.mjs, 160 Bot-Spiele Stufe 2 gegen 2 à 2 × 4 min, Seeds 1–160; Pass-Probe 200 je Variante), 04.11.2026
+| Variante | Ballverluste beim Führen/min (Zweikampf) | Grätschen mit Ballgewinn/Spiel | Tore/Spiel | Bot-Pässe an/abgefangen | Parcours Skript (Verluste) / Kinderhand | Kinderhand gegen Bot: weg/min | Pass-Probe kommt an (alle / Weg frei) | abgefangen | Abspieltempo p50 | Ballzeit bis Mitspieler p50 | Annahme gelingt |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| 0.7.0 (?magnet=1.8&pass=10.5) | 1.69 (1.47) | 7.7 (57 %) | 16.4 | 64 / 31 % | 8.36 s (0) / 6.22 s | 6.3 | 75.6 / 87.7 % | 19.5 % | 10.5 m/s | 0.52 s | 46.5 % |
+| n10 Standard | 1.50 (1.29) | 7.2 (59 %) | 15.8 | 64 / 32 % | 8.45 s (0) / 6.17 s | 6.2 | 77.9 / 89.8 % | 17.4 % | 12.1 m/s | 0.50 s | 49.5 % |

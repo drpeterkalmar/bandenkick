@@ -4,7 +4,7 @@
 // und der echten Rollphysik (Roll-Tabelle aus ball.js, Iteration über die Ankunftszeit). Hoch = Chip mit Rückdrall,
 // Abflug 25–45° je nach Weite, Landepunkt im Laufweg, Scheitel unter dem Dachnetz.
 // Technik nach Lage: vor dem Körper Innenseite/Vorfuß, seitlich Außenrist, hinter dem Körper (Ball am Standbein) Hacke.
-import { passDist, passSpeedAt, passSpeedFor, passTimeTo, chipTime, chipApex, chipSpeedFor, chipBack, bankRatio, clamp } from './kickplan.js';
+import { passDist, passSpeedAt, passSpeedFor, passTimeTo, passScharf, chipTime, chipApex, chipSpeedFor, chipBack, bankRatio, clamp } from './kickplan.js';
 import { passTechnique, PASS_PROPS } from './technique.js';
 
 const DEG = Math.PI / 180;
@@ -44,7 +44,7 @@ export function runPath(cage, r0, rv, T, maxT = 2.2) {
 // n8: aim/maxDev – nur Treffpunkte höchstens maxDev° neben der Stick-Richtung (Richtungstreue); keiner möglich → null
 export function leadFlat(P, cage, b0, r0, rv, { speedMul = 1, maxSpeed = P.passMaxSpeed, aim = null, maxDev = 180 } = {}) {
   let best = null;
-  const cMax = Math.cos(maxDev * DEG);
+  const cMax = Math.cos(maxDev * DEG), sch = passScharf(P);
   for (let T = 0.25; T <= 3.6; T += 0.02) {
     const R = runPath(cage, r0, rv, T, P.vorhaltMax);
     const D = Math.hypot(R[0] - b0[0], R[1] - b0[1]);
@@ -56,8 +56,11 @@ export function leadFlat(P, cage, b0, r0, rv, { speedMul = 1, maxSpeed = P.passM
     const rel = Math.hypot(vA * dx - rv[0], vA * dz - rv[1]);
     // Nacht 2e (passfix): zügiger – kommt mit passArr + 0,15 m/s je Meter an (8 m: 6,7 m/s statt 5,3); gemessen wurden 4 von 5
     // abgefangenen Pässen am Weg abgefangen, meist vom Gegner, der den Passgeber presst
-    const vIdeal = P.passfix ? P.passArr + 0.15 * D : 4.3 + 0.12 * D;
-    const cost = ((vA - vIdeal) / 1.2) ** 2 + (T > 2.4 ? (T - 2.4) * 2 : 0) + (rel > 8 ? (rel - 8) ** 2 : 0) + (vA < 1.2 ? 4 : 0);
+    // n10: × passScharf (schärfere Pässe), auch die Grenze des Relativtempos beim Empfänger (bis passRelMax). Kurze Pässe wachsen
+    // weniger mit (bis passScharfD0 m gar nicht, ab passScharfD1 m voll) – sonst versprangen kurze Bot-Pässe am Empfänger
+    const sD = 1 + (sch - 1) * clamp((D - P.passScharfD0) / Math.max(0.1, P.passScharfD1 - P.passScharfD0), 0, 1);
+    const vIdeal = (P.passfix ? P.passArr + 0.15 * D : 4.3 + 0.12 * D) * sD, relMax = Math.min(P.passRelMax, 8 * sD);
+    const cost = ((vA - vIdeal) / 1.2) ** 2 + (T > 2.4 ? (T - 2.4) * 2 : 0) + (rel > relMax ? (rel - relMax) ** 2 : 0) + (vA < 1.2 ? 4 : 0);
     if (!best || cost < best.cost) best = { cost, T, u, meet: R, vArr: vA, D };
   }
   if (!best && aim) return null;
@@ -111,7 +114,8 @@ export function leadChip(P, cage, b0, r0, rv, { speedMul = 1 } = {}) {
 
 // Bandenpass über die Längsbande (Seite s = ±1): Zielpunkt an der Bande aus der gemessenen Abprall-Kennzahl ρ,
 // Tempo so, dass der Ball nach dem Abprall (Anteil keep) mit ~4,5 m/s ankommt
-export function leadBank(P, cage, b0, r0, rv, s) {
+// n10: Ankunft × passScharf; zu hart für passMaxSpeed → mit dem Tempo von 0.7.0 (scharf = 1)
+export function leadBank(P, cage, b0, r0, rv, s, scharf = passScharf(P)) {
   const br = bankRatio(P, cage, 0), r = P.ballR;
   const zw = s * (cage.hz - r);
   let M = r0, out = null;
@@ -124,7 +128,7 @@ export function leadBank(P, cage, b0, r0, rv, s) {
     const L1 = Math.hypot(a, d1), L2 = Math.hypot(M[0] - wx, d2);
     // Tempo nach dem Abprall: kommt mit ~4,5 m/s beim Empfänger an
     let lo = 2, hi = 22;
-    for (let i = 0; i < 18; i++) { const m = (lo + hi) / 2; const t = passTimeTo(P, m, L2); if (!Number.isFinite(t) || passSpeedAt(P, m, t) < 4.5) lo = m; else hi = m; }
+    for (let i = 0; i < 18; i++) { const m = (lo + hi) / 2; const t = passTimeTo(P, m, L2); if (!Number.isFinite(t) || passSpeedAt(P, m, t) < 4.5 * scharf) lo = m; else hi = m; }
     const u2 = (lo + hi) / 2, v1 = u2 / Math.max(0.35, br.keep);
     lo = v1; hi = 24;
     for (let i = 0; i < 18; i++) { const m = (lo + hi) / 2; const t = passTimeTo(P, m, L1); if (!Number.isFinite(t) || passSpeedAt(P, m, t) < v1) lo = m; else hi = m; }
@@ -133,6 +137,7 @@ export function leadBank(P, cage, b0, r0, rv, s) {
     out = { T, u, aim: [wx, zw + s * 0.3], meet: M, L1, L2, D: L1 + L2 };
     M = runPath(cage, r0, rv, T);
   }
+  if (out && out.u > P.passMaxSpeed + 2 && scharf > 1) return leadBank(P, cage, b0, r0, rv, s, 1);
   return out && out.u <= P.passMaxSpeed + 2 ? out : null;
 }
 

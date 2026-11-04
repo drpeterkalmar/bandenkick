@@ -3,7 +3,7 @@
 // flach/Vollspann, tipp + halten = hoch/angeschnitten; Ziel, Technik und Stärke planen pass.js/shot.js mit der echten
 // Ballphysik, Luftbälle air.js. ?treffpunkt=1 = alte Profi-Steuerung (freie Richtung, Spin aus dem Treffpunkt).
 // Hilfen ziehen nur, solange der Spieler nichts Deutliches tut.
-import { setKick, passDist } from './kickplan.js';
+import { setKick, passDist, passScharf } from './kickplan.js';
 import { perfektPass } from './perfekt.js';
 import { clampCorner } from './world.js';
 import { planPass } from './pass.js';
@@ -465,6 +465,14 @@ export class Player {
     if (P.magnetSlide < 1) for (const o of game.players) if (o.team !== this.team && o.slide && o.slide.phase === 'slide' && Math.hypot(o.x - b.p.x, o.z - b.p.z) < 3) { m *= P.magnetSlide; break; }
     return m;
   }
+  // n10 (Peter 02.11.: „mehr ballmagnet“): Stärke über magnetEng0 (1,8 = 0.7.0) zieht den Ball zwischen den Kontakten enger vor den
+  // Fuß – Soll-Vorlage der Feder × diesen Faktor (bis 1,8 unverändert = 1). Gemessen: auch die Vorlage der Führ-Kontakte enger kostete
+  // im Spiel jeden vierten gezielten Pass (38 → 29 % kommen an), zusätzlich weniger Spielraum nach vorn ließ den Ball beim zappeligen
+  // Kinder-Stick gegen einen Bot öfter wegspringen (6,3 → 7,9 je Minute) – beides deshalb nicht
+  magnetEng(m) {
+    const P = this.P;
+    return Math.max(P.magnetEngMin, 1 - P.magnetEng * Math.max(0, m - P.magnetEng0));
+  }
   magnetPull(game, want, sx, sz, dt) {
     const P = this.P, b = game.ball;
     if ((game.match && game.lastTouch !== this.id) || game.t - this.lastTouchT > 2.5 || this.kickT < 0.4) return;
@@ -489,7 +497,7 @@ export class Player {
       for (const o of game.players) { if (o.team === this.team) continue; const d = Math.hypot(o.x - b.p.x, o.z - b.p.z); if (d < bd) { bd = d; best = o; } }
       if (best) { near = clamp((R - bd) / (R - 0.4), 0, 1); const side = (best.x - this.x) * -dz + (best.z - this.z) * dx; sh = -Math.sign(side || 1) * shM * near; }
     }
-    const L = (0.15 + 0.05 * this.speed) * (P.abschirmen ? 1 - P.schirmVorlage * near : 1); // Vorlage: Stand 0,15 m, 5 m/s 0,4 m
+    const L = (0.15 + 0.05 * this.speed) * (P.abschirmen ? 1 - P.schirmVorlage * near : 1) * this.magnetEng(m); // Vorlage: Stand 0,15 m, 5 m/s 0,4 m
     // Zielpunkt nie in der Bande (Abschirmen an der Bande entlang würde den Ball sonst dagegen drücken)
     let tx = clamp(fx + dx * L - dz * sh, -game.cage.hx + 0.4, game.cage.hx - 0.4), tz = clamp(fz + dz * L + dx * sh, -game.cage.hz + 0.4, game.cage.hz - 0.4);
     if (game.cage.ecke) { const T = { x: tx, z: tz }; if (clampCorner(game.cage, T, 0.4)) { tx = T.x; tz = T.z; } } // n7 E5: nicht in die Eck-Schräge
@@ -787,7 +795,7 @@ export class Player {
       const D = Math.hypot(tx, tz) || 1;
       dx = tx / D; dz = tz / D;
       if (pd.kind === 'pass') {
-        speed = pd.speed ?? passSpeedFor(P, D);
+        speed = pd.speed ?? passSpeedFor(P, D, 3.5 * passScharf(P)); // n10: schärfer mit ?pass=
         elev = (pd.elev ?? 1.5) * DEG;
         noiseDeg = (1.0 + sprintPen) * pd.noise;
       } else if (pd.kind === 'clear') {

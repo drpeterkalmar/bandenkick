@@ -66,6 +66,9 @@ function rollLookup(T, arr, u, t) {
 // Weg (m) und Tempo (m/s) eines flachen Passes mit Abspieltempo u nach t Sekunden
 export const passDist = (P, u, t) => rollLookup(rollTable(P), rollTable(P).X, u, t);
 export const passSpeedAt = (P, u, t) => rollLookup(rollTable(P), rollTable(P).V, u, t);
+// n10 (Peter 02.11.: „schärfere Pässe“): Schärfe aller flachen Pässe relativ zu 0.7.0 – ?pass= (passSpeed) ist das Abspieltempo
+// eines typischen Passes (0.7.0: 10,5 m/s); Ankunftstempo (passArr + 0,15 m/s je Meter), Banden- und Bot-Pässe × diesen Faktor
+export const passScharf = (P) => P.passSpeed / 10.5;
 // Abspieltempo, mit dem der Ball nach T Sekunden D Meter weit ist (Bisektion; null = nicht erreichbar)
 export function passSpeedFor(P, D, T) {
   let lo = RU0, hi = RU0 + (RNU - 1) * RDU;
