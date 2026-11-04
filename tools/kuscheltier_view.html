@@ -12,7 +12,8 @@
 <script type="module">
 // n9 Prüfstand: alle sechs Figuren (echte Avatar-Klasse aus src/render/avatars.js, mit Leibchen, Handschuhen, Wackel-Ohren)
 // nebeneinander in einer Pose. ?figuren=kuscheltiere|menschen  ?pose=stehen|laufen|sprint|schuss|pass|graetsche|hecht|
-// halten|jubel|klatschen|fallrueck|kopf  ?yaw=Grad  ?nah=1 (Köpfe)  ?q=0 (billiger Plüsch)  ?tormann=1  ?t=Sekunden
+// halten|jubel|klatschen|fallrueck|kopf|kopfball  ?yaw=Grad  ?nah=1 (Köpfe)  ?q=0 (billiger Plüsch)  ?tormann=1  ?t=Sekunden
+// n10: ?tierform=0 = Proportionen wie 0.7.0; Ball sichtbar bei Schuss, Pass, Halten, Kopfball (wie im Spiel gezeichnet)
 import * as THREE from 'three';
 import { HDRLoader } from 'three/addons/loaders/HDRLoader.js';
 import { loadAvatarAssets, Avatar, figurenSatz } from './src/render/avatars.js';
@@ -35,7 +36,7 @@ const sun = new THREE.DirectionalLight(0xfff2dd, 2.2); sun.position.set(4, 8, 6)
 sun.shadow.mapSize.set(2048, 2048); Object.assign(sun.shadow.camera, { left: -8, right: 8, top: 4, bottom: -2 }); scene.add(sun);
 const boden = new THREE.Mesh(new THREE.PlaneGeometry(40, 20).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0x2f7d34, roughness: 0.95 }));
 boden.receiveShadow = true; scene.add(boden);
-const A = await loadAvatarAssets(() => {}, { satz, renderer, billig: qs.get('q') === '0' });
+const A = await loadAvatarAssets(() => {}, { satz, renderer, billig: qs.get('q') === '0', tierform: qs.get('tierform') === '0' ? 0 : 1 });
 const R = A.roster.flat();
 const sp = (o = {}) => ({ face: Math.PI / 2, speed: 0, vx: 0, vz: 0, plant: 0, kickT: 9, kickFoot: 1, techT: 9, tech: '', hand: { mode: 'none', dx: 0, dz: 0, t: 0, T: 0.38 }, jumpY: 0, air: null, fall: null, slide: null, P: { slideGroundT: 0.6 }, ...o });
 const POSEN = {
@@ -51,7 +52,12 @@ const POSEN = {
   jubel: [sp(), { special: 'cheer' }], jubel2: [sp(), { special: 'cheer2', armeHoch: 1 }], klatschen: [sp(), { special: 'clap' }],
   fallrueck: [sp({ jumpY: 0.4, air: { go: true, tech: 'fallrueck', t0: 0, tc: 0.4, cy: 1.7 } }), { t: 0.4 }],
   kopf: [sp({ jumpY: 0.2, air: { go: true, tech: 'kopf', t0: 0, tc: 0.4, cy: 2.0 } }), { t: 0.4 }],
+  kopfball: [sp({ techT: 0.2, tech: 'kopf' }), {}],
 };
+// n10: Ball je Figur (Weltpunkt relativ zur Figur, Blick +z) – Schuss/Pass am Fuß, Halten wie main.js (Sim-Brusthöhe 1,13 m, 0,4 m vor
+// dem Körper, beim Kindchenschema um 0,75 · senken tiefer und 0,07 m näher), Kopfball in Sim-Höhe (Kopfstoß ≈ 1,7 m) vor dem Kopf
+const BALL = { schuss: () => [0, 0.11, 0.42], pass: () => [0, 0.11, 0.42], halten: (av) => [0, 1.13 - 0.75 * av.senk, 0.33 + (av.senk ? 0 : 0.07)],
+  kopf: () => [0, 2.0, 0.12], kopfball: () => [0, 1.72, 0.14] };
 const [pl, st] = POSEN[pose];
 const figs = R.map((n, i) => {
   const av = new Avatar(A, n, i < 3 ? 0 : 1, { shadows: true, deko: { sunDir: new THREE.Vector3(0.4, 0.8, 0.6).normalize(), num: [7, 10, 4, 9, 5, 11][i] } });
@@ -59,7 +65,9 @@ const figs = R.map((n, i) => {
 });
 const gap = nah ? 0.62 : 1.25;
 const n = Math.round(T * 60);
-for (let k = 0; k < n; k++) figs.forEach((av, i) => av.update(1 / 60, pl, { x: (i - 2.5) * gap, z: 0, keeper: !!st.keeper || qs.get('tormann') === '1', t: st.t ?? k / 60, ball: [0, 0.11, 0.6], ...st }));
+const bp = (av, i) => { const b = BALL[pose] ? BALL[pose](av) : [0, 0.11, 0.6]; return [b[0] + (i - 2.5) * gap, b[1], b[2]]; };
+for (let k = 0; k < n; k++) figs.forEach((av, i) => av.update(1 / 60, pl, { x: (i - 2.5) * gap, z: 0, keeper: !!st.keeper || qs.get('tormann') === '1', t: st.t ?? k / 60, ball: bp(av, i), ...st }));
+if (BALL[pose]) figs.forEach((av, i) => { const m = new THREE.Mesh(new THREE.SphereGeometry(0.11, 24, 16), new THREE.MeshStandardMaterial({ color: 0xf4f4f0, roughness: 0.5 })); m.castShadow = true; m.position.set(...bp(av, i)); scene.add(m); });
 const W = R.length * gap;
 const yaw = yawDeg * Math.PI / 180;
 const cam = new THREE.PerspectiveCamera(nah ? 24 : 30, innerWidth / innerHeight, 0.1, 100);

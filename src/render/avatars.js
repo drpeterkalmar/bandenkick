@@ -26,6 +26,9 @@ export const SAETZE = {
   menschen: { roster: ROSTER, ordner: 'assets/avatars', boundR: 1.25 },
   kuscheltiere: { roster: [['Teddy', 'Fuchs', 'Katze'], ['Hase', 'Panda', 'Elefant']], ordner: 'assets/kuscheltiere', boundR: 1.4 },
 };
+// n10 (Peter 02.11.: „tiere haben größere köpfe und kürzere ärmchen und beinchen“): Kindchenschema-Figuren in
+// assets/kuscheltiere, die n9-Proportionen (0.7.0) für ?tierform=0 in assets/kuscheltiere_n9
+export const ORDNER_TIERFORM0 = 'assets/kuscheltiere_n9';
 export function figurenSatz(wert) { return wert === 'menschen' ? 'menschen' : 'kuscheltiere'; }
 export const istKuscheltier = (name) => name in KUSCHELTIERE;
 const LOCO = ['walk', 'jog', 'run', 'sprint'];
@@ -56,7 +59,7 @@ const TR_KNOCHEN = ['Bip01_L_Thigh', 'Bip01_L_Calf', 'Bip01_L_Foot', 'Bip01_R_Th
 const TR_GRENZE = 0.45, TR_WEG = 0.08, TR_TAU = 0.04;
 const _qi = new THREE.Quaternion(), _qa = new THREE.Quaternion(), _va = new THREE.Vector3();
 const GLOVE_GRAU = new THREE.Color(0x5f625a); // n7 E1: Handschuhe eines müden Tormanns
-const TECH_WERTE = ['pitch', 'roll', 'drop', 'thigh', 'calf', 'twist', 'thigh2', 'arms', 'nod', 'spreiz'];
+const TECH_WERTE = ['pitch', 'roll', 'drop', 'thigh', 'calf', 'twist', 'thigh2', 'arms', 'nod', 'spreiz', 'hop'];
 const KERN = new Set([...LOCO, 'idle', 'crouch']);
 // Knochennamen je Seite (statt je Bild per Zeichenkette zusammengesetzt)
 const BN = Object.fromEntries(['L', 'R'].map((sd) => [sd, Object.fromEntries(['Thigh', 'Calf', 'Foot', 'UpperArm', 'Forearm'].map((k) => [k, `Bip01_${sd}_${k}`]))]));
@@ -71,7 +74,8 @@ export async function loadAvatarAssets(onProgress = () => {}, opts = {}) {
   const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
   const satz = SAETZE[opts.satz] ? opts.satz : 'menschen';
   const names = [...new Set(SAETZE[satz].roster.flat())];
-  const pfad = (n) => `${SAETZE[satz].ordner}/${n}.glb`;
+  const ordner = satz === 'kuscheltiere' && opts.tierform === 0 ? ORDNER_TIERFORM0 : SAETZE[satz].ordner;
+  const pfad = (n) => `${ordner}/${n}.glb`;
   let ktx = null;
   if (KTX2_AVATARE && opts.ktx !== false && opts.renderer) { try { ktx = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).setKTX2Loader(await ktx2Lader(opts.renderer)); } catch (e) { ktx = null; } }
   const ladeFigur = (n) => (ktx && KTX2_AVATARE[n] ? ktx.loadAsync(KTX2_AVATARE[n]).then((g) => ((g.userData.ktx2 = true), g)).catch(() => loader.loadAsync(pfad(n))) : loader.loadAsync(pfad(n)));
@@ -351,9 +355,14 @@ export class Avatar {
     this.model = SkeletonUtils.clone(A.avatars[name].scene);
     this.root = new THREE.Group(); this.root.name = 'avatar_' + name;
     this.tilt = new THREE.Group(); // Neigung (Hechtsprung, Stemmschritt) um den Körperschwerpunkt
-    this.tilt.position.y = 0.95; this.model.position.y = -0.95 + 0.015; // Sohle liegt in der Ruhepose 1,5 cm tief
     this.tilt.add(this.model); this.root.add(this.tilt);
     this.bones = boneMap(this.model);
+    // n10: Kindchenschema – das Skelett ist um senken m abgesenkt (kürzere Beine, build_kuscheltiere.mjs), bein = Beinlänge-Faktor.
+    // Der Dreh- und Absenkpunkt (Hüfte, bei den Menschen 0,95 m) wandert mit; liegend bleibt der Körper so hoch wie vorher.
+    const ex = (this.bones.Bip01 || this.model.getObjectByName('Bip01') || {}).userData || {};
+    this.senk = ex.senken || 0; this.beinF = ex.bein || 1;
+    this.hh = 0.95 - this.senk;
+    this.tilt.position.y = this.hh; this.model.position.y = -this.hh + 0.015; // Sohle liegt in der Ruhepose 1,5 cm tief
     this.meshes = [];
     let leib = null;
     this.model.traverse((o) => { if (o.isSkinnedMesh) { if (o.material.name === 'leibchen') leib = o; else this.meshes.push(o); o.frustumCulled = false; } });
@@ -375,6 +384,7 @@ export class Avatar {
     // n9: Ohren und Schwanz der Kuscheltiere wackeln beim Laufen (eigene Knochen, keine Animation fasst sie an).
     // Drehachsen einmal in der Ruhepose aus dem Figuren-Raum in den Knochen-Raum umrechnen.
     this.dicke = this.kuschel ? 0.07 : 0; // liegend: Plüsch ist dicker als der Mensch → Körper etwas höher (kein Einsinken)
+    if (this.kuschel && ex.kopf > 1) this.dicke += 0.25 * (ex.kopf - 1); // n10: größerer Kopf (bäuchlings: Rüssel, Schnauze) → +2,75 cm
     this.wackel = [];
     if (this.kuschel) {
       this.root.updateMatrixWorld(true);
@@ -492,7 +502,8 @@ export class Avatar {
     this.turnRate += (turn - this.turnRate) * Math.min(1, ds * 8);
     // ---- Lauf-Blend nach Tempo ----
     const v = pl.speed, M = this.meta;
-    const sp = { walk: M.walk.speed, jog: M.jog.speed, run: M.run.speed, sprint: M.sprint.speed };
+    // n10: kürzere Beine (beinF) → kürzere Schritte: Gangart und Schrittweg je Zyklus × beinF (höhere Schrittfrequenz, kein Gleiten)
+    const bf = this.beinF, sp = this._sp || (this._sp = { walk: M.walk.speed * bf, jog: M.jog.speed * bf, run: M.run.speed * bf, sprint: M.sprint.speed * bf });
     const w = laufGewichte(0, sp, this._w || (this._w = {}));
     const vRoh = Math.max(v, Math.min(1.2, Math.abs(this.turnRate) * 0.35)); // auf der Stelle drehen = Trippeln
     let vEff = vRoh;
@@ -566,7 +577,7 @@ export class Avatar {
     if (this.vorKick && !kb && this.seitKontakt > 0.2) this.vorKick = false;
     this.ktPrev = kt;
     // Technik-Pose (Nacht 2b, prozedural bis zu den Mixamo-Clips): Luftball im Anflug, am Boden danach, Kick-Arten
-    const tp = techPose(pl, st.t ?? 0);
+    const tp = techPose(pl, st.t ?? 0, this.beinF);
     this.tpW = (this.tpW || 0) + ((tp ? 1 : 0) - (this.tpW || 0)) * Math.min(1, ds * (tp ? 14 : 5));
     if (tp && this.glatt) {
       // n5: Ziel-Pose glätten – beim Ballkontakt wechselt z. B. die Luftball-Pose (Bein oben) in die Schuss-Pose (Bein
@@ -591,7 +602,7 @@ export class Avatar {
     if (this.wackel.length) this.wackeln(dt, vEff);
     this.procN += proc ? 1 : 0; this.bildN++;
     if (!proc) this.rlZiel = 0;
-    if (!proc) { this.tilt.rotation.set(0, 0, 0); this.tilt.position.y = 0.95; if (this.glatt) { this.ikNull(); if (this.traeg && this.procVor) this.traegheit(dt, ds === 1); else { this.trNeu = true; this.trAn = 0; } } this.procVor = false; return; }
+    if (!proc) { this.tilt.rotation.set(0, 0, 0); this.tilt.position.y = this.hh; if (this.glatt) { this.ikNull(); if (this.traeg && this.procVor) this.traegheit(dt, ds === 1); else { this.trNeu = true; this.trAn = 0; } } this.procVor = false; return; }
     this.procVor = true;
     let roll = 0, pitch = 0;
     if (plantK > 0.01 || this.lean > 0.01) {
@@ -619,17 +630,19 @@ export class Avatar {
       let seite = side >= 0 ? -1 : 1;
       if (this.glatt) { if (this.diveSeite === null || (this.dive < 0.05 && diveMode)) this.diveSeite = seite; seite = this.diveSeite; }
       roll = seite * (1.25 + 0.28 * fl) * this.dive;
-      this.tilt.position.y = 0.95 - 0.55 * this.dive + 0.32 * fl;
-    } else this.tilt.position.y = 0.95 - 0.08 * this.lean / 0.45; // im Stemmschritt leicht in die Knie
+      this.tilt.position.y = this.hh - 0.55 * this.dive + 0.32 * fl;
+    } else this.tilt.position.y = this.hh - 0.08 * this.lean / 0.45; // im Stemmschritt leicht in die Knie
     // Technik-Pose überblendet Neigung/Absenken
     const T = this.tp, tw = this.tpW;
     if (T && tw > 0.01) {
       pitch = pitch * (1 - tw) + T.pitch * tw; roll = roll * (1 - tw) + T.roll * tw;
-      this.tilt.position.y = this.tilt.position.y * (1 - tw) + (0.95 + T.drop) * tw;
+      this.tilt.position.y = this.tilt.position.y * (1 - tw) + (this.hh + T.drop + this.senk * (T.hop || 0)) * tw; // n10: Kopfball mit Hüpfer
     }
     // n9: liegend (Hechtsprung, Grätsche, Fallrückzieher) den dickeren Plüsch-Körper anheben, damit er nicht im Rasen steckt
+    const liegt = Math.min(1, Math.max(0, (Math.max(Math.abs(pitch), Math.abs(roll)) - 0.45) / 0.8));
+    this.tilt.position.y += this.senk * liegt; // n10: liegend so hoch wie mit langen Beinen (Rumpf ist gleich dick)
     if (this.dicke) {
-      this.tilt.position.y += this.dicke * Math.min(1, Math.max(0, (Math.max(Math.abs(pitch), Math.abs(roll)) - 0.45) / 0.8));
+      this.tilt.position.y += this.dicke * liegt;
       this.rlZiel = Math.min(1, Math.max(0, (-pitch - 0.35) / 0.45)); // Rückenlage: Schwanz zieht sich ein (wackeln)
     }
     this.tilt.rotation.set(pitch, 0, roll, 'YXZ');
@@ -835,7 +848,7 @@ export class Avatar {
 // Pose je Technik (Winkel in rad: pitch + = vorn über, roll + = zur rechten Seite; drop = Absenken des Schwerpunkts;
 // thigh − = Oberschenkel nach vorn/oben, + = nach hinten; calf + = Unterschenkel beugen). null = keine Sonderpose.
 const ease = (x) => (x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x));
-function techPose(pl, t) {
+function techPose(pl, t, beinF = 1) {
   const side = pl.kickFoot > 0 ? 1 : -1; // Schussbein rechts → Körper kippt nach links
   const sl = pl.slide;
   if (sl) { // Grätsche (Nacht 2c): zurückgelehnt, tief, führendes Bein gestreckt voraus, danach liegen und aufstehen
@@ -848,12 +861,12 @@ function techPose(pl, t) {
     const u = ease((t - a.t0) / Math.max(0.05, a.tc - a.t0)); // 0 Absprung … 1 Treffpunkt
     switch (a.tech) {
       case 'fallrueck': { // Hüfte so tief, dass der Fuß des über den Kopf schwingenden Beins den Ball trifft
-        const A = AIR_POSE.fallrueck, drop = (a.cy ?? 1.4) - A.hipBelow - 0.95 - (pl.jumpY || 0);
+        const A = AIR_POSE.fallrueck, drop = (a.cy ?? 1.4) - A.hipBelow * beinF - 0.95 - (pl.jumpY || 0); // n10: kürzeres Bein → Hüfte näher am Ball
         return { pitch: A.pitch * u, roll: 0, drop: drop * u, legs: true, thigh: -2.12 * u, thigh2: -0.6 * u, calf: 0.1, arms: 0.9 * u };
       }
       case 'seitfall': { const A = AIR_POSE.seitfall; return { pitch: A.pitch * u, roll: -side * A.roll * u, drop: A.drop * u, legs: true, thigh: -0.5 - 1.3 * u, thigh2: -0.3 * u, arms: 0.7 * u }; }
       case 'flugkopf': { const A = AIR_POSE.flugkopf; return { pitch: A.pitch * u, roll: 0, drop: A.drop * u, legs: true, thigh: 0.35 * u, thigh2: 0.35 * u, arms: -0.4 * u, nod: -0.3 * u }; }
-      case 'kopf': return { pitch: -0.25 * (1 - u) + 0.35 * u, roll: 0, drop: 0, legs: true, thigh: -0.3 * u, arms: 0.8 * (1 - u) + 0.3, nod: 0.45 * u };
+      case 'kopf': return { pitch: -0.25 * (1 - u) + 0.35 * u, roll: 0, drop: 0, hop: u, legs: true, thigh: -0.3 * u, arms: 0.8 * (1 - u) + 0.3, nod: 0.45 * u };
       default: return { pitch: -0.3 * u, roll: -side * 0.15 * u, drop: -0.05 * u, legs: true, thigh: 0.4 - 1.7 * u, calf: 0.9 * (1 - u), arms: 0.5 * u }; // Volley/Dropkick: ausholen, durchziehen
     }
   }
@@ -881,7 +894,7 @@ function techPose(pl, t) {
       case 'vollspann': return { pitch: -0.12 * u, roll: 0, drop: -0.03 * u, legs: true, thigh: -1.15 * u, calf: 0.5 * u * (1 - k / 0.45), arms: 0.35 * u };
       case 'brust': return { pitch: -0.32 * u, roll: 0, drop: -0.04 * u, legs: true, thigh: 0, arms: 0.6 * u };
       case 'oberschenkel': return { pitch: -0.08 * u, roll: 0, drop: 0, legs: true, thigh: -1.0 * u, calf: 0.9 * u };
-      case 'kopf': return { pitch: 0.3 * u, roll: 0, drop: 0, legs: true, thigh: 0, nod: 0.4 * u, arms: 0.3 * u };
+      case 'kopf': return { pitch: 0.3 * u, roll: 0, drop: 0, hop: u, legs: true, thigh: 0, nod: 0.4 * u, arms: 0.3 * u }; // n10: hop = Hüpfer um senken (kürzere Beine)
       case 'volley': case 'dropkick': return { pitch: -0.3 * u, roll: -side * 0.15 * u, drop: -0.05 * u, legs: true, thigh: -1.3 * u, arms: 0.5 * u };
       case 'blocken': return { pitch: 0.2, roll: 0, drop: -0.2, legs: true, thigh: -0.15, thigh2: -0.15, calf: 0.35, spreiz: 0.55, arms: 0.9 }; // n7 E1: Beine seitlich gespreizt, tief
       case 'stolpern': return { pitch: 0.5 * u, roll: side * 0.15 * u, drop: -0.12 * u, legs: true, thigh: 0.35 * u, calf: 0.6 * u, arms: 0.9 * u }; // nach Grätsche des Gegners

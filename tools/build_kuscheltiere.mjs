@@ -18,10 +18,13 @@ import { NodeIO } from '@gltf-transform/core';
 import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
 import { prune, meshopt } from '@gltf-transform/functions';
 import { MeshoptEncoder, MeshoptDecoder, MeshoptSimplifier } from 'meshoptimizer';
-import { TIERE, bauplan, male, grad, add, mul } from './kuscheltiere_formen.mjs';
+import { TIERE, TIERFORM, bauplan, male, grad, add, mul } from './kuscheltiere_formen.mjs';
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
-const OUT = path.join(ROOT, 'assets', 'kuscheltiere');
+// n10: --n9 baut die Proportionen von 0.7.0 nach assets/kuscheltiere_n9 (Standard: Kindchenschema TIERFORM → assets/kuscheltiere)
+const N9 = process.argv.includes('--n9');
+const FORM = N9 ? null : TIERFORM;
+const OUT = path.join(ROOT, 'assets', N9 ? 'kuscheltiere_n9' : 'kuscheltiere');
 await import('../tests/node/three_hook.mjs');
 const THREE = await import('three');
 await MeshoptEncoder.ready; await MeshoptDecoder.ready; await MeshoptSimplifier.ready;
@@ -121,12 +124,27 @@ function schneide(m, g, sdf) {
 }
 
 // ---------------------------------------------------------------- Vorlage lesen
-async function vorlage(ref) {
+async function vorlage(ref, form) {
   const doc = await io.read(path.join(ROOT, 'assets', 'avatars', ref + '.glb'));
   const root = doc.getRoot();
   const skin = root.listSkins()[0], joints = skin.listJoints(), ibm = skin.getInverseBindMatrices();
+  const kopfY0 = joints.find((n) => kurz(n.getName()) === 'Head').getWorldMatrix()[13];
+  let senken = 0;
+  if (form) {
+    // n10: Glieder kürzen – die Länge eines Bip01-Knochens ist die Verschiebung seines Kindes (Unterarm, Hand, Unterschenkel, Fuß)
+    const knoten = Object.fromEntries(root.listNodes().map((n) => [kurz(n.getName()), n]));
+    const sohle = () => Math.min(...['L', 'R'].flatMap((sd) => ['Foot', 'Toe0'].map((k) => knoten[sd + '_' + k].getWorldMatrix()[13])));
+    const y0 = sohle();
+    for (const sd of ['L', 'R']) {
+      for (const [k, f] of [['Forearm', form.arm], ['Hand', form.arm], ['Calf', form.bein], ['Foot', form.bein]]) knoten[sd + '_' + k].setTranslation(knoten[sd + '_' + k].getTranslation().map((v) => v * f));
+    }
+    // ganzes Skelett absenken (Bip01 trägt keine Animation), damit Knöchel und Zehen wieder so hoch über dem Rasen sind wie vorher
+    senken = sohle() - y0;
+    const b = knoten.Bip01, t = b.getTranslation();
+    b.setTranslation([t[0], t[1] - senken, t[2]]).setExtras({ ...(b.getExtras() || {}), senken, bein: form.bein, arm: form.arm, kopf: form.kopf });
+  }
   const W = joints.map((n) => new THREE.Matrix4().fromArray(n.getWorldMatrix()));
-  const G = {};
+  const G = { kopfY0 };
   joints.forEach((n, i) => { G[kurz(n.getName())] = [W[i].elements[12], W[i].elements[13], W[i].elements[14]]; });
   // Haut des Menschen in Welt-Koordinaten (Ruhepose) mit Gewichten
   const B = joints.map((n, i) => W[i].clone().multiply(new THREE.Matrix4().fromArray(ibm.getElement(i, []))));
@@ -143,7 +161,7 @@ async function vorlage(ref) {
       haut.p.push(acc.x, acc.y, acc.z); haut.j.push([...je]); haut.w.push(we.map((x) => x / ws));
     }
   }
-  return { doc, root, skin, joints, G, haut, namen: joints.map((n) => kurz(n.getName())) };
+  return { doc, root, skin, joints, G, haut, senken, namen: joints.map((n) => kurz(n.getName())) };
 }
 
 // Körpergegend eines Knochens (für die Gewichts-Übernahme)
@@ -159,8 +177,8 @@ function gegend(n) {
 async function baue(name) {
   const t0 = Date.now();
   const def = TIERE[name];
-  const V = await vorlage(def.ref);
-  const plan = bauplan(name, V.G);
+  const V = await vorlage(def.ref, FORM);
+  const plan = bauplan(name, V.G, FORM);
   const koerper = plan.familien.filter((f) => !/augen|nase|mund/.test(f.name));
   const alle = (x, y, z) => { let d = 9; for (const f of koerper) { const q = f.sdf.f(x, y, z); if (q < d) d = q; } return d; };
   // Knochen: Vorlage ohne Gesicht + Ohr/Schwanz
@@ -197,7 +215,8 @@ async function baue(name) {
         let occ = 0;
         for (let s = 1; s <= 5; s++) { const hh = 0.018 * s; occ += (hh - Math.min(hh, alle(p[0] + n[0] * hh, p[1] + n[1] * hh, p[2] + n[2] * hh))) / 2 ** s; }
         const ao = Math.max(0.5, 1 - occ * 9);
-        const mal = male(fam.farbe(p, n), p);
+        const q = fam.inv ? fam.inv(p) : p; // n10: vergrößerter Kopf – Farbe am Punkt der Grundform
+        const mal = male(fam.farbe(q, n), q);
         const fell = mal.fell * 0.45 + (mal.naht ? 0.5 : 0);
         Z.C0.push(mal.aussen[0] * ao, mal.aussen[1] * ao, mal.aussen[2] * ao, fell);
         const d = Math.max(-1, Math.min(1, mal.d / D_MAX));
@@ -311,7 +330,7 @@ async function baue(name) {
   const kb = fs.statSync(out).size / 1024;
   console.log(`${name.padEnd(8)} ${(IDX.length / 3).toString().padStart(5)} Dreiecke, ${(P.length / 3)} Punkte, ${kb.toFixed(0)} KB, Höhe ${hoehe.toFixed(2)} m, Sohle ${tief.toFixed(3)} m, ${order.length} Knochen, ${((Date.now() - t0) / 1000).toFixed(1)} s`);
   console.log('   ', stat.join(' · '));
-  return { name, sex: def.sex, ref: def.ref, tris: IDX.length / 3, kb: +kb.toFixed(1), hoehe: +hoehe.toFixed(3), knochen: neu };
+  return { name, sex: def.sex, ref: def.ref, tris: IDX.length / 3, kb: +kb.toFixed(1), hoehe: +hoehe.toFixed(3), knochen: neu, ...(FORM ? { form: FORM, senken: +V.senken.toFixed(4) } : {}) };
 }
 
 const namen = process.argv.slice(2).length ? process.argv.slice(2) : Object.keys(TIERE);

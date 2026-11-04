@@ -1,0 +1,80 @@
+{
+ "Teddy": {
+  "name": "Teddy",
+  "sex": "m",
+  "ref": "Sports_Male_02",
+  "tris": 7252,
+  "kb": 96.2,
+  "hoehe": 1.901,
+  "knochen": [
+   "Ohr_L",
+   "Ohr_R",
+   "Schwanz"
+  ]
+ },
+ "Fuchs": {
+  "name": "Fuchs",
+  "sex": "f",
+  "ref": "Sports_Female_02",
+  "tris": 7487,
+  "kb": 97.5,
+  "hoehe": 1.878,
+  "knochen": [
+   "Ohr_L",
+   "Ohr_R",
+   "Schwanz"
+  ]
+ },
+ "Katze": {
+  "name": "Katze",
+  "sex": "m",
+  "ref": "Male_Adult_10",
+  "tris": 7344,
+  "kb": 101.3,
+  "hoehe": 1.923,
+  "knochen": [
+   "Ohr_L",
+   "Ohr_R",
+   "Schwanz"
+  ]
+ },
+ "Hase": {
+  "name": "Hase",
+  "sex": "m",
+  "ref": "Sports_Male_03",
+  "tris": 7380,
+  "kb": 99.6,
+  "hoehe": 2.171,
+  "knochen": [
+   "Ohr_L",
+   "Ohr_R",
+   "Schwanz"
+  ]
+ },
+ "Panda": {
+  "name": "Panda",
+  "sex": "f",
+  "ref": "Female_Adult_12",
+  "tris": 7220,
+  "kb": 94.3,
+  "hoehe": 1.811,
+  "knochen": [
+   "Ohr_L",
+   "Ohr_R",
+   "Schwanz"
+  ]
+ },
+ "Elefant": {
+  "name": "Elefant",
+  "sex": "m",
+  "ref": "Sports_Male_04",
+  "tris": 7160,
+  "kb": 97,
+  "hoehe": 1.872,
+  "knochen": [
+   "Ohr_L",
+   "Ohr_R",
+   "Schwanz"
+  ]
+ }
+}

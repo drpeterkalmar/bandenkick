@@ -95,7 +95,12 @@ export function strahl(s, von, dir) { dir = norm(dir); let t = 0; for (let i = 0
 // Ergebnis: { familien: [{ name, sdf, h, tris, klasse, farbe(p, n) → Mal }], knochen: { Ohr_L: Punkt, … }, farben }
 // Mal (Farbe eines Punkts): { c: Farbe linear, fell: 0…1 (1 Plüsch, 0 glatter Knopf), flecken: [{ d(p) Abstand, c, naht }],
 // linien: [{ d(p), in(p) }] } – Flecken sind aufgenähte Stoffteile (scharfe Kante + Naht), Linien reine Nähte.
-const S = { s: 1 };
+const S = { s: 1, bein: 1 };
+// n10 (Peter 02.11.: „tiere haben größere köpfe und kürzere ärmchen und beinchen“): Kindchenschema. Ober-/Unterarm und
+// Ober-/Unterschenkel × arm bzw. bein (Knochen der Vorlage gekürzt, Skelett so weit abgesenkt, dass die Sohle bleibt –
+// build_kuscheltiere.mjs), Kopf samt Ohren, Augen, Nase, Mund × kopf um das Kopfgelenk (Volumen × kopf³).
+// Die n9-Figuren (0.7.0) liegen unverändert in assets/kuscheltiere_n9 (?tierform=0).
+export const TIERFORM = { arm: 0.75, bein: 0.75, kopf: 1.11 };
 const m = (v) => v * S.s; // Maße mit der Größe der Vorlage skalieren
 
 function grundkoerper(G, T) {
@@ -201,9 +206,26 @@ export const TIERE = {
   Elefant: { ref: 'Sports_Male_04', sex: 'm', bau: elefant },
 };
 
-export function bauplan(name, G) {
-  S.s = G.Head[1] / 1.587;
-  return TIERE[name].bau(G);
+// form = { arm, bein, kopf } (n10) oder null (n9); G.kopfY0 = Kopfhöhe der Vorlage vor dem Absenken (Maßstab der Formen)
+export function bauplan(name, G, form = null) {
+  S.s = (G.kopfY0 ?? G.Head[1]) / 1.587;
+  S.bein = form ? form.bein : 1;
+  const plan = TIERE[name].bau(G);
+  if (form && form.kopf !== 1) kopfGroesser(plan, G.Head, form.kopf);
+  return plan;
+}
+// Kopf-Teile (Kopf, Ohren, Augen, Nase, Mund) um den Punkt c mit k skalieren: Feld f'(p) = k·f(c + (p − c)/k); Farbe und
+// Flecken werden am zurückgerechneten Punkt gelesen (fam.inv), die Ohr-Knochen wandern mit
+function kopfGroesser(plan, c, k) {
+  const zur = (p) => add(c, mul(sub(p, c), 1 / k)), hin = (p) => add(c, mul(sub(p, c), k));
+  for (const fam of plan.familien) {
+    if (!/^(kopf|ohr[LR])$/.test(fam.klasse)) continue;
+    const f0 = fam.sdf.f, bb = fam.sdf.bb;
+    fam.sdf = { f: (x, y, z) => k * f0(...zur([x, y, z])), bb: [hin(bb[0]), hin(bb[1])] };
+    fam.inv = zur;
+    fam.h *= k;
+  }
+  for (const n of Object.keys(plan.knochen)) if (/^Ohr_/.test(n)) plan.knochen[n] = hin(plan.knochen[n]);
 }
 
 // Kopf-Grundform: Mittelpunkt über dem Kopfgelenk
@@ -275,7 +297,7 @@ function fuchs(G) {
   const T = {
     farbe: () => ({ c: hex(FELL), fell: 1 }),
     rumpfFarbe: () => ({ c: hex(FELL), fell: 1, flecken: [fleck(brust, WEISS)] }),
-    beinFarbe: () => ({ c: hex(FELL), fell: 1, flecken: [fleck(socke(m(0.3)), DUNKEL)] }),
+    beinFarbe: () => ({ c: hex(FELL), fell: 1, flecken: [fleck(socke(m(0.3) - (1 - S.bein) * (m(0.3) + 0.015)), DUNKEL)] }), // n10: Socke mit dem Bein kürzer
     armFarbe: (p, n, sd) => ({ c: hex(FELL), fell: 1, flecken: [fleck(kugel(G[sd + '_Hand'], m(0.13)), DUNKEL)] }),
     bein: 0.95, arm: 0.95,
   };

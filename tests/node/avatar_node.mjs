@@ -29,12 +29,14 @@ async function ohneTexturen(file) {
 }
 const parse = (buf) => new Promise((res, rej) => new GLTFLoader().parse(buf, '', res, rej));
 
-export async function ladeAvatare(names) {
+// n10: opts.tierform === 0 → Kuscheltiere mit den Proportionen von 0.7.0 (assets/kuscheltiere_n9)
+export async function ladeAvatare(names, opts = {}) {
   const { ROSTER, sexOf, istKuscheltier, plueschMaterial, SAETZE } = await import('../../src/render/avatars.js');
   names = names || [...new Set(ROSTER.flat())];
   const kt = names.every(istKuscheltier); // n9: Kuscheltiere aus assets/kuscheltiere, mit Plüsch-Material wie im Spiel
   const A = { avatars: {}, clips: {}, meta: {}, phase: {}, satz: kt ? 'kuscheltiere' : 'menschen', roster: SAETZE[kt ? 'kuscheltiere' : 'menschen'].roster };
-  for (const n of names) A.avatars[n] = await parse(await ohneTexturen(`${istKuscheltier(n) ? 'assets/kuscheltiere' : 'assets/avatars'}/${n}.glb`));
+  const ordnerKt = opts.tierform === 0 ? 'assets/kuscheltiere_n9' : 'assets/kuscheltiere';
+  for (const n of names) A.avatars[n] = await parse(await ohneTexturen(`${istKuscheltier(n) ? ordnerKt : 'assets/avatars'}/${n}.glb`));
   if (kt) for (const g of Object.values(A.avatars)) plueschMaterial(g.scene);
   for (const s of ['m', 'f']) {
     const g = await parse(await ohneTexturen(`assets/anims/${s}.glb`));

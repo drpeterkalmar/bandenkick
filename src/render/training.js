@@ -32,7 +32,9 @@ function buildMachine() {
   return { g, head, wheels };
 }
 
-function buildDummy(kuschel = false) {
+// n10: tierform 1 = Kindchenschema wie die Tiere – Kopf samt Ohren und Augen × KOPF_PUPPE um den Halsansatz (Volumen +37 %)
+const KOPF_PUPPE = 1.11, HALS_PUPPE = 1.48;
+function buildDummy(kuschel = false, tierform = 1) {
   const g = new THREE.Group(); g.name = 'puppe';
   const m = mat(0x1b3a8c, { roughness: kuschel ? 1 : 0.7 });
   const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.2, 1.05, 6, 14), m); body.position.y = 0.2 + 0.52 + 0.2; body.scale.set(1, 1, 0.55); g.add(body);
@@ -44,6 +46,10 @@ function buildDummy(kuschel = false) {
     kopf.push(new THREE.SphereGeometry(0.065, 12, 8).scale(0.45, 1, 1).translate(0.035, 1.77, sg * 0.12));
     fuss.push(new THREE.SphereGeometry(0.022, 10, 8).translate(0.145, 1.67, sg * 0.055));
   }
+  if (kuschel && tierform) {
+    const k = KOPF_PUPPE, s = (geo) => geo.translate(0, -HALS_PUPPE, 0).scale(k, k, k).translate(0, HALS_PUPPE, 0);
+    kopf.forEach(s); for (let i = 1; i < fuss.length; i++) s(fuss[i]); // (fuss[1…] = Knopfaugen)
+  }
   const head = new THREE.Mesh(kuschel ? mergeGeometries(kopf) : kopf[0], m); g.add(head);
   const foot = new THREE.Mesh(kuschel ? mergeGeometries(fuss) : fuss[0], mat(kuschel ? 0x141210 : 0x444444, kuschel ? { roughness: 0.3 } : {})); g.add(foot);
   g.traverse((o) => { if (o.isMesh) o.castShadow = true; });
@@ -52,7 +58,7 @@ function buildDummy(kuschel = false) {
 
 export class TrainingProps {
   constructor(scene, opts = {}) {
-    this.scene = scene; this.kuschel = !!opts.kuschel;
+    this.scene = scene; this.kuschel = !!opts.kuschel; this.tierform = opts.tierform ?? 1;
     this.group = new THREE.Group(); this.group.name = 'training';
     scene.add(this.group);
     this.machine = null; this.targets = []; this.cones = null; this.dummies = []; this.zones = []; this.gateMark = null;
@@ -91,7 +97,7 @@ export class TrainingProps {
       this.gateMark = new THREE.Mesh(new THREE.PlaneGeometry(0.12, 1).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xffe14a, transparent: true, opacity: 0.6, depthWrite: false }));
       this.gateMark.position.y = 0.012; this.group.add(this.gateMark);
     }
-    for (const d of C.dummies) { const m = buildDummy(this.kuschel); m.position.set(d.x, 0, d.z); m.rotation.y = Math.PI / 2; this.group.add(m); this.dummies.push(m); }
+    for (const d of C.dummies) { const m = buildDummy(this.kuschel, this.tierform); m.position.set(d.x, 0, d.z); m.rotation.y = Math.PI / 2; this.group.add(m); this.dummies.push(m); }
     for (const z of C.zones) {
       const g = new THREE.Group(); g.position.set(z.x, 0.013, z.z);
       const ring = new THREE.Mesh(new THREE.RingGeometry(z.r - 0.09, z.r, 56).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xffe14a, transparent: true, opacity: 0.85, depthWrite: false }));

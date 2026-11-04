@@ -36,6 +36,8 @@ const P = makeParams(location.search);
 const DEKO = !!P.deko;
 // n9: Figuren-Satz – Standard Kuscheltiere, ?figuren=menschen = Rocketbox-Menschen wie bis 0.6.x
 const FIGUREN = figurenSatz(qs.get('figuren'));
+// n10: Kuscheltiere im Kindchenschema (größerer Kopf, kürzere Arme/Beine), ?tierform=0 = Proportionen wie 0.7.0
+const TIERFORM = qs.get('tierform') === '0' ? 0 : 1;
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 let deko = null;
 // Deko-Licht: Tag oder Abend mit Flutlicht. 'auto' = nach Uhrzeit (ab kurz vor Sonnenuntergang, Mitteleuropa, bis 6:30),
@@ -184,7 +186,7 @@ function startChallenge(id) {
   document.body.classList.add('challenge');
   game = newGame(); resetPrev(); challengeDone = false;
   if (props) props.dispose();
-  props = new TrainingProps(scene, { kuschel: FIGUREN === 'kuscheltiere' });
+  props = new TrainingProps(scene, { kuschel: FIGUREN === 'kuscheltiere', tierform: TIERFORM });
   setMode('play');
 }
 function leaveChallenge() {
@@ -268,7 +270,7 @@ let field, ballMesh, blob, gran, marker, figs = [], capsule = null, figSlot = nu
 async function boot() {
   const texLoader = new THREE.TextureLoader();
   const tl = (u) => texLoader.loadAsync(u);
-  const avatarsP = qs.get('figur') === 'kapsel' ? Promise.resolve(null) : loadAvatarAssets((p) => { loadMsg.textContent = `Bandenkick lädt … Spieler ${Math.round(p * 100)} %`; }, { renderer, ktx: qs.get('ktx') !== '0', satz: FIGUREN, billig: quality.level < 1 }).catch((e) => { window.__errors.push('Avatare: ' + e.message); return null; });
+  const avatarsP = qs.get('figur') === 'kapsel' ? Promise.resolve(null) : loadAvatarAssets((p) => { loadMsg.textContent = `Bandenkick lädt … Spieler ${Math.round(p * 100)} %`; }, { renderer, ktx: qs.get('ktx') !== '0', satz: FIGUREN, tierform: TIERFORM, billig: quality.level < 1 }).catch((e) => { window.__errors.push('Avatare: ' + e.message); return null; });
   const [env, skyTex, skyInfo, turfColor, turfNormal, grassColor, grassNormal, A] = await Promise.all([
     loadEnvironment(renderer), tl('assets/hdri/sky.jpg'), fetch('assets/hdri/sky.json').then((r) => r.json()),
     tl('assets/tex/turf_color.jpg'), tl('assets/tex/turf_normal.jpg'), tl('assets/tex/grass_color.jpg'), tl('assets/tex/grass_normal.jpg'), avatarsP,
@@ -700,6 +702,12 @@ function frame() {
   let bx = prev.bx + (b.p.x - prev.bx) * a, by = prev.by + (b.p.y - prev.by) * a, bz = prev.bz + (b.p.z - prev.bz) * a;
   if (rf) { bx = rf.ball.p.x; by = rf.ball.p.y; bz = rf.ball.p.z; ballMesh.quaternion.set(rf.ball.q[1], rf.ball.q[2], rf.ball.q[3], rf.ball.q[0]); }
   else ballMesh.quaternion.set(b.q[1], b.q[2], b.q[3], b.q[0]);
+  // n10: Ball in der Hand eines Kindchenschema-Tormanns (kürzere Beine und Arme) tiefer und näher am Körper zeichnen – die Sim
+  // trägt ihn in Menschen-Brusthöhe (rules.carry)
+  if (!rf && b.held >= 0 && figs[b.held] && figs[b.held].senk && by > 0.6) {
+    const h = game.players[b.held], f = figs[b.held];
+    by -= f.senk * 0.75; bx -= Math.cos(h.face) * 0.07; bz -= Math.sin(h.face) * 0.07;
+  }
   ballMesh.position.set(bx, by, bz);
   poseBlob(blob, bx, by, bz, P.ballR);
   if (kontakt) blob.visible = false;
