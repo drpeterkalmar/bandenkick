@@ -454,7 +454,7 @@ python3 tools/fetch_assets.py && python3 tools/make_assets.py   # Assets neu bau
 Browser-Tests laufen headless über die GPU (ANGLE/Metal), nie zwei Browser gleichzeitig.
 
 ## Änderungen
-- **n12 Mitnahme (05.11., Version VERSION_N12)** – Peter: „der schöne Laufpass an die Spitze … prallt an ihm nach hinten ab“. Der
+- **n12 Mitnahme (05.11., Version 0.9.1)** – Peter: „der schöne Laufpass an die Spitze … prallt an ihm nach hinten ab“. Der
   laufende Empfänger eines Passes legt den Ball jetzt mit der ersten Berührung (Kopf, Brust, Oberschenkel oder Fuß, auch wenn der Ball
   von hinten an den Körper kommt) in seine Laufrichtung vor. Szene „Laufpass in die Spitze“: Ball danach hinter dem Empfänger
   76 → 0 % (hoch) bzw. 43 → 0 % (flach). Steht er, bleibt alles wie bisher; Bälle vom Gegner prallen weiter ab. `?mitnahme=0` = 0.9.0.

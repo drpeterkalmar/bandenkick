@@ -1,4 +1,4 @@
-# Bandenkick n12 – Laufpass im Lauf mitnehmen (06.11.2026, Version VERSION_N12)
+# Bandenkick n12 – Laufpass im Lauf mitnehmen (06.11.2026, Version 0.9.1)
 
 Peter (05.11., nach 0.9.0): „der schöne Laufpass an die Spitze wird vom Passempfänger nicht nach vorn mitgenommen, sondern prallt an
 ihm nach hinten ab“.
