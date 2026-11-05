@@ -17,3 +17,6 @@ tests/tmp/
 !tests/shots/n7/
 !tests/shots/n8/
 !tests/shots/kuscheltiere/
+!tests/shots/n10/
+tests/shots/n10/pose_*
+!tests/shots/n10/pose_stehen.jpg

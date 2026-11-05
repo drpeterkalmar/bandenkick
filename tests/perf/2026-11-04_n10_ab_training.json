@@ -1,0 +1,143 @@
+{
+ "datum": "2026-11-04T16:17:36",
+ "stand": "n10_ab_training",
+ "modus": "ab",
+ "runden": 3,
+ "varianten": [
+  {
+   "name": "vorher",
+   "wurzel": "/Users/wohnzimmer/dev/.wt/bandenkick-bandenkick-n10-magnet-paesse-tierform",
+   "zusatz": "&tierform=0"
+  },
+  {
+   "name": "nachher",
+   "wurzel": "/Users/wohnzimmer/dev/.wt/bandenkick-bandenkick-n10-magnet-paesse-tierform",
+   "zusatz": ""
+  }
+ ],
+ "profil": {
+  "drossel": 4,
+  "dpr": 2.6,
+  "sek": 10,
+  "start": "open",
+  "vsync": false
+ },
+ "szenen": {
+  "spiel_s1": {
+   "quer": {
+    "vorher": {
+     "p50": 4.3,
+     "p95": 5.6,
+     "fps": 227.8,
+     "calls": 41,
+     "tris": 63953,
+     "runden_p95": [
+      5.6,
+      8,
+      5.1
+     ],
+     "fehler": []
+    },
+    "nachher": {
+     "p50": 4.3,
+     "p95": 5.9,
+     "fps": 224.9,
+     "calls": 42,
+     "tris": 64728,
+     "runden_p95": [
+      5.5,
+      7.7,
+      5.9
+     ],
+     "fehler": []
+    }
+   },
+   "hoch": {
+    "vorher": {
+     "p50": 4.4,
+     "p95": 6.2,
+     "fps": 222,
+     "calls": 41,
+     "tris": 64787,
+     "runden_p95": [
+      6.2,
+      9.3,
+      5.8
+     ],
+     "fehler": []
+    },
+    "nachher": {
+     "p50": 4.3,
+     "p95": 6.6,
+     "fps": 220.8,
+     "calls": 41,
+     "tris": 67666,
+     "runden_p95": [
+      6.6,
+      5.3,
+      9.6
+     ],
+     "fehler": []
+    }
+   }
+  },
+  "training_s1": {
+   "quer": {
+    "vorher": {
+     "p50": 3.1,
+     "p95": 3.9,
+     "fps": 320.7,
+     "calls": 67,
+     "tris": 31160,
+     "runden_p95": [
+      4.7,
+      3.8,
+      3.9
+     ],
+     "fehler": []
+    },
+    "nachher": {
+     "p50": 3.1,
+     "p95": 4.1,
+     "fps": 316.6,
+     "calls": 67,
+     "tris": 31156,
+     "runden_p95": [
+      3.9,
+      4.1,
+      4.3
+     ],
+     "fehler": []
+    }
+   },
+   "hoch": {
+    "vorher": {
+     "p50": 3.1,
+     "p95": 3.9,
+     "fps": 319.7,
+     "calls": 66,
+     "tris": 31711,
+     "runden_p95": [
+      4,
+      3.8,
+      3.9
+     ],
+     "fehler": []
+    },
+    "nachher": {
+     "p50": 3.1,
+     "p95": 4,
+     "fps": 318.3,
+     "calls": 66,
+     "tris": 31701,
+     "runden_p95": [
+      3.9,
+      4,
+      4
+     ],
+     "fehler": []
+    }
+   }
+  }
+ }
+}

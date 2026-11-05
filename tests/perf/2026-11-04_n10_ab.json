@@ -1,0 +1,259 @@
+{
+ "datum": "2026-11-04T16:03:40",
+ "stand": "n10_ab",
+ "modus": "ab",
+ "runden": 3,
+ "varianten": [
+  {
+   "name": "vorher",
+   "wurzel": "/Users/wohnzimmer/dev/.wt/bandenkick-bandenkick-n10-magnet-paesse-tierform",
+   "zusatz": "&tierform=0"
+  },
+  {
+   "name": "nachher",
+   "wurzel": "/Users/wohnzimmer/dev/.wt/bandenkick-bandenkick-n10-magnet-paesse-tierform",
+   "zusatz": ""
+  }
+ ],
+ "profil": {
+  "drossel": 4,
+  "dpr": 2.6,
+  "sek": 10,
+  "start": "open",
+  "vsync": false
+ },
+ "szenen": {
+  "menu_s1": {
+   "hoch": {
+    "vorher": {
+     "p50": 16.6,
+     "p95": 18.7,
+     "fps": 83.5,
+     "calls": 45,
+     "tris": 75305,
+     "runden_p95": [
+      18.7,
+      18.7,
+      18.7
+     ],
+     "fehler": []
+    },
+    "nachher": {
+     "p50": 16.6,
+     "p95": 18.7,
+     "fps": 80.8,
+     "calls": 45,
+     "tris": 75305,
+     "runden_p95": [
+      18.7,
+      18.7,
+      18.7
+     ],
+     "fehler": []
+    }
+   },
+   "quer": {
+    "vorher": {
+     "p50": 16.6,
+     "p95": 18.7,
+     "fps": 85.9,
+     "calls": 45,
+     "tris": 75349,
+     "runden_p95": [
+      18.7,
+      18.7,
+      18.7
+     ],
+     "fehler": []
+    },
+    "nachher": {
+     "p50": 16.6,
+     "p95": 18.7,
+     "fps": 84.8,
+     "calls": 45,
+     "tris": 75325,
+     "runden_p95": [
+      18.7,
+      18.7,
+      18.7
+     ],
+     "fehler": []
+    }
+   }
+  },
+  "spiel_s1": {
+   "hoch": {
+    "vorher": {
+     "p50": 4.3,
+     "p95": 5.6,
+     "fps": 227.7,
+     "calls": 42,
+     "tris": 67740,
+     "runden_p95": [
+      5.3,
+      6.7,
+      5.6
+     ],
+     "fehler": []
+    },
+    "nachher": {
+     "p50": 4.2,
+     "p95": 6.1,
+     "fps": 227.2,
+     "calls": 41,
+     "tris": 66256,
+     "runden_p95": [
+      5.6,
+      6.1,
+      8.4
+     ],
+     "fehler": []
+    }
+   },
+   "quer": {
+    "vorher": {
+     "p50": 4.8,
+     "p95": 7.5,
+     "fps": 196.2,
+     "calls": 42,
+     "tris": 64750,
+     "runden_p95": [
+      11.3,
+      5.7,
+      7.5
+     ],
+     "fehler": []
+    },
+    "nachher": {
+     "p50": 4.6,
+     "p95": 6.1,
+     "fps": 210.7,
+     "calls": 42,
+     "tris": 64799,
+     "runden_p95": [
+      6.1,
+      6.9,
+      4.9
+     ],
+     "fehler": []
+    }
+   }
+  },
+  "spiel_s2": {
+   "hoch": {
+    "vorher": {
+     "p50": 5.8,
+     "p95": 7.3,
+     "fps": 170.8,
+     "calls": 53,
+     "tris": 116139,
+     "runden_p95": [
+      7.5,
+      7.3,
+      7
+     ],
+     "fehler": []
+    },
+    "nachher": {
+     "p50": 5.8,
+     "p95": 7.3,
+     "fps": 169.7,
+     "calls": 53,
+     "tris": 117796,
+     "runden_p95": [
+      7.3,
+      7.2,
+      7.3
+     ],
+     "fehler": []
+    }
+   },
+   "quer": {
+    "vorher": {
+     "p50": 5.7,
+     "p95": 9.9,
+     "fps": 158.3,
+     "calls": 53,
+     "tris": 112730,
+     "runden_p95": [
+      6.3,
+      9.9,
+      10.3
+     ],
+     "fehler": []
+    },
+    "nachher": {
+     "p50": 5.2,
+     "p95": 7.1,
+     "fps": 186.6,
+     "calls": 53,
+     "tris": 110877,
+     "runden_p95": [
+      7.1,
+      6.8,
+      9.2
+     ],
+     "fehler": []
+    }
+   }
+  },
+  "training_s1": {
+   "hoch": {
+    "vorher": {
+     "p50": 3.5,
+     "p95": 5,
+     "fps": 279,
+     "calls": 66,
+     "tris": 31708,
+     "runden_p95": [
+      5,
+      4.9,
+      5.1
+     ],
+     "fehler": []
+    },
+    "nachher": {
+     "p50": 3.4,
+     "p95": 4.7,
+     "fps": 286.4,
+     "calls": 66,
+     "tris": 31702,
+     "runden_p95": [
+      4.5,
+      4.8,
+      4.7
+     ],
+     "fehler": []
+    }
+   },
+   "quer": {
+    "vorher": {
+     "p50": 3.4,
+     "p95": 4.4,
+     "fps": 289.1,
+     "calls": 67,
+     "tris": 31153,
+     "runden_p95": [
+      4,
+      4.5,
+      4.4
+     ],
+     "fehler": []
+    },
+    "nachher": {
+     "p50": 3.6,
+     "p95": 4.4,
+     "fps": 279.7,
+     "calls": 67,
+     "tris": 31132,
+     "runden_p95": [
+      5.2,
+      4.4,
+      4.3
+     ],
+     "fehler": []
+    }
+   }
+  }
+ }
+}

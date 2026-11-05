@@ -37,6 +37,7 @@ Als App installierbar (PWA), läuft offline.
   Schwanz wippen beim Laufen. Leibchen mit Rückennummer, der Tormann trägt Fäustlinge über den Pfoten. Auch die Zuschauer
   sind Kuscheltiere, die Trainingspuppe ist eine Stoffpuppe mit Bärenohren. Spiel, Physik, Bots und Bewegungen sind
   unverändert (dieselben Rocketbox-Skelette und -Bewegungen). **`?figuren=menschen`** = die Rocketbox-Menschen wie bis 0.6.x.
+  Seit n10 im Kindchenschema: Kopf größer (+37 % Volumen), Arme und Beine 25 % kürzer; **`?tierform=0`** = Proportionen wie 0.7.0.
 - **Bewegungen:** Rocketbox (Microsoft, MIT) mit echten Lauf-, Sprint-, Jubel- und Klatsch-Bewegungen;
   die Laufzyklen laufen phasengleich mit dem gemessenen Schrittweg (kein Fußgleiten), Stemmschritt sichtbar.
 - **Bots** (Utility-KI, 3 Stärken `?bots=1…3`): Rollen Ballführer / Anspielstation / Absicherung (letzte Hand),
@@ -280,10 +281,10 @@ Ball mit (Sohle/Außenseite). `?zack=0` = altes Gefühl aus Nacht 1 zum Vergleic
 | `?gebengehen=0`, `?laufT=2`, `?ggSchwelle=0.5`, `?ggBonus=0.15` | n7 E3 Geben und Gehen aus; Laufzeit (s); Mindest-Wertung des Raums; Rückpass-Bonus der Bots |
 | `?nachdrall=0` … `2`, `?nachdrallT=0.25`, `?nachdrallSeite=14`, `?nachdrallHoch=5`, `?nachdrallBot=1` | n7 E2 Nachdrall nach dem Schuss: Stärke (`0` = aus); Fenster (s); Seitendrall bzw. Rück-/Vorwärtsdrall bei vollem Stick (U/s); × Chance der Bots (Stufe 1/2/3: 5/15/30 %) |
 | `?hilfe=0` … `1` | Stärke der Ballführungs-Hilfe (lenkt den Spieler zum Ball) |
-| `?magnet=0` … `2` | Ballmagnet (Standard 1,8 seit n7, davor 1,2; Nacht 2c 0,5; 0 = Ballführung wie Nacht 2b). Feinregler: `?magnetK=112`, `?magnetC=20`, `?magnetAcc=42`, `?magnetLead=0.7`, `?magnetSprint=0.7` (Nacht 2c 0,45), `?magnetOpp=0.5`, `?magnetShield=0.3`, `?magnetTurn0=60`, `?magnetTurn1=120`, `?magnetTurnMin=0.5` (n6 0,25), `?magnetKehr=0.15` (Kehrtwende lässt los), `?magnetSlide=0` (Magnet während einer gegnerischen Grätsche) |
+| `?magnet=0` … `3` | Ballmagnet (Standard 2,4 seit n10 – zieht den Ball enger vor den Fuß, `?magnetEng=0` = nur stärkere Feder; `?magnet=1.8` = 0.7.0 inkl. Abschirmen `?schirmVor=0.3`; 1,8 seit n7, davor 1,2; Nacht 2c 0,5; 0 = Ballführung wie Nacht 2b). Feinregler: `?magnetK=112`, `?magnetC=20`, `?magnetAcc=42`, `?magnetLead=0.7`, `?magnetSprint=0.7` (Nacht 2c 0,45), `?magnetOpp=0.5`, `?magnetShield=0.3`, `?magnetTurn0=60`, `?magnetTurn1=120`, `?magnetTurnMin=0.5` (n6 0,25), `?magnetKehr=0.15` (Kehrtwende lässt los), `?magnetSlide=0` (Magnet während einer gegnerischen Grätsche) |
 | `?wucht=1.5` | Endtempo von Vollspann, angeschnittenen Schüssen, Volley und Dropkick (Nacht 2d; `1` = Nacht 2c). `?wuchtDrall=1`: Drall der Banane wächst mit (0 = Drall wie Nacht 2c, die Kurve wird dann kleiner) |
 | `?hechten=0`, `?hechtAb=0.7`, `?hechtVorlauf=0.7`, `?hechtKnapp=0.5`, `?groundT=0.5`, `?diveArmT=0.2` | Tormann-Hechtsprung (Nacht 2d): alte Regel; ab so viel Abstand Ball ↔ Körper (m) hechtet er; frühester Absprung vor dem Ball (s); Spektakel-Hechter bei so knapp daneben (m); am Boden (s, Nacht 2c 0,75); bis die Arme gestreckt sind (s) |
-| `?schuss=32`, `?pass=12`, `?effet=12` | max. Schusstempo (Grundwert vor der Wucht, wirkt auf alle Schüsse), Passtempo, max. Effet (U/s) |
+| `?schuss=32`, `?pass=12`, `?effet=12` | max. Schusstempo (Grundwert vor der Wucht, wirkt auf alle Schüsse), Passtempo (n10: Standard 13,5 m/s, alle flachen Pässe für Mensch und Bots im selben Verhältnis schärfer, unter 2 m nicht, ab 8 m voll; `?pass=10.5` = 0.7.0), max. Effet (U/s) |
 | `?dach=0`, `?feld=20x13`, `?netz=2` | ohne Dachnetz (Ball kann raus → Abwurf), anderes Feld (Standard 24 × 15; die Kamera zieht mit: Figuren auf 24 × 15 ≈ 17 % kleiner im Bild als auf 20 × 13), Ballfangnetz ohne Dach (m) |
 | `?bande=0.7`, `?abprall=0.62`, `?rollen=0.65` | Stoßzahl Bande, Stoßzahl Rasen, Rollwiderstand Rasen |
 | `?dachhoehe=6`, `?torbreite=3`, `?torhoehe=2` | Käfig-Maße |
@@ -296,6 +297,7 @@ Ball mit (Sohle/Außenseite). `?zack=0` = altes Gefühl aus Nacht 1 zum Vergleic
 | `?schattenkam=0`, `?schatten2=1024` | Schattenkarte über den ganzen Käfig wie bisher (sonst folgt sie dem Bildausschnitt) / Stufe 2 mit 1024er- statt 2048er-Karte |
 | `?cull=0`, `?ik=0`, `?ktx=0` | Figuren immer zeichnen und jedes Bild animieren / ohne Fuß-IK / ohne KTX2-Texturen (erst wirksam, wenn erzeugt) |
 | `?figuren=menschen` | n9: Rocketbox-Menschen statt Kuscheltiere (Aussehen bis 0.6.x; Standard `kuscheltiere`) |
+| `?tierform=0` | n10: Kuscheltiere mit den Proportionen von 0.7.0 (Standard: größerer Kopf, kürzere Arme/Beine) |
 | `?figur=kapsel` | Kapsel-Figuren statt Kuscheltieren/Menschen (Rückfall) |
 | `?seed=4711`, `?debug`, `?play` | fester Zufall, Anzeige Bildrate/Draw-Calls, Startbildschirm überspringen |
 | `?doppel=0.11`, `?tipp=0.2` | Gesten: Fenster für den 2. Druck nach dem Loslassen (s; Kinder mit langsamem Doppeltipp: `0.15`), längster Tipp (s) |
@@ -450,6 +452,9 @@ python3 tools/fetch_assets.py && python3 tools/make_assets.py   # Assets neu bau
 Browser-Tests laufen headless über die GPU (ANGLE/Metal), nie zwei Browser gleichzeitig.
 
 ## Änderungen
+- **n10 Magnet, Pässe, Kindchenschema (05.11., Version VERSION_N10)** – Ballmagnet 2,4 (Ball enger vor dem Fuß, schärferes
+  Abschirmen; Ballverluste beim Führen −11 %), Pässe 13,5 m/s (flache Pässe schärfer, kommen etwas öfter an), Kuscheltiere mit
+  größerem Kopf und kürzeren Armen/Beinen (nur Optik). `?magnet=1.8`, `?pass=10.5`, `?tierform=0` = 0.7.0. Bericht: [`N10_BERICHT.md`](N10_BERICHT.md).
 - **n9 Kuscheltiere (01.11., Version 0.7.0)** – alle Menschen (Spieler, Tormann, Zuschauer, Trainingspuppe) sind
   Kuscheltiere: Teddy, Fuchs, Katze gegen Hase, Panda, Elefant, selbst gebaut auf den Rocketbox-Skeletten (alle Bewegungen,
   Fuß-IK, Schuss und Tormann-Posen wie bisher). Plüsch-Shader mit Sheen-Näherung, Nähten und Knopfaugen; Figuren-Download

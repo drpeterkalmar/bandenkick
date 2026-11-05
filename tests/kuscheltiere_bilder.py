@@ -29,7 +29,7 @@ def nah(s, i, d=2.4, h=1.45, seite=0.9):
 
 
 def fotos(s, f, var, extra):
-    sub = os.path.join('kuscheltiere_raw', var)
+    sub = os.path.join(os.path.basename(RAW), var)
     shot = lambda n: s.shot(f'{f}_{n}', sub)
     S.menu(s, extra); S.hide_cards(s); s.frames(3); shot('01_menu'); S.hide_cards(s, False)
     S.duel(s, extra); shot('02_spiel')
