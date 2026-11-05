@@ -53,7 +53,7 @@ Als App installierbar (PWA), läuft offline.
 ## Steuerung
 | | |
 |---|---|
-| **Handy** | **Stick links** (Finger irgendwo in der linken Hälfte): laufen – **ein Tempo für alle, kein Sprint** (n7). **Pass** und **Schuss** tippen oder doppeltippen (Tabelle unten), der Ring um den Knopf zeigt den Modus. Den Spieler wechselt das Spiel **automatisch** (zum ballnächsten, nach deinem Pass zum Empfänger) – der ⇄-Knopf ist seit n8 weg (`?wechsel=1` = Knopf wie bisher). |
+| **Handy** | **Stick links** (Finger irgendwo in der linken Hälfte): laufen – **ein Tempo für alle, kein Sprint** (n7). **Pass** und **Schuss**: seit n11 (0.9.0) **ein Tipp, alles automatisch** – das Spiel wählt Mitspieler mit freiem Weg, Technik (Innen-/Außenrist, Volley, Kopfball, Fallrückzieher, Hacke, Salto-Hacke …), Höhe und Effet; über dem Knopf steht, was gerade käme (✋ = kein freier Pass). Mit `?akro=0` wie bis 0.8.0: tippen oder doppeltippen (Tabelle unten), der Ring um den Knopf zeigt den Modus. Den Spieler wechselt das Spiel **automatisch** (zum ballnächsten, nach deinem Pass zum Empfänger) – der ⇄-Knopf ist seit n8 weg (`?wechsel=1` = Knopf wie bisher). |
 | **Als letzte Hand im eigenen Torraum** | **Auto-Torwart (Nacht 2c):** Fangen und Hechten macht er selbst – so sicher wie ein Bot-Tormann der alten Stufe 2. Laufen darfst du selbst (der Stick gewinnt; lässt du ihn los, stellt er sich hin). Mit Ball: Pass-Knopf = **Abwurf** (auf den Stick bzw. den freiesten Mitspieler), Schuss-Knopf = **Abschlag**; ohne Eingabe wirft er nach 1 s selbst ab (Nacht 2e; ohne freien Mitspieler nach 2 s weiter Abschlag). `?autotorwart=0` = alte grüne Knöpfe (Schuss = Fangen, Pass = Hechten). In den drei Torwart-Übungen im Training bleiben die Knöpfe, dort ist Fangen die Aufgabe. |
 | **Tastatur/Maus** | WASD/Pfeile laufen, **C/Tab** Wechsel. Maus zielt. **J/Enter/Linksklick = Pass-Knopf**, **Leertaste/K/Rechtsklick = Schuss-Knopf** – gleiche Gesten wie am Handy (Tormann mit Ball: Abwurf bzw. Abschlag). Esc Pause. |
 | **Gamepad** | Linker Stick laufen, A = Pass-Knopf, X oder RT = Schuss-Knopf (Gesten wie am Handy), **Y Wechsel**. |
@@ -254,6 +254,7 @@ Ball mit (Sohle/Außenseite). `?zack=0` = altes Gefühl aus Nacht 1 zum Vergleic
 ## URL-Schalter
 | Schalter | Wirkung |
 |---|---|
+| `?akro=0` | n11 aus: alles wie 0.8.0 (Abprall, Sprünge, Effet, flache Pässe, Tipp/Doppeltipp). Einzeln: `?abprall=0.621`, `?sprungkraft=0.6`, `?effet=10`, `?hochpass=0`, `?salto=0`, `?autotech=0`, `?gelenke=0`; `?einknopf=1` = Ein-Kick-Knopf-Test (auch im Pause-Menü) |
 | `?solo=1` | Training allein (Ball und Käfig wie Nacht 1) |
 | `?bots=1` … `3` | Stärke der Bots (Reaktion, Tempo, Streuung, Fangsicherheit, Fehlerquote), Standard 2 |
 | `?dauer=4`, `?golden=1`, `?anstoss=0` | Minuten je Halbzeit (Standard 2 seit n8, vorher 4), Golden Goal bei Gleichstand, Schnellstart statt Anstoß nach Tor |
@@ -452,6 +453,10 @@ python3 tools/fetch_assets.py && python3 tools/make_assets.py   # Assets neu bau
 Browser-Tests laufen headless über die GPU (ANGLE/Metal), nie zwei Browser gleichzeitig.
 
 ## Änderungen
+- **n11 Akrobatik (05.11., Version 0.9.0)** – Ball springt höher, Spieler springen bis 1,0 m, viel mehr Effet; Schuss- und
+  Pass-Knopf vollautomatisch (1 Tipp: Erfolg zuerst, dann das Spektakulärste), Pässe immer hoch und nur über freie Wege
+  (Mensch-Pässe abgefangen 16 → 7 %), Salto-Hacke und Hackenschuss, Füße treffen den Ball mit dem passenden Körperteil
+  (Gelenkgrenzen in `src/render/gelenke.js`). `?akro=0` = 0.8.0. Bericht: [`N11_AKROBATIK_BERICHT.md`](N11_AKROBATIK_BERICHT.md).
 - **n10 Magnet, Pässe, Kindchenschema (05.11., Version 0.8.0)** – Ballmagnet 2,4 (Ball enger vor dem Fuß, schärferes
   Abschirmen; Ballverluste beim Führen −11 %), Pässe 13,5 m/s (flache Pässe schärfer, kommen etwas öfter an), Kuscheltiere mit
   größerem Kopf und kürzeren Armen/Beinen (nur Optik). `?magnet=1.8`, `?pass=10.5`, `?tierform=0` = 0.7.0. Bericht: [`N10_BERICHT.md`](N10_BERICHT.md).
