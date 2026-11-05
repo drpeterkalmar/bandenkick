@@ -127,6 +127,11 @@ Nur der Dribbel-Parcours wird in Sekunden gewertet: Kinderhand-Skript 6,13 → 6
 - Prüfstand: `tools/kuscheltier_view.html?pose=…&tierform=0` (neu: Pose `kopfball`, Ball sichtbar), Fotos
   `python3 tests/kuscheltiere_bilder.py --n10 [hoch quer] [--bewegung]`.
 
+## Live
+Version 0.8.0 ist live (Service-Worker 84cc53c269, `tests/test_live.py` grün: Start hoch/quer ohne Fehler, Spielablauf, PWA, offline;
+Code-Marker `passScharf`/`ORDNER_TIERFORM0` und `assets/kuscheltiere_n9` per curl geprüft). Eine Einbindung in der Spielebox habe ich
+weder im Spielebox-Repo noch auf deren Live-Seite gefunden – dort war nichts zu prüfen.
+
 ## Handy-Test für Peter
 1. Dribbeln gegen einen Gegner: bleibt der Ball spürbar besser am Fuß? Vergleich `?magnet=1.8`.
 2. Pässe: kommen sie zackiger? Vergleich `?pass=10.5`; noch schärfer: `?pass=15`.
