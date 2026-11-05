@@ -1,0 +1,1248 @@
+
+> bandenkick@0.9.0 test
+> node tests/node/run_all.mjs
+
+
+### FIFA-Rasenprüfung (Quality Pro, trocken)
+
+| Prüfung | Messwert | Fenster | Ziel | Ergebnis | Hinweis |
+|---|---|---|---|---|---|
+| Ballabprall (M01), H = 1,23·T² | 0.720 m | 0.600–0.850 m | 0.720 m | ✅ | T = 0.765 s, Scheitel 0.717 m |
+| Testball auf Beton (Kalibrierung) | 1.350 m | 1.320–1.380 m | 1.350 m | ✅ | Scheitel 1.345 m |
+| Schräger Abprall (M02) 15°, 50 km/h | 52.00 % | 45.00–60.00 % | 52.00 % | ✅ | S1 46.3 km/h → S2 24.1 km/h |
+|   Toleranzecke 13°, 45 km/h | 52.00 % | 45.00–60.00 % | 52.00 % | ✅ |  |
+|   Toleranzecke 13°, 55 km/h | 52.00 % | 45.00–60.00 % | 52.00 % | ✅ |  |
+|   Toleranzecke 17°, 45 km/h | 52.00 % | 45.00–60.00 % | 52.00 % | ✅ |  |
+|   Toleranzecke 17°, 55 km/h | 52.00 % | 45.00–60.00 % | 52.00 % | ✅ |  |
+|   Info: mit Vordrall 3 U/s | 59.72 % | Info | – | ✅ | nicht Teil der Norm |
+|   Info: mit Rückdrall 3 U/s | 44.47 % | Info | – | ✅ | nicht Teil der Norm |
+| Ballrollen (M03) | 5.998 m | 4.000–8.000 m | 6.000 m | ✅ | Rampen-Ende 3.11 m/s, Rollradius 92.7 mm, 3.9 s |
+|   Toleranz 43°, 0,995 m | 5.966 m | 4.000–8.000 m | 6.000 m | ✅ |  |
+|   Toleranz 47°, 1,005 m | 6.022 m | 4.000–8.000 m | 6.000 m | ✅ |  |
+| Reduced Ball Roll (M17) | 5.990 m | 4.000–8.000 m | 6.000 m | ✅ | Höhen 0.41/0.61/0.80/1.00 m, 3×1,5 m + 0.49 m |
+|   M17 ↔ M03 (Abweichung) | 0.008 m | 0.000–0.500 m | 0.000 m | ✅ |  |
+| Gleiten: Rückdrall 8 U/s kürzer als ohne | 4.841 m | 0.500–50.00 m | – | ✅ | 7.7 m vs. 12.6 m |
+| Gleiten: Vorwärtsdrall 8 U/s weiter als ohne | 5.712 m | 0.500–50.00 m | – | ✅ | 18.3 m vs. 12.6 m |
+
+ALLE GRÜN (16/16)
+
+### Aerodynamik (Drag-Crisis, Magnus, Flatterball)
+
+| Prüfung | Messwert | Fenster | Ziel | Ergebnis | Hinweis |
+|---|---|---|---|---|---|
+| cD unterkritisch, Re 1,0·10⁵ | 0.500  | 0.450–0.550  | 0.500  | ✅ | 6.8 m/s; Paper: „~0,5“ |
+| cD bei Re 1,5·10⁵ (Beginn Abfall) | 0.490  | 0.420–0.520  | – | ✅ | 10.2 m/s; Cafusa: Abfall ab 1,5–1,7·10⁵ |
+| cD bei Re 2,2·10⁵ (Brazuca B krit.) | 0.199  | 0.140–0.220  | 0.160  | ✅ | 15.0 m/s |
+| cD bei Re 2,5·10⁵ (Brazuca A / herk. A krit.) | 0.160  | 0.140–0.180  | 0.155  | ✅ | 17.0 m/s; Paper 0,15–0,16 |
+| cD bei Re 2,8·10⁵ (herk. Ball B krit.) | 0.155  | 0.140–0.180  | 0.170  | ✅ | 19.1 m/s |
+| Übergang beginnt (95 %) | 10.69 m/s | 9.500–12.00 m/s | – | ✅ | Plan: ~10 m/s |
+| Übergang fertig (5 %) | 15.91 m/s | 15.00–17.50 m/s | – | ✅ | Plan: ~17 m/s |
+| cD überkritisch mit Sp 0,3 | 0.286  | 0.250–0.320  | 0.285  | ✅ | Gl. 4: 0,4127·Sp^0,3056 |
+| Heber 30 m/s, 52°: tiefstes Tempo im Flug | 12.04 m/s | 0.000–13.00 m/s | – | ✅ | muss durch die Krise laufen |
+| Luftbremse 13 m/s ÷ 17 m/s | 1.299 × | 1.150–2.000 × | – | ✅ | 2.46 → 3.19 m/s² (trotz kleinerem v²); 28 m/s: 6.45 m/s² |
+| Flugweite Heber (Info) | 52.85 m | 0.000–100.0 m | – | ✅ | Landung nach 4.27 s |
+| Seitenbeschleunigung 25 m/s, cL 0,25 | 8.288 m/s² | 7.500–9.000 m/s² | 8.300 m/s² | ✅ |  |
+| Kurve nach 20 m (Sp₀ 0.168, 6.1 U/s) | 2.870 m | 2.500–3.500 m | 3.000 m | ✅ | Höhe dort 0.37 m, 0.95 s, Richtung links (gegen den Uhrzeigersinn → links) |
+|   Kurve nach links bei Drall gegen den Uhrzeigersinn | 1.000  | 1.000–1.000  | 1.000  | ✅ |  |
+| Info: Innenseite 10 U/s, 25 m/s → Kurve auf 20 m | 3.416 m | Info | – | ✅ | Maximum im Spiel |
+| cL(Sp 0,11) (Asai-Median 0,22) | 0.220  | 0.200–0.240  | 0.220  | ✅ |  |
+| cL(Sp 0,49) (Goff & Carré 2009: 0,285) | 0.285  | 0.260–0.310  | 0.285  | ✅ |  |
+| Rückdrall trägt weiter als ohne | 7.701 m | 0.500–40.00 m | – | ✅ | 20.7 vs. 13.0 m |
+| Vorwärtsdrall senkt früher | 4.277 m | 0.500–40.00 m | – | ✅ | 8.7 vs. 13.0 m |
+| Flatterball: Streuung seitlich (SD) | 0.291 m | 0.200–0.500 m | – | ✅ | Paper: Brazuca 0,20–0,22 / herk. Ball 0,48–0,51 m |
+| Flatterball: Streuung vertikal (SD) | 0.276 m | 0.150–0.500 m | – | ✅ | Paper: 0,19–0,45 m |
+| Mit Effet 5 U/s kein Flattern (SD) | 0.000 m | 0.000–0.030 m | 0.000 m | ✅ |  |
+| Gleicher Seed → identische Bahn | 0.000 m | 0.000–0.000 m | 0.000 m | ✅ |  |
+| Anderer Seed → andere Bahn | 1.182 m | ≥ 0.001 m | – | ✅ |  |
+
+ALLE GRÜN (24/24)
+
+### Käfig (Bande, Netze, Dach, Tore)
+
+| Prüfung | Messwert | Fenster | Ziel | Ergebnis | Hinweis |
+|---|---|---|---|---|---|
+| Bande: Schuss 30 m/s prallt ab | 1.000  | 1.000–1.000  | 1.000  | ✅ | Aufprall 25.9 m/s |
+| Bande: Ball bleibt im Feld | 7.363 m | 0.000–7.500 m | – | ✅ | max |z| 7.363 m |
+| Bande: Stoßzahl (senkrecht, 10 m/s) | 0.649  | 0.600–0.700  | 0.650  | ✅ |  |
+| Bandenpass: Abprallwinkel ohne Drall | 47.69 ° | 25.00–65.00 ° | – | ✅ | rollender Ball, 45° Einfall |
+| Bandenpass: Drall ±8 U/s ändert den Winkel | 9.205 ° | 5.000–90.00 ° | – | ✅ | 38.5° / 47.7° / 47.7° |
+| Dachnetz: steiler Schuss 30 m/s trifft das Dach | 1.000  | 1.000–1.000  | 1.000  | ✅ | mit 26.7 m/s |
+| Dachnetz: max. Höhe (Dach 5 m + Eindellung) | 5.124 m | 0.000–5.900 m | – | ✅ | 5.12 m |
+| Dachnetz: Ball bleibt im Käfig | 0.000  | 0.000–0.000  | 0.000  | ✅ |  |
+| Netz schluckt Energie (Rückprall ÷ Aufprall) | 0.101  | 0.000–0.200  | 0.100  | ✅ | Feder-Dämpfer, einseitig, ζ = 1,2 |
+| Befreiungsschlag 30 m/s, 45°: im Käfig | 0.000  | 0.000–0.000  | 0.000  | ✅ | max |x| 12.11 m, max y 5.04 m |
+| Tor erkannt (Schuss mittig) | 1.000  | 1.000–1.000  | 1.000  | ✅ |  |
+| Pfosten: harter Abprall | 1.000  | 1.000–1.000  | 1.000  | ✅ | 13.8 m/s |
+| Zufallsbeschuss 1500 Schüsse: Ball draußen | 0.000 × | 0.000–0.000 × | 0.000 × | ✅ |  |
+| Zufallsbeschuss: Numerik-Notbremsen | 0.000 × | 0.000–0.000 × | 0.000 × | ✅ |  |
+| Zufallsbeschuss: max. Höhe | 5.129 m | 0.000–5.900 m | – | ✅ |  |
+| Zufallsbeschuss: max. Netz-Eindellung seitlich | 0.104 m | -1.000–0.900 m | – | ✅ |  |
+| Ohne Dach: hoher Schuss → Aus erkannt | 1.000  | 1.000–1.000  | 1.000  | ✅ | Netzoberkante 3 m |
+| ?feld=30x15 übernommen | 3015.0  | 3015.0–3015.0  | 3015.0  | ✅ |  |
+| 45 m/s: Bande flach – prallt ab, bleibt drin | 1.000  | 1.000–1.000  | 1.000  | ✅ | max |z| 7.39 m |
+| 45 m/s: Seitennetz über der Bande hält | 0.254 m | -1.000–0.900 m | – | ✅ | Eindellung |
+| 45 m/s: Tornetz hält (Tor, Ball bleibt im Tor) | 1.000  | 1.000–1.000  | 1.000  | ✅ | max x 12.33 (Rückwand 13.0 m) |
+| 45 m/s: Pfosten (voll getroffen) – harter Abprall, kein Durchrutschen | 1.000  | 1.000–1.000  | 1.000  | ✅ |  |
+| 45 m/s: Latte (voll getroffen) – harter Abprall | 1.000  | 1.000–1.000  | 1.000  | ✅ |  |
+| 45 m/s: Dachnetz hält | 5.255 m | 0.000–5.900 m | – | ✅ | höchster Punkt |
+| 52 m/s: Bande flach – prallt ab, bleibt drin | 1.000  | 1.000–1.000  | 1.000  | ✅ | max |z| 7.35 m |
+| 52 m/s: Seitennetz über der Bande hält | 0.330 m | -1.000–0.900 m | – | ✅ | Eindellung |
+| 52 m/s: Tornetz hält (Tor, Ball bleibt im Tor) | 1.000  | 1.000–1.000  | 1.000  | ✅ | max x 12.37 (Rückwand 13.0 m) |
+| 52 m/s: Pfosten (voll getroffen) – harter Abprall, kein Durchrutschen | 1.000  | 1.000–1.000  | 1.000  | ✅ |  |
+| 52 m/s: Latte (voll getroffen) – harter Abprall | 1.000  | 1.000–1.000  | 1.000  | ✅ |  |
+| 52 m/s: Dachnetz hält | 5.313 m | 0.000–5.900 m | – | ✅ | höchster Punkt |
+| Tornetz-Ecken 35–52 m/s (400 Schüsse): Ball hinter/neben dem Tor draußen | 0.000 × | 0.000–0.000 × | 0.000 × | ✅ | 332 Tore; Nacht 2d: Tor-Seiten- und Dachnetz reichen nach hinten über die Kante (vorher im Selbstspiel 4 von 16 Spielen) |
+| Zufallsbeschuss 30–52 m/s (1500 Schüsse, Drall bis ~20 U/s): Ball draußen | 0.000 × | 0.000–0.000 × | 0.000 × | ✅ | Nacht 2d: Außennetze reichen um die Eindellung über die Dachkante (vorher 23 draußen) |
+| … Numerik-Notbremsen | 0.000 × | 0.000–0.000 × | 0.000 × | ✅ |  |
+
+ALLE GRÜN (33/33)
+
+### Spieler (Laufwerte, Ballführung, Hilfe, Pass, Schuss)
+
+| Prüfung | Messwert | Fenster | Ziel | Ergebnis | Hinweis |
+|---|---|---|---|---|---|
+| ?sprintfrei=0: Antritt 0 → 7 m/s | 2.492 s | 2.200–2.800 s | 2.500 s | ✅ |  |
+| ?sprintfrei=0: Höchsttempo Sprint | 7.455 m/s | 7.400–7.550 m/s | 7.500 m/s | ✅ |  |
+| ?sprintfrei=0: Lauftempo ohne Sprint | 5.200 m/s | 5.000–5.300 m/s | 5.200 m/s | ✅ |  |
+| Ein Lauftempo: Höchsttempo = vEin | 7.000 m/s | 6.950–7.020 m/s | 7.000 m/s | ✅ | ?ein=7 |
+| Sprint-Eingang (Knopf, Stick-Rand, Shift, LB/RB → inp.sprint) ändert das Tempo nicht | 0.000 m/s | 0.000–0.000 m/s | 0.000 m/s | ✅ | mit „Sprint“ 7.000 m/s, Spieler.sprinting = false |
+| Antritt bleibt spritzig: 0 → 6 m/s | 1.158 s | 1.000–1.900 s | – | ✅ | n8: Antrittskurve läuft gegen 8.05 m/s (1,15 × vEin), endet bei vEin; n7 1,38 s |
+| n8 ?ein=6&vAntritt=7.5 = Antritt wie n7: 0 → 6 m/s | 1.383 s | 1.300–1.450 s | 1.380 s | ✅ |  |
+| ?ein=5.8 wirkt | 5.800 m/s | 5.750–5.820 m/s | 5.800 m/s | ✅ |  |
+| ?sprintfrei=0: Kurve: Radius bei 7,5 m/s (Tempo bleibt) | 4.295 m | 3.800–4.900 m | 4.327 m | ✅ | Tempo danach 7.50 m/s; Nacht 1: 9,4 m |
+| Kurve: Radius beim Lauftempo vEin (Tempo bleibt) | 3.738 m | 3.204–4.335 m | 3.769 m | ✅ | Tempo danach 7.00 m/s |
+| Kurve: Radius bei 4 m/s | 1.199 m | 1.000–1.500 m | 1.231 m | ✅ | Nacht 1: 2,7 m |
+| Kurve: Radius bei 2 m/s | 0.277 m | 0.200–0.450 m | 0.308 m | ✅ | Nacht 1: 0,65 m |
+| Laufen 5,2 m/s, 90°: Richtung erreicht | 0.325 s | 0.000–0.350 s | 0.350 s | ✅ | 80 % Tempo in neuer Richtung nach 0.52 s, Tiefpunkt 2.7 m/s |
+| Laufen 5,2 m/s, 90°: Überschießen | 0.846 m | 0.000–1.000 m | 1.000 m | ✅ |  |
+| Laufen 5,2 m/s, 180°: Richtung erreicht | 0.333 s | 0.000–0.600 s | 0.600 s | ✅ | 80 % Tempo in neuer Richtung nach 0.89 s, Tiefpunkt 0.0 m/s |
+| Laufen 5,2 m/s, 180°: Überschießen | 0.823 m | 0.000–1.000 m | 1.000 m | ✅ |  |
+| Sprint 7,5 m/s, 90°: Richtung erreicht | 0.467 s | 0.000–0.500 s | 0.500 s | ✅ | 80 % Tempo in neuer Richtung nach 1.07 s, Tiefpunkt 3.6 m/s |
+| Sprint 7,5 m/s, 90°: Überschießen | 1.765 m | 0.000–1.800 m | 1.800 m | ✅ |  |
+| Sprint 7,5 m/s, 180°: Richtung erreicht | 0.475 s | 0.000–0.800 s | 0.800 s | ✅ | 80 % Tempo in neuer Richtung nach 1.62 s, Tiefpunkt 0.0 m/s |
+| Sprint 7,5 m/s, 180°: Überschießen | 1.727 m | 0.000–1.800 m | 1.800 m | ✅ |  |
+| Laufen mit Ball, 90°: Richtung erreicht (schlechtester von 20) | 0.342 s | 0.000–0.438 s | 0.350 s | ✅ | mit Ball ≤ 125 % des Ziels |
+| Laufen mit Ball, 90°: Überschießen (schlechtester von 20) | 0.848 m | 0.000–1.250 m | 1.000 m | ✅ |  |
+| Laufen mit Ball, 90°: Ball mitgenommen (Sohle/Außenseite) | 20.00 /20 | 18.00–20.00 /20 | 20.00 /20 | ✅ | Ball danach vorn in neuer Richtung, ≤ 1,5 m am Fuß |
+| Laufen mit Ball, 180°: Richtung erreicht (schlechtester von 20) | 0.350 s | 0.000–0.750 s | 0.600 s | ✅ | mit Ball ≤ 125 % des Ziels |
+| Laufen mit Ball, 180°: Überschießen (schlechtester von 20) | 0.809 m | 0.000–1.250 m | 1.000 m | ✅ |  |
+| Laufen mit Ball, 180°: Ball mitgenommen (Sohle/Außenseite) | 20.00 /20 | 18.00–20.00 /20 | 20.00 /20 | ✅ | Ball danach vorn in neuer Richtung, ≤ 1,5 m am Fuß |
+| Sprint mit Ball, 90°: Richtung erreicht (schlechtester von 20) | 0.492 s | 0.000–0.625 s | 0.500 s | ✅ | mit Ball ≤ 125 % des Ziels |
+| Sprint mit Ball, 90°: Überschießen (schlechtester von 20) | 1.752 m | 0.000–2.250 m | 1.800 m | ✅ |  |
+| Sprint mit Ball, 90°: Ball mitgenommen (Sohle/Außenseite) | 20.00 /20 | 18.00–20.00 /20 | 20.00 /20 | ✅ | Ball danach vorn in neuer Richtung, ≤ 1,5 m am Fuß |
+| Sprint mit Ball, 180°: Richtung erreicht (schlechtester von 20) | 0.500 s | 0.000–1.000 s | 0.800 s | ✅ | mit Ball ≤ 125 % des Ziels |
+| Sprint mit Ball, 180°: Überschießen (schlechtester von 20) | 1.696 m | 0.000–2.250 m | 1.800 m | ✅ |  |
+| Sprint mit Ball, 180°: Ball mitgenommen (Sohle/Außenseite) | 20.00 /20 | 18.00–20.00 /20 | 20.00 /20 | ✅ | Ball danach vorn in neuer Richtung, ≤ 1,5 m am Fuß |
+| Reaktion auf den Stick (0,3 m/s in neuer Richtung) | 0.033 s | 0.000–0.050 s | 0.008 s | ✅ | keine Glättung am Stick |
+| Antritt 0 → 4 m/s (erste Schritte) | 0.533 s | 0.500–0.700 s | 0.600 s | ✅ | Nacht 1: 0,70 s |
+| ?zack=0 (altes Modell): Sprint 90° wie Nacht 1 | 1.750 s | 1.700–1.800 s | 1.750 s | ✅ | Überschießen 9.2 m (Nacht 1: 9,2 m) |
+| Führen (Laufen): Ballkontakte | 29.00 × | 5.000–60.00 × | – | ✅ | Abstand Fuß–Ball Mittel 0.12 m, SD 0.02 m |
+| Führen (Laufen): Ball entfernt sich zwischen Kontakten (kein Klebeball) | 0.164 m | 0.120–3.000 m | – | ✅ | max. Abstand Fuß–Ball (Nacht 2c 0,28 m); ?magnet=0: 0.60 m |
+| ?magnet=0: Ball entfernt sich zwischen Kontakten wie Nacht 2b | 0.604 m | 0.450–3.000 m | – | ✅ | 11 Kontakte |
+| Magnet trägt nicht: Kontakte je 10 m mindestens wie ohne Magnet | 7.346  | 2.788–99.00  | – | ✅ | 29 Kontakte auf 39 m, ohne Magnet 11 auf 39 m |
+| Führen (ein Lauftempo): Tempo mit Ball | 6.580 m/s | 5.950–7.000 m/s | 6.580 m/s | ✅ | Vorlage 1.37 m je Kontakt |
+| ?sprintfrei=0: Führen (Laufen): Tempo mit Ball | 4.888 m/s | 4.000–5.300 m/s | – | ✅ | Vorlage 1.02 m je Kontakt |
+| ?sprintfrei=0: Führen (Sprint): längere Vorlagen als im Laufen | 2.107 × | 1.300–10.00 × | – | ✅ | Sprint 2.15 m vs. 1.02 m je Kontakt, 20 Kontakte |
+| ?sprintfrei=0: Führen (Sprint): Tempo mit Ball | 7.050 m/s | 5.800–7.500 m/s | – | ✅ |  |
+| Führen mit „Sprint“-Eingang: gleiche Vorlagen wie ohne (kein Sprint) | 0.000 m | 0.000–0.020 m | 0.000 m | ✅ | 1.37 vs. 1.37 m |
+| Hilfe vor dem Richtungswechsel aktiv | 0.950  | 0.500–1.000  | – | ✅ |  |
+| Hilfe frei nach deutlicher Eingabe (< 5 %) | 0.183 s | 0.000–0.300 s | – | ✅ | Stick 90° gedreht |
+| Hilfe kehrt sanft zurück (bis 60 %) | 0.458 s | 0.300–1.500 s | – | ✅ |  |
+| ?treffpunkt=1: Pass (Tippen) Ballgeschwindigkeit | 12.75 m/s | 12.15–14.85 m/s | 13.50 m/s | ✅ |  |
+| ?treffpunkt=1: Schuss voll aufgeladen | 30.00 m/s ÷ wucht | 29.00–30.50 m/s ÷ wucht | 30.00 m/s ÷ wucht | ✅ | 162 km/h, Drall 0.08 U/s |
+| ?treffpunkt=1: Vollspann (Treffpunkt Mitte) kaum Drall | 0.085 U/s | 0.000–0.300 U/s | 0.000 U/s | ✅ |  |
+| ?treffpunkt=1: Schuss halb aufgeladen | 18.00 m/s ÷ wucht | 16.00–20.00 m/s ÷ wucht | 18.00 m/s ÷ wucht | ✅ |  |
+| ?treffpunkt=1: Innenseite (Treffpunkt ganz rechts) Effet | 10.00 U/s | 9.000–10.50 U/s | 10.00 U/s | ✅ | 36.9 m/s |
+| ?treffpunkt=1: Heber (Treffpunkt unten) Abflugwinkel | 21.14 ° | 18.00–28.00 ° | 23.00 ° | ✅ |  |
+| Schuss nach Aufladen im Lauf ausgelöst | 20.00 /20 | 20.00–20.00 /20 | 20.00 /20 | ✅ | 0× später als 0,1 s nach dem Loslassen |
+| Gleicher Seed + Eingaben → identischer Zustand | 1.000  | 1.000–1.000  | 1.000  | ✅ |  |
+
+ALLE GRÜN (55/55)
+
+### Regeln 3 gegen 3 (letzte Hand, Torraum, 3 s, Schnellstart, Spielzeit)
+
+| Prüfung | Messwert | Fenster | Ziel | Ergebnis | Hinweis |
+|---|---|---|---|---|---|
+| Letzte Hand = hinterster Spieler | 1.000  | 1.000–1.000  | 1.000  | ✅ | Abstände zur Linie 6 / 3 / 8 m → Spieler 1 |
+| Hysterese: 0,4 m Vorsprung → kein Wechsel (1 s) | 1.000  | 1.000–1.000  | 1.000  | ✅ | letzte Hand bleibt Spieler 0 |
+| Hysterese: 0,6 m Vorsprung → Wechsel nach | 0.300 s | 0.290–0.340 s | 0.300 s | ✅ | erst wenn ≥ 0,5 m für ≥ 0,3 s |
+| Kein Flackern bei ±0,3 m Pendeln (5 s) | 0.000 × | 0.000–0.000 × | 0.000 × | ✅ |  |
+| Überholen nur 0,25 s → kein Wechsel | 1.000  | 1.000–1.000  | 1.000  | ✅ |  |
+| Torraum: Punkte innen (3,9 m; 3,84 m schräg) | 1.000  | 1.000–1.000  | 1.000  | ✅ |  |
+| Torraum: Punkte außen (4,1 m; 4,03 m schräg; hinter der Linie; anderes Tor) | 1.000  | 1.000–1.000  | 1.000  | ✅ |  |
+| ?torraum=5: 4,5 m ist drin | 1.000  | 1.000–1.000  | 1.000  | ✅ |  |
+| Letzte Hand im Torraum fängt | 1.000  | 1.000–1.000  | 1.000  | ✅ |  |
+| Letzte Hand außerhalb des Torraums: keine Hand möglich | 1.000  | 1.000–1.000  | 1.000  | ✅ | Ball prallt nur ab / wird mit dem Fuß gespielt |
+| Nicht-hinterster Spieler im Torraum: keine Hand | 1.000  | 1.000–1.000  | 1.000  | ✅ |  |
+| Ball in der Hand: automatischer Abwurf nach | 3.008 s | 2.950–3.100 s | 3.000 s | ✅ | Ereignis „Zeit“ (Nacht 2e: 3 s, vorher 6 s) |
+| Während des Haltens: Gegner kommt nicht an den Ball | 1.000  | 1.000–1.000  | 1.000  | ✅ | Gegner lief 1,5 s lang in den Tormann |
+| Abwurf auf Mitspieler (6,3 m): Ball kommt an | 0.433 m | 0.000–0.800 m | 0.000 m | ✅ | kleinster Abstand Ball–Mitspieler |
+| Hechtsprung seitlich 1,7 m: Ball gefangen | 1.000  | 1.000–1.000  | 1.000  | ✅ | Ablauf dive → ground → hold |
+| Hechtsprung: Flugphase bis „am Boden“ | 0.392 s | 0.300–0.500 s | 0.380 s | ✅ |  |
+| Hechtsprung außerhalb des Torraums nicht möglich | 1.000  | 1.000–1.000  | 1.000  | ✅ |  |
+| Tor erkannt, Mannschaft 0 trifft | 1.000  | 1.000–1.000  | 1.000  | ✅ |  |
+| ?anstoss=0 Schnellstart: Tormann des Gegentors (Mannschaft 1) hat den Ball | 1.000  | 1.000–1.000  | 1.000  | ✅ | nach 2.60 s |
+| ?anstoss=0 Schnellstart: Tormann steht im eigenen Torraum | 1.000  | 1.000–1.000  | 1.000  | ✅ |  |
+| Uhr steht während des Torjubels | 0.000 s | 0.000–0.010 s | 0.000 s | ✅ | Jubel 2.6 s |
+| Anstoß nach Tor (Standard): in der Mitte für Mannschaft 0 | 1.000  | 1.000–1.000  | 1.000  | ✅ |  |
+| Anstoß nach Tor: Gegner ≥ 2 m vom Ball, jeder in seiner Hälfte | 1.000  | 1.000–1.000  | 1.000  | ✅ |  |
+| Parade, Ball trotzdem rein: kein Eigentor, Tor für den Schützen | 1.000  | 1.000–1.000  | 1.000  | ✅ | {"t":0,"team":0,"scorer":0,"own":false,"saved":true} |
+| Selbst ins eigene Tor gespielt: Eigentor | 1.000  | 1.000–1.000  | 1.000  | ✅ | {"t":0,"team":0,"scorer":-1,"own":true,"saved":false} |
+| Parade, dann eigener Mitspieler ins eigene Tor: Eigentor | 1.000  | 1.000–1.000  | 1.000  | ✅ | {"t":0,"team":0,"scorer":-1,"own":true,"saved":false} |
+| Direkter Treffer: Tor für den Schützen | 1.000  | 1.000–1.000  | 1.000  | ✅ | {"t":0,"team":0,"scorer":1,"own":false,"saved":false} |
+| ?dauer=0,5: Halbzeit nach 30 s gespielter Zeit | 1.000  | 1.000–1.000  | 1.000  | ✅ |  |
+| Ende nach 2 × 30 s gespielter Zeit | 60.01 s | 59.90–60.10 s | 60.00 s | ✅ | Ergebnis 1:1 |
+| Golden Goal: bei 0:0 läuft das Spiel weiter | 1.000  | 1.000–1.000  | 1.000  | ✅ |  |
+| Golden Goal: erstes Tor beendet das Spiel | 1.000  | 1.000–1.000  | 1.000  | ✅ |  |
+| Ohne Golden Goal: 0:0 → Unentschieden | 1.000  | 1.000–1.000  | 1.000  | ✅ |  |
+
+ALLE GRÜN (32/32)
+
+### Gesten-Grammatik (halten / tipp + halten / Einzeltipp)
+
+| Prüfung | Messwert | Fenster | Ziel | Ergebnis | Hinweis |
+|---|---|---|---|---|---|
+| Schuss halten: Start „Standard“ ohne Verzögerung | 0.000 s | -0.000–0.000 s | 0.000 s | ✅ | Aufladen ab dem ersten Takt |
+| Schuss halten: Auslösen beim Loslassen (Standard) | 0.000 s | -0.000–0.000 s | 0.000 s | ✅ | Haltedauer 0.600 s |
+| Schuss halten: kein Tipp, kein Abbruch | 0.000 × | 0.000–0.000 × | 0.000 × | ✅ |  |
+| Pass halten: Start „Standard“ ohne Verzögerung | 0.000 s | -0.000–0.000 s | 0.000 s | ✅ | Aufladen ab dem ersten Takt |
+| Pass halten: Auslösen beim Loslassen (Standard) | 0.000 s | -0.000–0.000 s | 0.000 s | ✅ | Haltedauer 0.600 s |
+| Pass halten: kein Tipp, kein Abbruch | 0.000 × | 0.000–0.000 × | 0.000 × | ✅ |  |
+| Schuss Tipp + halten: zweiter Druck startet „Variante“ | 1.000  | 1.000–1.000  | 1.000  | ✅ | Pause nach 0.083 s, zweiter Druck 0.120 s nach dem Loslassen |
+| Schuss Tipp + halten: Auslösen „Variante“ mit Haltedauer des zweiten Drucks | 0.600 s | 0.590–0.610 s | 0.600 s | ✅ |  |
+| Schuss Tipp + halten: kein Einzeltipp ausgelöst | 0.000 × | 0.000–0.000 × | 0.000 × | ✅ |  |
+| Pass Tipp + halten: zweiter Druck startet „Variante“ | 1.000  | 1.000–1.000  | 1.000  | ✅ | Pause nach 0.083 s, zweiter Druck 0.120 s nach dem Loslassen |
+| Pass Tipp + halten: Auslösen „Variante“ mit Haltedauer des zweiten Drucks | 0.600 s | 0.590–0.610 s | 0.600 s | ✅ |  |
+| Pass Tipp + halten: kein Einzeltipp ausgelöst | 0.000 × | 0.000–0.000 × | 0.000 × | ✅ |  |
+| Pass Einzeltipp: aufgelöst nach dem Fenster | 0.258 s | 0.250–0.258 s | 0.250 s | ✅ | Tipp 0.092 s lang |
+| Pass Einzeltipp: genau ein Tipp, kein Auslösen | 10.00  | 10.00–10.00  | 10.00  | ✅ |  |
+| Schuss Einzeltipp: „Standard“ mit kurzer Haltedauer | 0.050 s | 0.040–0.060 s | 0.050 s | ✅ |  |
+| Zu später zweiter Druck: erster bleibt Einzeltipp | 1.000  | 1.000–1.000  | 1.000  | ✅ | Tipp bei 0.442 s |
+| Zu später zweiter Druck: zweiter startet „Standard“ | 1.000  | 1.000–1.000  | 1.000  | ✅ |  |
+| Grenzfall: zweiter Druck genau am Fensterende → Variante | 1.000  | 1.000–1.000  | 1.000  | ✅ |  |
+| Grenzfall: zwei Takte nach dem Fenster → Standard | 1.000  | 1.000–1.000  | 1.000  | ✅ |  |
+| Kurzes Halten über der Tipp-Grenze: sofort ausgelöst | 0.005 s | -0.000–0.008 s | 0.000 s | ✅ |  |
+| Knopf-Wechsel: Pass-Tipp sofort aufgelöst (kein Warten) | 0.000 s | -0.000–0.000 s | 0.000 s | ✅ | im selben Takt wie der Schuss-Druck |
+| Knopf-Wechsel: Schuss startet „Standard“ (nicht Variante) | 1.000  | 1.000–1.000  | 1.000  | ✅ |  |
+| Knopf-Wechsel beim Halten: Schuss abgebrochen | 0.000 s | -0.000–0.000 s | 0.000 s | ✅ |  |
+| Knopf-Wechsel beim Halten: kein Schuss beim späteren Loslassen | 0.000  | 0.000–0.000  | 0.000  | ✅ |  |
+| Doppeltipp: Variante (z. B. hoher Pass mit Auto-Stärke) | 1.000  | 1.000–1.000  | 1.000  | ✅ | zweiter Druck 0.067 s |
+| Anzeige: Fenster nach dem Tipp → wartet | 1.000  | 1.000–1.000  | 1.000  | ✅ |  |
+| Anzeige: zweiter Druck → Variante, Dauer läuft | 0.300 s | 0.299–0.301 s | 0.300 s | ✅ |  |
+| 1000 Zufalls-Gesten: jeder Druck genau ein Ergebnis | 0.000 × | 0.000–0.000 × | 0.000 × | ✅ |  |
+
+ALLE GRÜN (28/28)
+
+### Tipp-Grammatik (Tipp / Doppeltipp, Auto-Stärke)
+
+| Prüfung | Messwert | Fenster | Ziel | Ergebnis | Hinweis |
+|---|---|---|---|---|---|
+| Tipp: Kick sofort beim Druck vorgemerkt (start) | 0.000 s | -0.000–0.000 s | 0.000 s | ✅ |  |
+| Tipp: Standard steht fest nach Tippdauer + doppel | 0.192 s | 0.180–0.197 s | 0.180 s | ✅ | doppel 0.11 s (Nacht 2b: Fenster 0,25 s nach dem Loslassen) |
+| Doppeltipp: Zweitfunktion steht beim zweiten Druck fest | 0.000 s | -0.000–0.000 s | 0.000 s | ✅ | kein Einzeltipp: 0 |
+| Halten = Tipp: Standard steht nach tapMax fest (wartet nicht aufs Loslassen) | 0.200 s | 0.200–0.208 s | 0.200 s | ✅ | 2 Ereignisse |
+| Zweiter Druck zu spät: zwei Standard-Tipps | 2.000 × | 2.000–2.000 × | 2.000 × | ✅ |  |
+| Knopf-Wechsel im Fenster: Pass verworfen, Schuss gilt | 1.000  | 1.000–1.000  | 1.000  | ✅ |  |
+| 1000 Zufalls-Gesten: jeder Druck genau ein Ergebnis | 0.000 × | 0.000–0.000 × | 0.000 × | ✅ |  |
+| Tipp → Ballkontakt beim Führen (Laufen, Mittel aus 40 Situationen) | 0.192 s | 0.000–0.200 s | 0.200 s | ✅ | Median 0.192 s, p90 0.192 s, ohne Kick 0 |
+| … im Sprint (Ball weit vorgelegt, Info) | 0.192 s | ≥ 0.000 s | – | ✅ | Median 0.192 s, p90 0.192 s, ohne Kick 0 |
+| Tipp → Ballkontakt, Ball ruhig am Fuß | 0.192 s | 0.000–0.210 s | 0.190 s | ✅ | Tippdauer 0,07 s + doppel |
+| Schuss Tipp = Vollspann (Auto-Stärke; Nacht 2d × wucht) | 41.75 m/s | 30.00–45.00 m/s | – | ✅ | vollspann, 0.192 s nach dem Druck, Drall 0.0 U/s |
+| Schuss Doppeltipp = angeschnitten | 16.72 U/s | 3.000–99.00 U/s | – | ✅ | innenrist, 41.8 m/s, 0.150 s nach dem ersten Druck |
+| Auto-Stärke: weiter weg härter | 8.671 m/s | 1.000–99.00 m/s | – | ✅ | 4 m: 33.7, 11 m: 42.4 m/s |
+| Schuss halten = wie Tipp (kein Aufladen), Kick vor dem Loslassen | 0.200 s | 0.000–0.350 s | – | ✅ | vollspann 41.7 m/s |
+| Pass Tipp = flach zum Mitspieler | 12.75 m/s | 4.000–22.00 m/s | – | ✅ | innen, 1.5° |
+| Pass Doppeltipp = hoch (Chip) | 29.09 ° | 10.00–50.00 ° | – | ✅ | chip 9.4 m/s |
+| ?laden=1: Stärke aus der Haltedauer (lang härter als kurz) | 26.26 m/s | 4.000–99.00 m/s | – | ✅ | 0,25 s: 18.0, 1,0 s: 44.3 m/s |
+
+ALLE GRÜN (17/17)
+
+### Technik-Wahl (Pass, Schuss, Luftball)
+
+| Prüfung | Messwert | Fenster | Ziel | Ergebnis | Hinweis |
+|---|---|---|---|---|---|
+| Pass 0° (vor dem Körper) → Innenseite/Vorfuß | 1.000  | 1.000–1.000  | 1.000  | ✅ | innen |
+| Pass 59,9° → Innenseite (Grenze 60°) | 1.000  | 1.000–1.000  | 1.000  | ✅ | innen |
+| Pass 60,1° → Außenrist | 1.000  | 1.000–1.000  | 1.000  | ✅ | aussen |
+| Pass 119,9° → Außenrist (Grenze 120°) | 1.000  | 1.000–1.000  | 1.000  | ✅ | aussen |
+| Pass 150°, Ball am Standbein (0,4 m) → Hacke | 1.000  | 1.000–1.000  | 1.000  | ✅ | ferse |
+| Pass 120,1°, Ball 0,59 m → Hacke (Grenze 0,6 m) | 1.000  | 1.000–1.000  | 1.000  | ✅ | ferse |
+| Pass 150°, Ball weiter weg (0,8 m) → Außenrist mit Drehung | 1.000  | 1.000–1.000  | 1.000  | ✅ | aussen |
+| Regler ?innen=45: 50° → Außenrist | 1.000  | 1.000–1.000  | 1.000  | ✅ | aussen |
+| Regler ?hacke=150: 140° → Außenrist | 1.000  | 1.000–1.000  | 1.000  | ✅ | aussen |
+| Pass im Spiel: Mitspieler vorn → Innenseite | 1.000  | 1.000–1.000  | 1.000  | ✅ | innen · 7°, 14.0 m/s |
+| Pass im Spiel: Mitspieler seitlich (78°) → Außenrist | 1.000  | 1.000–1.000  | 1.000  | ✅ | aussen · 80° |
+| Pass im Spiel: Mitspieler hinten, Ball am Fuß → Hacke | 1.000  | 1.000–1.000  | 1.000  | ✅ | ferse · 175° |
+| Hackenpass: kürzer (Tempo ≤ 8,5 m/s) | 8.500 m/s | 0.000–8.500 m/s | 8.500 m/s | ✅ | Mitspieler 6 m hinter dem Spieler |
+| Pass hoch 9 m (feste Flanke): Abflugwinkel 14–28° | 23.07 ° | 14.00–28.00 ° | – | ✅ | 11.1 m/s, Scheitel 1.13 m |
+| Chip: Scheitel unter dem Dachnetz (−0,5 m) | 1.132 m | 0.000–4.500 m | – | ✅ |  |
+| Chip kurz (4,5 m) steiler als weit (9 m) | 21.93 ° | 1.000–30.00 ° | – | ✅ | 45° / 23° |
+| Schuss Standard → Vollspann | 1.000  | 1.000–1.000  | 1.000  | ✅ | vollspann |
+| Angeschnitten, Kurve links, Rechtsfuß, Ball mittig → Innenrist rechts | 1.000  | 1.000–1.000  | 1.000  | ✅ | {"tech":"innenrist","foot":1} |
+| Angeschnitten, Kurve rechts, Ball rechts (0,1 m) → Außenrist rechts (Innenrist-Bein links steht unpassend) | 1.000  | 1.000–1.000  | 1.000  | ✅ | {"tech":"aussenrist","foot":1} |
+| Angeschnitten, Kurve rechts, Ball links (−0,1 m) → Innenrist links | 1.000  | 1.000–1.000  | 1.000  | ✅ | {"tech":"innenrist","foot":-1} |
+| Linksfuß, Kurve rechts, Ball mittig → Innenrist links | 1.000  | 1.000–1.000  | 1.000  | ✅ | {"tech":"innenrist","foot":-1} |
+| Linksfuß, Kurve links, Ball links → Außenrist links | 1.000  | 1.000–1.000  | 1.000  | ✅ | {"tech":"aussenrist","foot":-1} |
+| Links vom Tor, Rechtsfuß: langes Eck mit Innenrist rechts (Kurve nach innen) | 1.000  | 1.000–1.000  | 1.000  | ✅ | innenrist/1/1/1 · innenrist rechts, Ecke z = 1.0, Drall 13.7 U/s |
+| Rechts vom Tor, Rechtsfuß, Ball mittig: langes Eck, Kurve nach rechts → Innenrist links | 1.000  | 1.000–1.000  | 1.000  | ✅ | innenrist/-1/-1/-1 · innenrist links, Ecke z = -1.0, Drall -12.6 U/s |
+| Rechts vom Tor, Rechtsfuß, Ball rechts: Außenrist rechts | 1.000  | 1.000–1.000  | 1.000  | ✅ | aussenrist/1/-1 · aussenrist rechts, Ecke z = -1.0, Drall -10.3 U/s |
+| Links vom Tor, Linksfuß, Ball links: Außenrist links | 1.000  | 1.000–1.000  | 1.000  | ✅ | aussenrist/-1/1 · aussenrist links, Ecke z = 1.0, Drall 10.3 U/s |
+| Luftball 0,6 m, θ 60° → volley | 1.000  | 1.000–1.000  | 1.000  | ✅ | volley · Hüfthöhe, Flanke schräg |
+| Luftball 0,45 m, θ 0° → volley | 1.000  | 1.000–1.000  | 1.000  | ✅ | volley · Abpraller aus Torrichtung |
+| Luftball 0,9 m, θ 90° → volley | 1.000  | 1.000–1.000  | 1.000  | ✅ | volley · Flanke von der Seite, 0,9 m |
+| Luftball 1,04 m, θ 30° → volley | 1.000  | 1.000–1.000  | 1.000  | ✅ | volley · Grenze 1,05 m, Tor vorn |
+| Luftball 0,3 m, θ 60°, Aufsetzer → dropkick | 1.000  | 1.000–1.000  | 1.000  | ✅ | dropkick · Aufsetzer |
+| Luftball 0,3 m, θ 60° → keine | 1.000  | 1.000–1.000  | 1.000  | ✅ | keine · ohne Aufsetzer zu tief (Fuß am Boden) |
+| Luftball 1,2 m, θ 90° → seitfall | 1.000  | 1.000–1.000  | 1.000  | ✅ | seitfall · Flanke von der Seite, Brusthöhe |
+| Luftball 1,4 m, θ 110° → seitfall | 1.000  | 1.000–1.000  | 1.000  | ✅ | seitfall · seitlich-hinten |
+| Luftball 1,3 m, θ 170° → fallrueck | 1.000  | 1.000–1.000  | 1.000  | ✅ | fallrueck · Rücken zum Tor |
+| Luftball 1,7 m, θ 150° → fallrueck | 1.000  | 1.000–1.000  | 1.000  | ✅ | fallrueck · hoch, Rücken zum Tor |
+| Luftball 1,12 m, θ 180° → fallrueck | 1.000  | 1.000–1.000  | 1.000  | ✅ | fallrueck · Grenze unten |
+| Luftball 1,7 m, θ 60° → kopf | 1.000  | 1.000–1.000  | 1.000  | ✅ | kopf · Kopfhöhe, Tor vorn |
+| Luftball 2,3 m, θ 90° → kopf | 1.000  | 1.000–1.000  | 1.000  | ✅ | kopf · Sprunghöhe, Flanke |
+| Luftball 2,6 m, θ 60° → keine | 1.000  | 1.000–1.000  | 1.000  | ✅ | keine · zu hoch (über 2,55 m) |
+| Luftball 0,7 m, θ 180° → keine | 1.000  | 1.000–1.000  | 1.000  | ✅ | keine · Hüfthöhe, Rücken zum Tor |
+| Luftball 1,5 m, θ 40° → kopf | 1.000  | 1.000–1.000  | 1.000  | ✅ | kopf · Überschneidung Kopf/Volley-Ende |
+| Luftball 0,75 m, θ 125° → flugkopf | 1.000  | 1.000–1.000  | 1.000  | ✅ | flugkopf · halbhoch, Ball kommt schräg von hinten |
+| Überschneidung 0,9 m seitlich: Volley > Seitfallzieher | 0.227  | 0.001–9.000  | – | ✅ | Volley 0.82, Seitfall 0.60, Flugkopf 0.72 |
+| Überschneidung 1,0 m seitlich: Seitfallzieher > Volley | 0.445  | 0.001–9.000  | – | ✅ | Volley 0.48, Seitfall 0.92 |
+| Überschneidung 1,2 m, θ 150°: Fallrückzieher > Seitfallzieher | 0.409  | 0.001–9.000  | – | ✅ | Fallrück 0.90, Seitfall 0.49 |
+| Regler ?luft=1,2 (alle Fenster höher): 1,0 m seitlich → Volley | 1.000  | 1.000–1.000  | 1.000  | ✅ | volley |
+
+ALLE GRÜN (47/47)
+
+### Pass in den Laufweg (flach/hoch), Kegel, Bande
+
+| Prüfung | Messwert | Fenster | Ziel | Ergebnis | Hinweis |
+|---|---|---|---|---|---|
+| Pass flach (Einzeltipp): Empfänger erreicht den Ball ohne Stehenbleiben | 92.20 % | 90.00–100.0 % | 90.00 % | ✅ | 500 Lagen; 39× unter 1 m/s; Fehlerabstand p50 0.07 m, p95 0.23 m; Techniken {"innen":499,"aussen":1} |
+| Pass flach (Einzeltipp): richtiger Empfänger gewählt (Stick ±9°) | 100.0 % | 99.00–100.0 % | 100.0 % | ✅ |  |
+| Pass flach (Einzeltipp): Abflugwinkel flach (1,5°) | 100.0 % | 99.00–100.0 % | 100.0 % | ✅ |  |
+| Pass hoch (Tipp + halten, Chip): Empfänger erreicht den Ball ohne Stehenbleiben | 91.60 % | 75.00–100.0 % | 75.00 % | ✅ | 500 Lagen; 42× unter 1 m/s; Fehlerabstand p50 0.13 m, p95 0.44 m; Techniken {"chip":500} |
+| Pass hoch (Tipp + halten, Chip): richtiger Empfänger gewählt (Stick ±9°) | 100.0 % | 99.00–100.0 % | 100.0 % | ✅ |  |
+| Pass hoch (Tipp + halten, Chip): Abflugwinkel 14–45° (Flanke weit flach, Chip kurz steil) | 100.0 % | 99.00–100.0 % | 100.0 % | ✅ |  |
+| Kegel: Stick auf Mitspieler 1 → Mitspieler 1 | 1.000  | 1.000–1.000  | 1.000  | ✅ | Winkel 21° |
+| Kegel: Stick auf Mitspieler 2 → Mitspieler 2 | 1.000  | 1.000–1.000  | 1.000  | ✅ | Winkel -35° |
+| Kegel: 30° neben Mitspieler 1 → noch Mitspieler 1 | 1.000  | 1.000–1.000  | 1.000  | ✅ |  |
+| Kegel: Spiegelbild eines Mitspielers an der Bande im Kegel → Bandenpass | 1.000  | 1.000–1.000  | 1.000  | ✅ | Stick 81°, Mitspieler 2 über die Bande |
+| Kegel: kein Mitspieler (auch nicht über die Bande) im Kegel → freier Raum | 1.000  | 1.000–1.000  | 1.000  | ✅ | Ziel (-6.2, -2.4), 5.6 m/s, ferse |
+| Freier Raum (Tipp): Weite | 7.000 m | 6.500–7.500 m | 7.000 m | ✅ |  |
+| Passweg frei → Mitspieler näher an der Stick-Richtung | 1.000  | 1.000–1.000  | 1.000  | ✅ | gewählt 1 |
+| Passweg zu (Gegner in der Linie) → freier Mitspieler im Kegel | 1.000  | 1.000–1.000  | 1.000  | ✅ | gewählt 2 |
+| Halten: Stärke aus der Haltedauer (voll härter als kurz) | 10.22 m/s | 3.000–20.00 m/s | – | ✅ | kurz 11.7, Tipp 14.6, voll 21.9 m/s |
+| Bandenpass: Stick aufs Spiegelbild an der Bande → über die Bande | 1.000  | 1.000–1.000  | 1.000  | ✅ | Bande 1, Zielpunkt (0.1, 7.7), 22.0 m/s |
+| Bandenpass im Spiel: Ball erreicht den Mitspieler | 0.000 m | 0.000–0.900 m | 0.000 m | ✅ | kleinster Abstand bzw. Annahme |
+| Einzeltipp mit Ball am Fuß: Pass nach dem Fenster | 0.192 s | 0.170–0.195 s | 0.170 s | ✅ | Tipp 0,06 s + Fenster 0.11 s |
+
+ALLE GRÜN (18/18)
+
+### Schuss: Ziel automatisch, Qualität q, Techniken
+
+| Prüfung | Messwert | Fenster | Ziel | Ergebnis | Hinweis |
+|---|---|---|---|---|---|
+| q-Tabelle und Kurven monoton (schlechter → nie besser, nie schneller, nie weiter außen) | 0.000 × | 0.000–0.000 × | 0.000 × | ✅ | 767 Paare |
+| Kurve: q 0,15 → Tempo-Faktor ≤ 0,6 | 0.536  | 0.000–0.600  | – | ✅ | Ecke 26 %, Streuung ×2.7 |
+| Im Spiel: schlechtere Lage → nie höheres q, schnellerer oder weiter außen gezielter Schuss | 0.000 × | 0.000–0.000 × | 0.000 × | ✅ | 1800 Paare (2 m weiter weg auf der Linie zur Tormitte, 0,5 rad weiter weggedreht, Gegner 0,7 m, Sprint, Ball 0,85 m vorn, Ball springt) |
+| Trefferquote aufs Tor aus guter Lage (6–10 m, ±2 m, zum Tor gedreht, Ball am Fuß) | 95.33 % | 85.00–100.0 % | 85.00 % | ✅ | Vollspann 141/150, angeschnitten 145/150; q Median 1.00 |
+| Schlechte Lage (spitzer Winkel an der Grundlinie, Körper zur Bande, Sprint): Tempo ≤ 60 % der guten Lage | 52.91 % | 0.000–60.00 % | – | ✅ | q 0.14, 23.8 von 45.0 m/s |
+| Schlechte Lage (spitzer Winkel an der Grundlinie, Körper zur Bande, Sprint): Ziel ≤ 0,6 m von der Tormitte | 0.516 m | 0.000–0.600 m | – | ✅ | Ziel z -0.24 m, Höhe 0.54 m (gute Lage: z 1.00) |
+| Schlechte Lage (17 m, Rücken zum Tor, Ball zu weit vorn): Tempo ≤ 60 % der guten Lage | 47.63 % | 0.000–60.00 % | – | ✅ | q 0.06, 21.4 von 45.0 m/s |
+| Schlechte Lage (17 m, Rücken zum Tor, Ball zu weit vorn): Ziel ≤ 0,6 m von der Tormitte | 0.417 m | 0.000–0.600 m | – | ✅ | Ziel z -0.05 m, Höhe 0.59 m (gute Lage: z 1.00) |
+| Schlechte Lage (12 m, Gegner 0,5 m dran, Ball springt, quer zum Tor, Sprint): Tempo ≤ 60 % der guten Lage | 56.62 % | 0.000–60.00 % | – | ✅ | q 0.20, 25.5 von 45.0 m/s |
+| Schlechte Lage (12 m, Gegner 0,5 m dran, Ball springt, quer zum Tor, Sprint): Ziel ≤ 0,6 m von der Tormitte | 0.600 m | 0.000–0.600 m | – | ✅ | Ziel z -0.35 m, Höhe 0.51 m (gute Lage: z 1.00) |
+| Gute Lage (8 m frontal, voll): q und Tempo | 1.000  | 0.950–1.000  | 1.000  | ✅ | 45.0 m/s, Ecke z 1.00, Höhe 0.35 |
+| Tormann rechts (z +0,8) → Ecke links | 1.000  | 1.000–1.000  | 1.000  | ✅ | Ecke z -1 |
+| Tormann links (z −0,8) → Ecke rechts | 1.000  | 1.000–1.000  | 1.000  | ✅ | Ecke z 1 |
+| Tormann weit vor dem Tor → hohe Ecke | 1.000  | 1.000–1.000  | 1.000  | ✅ |  |
+| Stick seitlich links → flache Ecke links | 1.000  | 1.000–1.000  | 1.000  | ✅ |  |
+| Stick seitlich rechts → flache Ecke rechts | 1.000  | 1.000–1.000  | 1.000  | ✅ |  |
+| Stick schräg nach vorn links → hohe Ecke links | 1.000  | 1.000–1.000  | 1.000  | ✅ |  |
+| Vollspann: kaum Drall (Flatterball) und höchstes Tempo | 0.000 U/s | 0.000–0.300 U/s | 0.000 U/s | ✅ | 45.0 m/s |
+| Angeschnitten (feste Banane): Drall bis spinMax × bananeSpinMax × wucht | 32.40 U/s | 5.000–36.46 U/s | – | ✅ | innenrist, 45.0 m/s (100 % von Vollspann) |
+| Angeschnitten (feste Banane): mindestens 95 % des Vollspann-Tempos | 1.000  | 0.950–1.000  | 0.970  | ✅ |  |
+| ?banane=0: angeschnitten langsamer wie Nacht 2b, Drall bis spinMax | 0.850  | 0.750–0.950  | 0.850  | ✅ | 27.0 U/s |
+| Kurve: Abflug zeigt außen am Zielpfosten vorbei | 5.498 ° | 1.500–25.00 ° | – | ✅ | Ziel z 1.00, Drall 32.4 U/s |
+| Kurvenschuss im Spiel (Tipp + halten, 20 Seeds): Tore | 19.00 /20 | 17.00–20.00 /20 | 20.00 /20 | ✅ | innenrist, 37.3 m/s, 27.9 U/s |
+| Außenrist: weniger Drall als Innenrist | 0.850  | 0.600–0.900  | 0.850  | ✅ | aussenrist, Streuung 2.4° vs. 1.8° |
+| Aus jeder Lage (200 Zufallslagen, jede Blickrichtung): Ziel im Tor, Abflug Richtung Tor | 200.0 /200 | 200.0–200.0 /200 | 200.0 /200 | ✅ | 168× Flugbahn (inkl. Kurve) durch den Zielpunkt gelöst, sonst Roller direkt aufs Ziel |
+
+ALLE GRÜN (25/25)
+
+### Banane und Flanke (vorher/nachher)
+
+| Prüfung | Messwert | Fenster | Ziel | Ergebnis | Hinweis |
+|---|---|---|---|---|---|
+| Banane aus 8 m: Tempo ÷ Vollspann | 0.950  | 0.950–1.000  | 0.970  | ✅ | 38.1 von 40.1 m/s (Nacht 2b 32.6 m/s = 81 %) |
+| Banane aus 8 m: Kurve bleibt (seitlich) | 0.537 m | 0.490–9.000 m | – | ✅ | Nacht 2b 0.54 m; Flugzeit 0.28 → 0.23 s, Drall 12.6 → 14.8 U/s |
+| Banane aus 12 m: Tempo ÷ Vollspann | 0.956  | 0.950–1.000  | 0.970  | ✅ | 35.7 von 37.3 m/s (Nacht 2b 30.4 m/s = 81 %) |
+| Banane aus 12 m: Kurve bleibt (seitlich) | 1.194 m | 1.071–9.000 m | – | ✅ | Nacht 2b 1.19 m; Flugzeit 0.45 → 0.38 s, Drall 10.9 → 12.8 U/s |
+| Banane aus 16 m: Tempo ÷ Vollspann | 0.964  | 0.950–1.000  | 0.970  | ✅ | 30.0 von 31.1 m/s (Nacht 2b 25.6 m/s = 82 %) |
+| Banane aus 16 m: Kurve bleibt (seitlich) | 2.054 m | 1.840–9.000 m | – | ✅ | Nacht 2b 2.04 m; Flugzeit 0.72 → 0.62 s, Drall 8.4 → 9.9 U/s |
+| Kurzer Chip 6 m bleibt steil (über den Tormann) | 38.00 ° | 35.00–45.50 ° | – | ✅ | Nacht 2b 43° |
+| Flanke 9 m: Abflugwinkel | 22.57 ° | 13.50–28.00 ° | – | ✅ | Nacht 2b 38°, Abflug 10.1 → 11.4 m/s |
+| Flanke 9 m: Flugzeit ÷ Nacht 2b | 0.738 × | 0.000–0.800 × | 0.700 × | ✅ | 1.33 → 0.98 s, Scheitel 2.12 → 1.14 m |
+| Flanke 9 m: landet beim Mitspieler | 0.048 m | 0.000–0.350 m | 0.000 m | ✅ | Chip-Tabelle mit erstem Aufsetzer (Nacht 2c korrigiert) |
+| Flanke 9 m: Scheitel unter dem Dachnetz | 1.145 m | 0.000–4.500 m | – | ✅ |  |
+| Flanke 12 m: Abflugwinkel | 18.29 ° | 13.50–28.00 ° | – | ✅ | Nacht 2b 33°, Abflug 12.1 → 14.0 m/s |
+| Flanke 12 m: Flugzeit ÷ Nacht 2b | 0.720 × | 0.000–0.800 × | 0.700 × | ✅ | 1.46 → 1.05 s, Scheitel 2.43 → 1.24 m |
+| Flanke 12 m: landet beim Mitspieler | 0.047 m | 0.000–0.350 m | 0.000 m | ✅ | Chip-Tabelle mit erstem Aufsetzer (Nacht 2c korrigiert) |
+| Flanke 12 m: Scheitel unter dem Dachnetz | 1.237 m | 0.000–4.500 m | – | ✅ |  |
+| Flanke 15 m: Abflugwinkel | 14.00 ° | 13.50–28.00 ° | – | ✅ | Nacht 2b 28°, Abflug 14.0 → 16.4 m/s |
+| Flanke 15 m: Flugzeit ÷ Nacht 2b | 0.692 × | 0.000–0.800 × | 0.700 × | ✅ | 1.54 → 1.07 s, Scheitel 2.57 → 1.15 m |
+| Flanke 15 m: landet beim Mitspieler | 0.128 m | 0.000–0.350 m | 0.000 m | ✅ | Chip-Tabelle mit erstem Aufsetzer (Nacht 2c korrigiert) |
+| Flanke 15 m: Scheitel unter dem Dachnetz | 1.152 m | 0.000–4.500 m | – | ✅ |  |
+
+ALLE GRÜN (19/19)
+
+| Schuss | Technik | Nacht 2b: Tempo / Flugzeit / Scheitel / Kurve | Nacht 2c |
+|---|---|---|---|
+| 8 m | vollspann | 40.1 m/s / 0.22 s / 0.35 m / 0.00 m | 40.1 m/s / 0.22 s / 0.35 m / 0.00 m |
+| 8 m | innenrist | 32.6 m/s / 0.28 s / 0.37 m / 0.54 m | 38.1 m/s / 0.23 s / 0.36 m / 0.54 m |
+| 12 m | vollspann | 37.3 m/s / 0.35 s / 0.41 m / 0.00 m | 37.3 m/s / 0.35 s / 0.41 m / 0.00 m |
+| 12 m | innenrist | 30.4 m/s / 0.45 s / 0.49 m / 1.19 m | 35.7 m/s / 0.38 s / 0.43 m / 1.19 m |
+| 16 m | vollspann | 31.1 m/s / 0.56 s / 0.66 m / 0.00 m | 31.1 m/s / 0.56 s / 0.66 m / 0.00 m |
+| 16 m | innenrist | 25.6 m/s / 0.72 s / 0.92 m / 2.04 m | 30.0 m/s / 0.62 s / 0.75 m / 2.05 m |
+
+| Pass hoch | Nacht 2b: Winkel / Tempo / Flugzeit / Scheitel | Nacht 2c |
+|---|---|---|
+| 6 m | 43° / 8.1 m/s / 1.15 s / 1.65 m | 38° / 8.1 m/s / 1.05 s / 1.38 m |
+| 9 m | 38° / 10.1 m/s / 1.33 s / 2.12 m | 23° / 11.4 m/s / 0.98 s / 1.14 m |
+| 12 m | 33° / 12.1 m/s / 1.46 s / 2.43 m | 18° / 14.0 m/s / 1.05 s / 1.24 m |
+| 15 m | 28° / 14.0 m/s / 1.54 s / 2.57 m | 14° / 16.4 m/s / 1.07 s / 1.15 m |
+
+### Luftbälle: Ballmaschinen-Serie, Timing, Technik-Folgen
+
+| Prüfung | Messwert | Fenster | Ziel | Ergebnis | Hinweis |
+|---|---|---|---|---|---|
+| Ballmaschinen-Serie (8 × 10 Bälle): Tore gesamt | 88.75 % | 50.00–100.0 % | – | ✅ | 71 von 80 |
+| Volley: gewählt und trifft das Tor | 15.00 Tore | ≥ 1.000 Tore | – | ✅ | 16× gewählt (Station 16×), 16 Ballkontakte, Ø 36.0 m/s, q 1.00 |
+| Dropkick: gewählt und trifft das Tor | 7.000 Tore | ≥ 1.000 Tore | – | ✅ | 8× gewählt (Station 8×), 8 Ballkontakte, Ø 32.9 m/s, q 0.95 |
+| Seitfallzieher: gewählt und trifft das Tor | 13.00 Tore | ≥ 1.000 Tore | – | ✅ | 16× gewählt (Station 16×), 16 Ballkontakte, Ø 19.2 m/s, q 0.83 |
+| Fallrückzieher: gewählt und trifft das Tor | 13.00 Tore | ≥ 1.000 Tore | – | ✅ | 16× gewählt (Station 16×), 16 Ballkontakte, Ø 16.4 m/s, q 0.74 |
+| Kopfball: gewählt und trifft das Tor | 15.00 Tore | ≥ 1.000 Tore | – | ✅ | 16× gewählt (Station 16×), 16 Ballkontakte, Ø 13.0 m/s, q 0.90 |
+| Flugkopfball: gewählt und trifft das Tor | 8.000 Tore | ≥ 1.000 Tore | – | ✅ | 8× gewählt (Station 8×), 8 Ballkontakte, Ø 13.5 m/s, q 0.82 |
+| Kopfball langsamer als Fuß (Volley/Dropkick) | 0.372  | 0.000–0.800  | – | ✅ | 13.0 vs. 34.9 m/s |
+| Timing-Hilfe: zu früh gedrückt (0,3 s vor dem Abschuss) → Timing-Wert höchstens 15 % schlechter | 1.000  | 0.850–1.000  | – | ✅ | gut 1.00 (60 Kontakte), zu früh 1.00 (60) |
+| Timing-Hilfe: zu früh → kaum langsamer | 21.55 m/s | 20.55–99.00 m/s | – | ✅ | gut 21.6, zu früh 21.6 m/s; Tore ohne Tormann: gut 53, zu früh 53 von je 60 |
+| ?timinghilfe=0: zu früh gedrückt → Timing-Wert sinkt | 0.192  | 0.000–0.700  | – | ✅ | gut 1.00 (60 Kontakte), zu früh 0.19 (54) |
+| ?timinghilfe=0: zu früh → langsamer | 15.06 m/s | 0.000–20.55 m/s | – | ✅ | gut 21.6, zu früh 15.1 m/s |
+| ?timinghilfe=0: zu früh → Qualität q sinkt (Ziel zur Mitte, mehr Streuung) | 0.424  | 0.000–0.620  | – | ✅ | gut 0.87, zu früh 0.42; Tore ohne Tormann: gut 53, zu früh 43 von je 60 |
+| Nach Fallrück-/Seitfallzieher am Boden | 1.018 s | 0.800–1.200 s | 0.800 s | ✅ | 5× gemessen (0,8 s + Landung) |
+| Kopfball in Sprunghöhe: Absprung | 0.443 m | 0.100–1.010 m | – | ✅ | höchster Sprung bei den Kopfball-Flanken |
+| Deutliche Gegen-Eingabe bricht den Luftball ab | 0.300 s | 0.000–0.360 s | 0.300 s | ✅ | Stick weg vom Anlaufpunkt |
+| Fallrückzieher: Blick beim Kontakt ↔ Richtung Tor (Rücken zum Tor) | -0.997 cos | -1.000–-0.500 cos | -1.000 cos | ✅ | 16 Kontakte; Nacht 2c schaute er zum Tor (Blick in Flugrichtung des Balls) |
+| Fallrückzieher: Kopf fällt zum Tor (Pose rückwärts, Blick vom Tor weg) | 0.997 cos | 0.500–1.000 cos | 1.000 cos | ✅ | pitch -1.75 rad |
+| Fallrückzieher: Ball beim Kontakt über/hinter dem Kopf (hinter der Körpermitte, hoch) | -0.455 m | -1.000–0.050 m | – | ✅ | vor (+)/hinter (−) dem Körper entlang des Blicks; niedrigster Treffpunkt 1.23 m |
+| Fallrückzieher: Ball fliegt aufs Tor | 93.75 % | 80.00–100.0 % | – | ✅ | Richtung Ball ↔ Tor cos 0.96 |
+| Seitfallzieher: seitlich (Blick quer zum Tor) | 0.281 |cos| | 0.000–0.500 |cos| | 0.000 |cos| | ✅ | 16 Kontakte, Blick ↔ Ball cos 1.00 |
+| Flugkopfball: Blick zum Ball hin | 0.784 cos | 0.300–1.000 cos | – | ✅ | Blick ↔ Tor cos 0.78 |
+| Volley: Blick zwischen Ball und Tor | 0.843 cos | 0.000–1.000 cos | – | ✅ | Blick ↔ Ball 0.84, ↔ Tor 0.84, Treffpunkt 0.50 m vor dem Körper |
+| Dropkick: Blick zwischen Ball und Tor | 0.899 cos | 0.000–1.000 cos | – | ✅ | Blick ↔ Ball 0.90, ↔ Tor 0.90, Treffpunkt 0.46 m vor dem Körper |
+| Kopfball: Blick zwischen Ball und Tor | 0.829 cos | 0.000–1.000 cos | – | ✅ | Blick ↔ Ball 0.83, ↔ Tor 0.83, Treffpunkt 0.22 m vor dem Körper |
+| Volley-Station, Fallrückzieher-Bälle (40 Durchgänge): Tore | 86.25 % | 72.00–100.0 % | 81.00 % | ✅ | 69 von 80 (Nacht 2c 65 von 80) |
+| Freies Training: Fallrückzieher trifft das Tor aus dem Plan (+x), obwohl er von ihm weg schaut | 1.000  | 1.000–1.000  | 1.000  | ✅ | Plan-Tor x = 12, Blick beim Kontakt cos -1.00 |
+
+ALLE GRÜN (27/27)
+
+Je Technik:
+- Volley 16× gewählt, 16 getroffen, 15 Tore, Ø 36.0 m/s, Timing 1.00
+- Dropkick 8× gewählt, 8 getroffen, 7 Tore, Ø 32.9 m/s, Timing 1.00
+- Seitfallzieher 16× gewählt, 16 getroffen, 13 Tore, Ø 19.2 m/s, Timing 1.00
+- Fallrückzieher 16× gewählt, 16 getroffen, 13 Tore, Ø 16.4 m/s, Timing 1.00
+- Kopfball 16× gewählt, 16 getroffen, 15 Tore, Ø 13.0 m/s, Timing 1.00
+- Flugkopfball 8× gewählt, 8 getroffen, 8 Tore, Ø 13.5 m/s, Timing 1.00
+
+### Training und Challenges (headless, Skript-Spieler)
+
+| Prüfung | Messwert | Fenster | Ziel | Ergebnis | Hinweis |
+|---|---|---|---|---|---|
+| Torwand: untätig endet | 1.000  | 1.000–1.000  | 1.000  | ✅ | 0 Treffer, 0 ★ nach 133 s |
+| Torwand: Skript-Spieler holt Sterne | 1.000 ★ | 1.000–3.000 ★ | 3.000 ★ | ✅ | 3 Treffer (1 ★, 23 s) / 3 Treffer (1 ★, 18 s) |
+| Volley-Station: untätig endet | 1.000  | 1.000–1.000  | 1.000  | ✅ | 0 Tore, 0 ★ nach 69 s |
+| Volley-Station: Skript-Spieler holt Sterne | 3.000 ★ | 1.000–3.000 ★ | 3.000 ★ | ✅ | 8 Tore (3 ★, 43 s) / 9 Tore (3 ★, 40 s) |
+| Bandenpass: untätig endet | 1.000  | 1.000–1.000  | 1.000  | ✅ | 0 Treffer, 0 ★ nach 80 s |
+| Bandenpass: Skript-Spieler holt Sterne | 3.000 ★ | 1.000–3.000 ★ | 3.000 ★ | ✅ | 6 Treffer (3 ★, 14 s) / 6 Treffer (3 ★, 14 s) |
+| Dribbel-Parcours: untätig endet | 1.000  | 1.000–1.000  | 1.000  | ✅ | – s, 0 ★ nach 61 s |
+| Dribbel-Parcours: Skript-Spieler holt Sterne | 3.000 ★ | 1.000–3.000 ★ | 3.000 ★ | ✅ | 7,84 s (3 ★, 6 s) / 10,83 s (3 ★, 6 s) |
+| Elfmeter: untätig endet | 1.000  | 1.000–1.000  | 1.000  | ✅ | 0 Tore, 0 ★ nach 77 s |
+| Elfmeter: Skript-Spieler holt Sterne | 3.000 ★ | 1.000–3.000 ★ | 3.000 ★ | ✅ | 4 Tore (3 ★, 12 s) / 4 Tore (3 ★, 12 s) |
+| Doppelpass: untätig endet | 1.000  | 1.000–1.000  | 1.000  | ✅ | 0 Tore, 0 ★ nach 42 s |
+| Doppelpass: Skript-Spieler holt Sterne | 2.000 ★ | 1.000–3.000 ★ | 3.000 ★ | ✅ | 3 Tore (2 ★, 28 s) / 4 Tore (3 ★, 24 s) |
+| Ballmaschine: untätig endet | 1.000  | 1.000–1.000  | 1.000  | ✅ | 0 gehalten, 0 ★ nach 47 s |
+| Ballmaschine: Skript-Spieler holt Sterne | 3.000 ★ | 1.000–3.000 ★ | 3.000 ★ | ✅ | 12 gehalten (3 ★, 61 s) / 12 gehalten (3 ★, 60 s) |
+| Reaktion: untätig endet | 1.000  | 1.000–1.000  | 1.000  | ✅ | 0 gehalten, 0 ★ nach 22 s |
+| Reaktion: Skript-Spieler holt Sterne | 3.000 ★ | 1.000–3.000 ★ | 3.000 ★ | ✅ | 10 gehalten (3 ★, 33 s) / 10 gehalten (3 ★, 33 s) |
+| 1 gegen 1: untätig endet | 1.000  | 1.000–1.000  | 1.000  | ✅ | 0 gehalten, 0 ★ nach 15 s |
+| 1 gegen 1: Skript-Spieler holt Sterne | 3.000 ★ | 1.000–3.000 ★ | 3.000 ★ | ✅ | 5 gehalten (3 ★, 18 s) / 5 gehalten (3 ★, 9 s) |
+| Sterne: Schwellen (mehr/weniger ist besser, kein Ergebnis = 0) | 1.000  | 1.000–1.000  | 1.000  | ✅ | Torwand 3/5/7 Treffer, Dribbel 26/19/15 s |
+| Ballmaschine ohne Tormann: Schüsse gehen ins Tor | 12.00 /12 | 11.00–12.00 /12 | 12.00 /12 | ✅ | Treffer je Art {"flach":3,"hoch":2,"flatter":2,"aufsetzer":2,"bande":1,"kurve":2} |
+| Torwand: andere Scheibe getroffen zählt nicht | 1.000  | 1.000–1.000  | 1.000  | ✅ | leuchtend oben rechts, getroffen: Falsche Scheibe (unten rechts) |
+| Dribbel: alle Tore verfehlt → 5 × 3 s Strafe | 15.00 s | 15.00–15.00 s | 15.00 s | ✅ | Zeit 17,42 s |
+
+ALLE GRÜN (22/22)
+
+| Challenge | Gruppe | Versuche | Sterne ab | Skript-Spieler (Seed 1, 2) | untätig |
+|---|---|---|---|---|---|
+| 🎯 Torwand | Schütze | 10 | 3 / 5 / 7 Treffer | 3 (1 ★), 3 (1 ★) | 0 (0 ★) |
+| 🦵 Volley-Station | Schütze | 10 | 3 / 5 / 7 Tore | 8 (3 ★), 9 (3 ★) | 0 (0 ★) |
+| ↗️ Bandenpass | Schütze | 6 | 2 / 4 / 6 Treffer | 6 (3 ★), 6 (3 ★) | 0 (0 ★) |
+| 🔶 Dribbel-Parcours | Schütze | 1 | 26 / 19 / 15 s | 7,84 (3 ★), 10,83 (3 ★) | – (0 ★) |
+| ⚽ Elfmeter | Schütze | 5 | 2 / 3 / 4 Tore | 4 (3 ★), 4 (3 ★) | 0 (0 ★) |
+| 🔁 Doppelpass | Schütze | 5 | 2 / 3 / 4 Tore | 3 (2 ★), 4 (3 ★) | 0 (0 ★) |
+| 🧤 Ballmaschine | Torwart | 12 | 5 / 8 / 10 gehalten | 12 (3 ★), 12 (3 ★) | 0 (0 ★) |
+| ⚡ Reaktion | Torwart | 10 | 3 / 5 / 7 gehalten | 10 (3 ★), 10 (3 ★) | 0 (0 ★) |
+| 🥅 1 gegen 1 | Torwart | 5 | 2 / 3 / 4 gehalten | 5 (3 ★), 5 (3 ★) | 0 (0 ★) |
+
+### Torwart (Auto-Torwart, CPU-Stufen)
+
+| Prüfung | Messwert | Fenster | Ziel | Ergebnis | Hinweis |
+|---|---|---|---|---|---|
+| Auto-Torwart ohne Knopf: gehalten (40 Schüsse 14–20 m/s aus 7–10 m) | 80.00 % | 55.00–100.0 % | – | ✅ | gefangen 7, abgewehrt 25, Tore 8, gehechtet 21× |
+| … ohne Automatik (?autotorwart=0, kein Knopf) | 0.000 % | 0.000–55.00 % | – | ✅ | gefangen 0, abgewehrt 0, Tore 37 |
+| Auto-Torwart hechtet selbst | 21.00 × | ≥ 3.000 × | – | ✅ |  |
+| Stick gewinnt: Tormann läuft mit dem Stick (Schuss in die andere Ecke) | 1.830 m | ≥ 0.800 m | – | ✅ | Ausgang goal |
+| Ball in der Hand ohne Eingabe, Mitspieler frei: Auto-Torwart wirft ab nach | 1.008 s | 0.950–1.300 s | 1.000 s | ✅ | Abwurf zum Mitspieler |
+| … ohne Mitspieler: Auto-Torwart gibt ab nach | 2.008 s | 1.000–2.100 s | 2.000 s | ✅ | ohne Mitspieler: Abschlag 1 s nach dem Abwurf-Zeitpunkt (Nacht 2e; vorher bis 4,4 s), nie Zwangsabwurf |
+| … mit Pass-Knopf (Abwurf) sofort | 0.258 s | 0.200–0.300 s | 0.250 s | ✅ | Knopf nach 0,25 s |
+| Harmlose Roller (6–11 m/s, 6–10 m) werden Tor: schwächste Stufe | 0.000 % | 0.000–5.000 % | 5.000 % | ✅ | Stufe 1: 0/40, Stufe 2: 0/40, Stufe 3: 0/40 |
+| CPU-Tormann Stufe 1: Tore je Schuss (48 Spiele) | 44.01 % | 38.00–100.0 % | 40.00 % | ✅ | 610/1386, Fangen 20.1, Abwehr 12.9 je Spiel |
+| CPU-Tormann Stufe 2 (Standard): Tore je Schuss (48 Spiele) | 26.34 % | 24.00–36.00 % | 30.00 % | ✅ | 369/1401, Fangen 16.0, Abwehr 16.5 je Spiel · Nacht 2b: 14 %, Nacht 2d: 29–31 % |
+| CPU-Tormann Stufe 3: Tore je Schuss (48 Spiele) | 19.38 % | 0.000–29.00 % | 25.00 % | ✅ | 280/1445, Fangen 16.1, Abwehr 18.1 je Spiel · n7 E1: Müdigkeit/Herauslaufen/Winkel heben Stufe 3 von 25,5 auf ≈ 28 % (Datenblatt-Gate: Stufe 3 hält nicht mehr fast alles), Grenze 26 → 29 % |
+| Stufen monoton (1 > 2 > 3) | 1.000  | 1.000–1.000  | 1.000  | ✅ | 44.0 > 26.3 > 19.4 |
+| Langsame Schüsse (< 12 m/s, auch Stocherbälle aus 2 m) werden Tor | 4.678 % | 0.000–18.00 % | 5.000 % | ✅ | 8/171 (alle Stufen), harmlose Roller vom Boden ≥ 5 m: 0/0 |
+| Eckschuss-Serie 21–33 m/s: Tore gegen Tormann 1 / 2 / 3 monoton | 1.000  | 1.000–1.000  | 1.000  | ✅ | Stufe 1: 17/60 Tore, 1 gefangen, 38 abgewehrt · Stufe 2: 2/60 Tore, 0 gefangen, 58 abgewehrt · Stufe 3: 0/60 Tore, 0 gefangen, 60 abgewehrt |
+| … scharfe Schüsse werden abgeklatscht, nicht gefangen (alle Stufen, n7) | 0.637 % | 0.000–5.000 % | 0.000 % | ✅ |  |
+| Eckschuss-Serie Stufe 1: Ball ≥ 0,8 m neben ihm → Hechtsprung | 100.0 % | 70.00–100.0 % | – | ✅ | 40/40, alte Hecht-Regel (?hechten=0): 41/43; gehechtet gesamt 64/120, davon gehalten 62 |
+| Eckschuss-Serie Stufe 2: Ball ≥ 0,8 m neben ihm → Hechtsprung | 95.35 % | 70.00–100.0 % | – | ✅ | 41/43, alte Hecht-Regel (?hechten=0): 36/41; gehechtet gesamt 55/120, davon gehalten 55 |
+| Eckschuss-Serie Stufe 3: Ball ≥ 0,8 m neben ihm → Hechtsprung | 100.0 % | 70.00–100.0 % | – | ✅ | 39/39, alte Hecht-Regel (?hechten=0): 26/40; gehechtet gesamt 57/120, davon gehalten 57 |
+| Hechtsprung: Landung und Aufstehen | 0.500 s | 0.000–1.000 s | – | ✅ | Flugphase 0.38–0.7 s je nach Absprung (bis 0.7 s vor dem Ball) |
+
+ALLE GRÜN (19/19)
+
+### Fanggrenze (n7 Etappe 0)
+
+| Prüfung | Messwert | Fenster | Ziel | Ergebnis | Hinweis |
+|---|---|---|---|---|---|
+| Stufe 1: 11 m/s (40 km/h) neben den Körper → gefangen | 1.000  | 1.000–1.000  | 1.000  | ✅ |  |
+| Stufe 1: 15 m/s (54 km/h) neben den Körper → abgeklatscht | 1.000  | 1.000–1.000  | 1.000  | ✅ | tip |
+| Stufe 1: 24 m/s (86 km/h) → abgeklatscht | 1.000  | 1.000–1.000  | 1.000  | ✅ | tip |
+| Stufe 2: 11 m/s (40 km/h) neben den Körper → gefangen | 1.000  | 1.000–1.000  | 1.000  | ✅ |  |
+| Stufe 2: 15 m/s (54 km/h) neben den Körper → abgeklatscht | 1.000  | 1.000–1.000  | 1.000  | ✅ | parry |
+| Stufe 2: 24 m/s (86 km/h) → abgeklatscht | 1.000  | 1.000–1.000  | 1.000  | ✅ | parry |
+| Stufe 3: 11 m/s (40 km/h) neben den Körper → gefangen | 1.000  | 1.000–1.000  | 1.000  | ✅ |  |
+| Stufe 3: 15 m/s (54 km/h) neben den Körper → abgeklatscht | 1.000  | 1.000–1.000  | 1.000  | ✅ | parry |
+| Stufe 3: 24 m/s (86 km/h) → abgeklatscht | 1.000  | 1.000–1.000  | 1.000  | ✅ | parry |
+| Auto-Torwart: 11 m/s (40 km/h) neben den Körper → gefangen | 1.000  | 1.000–1.000  | 1.000  | ✅ |  |
+| Auto-Torwart: 15 m/s (54 km/h) neben den Körper → abgeklatscht | 1.000  | 1.000–1.000  | 1.000  | ✅ | parry |
+| Auto-Torwart: 24 m/s (86 km/h) → abgeklatscht | 1.000  | 1.000–1.000  | 1.000  | ✅ | parry |
+| Ball direkt auf den Körper, 14 m/s: ab und zu gefangen | 57.50 % | 10.00–60.00 % | – | ✅ | 23/40 |
+| … 17,5 m/s: nie gefangen | 0.000  | 0.000–0.000  | 0.000  | ✅ |  |
+| Abpraller-Tempo: Anteil des Schusstempos (min…max) | 0.253 × | 0.240–0.410 × | – | ✅ | bis 0.40, 30 Paraden |
+| … höchstens 0,41 des Tempos | 0.396 × | 0.000–0.410 × | – | ✅ |  |
+| Abpraller nie zurück Richtung eigenes Tor | 0.000  | 0.000–0.000  | 0.000  | ✅ |  |
+| Abpraller schräg zur Seite (Winkel zur Torlinien-Normalen, min) | 26.05 ° | 20.00–75.00 ° | – | ✅ | max 69° |
+| Hoher Ball (1,85 m) wird gefaustet (Pose „fausten“) | 1.000  | 1.000–1.000  | 1.000  | ✅ | parry, fausten |
+| Mittlerer Ball: Pose „parade“ (Abklatschen sichtbar) | 1.000  | 1.000–1.000  | 1.000  | ✅ | parade |
+| ?fangMax=0: Stufe 3 fängt 18 m/s wie bisher | 1.000  | 1.000–1.000  | 1.000  | ✅ | catch |
+| Bot-Spiele (8): direkte Schüsse 58–72 km/h gefangen | 0.000 % | 0.000–15.00 % | – | ✅ | ?fangMax=0: 40 % |
+| … 72–90 km/h | 4.348 % | 0.000–5.000 % | – | ✅ | ?fangMax=0: 13 % |
+| … ≥ 90 km/h | 0.000 % | 0.000–2.000 % | – | ✅ | ?fangMax=0: 2 %; alle (auch abgefälschte, die langsam ankommen): 100/50/18/11/0 % |
+| … langsame Bälle (< 45 km/h an den Händen) gefangen | 100.0 % | 90.00–100.0 % | – | ✅ | 137 Bälle |
+
+ALLE GRÜN (25/25)
+
+### Tormann (n7 Vorlagen E1)
+
+| Prüfung | Messwert | Fenster | Ziel | Ergebnis | Hinweis |
+|---|---|---|---|---|---|
+| Energie nach Hechter + Abklatschen | 68.00  | 67.99–68.01  | 68.00  | ✅ |  |
+| Erholung in 2 s Spielzeit | 2.000  | 1.950–2.050  | 2.000  | ✅ |  |
+| Aufstehen frisch: Tempo × 1 | 1.000 × | 1.000–1.000 × | 1.000 × | ✅ |  |
+| Aufstehen bei Energie 20: Tempo × muedeAuf | 0.600 × | 0.590–0.610 × | 0.600 × | ✅ |  |
+| Kondition je Stufe: 10 Punkte kosten Stufe 1 / Stufe 3 | -6.500  | -6.600–-6.400  | -6.500  | ✅ | Stufe 1: 87.5, Stufe 3: 94.0 |
+| ?muede=0: keine Kosten | 100.0  | 100.0–100.0  | 100.0  | ✅ |  |
+| Frisch: 11 m/s (40 km/h) gefangen | 1.000  | 1.000–1.000  | 1.000  | ✅ |  |
+| Müde (Energie 10): 11 m/s abgeklatscht (Fanggrenze für mittlere Bälle gesunken) | 1.000  | 1.000–1.000  | 1.000  | ✅ |  |
+| Müde: langsamer Roller 6 m/s weiter gefangen | 1.000  | 1.000–1.000  | 1.000  | ✅ |  |
+| ?muede=0: müde Energie wirkt nicht | 1.000  | 1.000–1.000  | 1.000  | ✅ |  |
+| Winkelhalbierende: Tormann näher am kurzen Pfosten als auf der Mittellinie | 0.182 m | 0.050–1.500 m | – | ✅ | ?winkel=0: z = 1.02 m, Standard (0,5): 1.20 m, ?winkel=1: 1.34 m (Pfosten bei 1,5 m) |
+| 1 gegen 1 vereitelt, Mittel Stufe 1–3 (n7-Lauftempo) | 48.33 % | 35.00–55.00 % | – | ✅ | je Stufe 18/63/65 % · ?raus=0: 20/35/45 % (Mittel 33 %) |
+| … Stufe 2 mit Herauslaufen besser als ohne (n7-Lauftempo) | 27.50 Punkte | 5.000–100.0 Punkte | – | ✅ |  |
+| … n8-Lauftempo 7 m/s (Info) | 56.67 % | 0.000–100.0 % | – | ✅ | je Stufe 30/65/75 % · ?raus=0: 28/70/75 % (Mittel 58 %) |
+| Blocken mit gespreizten Beinen: flacher Ball 0,42 m neben der Mitte prallt ab | 1.000  | 1.000–1.000  | 1.000  | ✅ |  |
+| Heber über den Tormann: er stolpert (Chance 1) | 1.000  | 1.000–1.000  | 1.000  | ✅ |  |
+| ?stolpern=0: nie | 0.000 s | 0.000–0.000 s | 0.000 s | ✅ |  |
+| Bot-Spiel: Tore je Schuss (Stufe 2) | 26.80 % | 25.00–35.00 % | 30.00 % | ✅ | ?muede=0: 26.5 % |
+| … Nachschuss-Tore (Anteil aller Tore) | 27.36 % | 10.00–100.0 % | – | ✅ |  |
+| … Hechter je Spiel | 29.67  | ≥ 15.00  | – | ✅ |  |
+| … Tormann-Energie Minimum je Spiel (Mittel) | 33.42  | 30.00–60.00  | – | ✅ | unter 60: 9.3 % der Spielzeit |
+| … Hänger / Numerik | 0.000  | 0.000–0.000  | 0.000  | ✅ |  |
+
+ALLE GRÜN (22/22)
+
+### Nachdrall (n7 Vorlagen E2)
+
+| Prüfung | Messwert | Fenster | Ziel | Ergebnis | Hinweis |
+|---|---|---|---|---|---|
+| Gewichte: Summe über das Fenster | 1.000  | 0.999–1.001  | 1.000  | ✅ |  |
+| … erste drei Abschnitte (5-4-3 von 23) | 52.17 % | 52.00–52.30 % | 52.20 % | ✅ |  |
+| … in den ersten 0,08 s | 53.91 % | 50.00–100.0 % | – | ✅ |  |
+| Stick relativ zur Schussrichtung: −z bei Schuss nach +x = links | 1.000  | 1.000–1.000  | 1.000  | ✅ |  |
+| Kein Stick: kein Nachdrall-Ereignis | 0.000  | 0.000–0.000  | 0.000  | ✅ |  |
+| Stick voll links: seitlicher Versatz nach 15 m | 1.870 m | 1.500–3.000 m | – | ✅ | ohne 0.63 m, links -1.24 m, rechts 2.51 m; Drall 11.4 U/s |
+| … rechts spiegelbildlich | 1.883 m | 1.500–3.000 m | – | ✅ |  |
+| Stick halb: halber Drall | 0.500 × | 0.400–0.600 × | 0.500 × | ✅ | Kurve 0.69 × (der Auftrieb sättigt) |
+| Stick zurück: Ball steigt (24 m/s, 10°, Höhe nach 15 m) | 1.179 m | 0.500–3.000 m | – | ✅ | ohne 0.36 m, zurück 1.53 m |
+| Stick vor: Ball taucht ab (24 m/s, 14°) | 0.873 m | 0.400–3.000 m | – | ✅ | ohne 1.37 m, vor 0.50 m |
+| Stick schon beim Kontakt so gehalten: keine Kurve | 0.000 m | 0.000–0.100 m | 0.000 m | ✅ |  |
+| ?nachdrall=0: keine Kurve | 0.000 m | 0.000–0.020 m | 0.000 m | ✅ |  |
+| Langsamer Schuss (12 m/s): schwächerer Drall (× Wucht) | 0.545 × | 0.300–0.600 × | 0.480 × | ✅ | Versatz 1.50 m |
+| Bot-Spiel: Nachdrall je Spiel (Stufe 2, 15 %) | 6.100  | 3.000–15.00  | – | ✅ | Schüsse/Spiel 62.0 |
+| … Torquote mit − ohne Nachdrall | 0.278 Punkte | -10.00–10.00 Punkte | 0.000 Punkte | ✅ | 26.7 % / ?nachdrall=0: 26.4 % |
+| … Tore je Schuss im Ziel | 26.67 % | 25.00–35.00 % | 30.00 % | ✅ |  |
+| … Hänger / Numerik | 0.000  | 0.000–0.000  | 0.000  | ✅ |  |
+
+ALLE GRÜN (17/17)
+
+### Traumpass und Geben und Gehen (n7 Vorlagen E3)
+
+| Prüfung | Messwert | Fenster | Ziel | Ergebnis | Hinweis |
+|---|---|---|---|---|---|
+| Empfänger 5 m vor dem Tor, frei, Wege frei → Traumpass | 1.000  | 1.000–1.000  | 1.000  | ✅ | Wertung 1.00, Abstand 5.4 m |
+| … Gegner 1 m neben dem Treffpunkt → nein | 0.000  | 0.000–0.000  | 0.000  | ✅ |  |
+| … Gegner im Schussweg → nein | 0.000  | 0.000–0.000  | 0.000  | ✅ |  |
+| … Tormann steht im Passweg → nein | 0.000  | 0.000–0.000  | 0.000  | ✅ |  |
+| … Treffpunkt 9 m vor dem Tor → nein | 0.000  | 0.000–0.000  | 0.000  | ✅ |  |
+| … ?perfekt=0: kein Ereignis | 0.000  | 0.000–0.000  | 0.000  | ✅ |  |
+| Traumpass-Ereignis gemeldet | 1.000  | 1.000–1.000  | 1.000  | ✅ |  |
+| Direktabnahme: Qualität + perfektQ | 0.400  | 0.050–0.400  | 0.400  | ✅ | 0.50 → 0.90 |
+| … Schuss härter | 1.409 × | 1.080–1.600 × | – | ✅ | 101 → 142 km/h |
+| … Bonus nur einmal (Traumpass verbraucht) | 1.000  | 1.000–1.000  | 1.000  | ✅ |  |
+| Geben und Gehen: Passgeber startet einen Lauf | 1.000  | 1.000–1.000  | 1.000  | ✅ |  |
+| … läuft in 2,5 s nach vorn | 7.413 m | 4.000–20.00 m | – | ✅ | ?gebengehen=0: 6.5 m |
+| … deutlich weiter als ohne (größter Vorsprung in 2,5 s) | 4.636 m | 2.000–20.00 m | – | ✅ | nach 2,5 s 0.9 m |
+| Bot-Spiel: Traumpässe je Spiel | 2.900  | 2.000–5.000  | – | ✅ | direkt abgenommen 79 % |
+| … Tore nach Traumpass | 50.00 % | 30.00–65.00 % | 45.00 % | ✅ | Datenblatt 40–55 % (kleine Stichprobe, ± 8 Punkte je 20 Spiele) |
+| … Geben und Gehen (Anteil der Pässe ≥ 4 m) | 36.24 % | 27.00–50.00 % | 35.00 % | ✅ | ohne: 26 % |
+| … Doppelpässe je Spiel | 25.40  | ≥ 3.000  | – | ✅ | ohne: 22.6 |
+| … Bot-Pässe kommen an | 64.00 % | 57.00–100.0 % | 60.00 % | ✅ | ohne: 71 % |
+| … Tore je Schuss | 30.37 % | 25.00–35.00 % | 30.00 % | ✅ | ohne: 30.1 % |
+| … Tore je Spiel ± 20 % zu ohne | 1.018 × | 0.800–1.200 × | 1.000 × | ✅ |  |
+| … Hänger / Numerik | 0.000  | 0.000–0.000  | 0.000  | ✅ |  |
+
+ALLE GRÜN (21/21)
+
+### Kinder-Steuerung (n7 Vorlagen E4)
+
+| Prüfung | Messwert | Fenster | Ziel | Ergebnis | Hinweis |
+|---|---|---|---|---|---|
+| ?stickruhe=0.1: Zittern ±8° → Schwankung der Laufrichtung | 0.650 ° | 0.000–4.000 ° | – | ✅ | ohne 8.0° |
+| … 45°-Richtungswechsel geht sofort durch | 45.00 ° | 44.90–45.10 ° | 45.00 ° | ✅ |  |
+| … Kehrtwende sofort, Stärke bleibt | -0.600  | -0.601–-0.599  | -0.600  | ✅ |  |
+| … 6°-Zucken wird geglättet (Laufrichtung) | 0.479 ° | 0.100–3.000 ° | – | ✅ |  |
+| … gezielt wird mit dem rohen Stick | 6.000 ° | 5.900–6.100 ° | 6.000 ° | ✅ |  |
+| Wechsel: im ersten Takt halb Schwung, halb Stick | 40.60 ° | 40.00–50.00 ° | 45.00 ° | ✅ | Eingabe (0.50, 0.43) |
+| … nach 0,15 s überwiegt der Stick | 15.95 ° | 15.00–35.00 ° | 26.60 ° | ✅ |  |
+| … nach 0,3 s ganz Stick | 0.000 ° | -0.100–0.100 ° | 0.000 ° | ✅ |  |
+| ?wechselGlatt=0: sofort ganz Stick | 0.000 ° | -0.100–0.100 ° | 0.000 ° | ✅ |  |
+| Beide Regler 0: Eingabe unverändert | 1.000  | 1.000–1.000  | 1.000  | ✅ |  |
+| Kinderhand allein: Ball weg je Minute | 2.283 /min | 0.000–3.500 /min | 3.500 /min | ✅ | ohne E4 2.28, mit ?stickruhe=0.1 2.43 (Datenblatt-Ziel ≤ 3,5, n6: 4,9) |
+| Kinderhand gegen Bot: Ball weg je Minute | 6.250 /min | 0.000–6.550 /min | – | ✅ | ohne E4 6.25, mit ?stickruhe=0.1 6.50 |
+| Kinderhand: Tempo mit Ball | 0.000 m/s | -0.100–9.000 m/s | – | ✅ | 4.63 → 4.63 m/s, mit ?stickruhe=0.1 4.75 |
+
+ALLE GRÜN (13/13)
+
+### Spielerwechsel automatisch (n8, ohne ⇄-Knopf)
+
+| Prüfung | Messwert | Fenster | Ziel | Ergebnis | Hinweis |
+|---|---|---|---|---|---|
+| Ball frei, Mitspieler näher am Ball: wechselt ohne Eingabe | 0.008 s | 0.000–0.100 s | 0.000 s | ✅ | gesteuert danach Spieler 1 |
+| Nach dem eigenen Pass: Steuerung beim Empfänger | 0.000 s | 0.000–0.017 s | 0.000 s | ✅ | Pass nach 0.01 s |
+| Gegner am Ball, Mitspieler näher: wechselt ohne Eingabe | 0.008 s | 0.000–0.100 s | 0.000 s | ✅ |  |
+| C/Tab/Gamepad Y wechselt von Hand | 1.000  | 1.000–1.000  | 1.000  | ✅ |  |
+| 6 Spiele (2 × 2 min) ohne Wechsel-Eingabe: automatische Wechsel je Minute | 28.53 /min | 3.000–60.00 /min | – | ✅ | 762 Wechsel in 26.7 min |
+| … Ball frei/beim Gegner: Gesteuerter ist der ballnächste eigene Spieler (± 0,2 s) | 94.66 % | 85.00–100.0 % | – | ✅ | 644 s gemessen |
+| … längste Zeit, in der ein Mitspieler klar näher war (≥ 0,5 s Laufzeit) | 0.583 s | 0.000–1.000 s | – | ✅ | Mindestabstand zweier Wechsel switchT = 0.6 s |
+| … eigener Pass zum Mitspieler → Steuerung beim Empfänger | 100.0 % | 100.0–100.0 % | 100.0 % | ✅ | 284 Pässe (dazu 3 gleich am Fuß geblockt) |
+
+ALLE GRÜN (8/8)
+
+### Pässe (n8 Etappe 2)
+
+| Prüfung | Messwert | Fenster | Ziel | Ergebnis | Hinweis |
+|---|---|---|---|---|---|
+| Stick bildschirmtreu (hoch): Fehler zur Richtung im Bild p90 | 0.000 ° | 0.000–0.500 ° | 0.000 ° | ✅ | alt (Bodenachsen): p50 4,8°, p90 7,5°, max 10,2°, > 15° in 0,0 % der Fälle |
+| Stick bildschirmtreu (quer): Fehler zur Richtung im Bild p90 | 0.000 ° | 0.000–0.500 ° | 0.000 ° | ✅ | alt (Bodenachsen): p50 8,9°, p90 16,7°, max 21,7°, > 15° in 13,7 % der Fälle |
+| Reaktionszeit: Pass am pressenden Gegner (Fuß 0,3 m neben der Bahn) vorbei kommt beim Mitspieler an | 1.000  | 1.000–1.000  | 1.000  | ✅ | Erster am Ball: Spieler 1 · ?reaktion=0: Spieler 2 (2 = Gegner) |
+| Empfänger-Treue: Steuerung springt während des Passes nicht zum Passgeber zurück | 1.000  | 1.000–1.000  | 1.000  | ✅ | ?empfTreue=0: bleibt hier auch (Absicherung; im Spiel selten, siehe N8_BERICHT.md) |
+| Richtungstreue: Stick Richtung eigenes Tor ohne Mitspieler → Abspielrichtung ↔ Stick | 0.000 ° | 0.000–30.00 ° | – | ✅ | ?passTreue=0: 127,0° (Rückpass-Umweg zur Seite) |
+| Spiel quer (8 Spiele): gezielte Pässe kommen beim Gemeinten an, besser als n8 E1 | 24.09 Punkte | 12.00–100.0 Punkte | – | ✅ | 38,0 % statt 13,9 %; zum Gegner 55,9 % statt 80,5 % (379 gezielte Pässe) |
+| … quer: Pässe > 30° neben dem Stick ohne Mitspieler dort | 1.075 % | 0.000–4.000 % | – | ✅ | n8 E1 1,9 %; Stick ↔ Abspielrichtung p50 17,8° (Vorhalt in den Laufweg) |
+| Spiel hoch (8 Spiele): gezielte Pässe kommen beim Gemeinten an, besser als n8 E1 | 31.02 Punkte | 12.00–100.0 Punkte | – | ✅ | 45,5 % statt 14,5 %; zum Gegner 47,9 % statt 82,2 % (376 gezielte Pässe) |
+| … hoch: Pässe > 30° neben dem Stick ohne Mitspieler dort | 0.629 % | 0.000–4.000 % | – | ✅ | n8 E1 1,7 %; Stick ↔ Abspielrichtung p50 16,8° (Vorhalt in den Laufweg) |
+
+ALLE GRÜN (9/9)
+
+### Abgeschrägte Käfig-Ecken (n7 Vorlagen E5)
+
+| Prüfung | Messwert | Fenster | Ziel | Ergebnis | Hinweis |
+|---|---|---|---|---|---|
+| Vier Eck-Banden und vier Ecknetze | 8.000  | 8.000–8.000  | 8.000  | ✅ | Schenkel 1.5 m |
+| … Eck-Bande so lang wie die Schräge (Schenkel · √2) | 2.121 m | 2.121–2.121 m | 2.121 m | ✅ |  |
+| ?eckschraege=0: eckig wie bisher | 0.000  | 0.000–0.000  | 0.000  | ✅ |  |
+| Ball diagonal in die Ecke: Abpraller an der Bande | 1.000 × | 1.000–1.000 × | 1.000 × | ✅ | eckig: 2× |
+| … nach 3 s mindestens doppelt so weit aus der Ecke wie eckig | 2.696 × | 2.000–99.00 × | – | ✅ | 2.9 m, eckig 1.1 m |
+| … nie hinter der Schräge | 17.84 m | 0.000–18.00 m | – | ✅ |  |
+| 800 harte Schüsse in die Ecken (30–52 m/s): Ball draußen / hinter der Schräge | 0.000 × | 0.000–0.000 × | 0.000 × | ✅ | 434 trafen Eck-Bande oder Ecknetz |
+| Spieler läuft in die Ecke: Abstand zur Schräge ≥ Körperradius | 0.424 m | 0.414–9.000 m | – | ✅ |  |
+| Bot-Spiel: Ballkontakte in den Ecken (2,5 × 2,5 m) je Spiel ÷ eckig | 0.681 × | 0.000–0.730 × | 0.700 × | ✅ | 96.2 / eckig 141.3 |
+| … Ball in der Ecke eingeklemmt | 0.000 × | 0.000–0.000 × | 0.000 × | ✅ |  |
+| … Tore je Schuss | 26.94 % | 25.00–35.00 % | 30.00 % | ✅ | eckig 24.6 % |
+| … Hänger / Numerik | 0.000  | 0.000–0.000  | 0.000  | ✅ |  |
+
+ALLE GRÜN (12/12)
+
+### Ballmagnet (vorher/nachher)
+
+| Prüfung | Messwert | Fenster | Ziel | Ergebnis | Hinweis |
+|---|---|---|---|---|---|
+| Kinderhand allein (30 × 60 s): Ball springt weg (Magnet ÷ ohne) | 0.129 × | 0.000–0.300 × | 0.170 × | ✅ | ohne 17.1, Nacht 2c 10.1, jetzt 2.2 je Minute, davon 0.5 nach einer Kehrtwende (> 150°: dort lässt der Magnet absichtlich los), Tempo mit Ball 3.43 → 4.67 m/s |
+| … gegenüber Nacht 2c (Magnet 0,5): Ball springt weg | 0.219 × | 0.000–0.600 × | 0.500 × | ✅ | 10.1 → 2.2 je Minute |
+| … ohne Kehrtwenden: Ball springt weg je Minute | 1.733 /min | 0.000–3.000 /min | – | ✅ | Nacht 2c 7.3, ohne Magnet 13.2 |
+| Kinderhand allein: Tempo mit Ball höher | 1.248 m/s | 0.100–9.000 m/s | – | ✅ |  |
+| Kinderhand gegen Bot (Stufe 2): Ball springt weg je Minute | 6.000 /min | 0.000–9.000 /min | – | ✅ | ohne 18.7, Nacht 2c 10.5, jetzt 6.0 je Minute (Ziel ≤ 9) |
+| Dribbel-Parcours Skript: nicht langsamer als n6 (inkl. Strafsekunden) | 8.332 s | 0.000–9.375 s | – | ✅ | n6 9.18 s, jetzt 8.33 s |
+| … Ballverluste im Parcours | 0.000  | 0.000–0.000  | 0.000  | ✅ |  |
+| Dribbel-Parcours, Kinderhand (direkt aufs Tor): Zeit mit Magnet nicht langsamer | 5.993 s | 0.000–11.95 s | – | ✅ | ohne 11.65 s (1 Ballverluste), mit 5.99 s (0) |
+| … im Sprint: Zeit inkl. Strafsekunden (Info) | 5.993 s | ≥ 0.000 s | – | ✅ | ohne 11.65 s (1 Verluste, 27 s Strafe), mit 5.99 s (0, 0 s) |
+| … Challenge-Skript (Info) | 8.332 s | ≥ 0.000 s | – | ✅ | ohne 11.79 s (45 s Strafe), mit 8.33 s (21 s Strafe) |
+| Selbstspiel: Ballverluste beim Führen je Minute (n7-Ziel ≤ 2,3) | 1.516 /min | 0.500–2.300 /min | – | ✅ | ohne Magnet 2.02 (Zweikampf 1.60), n6 3.19 (2.89, verspringt 0.30), jetzt 1.52 (1.30, 0.21) |
+| … davon im Zweikampf (n7-Ziel ≤ 2,1) | 1.302 /min | 0.000–2.100 /min | – | ✅ | Nacht 2c 4.09, n6 2.89 |
+| … Ball am Fuß je Minute mehr als n6 | 1.163 s | ≥ 0.500 s | – | ✅ | n6 3.2 → jetzt 4.4 s je Minute (Ziel ≥ 5) |
+| … Grätschen mit Ballgewinn je Spiel (nicht seltener als n6) | 6.646  | ≥ 5.325  | – | ✅ | Nacht 2c 5.4, n6 5.9, jetzt 6.6 (Treffer gesamt 9.7 → 10.1); je 48 Spiele |
+| Selbstspiel: verspringende Bälle ohne Zweikampf (Info) | 0.214 /min | ≥ 0.000 /min | – | ✅ | ohne Magnet 0.42 je Minute |
+| Magnetstärke im Lauf = Regler | 2.400  | 2.390–2.410  | 2.400  | ✅ |  |
+| … im Sprint schwächer (Nacht 2d: 70 %) | 0.700 × | 0.600–0.800 × | 0.700 × | ✅ |  |
+| … bei scharfem Richtungswechsel (115°) schwächer, n7 milder (bis 120° auf 50 %) | 0.511 × | 0.450–0.600 × | 0.500 × | ✅ |  |
+| … Gegner 0,3 m am Ball: schwächer | 0.520 × | 0.000–0.600 × | 0.500 × | ✅ |  |
+| … gilt auch für Bots (gleiche Spieler-Physik) | 1.000  | 1.000–1.000  | 1.000  | ✅ |  |
+| ?magnet=0: aus | 0.000  | 0.000–0.000  | 0.000  | ✅ |  |
+
+ALLE GRÜN (21/21)
+
+### Abschirmen (n7 Etappe 0)
+
+| Prüfung | Messwert | Fenster | Ziel | Ergebnis | Hinweis |
+|---|---|---|---|---|---|
+| Gegner hinter dem Führenden (Körper dazwischen): bloßer Kontakt gesperrt | 1.000  | 1.000–1.000  | 1.000  | ✅ |  |
+| Gegner seitlich, nicht klar früher am Ball: gesperrt | 1.000  | 1.000–1.000  | 1.000  | ✅ |  |
+| Gegner vorn, Fuß klar früher am Ball: darf spielen | 0.000  | 0.000–0.000  | 0.000  | ✅ |  |
+| Ball weg vom Fuß (> 0,9 m): frei für alle | 0.000  | 0.000–0.000  | 0.000  | ✅ |  |
+| nach Pass/Schuss des Führenden: frei | 0.000  | 0.000–0.000  | 0.000  | ✅ |  |
+| ?abschirmen=0: nie gesperrt (n6) | 0.000  | 0.000–0.000  | 0.000  | ✅ |  |
+| Gegner von schräg hinten am Körper vorbei: kein Ballgewinn per Kontakt | 0.000  | 0.000–0.000  | 0.000  | ✅ |  |
+| … mit ?abschirmen=0 spielt er den Ball (n6) | 1.000  | 1.000–1.000  | 1.000  | ✅ |  |
+| Grätsche trifft trotz Abschirmen (Ball oder Gegner zuerst) | 1.000  | 1.000–1.000  | 1.000  | ✅ | Ergebnis: player |
+| Gegner nah am Ball → Nähe-Faktor für kürzere Vorlage | 0.755  | 0.300–1.000  | – | ✅ | fern 0.21, nah 0.97 |
+| Mensch gegen Stufe-2-Verteidiger: Ballverluste je Minute am Ball (÷ n6) | 0.184 × | 0.000–0.500 × | – | ✅ | n6 35.1/min (Ball weg in 89 % der Versuche, Haltedauer 1.52 s, bis vors Tor 11 %) → jetzt 6.5/min (24 %, 2.20 s, 72 %) |
+| … der Verteidiger gewinnt den Ball trotzdem noch (kein Klebeball) | 23.61 % | 15.00–80.00 % | – | ✅ |  |
+
+ALLE GRÜN (12/12)
+
+### Grätsche
+
+| Prüfung | Messwert | Fenster | Ziel | Ergebnis | Hinweis |
+|---|---|---|---|---|---|
+| Gegner am Ball in 2 m, Schuss tippen → Grätsche | 1.000  | 1.000–1.000  | 1.000  | ✅ | nach 0.008 s |
+| Freier Ball in 2 m (kein Gegner dran) → keine Grätsche, hinlaufen und schießen | 1.000  | 1.000–1.000  | 1.000  | ✅ |  |
+| Ball am Fuß → normaler Schuss, keine Grätsche | 1.000  | 1.000–1.000  | 1.000  | ✅ |  |
+| Gegner am Ball in 4,5 m → keine Grätsche (läuft hin) | 1.000  | 1.000–1.000  | 1.000  | ✅ |  |
+| ?graetsche=0: aus | 1.000  | 1.000–1.000  | 1.000  | ✅ |  |
+| Grätsche mit Pass-Knopf: Ball erwischt → Pass zum Mitspieler | 1.000  | 1.000–1.000  | 1.000  | ✅ | ball nach 0.13 s, pass → 1 |
+| Grätsche mit Schuss-Knopf in Tornähe: Schuss aufs Tor | 1.000  | 1.000–1.000  | 1.000  | ✅ | vollspann, 24.3 m/s |
+| Grätsche mit Schuss-Knopf weit weg: klären nach vorn | 1.000  | 1.000–1.000  | 1.000  | ✅ | clear, Richtung x 1.00 |
+| Gegner zuerst getroffen: Gegner stolpert (kann 0,6 s nicht an den Ball) | 0.600 s | 0.500–0.650 s | 0.600 s | ✅ | Gegner-Kontakte in der Zeit: 0 |
+| … Ball springt frei | 1.000  | 1.000–1.000  | 1.000  | ✅ |  |
+| Grätsche: rutschen + am Boden bis wieder frei | 1.100 s | 0.900–1.250 s | 1.100 s | ✅ | 0,5 s rutschen + 0,6 s am Boden (ab Druck) |
+| Bots grätschen gelegentlich (je Spiel, Stufe 2) | 18.33 × | 2.000–15.00 × | – | ❌ | Stufe 1: 11.3, 2: 18.3, 3: 4.7 je Spiel |
+| Selbstspiel mit Grätschen: keine Hänger (9 Spiele) | 0.000 × | 0.000–0.000 × | 0.000 × | ✅ | Grätschen-Ereignisse 22.6 je Spiel |
+
+FEHLER (12/13)
+✗ tackle.test.mjs
+
+### Wucht und Hechten (Nacht 2d)
+
+| Prüfung | Messwert | Fenster | Ziel | Ergebnis | Hinweis |
+|---|---|---|---|---|---|
+| 8 m Vollspann: Tempo × 1.5 | 1.500 × | 1.480–1.520 × | 1.500 × | ✅ | 26.7 → 40.1 m/s (96 → 144 km/h), Flugzeit 0.33 → 0.22 s |
+| 8 m Vollspann: Treffer ins leere Tor nicht schlechter | 95.00 % | 85.00–100.0 % | – | ✅ | vorher 95 % (40 Schüsse, Ball bis 3 m seitlich, mit Streuung) |
+| 8 m angeschnitten: Tempo × 1.5 | 1.500 × | 1.480–1.520 × | 1.500 × | ✅ | 25.4 → 38.1 m/s (91 → 137 km/h), Flugzeit 0.36 → 0.24 s |
+| 8 m angeschnitten: Kurve ≥ 90 % von vorher | 1.025 × | 0.900–9.000 × | 1.000 × | ✅ | 0.85 → 0.87 m, Drall 17.7 → 26.6 U/s |
+| 8 m angeschnitten: Treffer ins leere Tor nicht schlechter | 95.00 % | 85.00–100.0 % | – | ✅ | vorher 95 % (40 Schüsse, Ball bis 3 m seitlich, mit Streuung) |
+| 12 m Vollspann: Tempo × 1.5 | 1.500 × | 1.480–1.520 × | 1.500 × | ✅ | 24.9 → 37.3 m/s (90 → 134 km/h), Flugzeit 0.53 → 0.35 s |
+| 12 m Vollspann: Treffer ins leere Tor nicht schlechter | 77.50 % | 65.00–100.0 % | – | ✅ | vorher 75 % (40 Schüsse, Ball bis 3 m seitlich, mit Streuung) |
+| 12 m angeschnitten: Tempo × 1.5 | 1.500 × | 1.480–1.520 × | 1.500 × | ✅ | 23.8 → 35.7 m/s (86 → 128 km/h), Flugzeit 0.58 → 0.39 s |
+| 12 m angeschnitten: Kurve ≥ 90 % von vorher | 1.021 × | 0.900–9.000 × | 1.000 × | ✅ | 1.73 → 1.76 m, Drall 15.4 → 23.0 U/s |
+| 12 m angeschnitten: Treffer ins leere Tor nicht schlechter | 77.50 % | 65.00–100.0 % | – | ✅ | vorher 75 % (40 Schüsse, Ball bis 3 m seitlich, mit Streuung) |
+| 16 m Vollspann: Tempo × 1.5 | 1.500 × | 1.480–1.520 × | 1.500 × | ✅ | 20.7 → 31.1 m/s (75 → 112 km/h), Flugzeit 0.86 → 0.56 s |
+| 16 m Vollspann: Treffer ins leere Tor nicht schlechter | 77.50 % | 62.50–100.0 % | – | ✅ | vorher 73 % (40 Schüsse, Ball bis 3 m seitlich, mit Streuung) |
+| 16 m angeschnitten: Tempo × 1.5 | 1.500 × | 1.480–1.520 × | 1.500 × | ✅ | 20.0 → 30.0 m/s (72 → 108 km/h), Flugzeit 0.97 → 0.63 s |
+| 16 m angeschnitten: Kurve ≥ 90 % von vorher | 0.984 × | 0.900–9.000 × | 1.000 × | ✅ | 2.91 → 2.87 m, Drall 11.9 → 17.8 U/s |
+| 16 m angeschnitten: Treffer ins leere Tor nicht schlechter | 77.50 % | 62.50–100.0 % | – | ✅ | vorher 73 % (40 Schüsse, Ball bis 3 m seitlich, mit Streuung) |
+| Pass flach, Pass hoch (Flanke), Kopfball: Tempo unverändert | 0.000 m/s | 0.000–0.010 m/s | 0.000 m/s | ✅ | 14.0 / 14.0 / 10.3 m/s |
+| Ziel-Löser bei voller Wucht (24 Schüsse 5–16 m, bis 45 m/s): größte Abweichung im Tor | 0.016 m | 0.000–0.150 m | 0.000 m | ✅ |  |
+| 40 m/s auf den Tormann (Stufe 3, Fang-Grenze 22 m/s): gefangen | 0.000 × | 0.000–0.000 × | 0.000 × | ✅ | 12 von 12 abgewehrt |
+| … Abpraller weg vom Tor, höchstens halb so schnell | 0.396 × | 0.050–0.500 × | – | ✅ | Tempo nach ÷ vor der Abwehr: 0.36, 0.40, 0.26, 0.38, 0.38, 0.33, 0.39, 0.35, 0.28, 0.38, 0.31, 0.36 |
+| Selbstspiel (16 Spiele, Stufe 2): Ball außerhalb des Käfigs | 0.000 Takte | 0.000–0.000 Takte | 0.000 Takte | ✅ | schnellster Schuss 158 km/h |
+| … Zahlenfehler / Numerik-Notbremsen | 0.000 × | 0.000–0.000 × | 0.000 × | ✅ |  |
+| … Hechtsprünge je Spiel (beide Tormänner; Ziel ≥ 15 und ≥ 3 × Nacht 2c) | 25.13  | ≥ 15.00  | – | ✅ | Nacht 2c 2,2; Paraden 66.0 je Spiel, davon im Hechtsprung 19.1 |
+| … Tore je Spiel (Nacht 2c 11,8) | 13.81  | 6.000–21.00  | – | ✅ | 58.2 Schüsse, 23.7 % Tore je Schuss (Nacht 2c 32,9 %) · n7: Abklatschen/Nachschüsse und mehr Schüsse heben die Tore je Spiel, Grenze 18 → 21 |
+
+ALLE GRÜN (23/23)
+
+| Schuss | Technik | vorher (?wucht=1): Tempo / Flugzeit / Kurve / leeres Tor | nachher |
+|---|---|---|---|
+| 8 m | Vollspann | 26.7 m/s / 0.33 s / 0.00 m / 95 % | 40.1 m/s / 0.22 s / 0.00 m / 95 % |
+| 8 m | innenrist | 25.4 m/s / 0.36 s / 0.85 m / 95 % | 38.1 m/s / 0.24 s / 0.87 m / 95 % |
+| 12 m | Vollspann | 24.9 m/s / 0.53 s / 0.00 m / 75 % | 37.3 m/s / 0.35 s / 0.00 m / 78 % |
+| 12 m | innenrist | 23.8 m/s / 0.58 s / 1.73 m / 75 % | 35.7 m/s / 0.39 s / 1.76 m / 78 % |
+| 16 m | Vollspann | 20.7 m/s / 0.86 s / 0.00 m / 73 % | 31.1 m/s / 0.56 s / 0.00 m / 78 % |
+| 16 m | innenrist | 20.0 m/s / 0.97 s / 2.91 m / 73 % | 30.0 m/s / 0.63 s / 2.87 m / 78 % |
+
+### Tor-Wiederholung (Nacht 2d)
+
+| Prüfung | Messwert | Fenster | Ziel | Ergebnis | Hinweis |
+|---|---|---|---|---|---|
+| Ringpuffer: Länge | 10.000 s | 9.990–10.01 s | 10.00 s | ✅ | 1200 Takte à 0.73 KB, gesamt 881 KB; Spielzeit bis zum Tor 56.7 s |
+| Ringpuffer: älteste Ereignisse fallen heraus | 9.308 s | 0.000–10.01 s | – | ✅ | 20 Ereignisse im Puffer |
+| Aufzeichnung: Positionen zum Takt wie in der Simulation | 0.000 m | 0.000–0.000 m | 0.000 m | ✅ | Float32 |
+| Tore untersucht | 6.000  | 5.000–99.00  | – | ✅ |  |
+| Kontakt-Takt gefunden (≤ 5 s vor dem Tor) | 6.000 /6 | 6.000–6.000 /6 | 6.000 /6 | ✅ | innenrist 4, aussenrist 1, salto 1 |
+| … vom Torschützen | 6.000 /6 | 5.000–6.000 /6 | 6.000 /6 | ✅ | Eigentor: letzter Kontakt überhaupt |
+| … Ball beim Kontakt dort, wo das Ereignis war | 0.000 m | 0.000–0.050 m | 0.000 m | ✅ |  |
+| Ablauf: Zeitlupe am Kontakt (≤ 0,25 ×) und in der Fan-Cam über die Torlinie | 6.000 /6 | 6.000–6.000 /6 | 6.000 /6 | ✅ |  |
+| Ablauf: Wiederholung höchstens 7 s (mit 1 s Live-Jubel ≤ 8 s) | 7.000 s | 3.000–7.010 s | 7.000 s | ✅ |  |
+| Kameras: alle Werte endlich, hoch und quer | 6.000 /6 | 6.000–6.000 /6 | 6.000 /6 | ✅ |  |
+| Spielzustand nach der Wiederholung unverändert (Hash davor = danach) | 6.000 /6 | 6.000–6.000 /6 | 6.000 /6 | ✅ |  |
+| … und das Spiel läuft danach genauso weiter wie ohne Wiederholung | 6.000 /6 | 6.000–6.000 /6 | 6.000 /6 | ✅ |  |
+| Überspringen: sofort zu Ende | 1.000  | 1.000–1.000  | 1.000  | ✅ | vorher Abschnitt „aufbau“ |
+| Eigentor (kein Schütze): letzter Kontakt vor dem Tor | 1.000  | 1.000–1.000  | 1.000  | ✅ |  |
+
+ALLE GRÜN (14/14)
+
+### Fan-Edit der Tor-Wiederholung (n6)
+
+| Prüfung | Messwert | Fenster | Ziel | Ergebnis | Hinweis |
+|---|---|---|---|---|---|
+| Tore untersucht | 8.000  | 6.000–99.00  | – | ✅ | BANANE 4, AUSSENRIST-|BANANE 1, SALTO-|HACKE 1, VOLLEY 1, DROPKICK 1 |
+| Schnitte auf dem Taktraster (128 BPM, Einstellung beginnt auf ganzem Schlag) | 8.000 /8 | 8.000–8.000 /8 | 8.000 /8 | ✅ |  |
+| … beim Abspielen (30–75 fps schwankend): Schnitt höchstens 1 Bild nach dem Schlag | 0.959 Bild | 0.000–1.000 Bild | < 1 Bild | ✅ | max 24.0 ms |
+| Clip-Länge | 7.031 s | 6.000–10.00 s | 6–10 s | ✅ | 6.56–7.03 s |
+| Spielzeit je Einstellung nie rückwärts | 8.000 /8 | 8.000–8.000 /8 | 8.000 /8 | ✅ |  |
+| Kontakt fast Standbild (Tempo am Kontakt) | 8.000 /8 | 8.000–8.000 /8 | 8.000 /8 | ✅ | max 0.038 × |
+| Standbild am Netzeinschlag | 8.000 /8 | 8.000–8.000 /8 | 8.000 /8 | ✅ |  |
+| Flashes ≤ 3 je Clip, jeder < 120 ms | 8.000 /8 | 8.000–8.000 /8 | 8.000 /8 | ✅ | max 3 Flashes, längster 90 ms |
+| „Blitze reduzieren“: kein Flash, kein RGB-Versatz, Aufhellen ≤ 0,25 | 8.000 /8 | 8.000–8.000 /8 | 8.000 /8 | ✅ |  |
+| Ball am Kontakt im Bild (Makro, hoch/quer/9:16, |x|,|y| < 0,85) | 477.0 /477 | 477.0–477.0 /477 | 477.0 /477 | ✅ |  |
+| Kameras: alle Werte endlich | 8.000 /8 | 8.000–8.000 /8 | 8.000 /8 | ✅ | Ball im Bild je Kamera: netz 96 %, tief 65 %, makro 84 %, gegen 35 %, hinten 85 %, pfosten 100 %, weit 87 %, jubel 17 %, jubel2 0 %, keeper 92 % |
+| Spielzustand unverändert (Hash davor = danach) | 8.000 /8 | 8.000–8.000 /8 | 8.000 /8 | ✅ |  |
+
+ALLE GRÜN (12/12)
+
+### Action-Momente (n6)
+
+| Prüfung | Messwert | Fenster | Ziel | Ergebnis | Hinweis |
+|---|---|---|---|---|---|
+| ramp: Dauer | 1.181 s | 0.500–1.200 s | ≤ 1,2 s | ✅ |  |
+| ramp: langsamstes Tempo | 0.120 × | 0.000–0.150 × | ≈ 0,1 × | ✅ | schnellstes 1.50 ×, Spielzeit im Moment 0.72 s |
+| ramp: Weißblitz kürzer als 120 ms | 80.00 ms | 1.000–119.0 ms | < 120 ms | ✅ |  |
+| ramp: „Blitze reduzieren“ (kein Blitz, kein RGB-Versatz) | 1.000  | 1.000–1.000  | – | ✅ |  |
+| bullet: Dauer | 1.451 s | 0.500–1.500 s | ≤ 1,5 s | ✅ |  |
+| bullet: langsamstes Tempo | 0.000 × | 0.000–0.050 × | 0 (Pause) × | ✅ | schnellstes 1.40 ×, Spielzeit im Moment 0.29 s |
+| bullet: Zeit steht (Pause) | 1.151 s | 0.900–1.300 s | ≈ 1,1 s | ✅ |  |
+| bullet: Weißblitz kürzer als 120 ms | 80.00 ms | 1.000–119.0 ms | < 120 ms | ✅ |  |
+| bullet: „Blitze reduzieren“ (kein Blitz, kein RGB-Versatz) | 1.000  | 1.000–1.000  | – | ✅ |  |
+| Häufigkeit „selten“ je Bot-Spiel (2 × 4 min) | 3.333  | 1.000–8.000  | 2–6  | ✅ | 0.74 je Spielminute; 3/3/4 in 3 Spielen; Bullet-Time 3, Ramp 7; innenrist 1, kreuzeck 1, volley 1, dropkick 1, hechtsprung 3, parade 2, aussenrist 1 |
+| Häufigkeit „oft“ je Bot-Spiel (2 × 4 min) | 12.33  | 3.000–25.00  | mehr  | ✅ | 2.74 je Spielminute; 13/12/12 in 3 Spielen; Bullet-Time 4, Ramp 33; pfosten 1, dropkick 3, volley 4, kreuzeck 2, innenrist 10, graetsche 1, hechtsprung 3, vollspann 3, aussenrist 8, traumpass 1, seitfall 1 |
+| „oft“ häufiger als „selten“ | 9.000  | 0.500–99.00  | – | ✅ |  |
+| Abkühlzeit ≥ 8 s Spielzeit eingehalten | 1.000  | 1.000–1.000  | – | ✅ |  |
+| Simulation unverändert (Regie liest nur, Hash = Zwilling ohne Regie) | 1.000  | 1.000–1.000  | – | ✅ |  |
+| Sicherheitsregel: Gegner am Ball vor dem eigenen Tor → unsicher, kein Moment | 1.000  | 1.000–1.000  | 1.000  | ✅ | vor dem Tor true, vor dem Gegnertor false |
+
+ALLE GRÜN (15/15)
+
+### Ton aus (Nacht 2e)
+
+| Prüfung | Messwert | Fenster | Ziel | Ergebnis | Hinweis |
+|---|---|---|---|---|---|
+| ausgelieferter Code (57 Dateien): Audio-Erzeuger | 0.000  | 0.000–0.000  | 0.000  | ✅ |  |
+| Stub: alte Schnittstelle ruft ohne Fehler | 0.000  | 0.000–0.000  | – | ✅ |  |
+| Stub: kein Kontext, aus | 1.000  | 1.000–1.000  | – | ✅ |  |
+| Pause-Menü ohne Ton-Knopf | 0.000  | 0.000–0.000  | – | ✅ |  |
+
+ALLE GRÜN (4/4)
+
+### Tormann gibt den Ball schnell weiter (Nacht 2e)
+
+| Prüfung | Messwert | Fenster | Ziel | Ergebnis | Hinweis |
+|---|---|---|---|---|---|
+| Bot-Tormann: Haltezeit Median (6 Spiele) | 0.892 s | 0.000–1.200 s | 1.200 s | ✅ | Median 0,89 s, 90 % 2,02 s, max 2,02 s (225 Ballbesitze; Abwurf 185, Abschlag 40, Zwang 0) · vorher (?halten=0): Median 1,63 s, 90 % 4,41 s, max 4,41 s (204 Ballbesitze; Abwurf 133, Abschlag 71, Zwang 0) |
+| Bot-Tormann: längste Haltezeit | 2.017 s | 0.000–2.050 s | 2.000 s | ✅ | spätestens nach ~2 s Abschlag in die freiere Hälfte |
+| Bot-Tormann: kein Zwangsabwurf (Zeitregel) | 0.000 × | 0.000–0.000 × | 0.000 × | ✅ | Zeitregel jetzt 3 s (vorher 6 s) |
+| Abgefangene Abwürfe/Abschläge (Gegner zuerst am Ball) | 3.111 % | 0.000–27.02 % | – | ✅ | 7/225, daraus Gegentor ≤ 6 s 3 · vorher 49/204 = 24.0 %, Gegentor 13 |
+| Numerik-Fehler | 0.000 × | 0.000–0.000 × | 0.000 × | ✅ | Tore 94 (vorher 99) |
+
+ALLE GRÜN (5/5)
+
+### Kein Rückpass (Nacht 2e)
+
+| Prüfung | Messwert | Fenster | Ziel | Ergebnis | Hinweis |
+|---|---|---|---|---|---|
+| Stick aufs eigene Tor (Tormann im Kegel): Pass nicht zum Tormann | 1.000  | 1.000–1.000  | 1.000  | ✅ | Empfänger -1 (Mitspieler im erweiterten Kegel: 2), Ziel (-6.4, 0.5) |
+| … Ziel nicht im eigenen Torraum (+ 1 m) | 5.622 m | ≥ 5.000 m | – | ✅ | Abstand Ziel ↔ Tormitte 5.6 m |
+| Stick aufs eigene Tor, niemand im erweiterten Kegel: seitlich (freier Raum oder über die Bande), nie durch den Torraum | 1.000  | 1.000–1.000  | 1.000  | ✅ | Empfänger -1, Ziel (-6.4, 0.6), Weg ≥ 5.6 m vom Tor, Ziel 5.6 m |
+| ?rueckpass=1: Stick aufs eigene Tor → Pass zum Tormann (alt) | 1.000  | 1.000–1.000  | 1.000  | ✅ |  |
+| Rückpass vom Mitspieler: Tormann nimmt keine Hände | 1.000  | 1.000–1.000  | 1.000  | ✅ | gefangen false, mit dem Fuß gespielt true |
+| … Hinweis „Rückpass – keine Hände“ genau einmal (kein Freistoß) | 1.000 × | 1.000–1.000 × | 1.000 × | ✅ |  |
+| … nach einem Gegner-Kontakt darf er wieder fangen | 1.000  | 1.000–1.000  | 1.000  | ✅ |  |
+| ?rueckpass=1: Tormann fängt den Rückpass (alt) | 1.000  | 1.000–1.000  | 1.000  | ✅ |  |
+| Auto-Torwart (Mensch): Rückpass nicht gefangen | 1.000  | 1.000–1.000  | 1.000  | ✅ |  |
+| Bot-Spiele (6): Pässe zum eigenen Tormann im Torraum | 0.000 × | 0.000–0.000 × | 0.000 × | ✅ | von 2321 Pässen · vorher (?rueckpass=1) 110 von 2518 |
+| Bot-Spiele (6): Hand-Aufnahmen nach Rückpass | 0.000 × | 0.000–0.000 × | 0.000 × | ✅ | von 180 Fängen · vorher 63 von 225 |
+| Bot-Spiele: Numerik-Fehler | 0.000 × | 0.000–0.000 × | 0.000 × | ✅ | Tore 76 (vorher 90), Haltezeit Median 0.88 s |
+
+ALLE GRÜN (12/12)
+
+### Passsystem (Nacht 2e)
+
+| Prüfung | Messwert | Fenster | Ziel | Ergebnis | Hinweis |
+|---|---|---|---|---|---|
+| Pass kommt beim gemeinten Mitspieler an, Weg frei – stehend (mit/ohne Stick) | 94.93 % | 90.00–100.0 % | 90.00 % | ✅ | 670 Pässe; alle Pässe 87,9 %, abgefangen 11,4 %, kein Pass 0,0 % · ?passfix=0: 67,9 % (alle 63,3 %, kein Pass 0,0 %) |
+| Pass kommt beim gemeinten Mitspieler an, Weg frei – laufend | 85.81 % | 80.00–100.0 % | 80.00 % | ✅ | 296 Pässe; alle Pässe 70,5 %, abgefangen 22,3 %, kein Pass 7,5 % · ?passfix=0: 32,3 % (alle 27,2 %, kein Pass 11,1 %) |
+| Pass kommt beim gemeinten Mitspieler an, Weg frei – Sprint | 82.72 % | 77.00–100.0 % | 77.00 % | ✅ | 324 Pässe; alle Pässe 70,2 %, abgefangen 21,7 %, kein Pass 10,9 % · ?passfix=0: 36,1 % (alle 28,0 %, kein Pass 11,9 %) |
+| Daumen bleibt nach dem Pass auf dem Stick: kommt trotzdem an (Weg frei) | 86.49 % | 80.00–100.0 % | – | ✅ | ?passfix=0: 19,5 % – der Empfänger lief mit dem gehaltenen Stick vom Ball weg |
+| Gewählter Empfänger = Mitspieler, auf den Stick/Blick zeigt | 94.28 % | 90.00–100.0 % | 95.00 % | ✅ | ?passfix=0: 88,0 % |
+| Abflug = Vorschau ohne Streuung (p90) | 0.565 ° | 0.000–3.000 ° | 0.000 ° | ✅ | mit Streuung p50 0,6°, p90 1,5° (?passfix=0: p90 2,0°) |
+| Alle Pässe: kommt an, besser als ?passfix=0 | 34.65 Punkte | 25.00–100.0 Punkte | – | ✅ | 77,9 % statt 43,2 %; Passgeber holt sich den Ball selbst 1,3 % (vorher 12,2 %), anderer Mitspieler 3,2 % (vorher 10,7 %) |
+| Bot-Spiele (6): Bot-Pässe kommen an | 64.69 % | 50.00–100.0 % | – | ✅ | 572 Pässe, abgefangen 32,5 % · ?passfix=0: 36,4 % |
+| Bot-Spiele: Passgeber spielt seinen eigenen Pass wieder selbst | 2.448 % | 0.000–5.000 % | 0.000 % | ✅ | ?passfix=0: 32,5 % |
+
+ALLE GRÜN (9/9)
+
+### Selbstspiel (200 Bot-Spiele)
+
+| Prüfung | Messwert | Fenster | Ziel | Ergebnis | Hinweis |
+|---|---|---|---|---|---|
+| Bot-Spiele (2 × 4 min, alle Stärke-Paarungen) | 200.0  | ≥ 200.0  | 200.0  | ✅ | 832 s Rechenzeit, Zeitraffer 131× |
+| Spiele regulär beendet (Abpfiff) | 200.0 /200 | 200.0–200.0 /200 | 200.0 /200 | ✅ |  |
+| Hänger: Ball liegt fest / in der Ecke eingeklemmt | 0.000 × | 0.000–0.000 × | 0.000 × | ✅ |  |
+| Hänger: Bot läuft im Kreis | 0.000 × | 0.000–0.000 × | 0.000 × | ✅ |  |
+| Numerik-Fehler | 0.000 × | 0.000–0.000 × | 0.000 × | ✅ |  |
+| Ball höchstens P.holdMax in der Hand (Nacht 2e: 3 s) | 2.008 s | 0.000–3.010 s | 3.000 s | ✅ |  |
+| Tore fallen: Spiele ohne Tor | 0.000  | 0.000–4.000  | 0.000  | ✅ | Ø 16.7 Tore je Spiel (1.83 je Minute), höchstens 31, Remis 12 |
+| Beide Mannschaften treffen (gesamt) | 1626.0 Tore | ≥ 1.000 Tore | – | ✅ | Mannschaft 0: 1706, Mannschaft 1: 1626 |
+| Spiele, in denen beide treffen | 100.0 % | 80.00–100.0 % | – | ✅ | Mannschaft 0 trifft in 200, Mannschaft 1 in 200 von 200 |
+| Letzte Hand wechselt im Spiel (Hysterese) | 5.980 × je Spiel | ≥ 0.200 × je Spiel | – | ✅ |  |
+| Tormann-Aktionen je Spiel: Fangen | 34.50  | ≥ 5.000  | – | ✅ | Abwehren 30.9, Hechten 21.5, Abwurf 27.3, Abschlag 7.0, 6-s-Regel 0.0 |
+| Schüsse je Spiel | 57.20  | ≥ 10.00  | – | ✅ | Verwertung 29 %, Pässe 323.7, Befreien 113.3, Ballkontakte beim Führen 270.5 |
+| Bandenpässe je Spiel (zum Mitspieler / zu sich selbst) | 75.89  | ≥ 1.000  | – | ✅ | 0.0 / 75.9, Bande-Treffer 188.2 |
+| Neue Techniken im Selbstspiel: Luftbälle je Spiel | 20.34  | ≥ 1.000  | – | ✅ | volley 11.8 (496 Tore), dropkick 2.4 (122 Tore), flugkopf 1.7 (28 Tore), salto 0.6 (7 Tore), seitfall 2.5 (76 Tore), kopf 0.9 (19 Tore), fallrueck 0.4 (5 Tore) |
+| Neue Techniken im Selbstspiel: Chips/Hacke/Außenrist/angeschnitten je Spiel | 157.9  | ≥ 1.000  | – | ✅ | innen 179.3, aussen 15.6, ferse 112.5, chip 0.0, vollspann 120.5, innenrist 22.2, aussenrist 7.7 |
+| Stärke 2 gegen 1: Siege der stärkeren Bots | 95.35 % | 50.00–100.0 % | – | ✅ | 41:2, Remis 2 |
+| Stärke 3 gegen 1: Siege der stärkeren Bots | 100.0 % | 50.00–100.0 % | – | ✅ | 44:0, Remis 0 |
+| Stärke 3 gegen 2: Siege der stärkeren Bots | 85.00 % | 50.00–100.0 % | – | ✅ | 34:6, Remis 4 |
+
+ALLE GRÜN (18/18)
+
+### n4 Kino-Look (Logik, ohne Browser)
+
+| Prüfung | Messwert | Fenster | Ziel | Ergebnis | Hinweis |
+|---|---|---|---|---|---|
+| Stufe 0 zeichnet direkt (kein Render-Target), Kontaktschatten an | 1.000  | 1.000–1.000  | – | ✅ |  |
+| Stufe 1: Renderskala 0,7–0,85, Start 0,85 (n4-Abnahme: 0,8 zu weich) | 1.000  | 1.000–1.000  | – | ✅ |  |
+| Stufe 1: Szenen-Pixel neu/alt bei Renderskala max (DPR 1,5) | 0.722 × | 0.000–0.750 × | – | ✅ | heute 1,5² mit MSAA |
+| Stufe 1 ohne MSAA, mit Kantenglättung + Nachschärfen | 1.000  | 1.000–1.000  | – | ✅ |  |
+| Stufe 2: AO-Radius (m) | 0.400 m | 0.400–0.400 m | – | ✅ | Figuren-Maßstab |
+| Stufe 2: MSAA 4 + Umgebungsverdeckung | 1.000  | 1.000–1.000  | – | ✅ |  |
+| Dunst, Bewegungsunschärfe, Hitzeflimmern, Blendung überall aus | 1.000  | 1.000–1.000  | – | ✅ |  |
+| Tiefenschärfe-Stufe an (wirkt nur, wenn das Replay sie anfordert) | 1.000  | 1.000–1.000  | – | ✅ |  |
+| Bloom ohne Himmel (bloomSky 0), dezente Vignette ≤ 0,15 | 1.000  | 1.000–1.000  | – | ✅ |  |
+| alle Stufen-Schlüssel sind Kern-Stufen | 1.000  | 1.000–1.000  | – | ✅ |  |
+| Tag: Bloom-Schwelle (nur Leuchtendes) | 0.970  | 0.970–1.000  | – | ✅ |  |
+| Abend: Bloom-Schwelle Stufe 1 | 0.930  | 0.850–0.950  | – | ✅ |  |
+| Tag schwächerer Bloom als Abend | 1.000  | 1.000–1.000  | – | ✅ |  |
+| Tag ohne Bloom (nichts leuchtet), Abend mit | 1.000  | 1.000–1.000  | – | ✅ |  |
+| Farbkorrektur tv / tvAbend | 1.000  | 1.000–1.000  | – | ✅ |  |
+| TV-Look ohne Grün-Bremse, leicht gesättigt | 1.000  | 1.000–1.000  | – | ✅ |  |
+| ?kino=0 → alter Weg | 1.000  | 1.000–1.000  | – | ✅ |  |
+| ?look=2 erzwingt Kino-Stufe, ?look=x ignoriert | 1.000  | 1.000–1.000  | – | ✅ |  |
+| ?kl= wird durchgereicht | 1.000  | 1.000–1.000  | – | ✅ |  |
+| Replay: Tiefenschärfe im Zoom und in der Fan-Cam, nicht in der TV-Kamera | 1.000  | 1.000–1.000  | – | ✅ |  |
+| Replay-Zoom: Fokus = Abstand Kamera → Blickpunkt | 2.010 m | 2.000–2.020 m | – | ✅ |  |
+| Fan-Cam weicher als Zoom | 1.000  | 1.000–1.000  | – | ✅ |  |
+| Replay-Zoom: Ball vor dem Blickpunkt → Fokus auf den Ball | 1.073 m | 1.000–1.100 m | – | ✅ |  |
+| Figur: länglich in Blickrichtung, am Boden voll | 1.000  | 1.000–1.000  | – | ✅ |  |
+| Figur: Deckkraft bei 0,2 m Sprunghöhe | 0.500  | 0.450–0.550  | – | ✅ |  |
+| Figur: Hechtsprung → größer | 1.000  | 1.000–1.000  | – | ✅ |  |
+| Ball: am Boden dunkel und klein, hoch größer und blasser | 1.000  | 1.000–1.000  | – | ✅ |  |
+| makeKino: Standard, Pipeline, Startskala 0,85 | 1.000  | 1.000–1.000  | – | ✅ |  |
+| makeKino: Farbe tv, Tag-Bloom gesetzt | 1.000  | 1.000–1.000  | – | ✅ |  |
+| Stufe 2: Kino mit AO, Skala 0,9 | 1.000  | 1.000–1.000  | – | ✅ |  |
+| Abend: tvAbend, Preset-Schwelle | 1.000  | 1.000–1.000  | – | ✅ |  |
+| Stufe 0: kein Render-Target (direkt) | 1.000  | 1.000–1.000  | – | ✅ |  |
+| ?look=2 bleibt trotz Stufenwechsel, ?kl=-bloom wirkt | 1.000  | 1.000–1.000  | – | ✅ |  |
+| Kern ohne neue Optionen = Stuntbahn-Verhalten (Standard 0,84, AO aus) | 1.000  | 1.000–1.000  | – | ✅ |  |
+| Instanzen: 4 Figuren + Ball | 1.000  | 1.000–1.000  | – | ✅ |  |
+| Figur 0 (Blick +x): lange Achse zeigt in +x | 1.000  | 0.999–1.001  | – | ✅ | Länge 0.85 m, Breite 0.60 m |
+| Figur 1 (Blick +z): lange Achse zeigt in +z | 1.000  | 0.999–1.001  | – | ✅ |  |
+| Figur 0 liegt unter der Figur, knapp über dem Rasen | 1.000  | 1.000–1.000  | – | ✅ |  |
+| Figur 2 in 0,5 m Höhe: unsichtbar | 0.000  | 0.000–0.001  | – | ✅ |  |
+| unsichtbare Figur: Größe 0 (x- und z-Spalte leer) | 0.000  | 0.000–0.000  | – | ✅ |  |
+| Ball: rund, unter dem Ball, volle Deckkraft am Boden | 1.000  | 1.000–1.000  | – | ✅ |  |
+| Abend: Kontaktschatten etwas heller (Flutlicht von allen Seiten) | 1.000  | 1.000–1.000  | – | ✅ |  |
+
+ALLE GRÜN (42/42)
+
+### n4 Qualitäts-Autopilot (künstliche Geräte)
+
+| Prüfung | Messwert | Fenster | Ziel | Ergebnis | Hinweis |
+|---|---|---|---|---|---|
+| Stufenwerte: Pixeldichte 1 / 1,5 / 2 (Deckel wie bisher) | 1.000  | 1.000–1.000  | – | ✅ |  |
+| Stufenwerte: Schatten ab 1, Menschen-Schatten ab 2, MSAA-Canvas ab 1 | 1.000  | 1.000–1.000  | – | ✅ |  |
+| Schattenkarte: Stufe 1 = 1024, Stufe 2 = 2048 (wie bisher), ?schatten2=1024 möglich | 1.000  | 1.000–1.000  | – | ✅ |  |
+| Skalenbereich: Stufe 1 = Kino-Look 0,7–0,85 (Start 0,85), Stufe 0 direkt | 1.000  | 1.000–1.000  | – | ✅ |  |
+| Skalenbereich ohne Kino-Look (?kino=0): Pixeldichte-Faktor | 1.000  | 1.000–1.000  | – | ✅ |  |
+| Skalenbereich der Ziel-Stufe, auch wenn der Kino-Look gerade auf Stufe 0 steht; ?kl=-scale → direkt | 1.000  | 1.000–1.000  | – | ✅ |  |
+| Start: ?q= fest, sonst gemerkt, sonst Touch 1 / Desktop 2 | 1.000  | 1.000–1.000  | – | ✅ |  |
+| Gerätespeicher: Stufe merken/laden, nach 21 Tagen verworfen, Unsinn → null | 1.000  | 1.000–1.000  | – | ✅ |  |
+| Kurzmessung: 20 ms je Bild bei 0,8 → Startskala (Bereich 0,7–0,85) | 0.700  | 0.700–0.700  | – | ✅ |  |
+| Kurzmessung: 6 ms je Bild bei 0,8 → Startskala | 0.850  | 0.850–0.850  | – | ✅ |  |
+| starkes Handy: Stufe nach 60 s | 2.000  | 2.000–2.000  | – | ✅ | rauf nach 4.08 s, Skala 1 |
+| starkes Handy: Zeit bis Stufe 2 | 4.080 s | 0.000–25.00 s | – | ✅ |  |
+| starkes Handy: Änderungen in den letzten 20 s (kein Pendeln) | 0.000  | 0.000–2.000  | – | ✅ |  |
+| schwaches Handy: erster Schritt nach unten | 2.530 s | 0.000–3.000 s | – | ✅ | 2.53s L1 s0.74 · 4.13s L1 s0.7 · 5.73s L1 s0.7 -deko · 7.33s L1 s0.7 -deko |
+| schwaches Handy: erster Schritt ist die Renderskala | 1.000  | 1.000–1.000  | – | ✅ |  |
+| schwaches Handy: Zeit bis Stufe 0 | 8.930 s | 0.000–10.00 s | – | ✅ |  |
+| schwaches Handy: Änderungen in den letzten 15 s (ein Fehlversuch, dann gelernt) | 0.000  | 0.000–0.000  | – | ✅ | 7.33s L1 s0.7 -deko -m · 8.93s L0 s1 -deko -m · 12.03s L1 s0.7 -deko -m · 13.63s L0 s1 -deko -m |
+| schwaches Handy: gelernte Kosten der Stufe (Schätzung 0,3) | 1.178  | 0.800–5.000  | – | ✅ |  |
+| mittleres Handy: bleibt auf Stufe 1, nur die Renderskala sinkt | 1.000  | 1.000–1.000  | – | ✅ | Skala 0.74, Deko true |
+| CPU-gebunden: Renderskala bleibt, zuerst Deko aus | 1.000  | 1.000–1.000  | – | ✅ | L1 s0.85 -deko · L1 s0.85 -deko · L0 s1 -deko |
+| ohne GPU-Zeit, starkes Gerät: Stufe nach 90 s | 2.000  | 2.000–2.000  | – | ✅ | Skala 1 |
+| ohne GPU-Zeit, schwaches Gerät: Zeit bis Stufe 0 | 8.930 s | 0.000–15.00 s | – | ✅ |  |
+| Rückrufe in Reihenfolge Skala → Deko → Menschen → Stufe, je Änderung gemerkt | 1.000  | 1.000–1.000  | – | ✅ | skala0.8@2 skala0.7@2 merke2 dekofalse merke2 menschenfalse merke2 stufe1 skala0.85@1 |
+| info: Schritte als Text | 1.000  | 1.000–1.000  | – | ✅ |  |
+
+ALLE GRÜN (24/24)
+
+### n4 enge Schattenkamera
+
+| Prüfung | Messwert | Fenster | Ziel | Ergebnis | Hinweis |
+|---|---|---|---|---|---|
+| Lichtachsen = three.js-Kamera (Sonne) | 0.000  | 0.000–0.000  | – | ✅ |  |
+| Lichtachsen = three.js-Kamera (Flutlicht) | 0.000  | 0.000–0.000  | – | ✅ |  |
+| hoch Tag Ball (0,0): sichtbarer Käfig in der Karte (mind. wie bisher) | 1.000  | 0.993–1.000  | – | ✅ | 1225 Punkte, bisher 99.3 %, Kante ±15.5 m (bisher ±15.5) |
+| hoch Tag Ball (9,4): sichtbarer Käfig in der Karte (mind. wie bisher) | 1.000  | 0.999–1.000  | – | ✅ | 1000 Punkte, bisher 100.0 %, Kante ±11.5 m (bisher ±15.5) |
+| hoch Tag: halbe Kante (m) | 11.50 m | 4.000–15.50 m | – | ✅ | Texel 2.2 cm bei 1024 (bisher 3.0 cm bei 1024, 1.5 cm bei 2048) |
+| hoch Tag Ball (-10,-5): sichtbarer Käfig in der Karte (mind. wie bisher) | 1.000  | 0.999–1.000  | – | ✅ | 791 Punkte, bisher 100.0 %, Kante ±14 m (bisher ±15.5) |
+| hoch Abend Ball (0,0): sichtbarer Käfig in der Karte (mind. wie bisher) | 1.000  | 0.999–1.000  | – | ✅ | 1225 Punkte, bisher 100.0 %, Kante ±12.5 m (bisher ±15.5) |
+| hoch Abend Ball (9,4): sichtbarer Käfig in der Karte (mind. wie bisher) | 1.000  | 0.999–1.000  | – | ✅ | 1000 Punkte, bisher 100.0 %, Kante ±10 m (bisher ±15.5) |
+| hoch Abend Ball (-10,-5): sichtbarer Käfig in der Karte (mind. wie bisher) | 1.000  | 0.999–1.000  | – | ✅ | 791 Punkte, bisher 100.0 %, Kante ±12 m (bisher ±15.5) |
+| quer Tag Ball (0,0): sichtbarer Käfig in der Karte (mind. wie bisher) | 0.998  | 0.996–1.000  | – | ✅ | 1209 Punkte, bisher 99.6 %, Kante ±15.5 m (bisher ±15.5) |
+| quer Tag Ball (9,4): sichtbarer Käfig in der Karte (mind. wie bisher) | 1.000  | 0.996–1.000  | – | ✅ | 1117 Punkte, bisher 99.6 %, Kante ±14.5 m (bisher ±15.5) |
+| quer Tag: halbe Kante (m) | 14.50 m | 4.000–15.50 m | – | ✅ | Texel 2.8 cm bei 1024 (bisher 3.0 cm bei 1024, 1.5 cm bei 2048) |
+| quer Tag Ball (-10,-5): sichtbarer Käfig in der Karte (mind. wie bisher) | 0.991  | 0.990–1.000  | – | ✅ | 1124 Punkte, bisher 99.0 %, Kante ±15.5 m (bisher ±15.5) |
+| quer Abend Ball (0,0): sichtbarer Käfig in der Karte (mind. wie bisher) | 1.000  | 0.999–1.000  | – | ✅ | 1209 Punkte, bisher 100.0 %, Kante ±14.5 m (bisher ±15.5) |
+| quer Abend Ball (9,4): sichtbarer Käfig in der Karte (mind. wie bisher) | 1.000  | 0.999–1.000  | – | ✅ | 1117 Punkte, bisher 99.9 %, Kante ±13.5 m (bisher ±15.5) |
+| quer Abend Ball (-10,-5): sichtbarer Käfig in der Karte (mind. wie bisher) | 1.000  | 0.999–1.000  | – | ✅ | 1124 Punkte, bisher 100.0 %, Kante ±15 m (bisher ±15.5) |
+| Mitbewegen: Karte nur um ganze Texel verschoben (Abweichung in Texeln) | 0.000  | 0.000–0.000  | – | ✅ |  |
+| Hysterese: etwas kleiner → Kante bleibt, deutlich kleiner → schrumpft, größer → wächst sofort | 1.000  | 1.000–1.000  | – | ✅ | 6.5 / 6.5 / 5 / 7.5 |
+| höchstens maxExt (ganzer Käfig wie bisher) | 1.000  | 1.000–1.000  | – | ✅ |  |
+
+ALLE GRÜN (19/19)
+
+### n4 Figuren (Culling, Halbtakt, Fuß-IK)
+
+| Prüfung | Messwert | Fenster | Ziel | Ergebnis | Hinweis |
+|---|---|---|---|---|---|
+| Figur: alle Teil-Meshes mit Sichtbarkeitsprüfung und Kugel ≥ BOUND_R | 1.000  | 1.000–1.000  | – | ✅ |  |
+| Begrenzungskugel: größte Füllung über 6 Figuren × 10 Posen (≤ 1 = ganz drin) | 0.825  | 0.000–1.000  | – | ✅ | Sports_Male_04 stemmschritt |
+| ?cull=0: Figuren wie bisher immer gezeichnet | 1.000  | 1.000–1.000  | – | ✅ |  |
+| nicht im Bild: Mischer-Aufrufe in 60 Bildern | 30.00  | 30.00–30.00  | – | ✅ |  |
+| nicht im Bild: Lage trotzdem jedes Bild (x nach 60 Bildern) | 3.540 m | 3.540–3.540 m | – | ✅ |  |
+| im Bild: Mischer jedes Bild | 60.00  | 60.00–60.00  | – | ✅ |  |
+| Halbtakt: Laufphase gleich weit wie im Volltakt | 0.000  | 0.000–0.000  | – | ✅ | Phase 0.381 |
+| Fuß-IK: Füße im Rasen ohne IK (größte Tiefe, Info) | 18.32 cm | Info | – | ✅ | Female_Adult_12 stemmschritt |
+| Fuß-IK: Füße im Rasen mit IK (Toleranz 1 cm + 2 mm Schwelle) | 1.156 cm | 0.000–1.250 cm | – | ✅ |  |
+| Ballkontakt (?glatt=0): Schussfuß beim Kontakt am Ball (Abstand Knöchel → Ziel) | 4.540 cm | 0.000–13.73 cm | – | ✅ | ohne IK 45.8 cm; nach 0,05 s 22.1 / 40.0 cm |
+| Ballkontakt (?glatt=0): nach 0,12 s kein Zug mehr zum Ball (Differenz zu ohne IK) | 0.094 cm | 0.000–3.000 cm | – | ✅ |  |
+| Ballkontakt: Schussfuß greift in ≤ 0,15 s zum Ball (nächster Abstand Knöchel → Ziel) | 17.31 cm | 0.000–19.98 cm | – | ✅ | nach 0.117 s, ohne IK dort 40.0 cm |
+| Ballkontakt: nach 0,4 s kein Zug mehr zum Ball (Differenz zu ohne IK) | 0.000 cm | 0.000–3.000 cm | – | ✅ |  |
+| Ballkontakt: kein Sprung – Fuß-Ruck mit IK höchstens 4 cm/Bild² über ohne IK | 2.520 cm | ≤ 4.000 cm | – | ✅ | mit 4.5, ohne 2.0 |
+| reiner Laufzyklus: IK greift nicht ein | 0.000 m | 0.000–0.000 m | – | ✅ | IK-Läufe 0 |
+| CPU je Bild, 6 Figuren mit Stemmschritt: Mehrzeit durch IK (Node, ungedrosselt) | 0.017 ms | ≤ 0.250 ms | – | ✅ | ohne 0.140 ms, mit 0.157 ms, IK selbst 0.015 ms, 2272 Bein-Lösungen; Budget am Handy (CPU ×4): +0,5 ms → hier ≤ 0,125 ms anstreben |
+
+ALLE GRÜN (16/16)
+
+### n9 Kuscheltiere
+
+| Prüfung | Messwert | Fenster | Ziel | Ergebnis | Hinweis |
+|---|---|---|---|---|---|
+| Standard-Satz = Kuscheltiere, ?figuren=menschen = Menschen | 1.000  | 1.000–1.000  | – | ✅ |  |
+| verschiedene Tiere | 6.000  | 6.000–99.00  | – | ✅ | Teddy, Fuchs, Katze, Hase, Panda, Elefant |
+| Bewegungs-Satz je Tier wie die Rocketbox-Vorlage (m/f) | 1.000  | 1.000–1.000  | – | ✅ |  |
+| Animationsspuren ohne Knochen (alle Tiere × alle Clips) | 0.000  | 0.000–0.000  | – | ✅ | 5088 Spuren |
+| Hautgewichte nicht normiert (Punkte) | 0.000  | 0.000–0.000  | – | ✅ |  |
+| Sohle in der Ruhepose: tiefster Punkt (wie Menschen −1,5 cm) | -1.201 cm | -2.500–-0.500 cm | – | ✅ | bis -1.1 cm |
+| Dreiecke je Tier (Mittel, Menschen: 8146) | 8173.2  | 5000.0–9000.0  | – | ✅ |  |
+| Begrenzungskugel: größte Füllung über 6 Tiere × 12 Posen (≤ 1 = ganz drin) | 0.760  | 0.000–1.000  | – | ✅ | Hase stemmschritt |
+| liegend: tiefster Plüsch-Punkt (Rasen = 0, Menschen-Sohle −1,5 cm) | 6.323 cm | -9.000–99.00 cm | – | ✅ | Fuchs graetsche |
+| Ohr wackelt beim Laufen (größter Ausschlag) | 0.350 rad | 0.100–0.600 rad | – | ✅ |  |
+| Ohr nach dem Laufen zurück (Abstand zur Ruhe) | 0.072 rad | 0.000–0.200 rad | – | ✅ |  |
+| Schwanz-Knochen bei allen Tieren | 1.000  | 1.000–1.000  | – | ✅ |  |
+| Leibchen: fertiges Teil aus dem GLB, Stoff-Muster, Teamfarbe | 1.000  | 1.000–1.000  | – | ✅ |  |
+| Draw-Calls je Figur (Körper + Leibchen; Menschen: 3) | 2.000  | 2.000–2.000  | – | ✅ |  |
+| Ladegröße Figuren Kuscheltiere / Menschen (≤ 1,3) | 0.338  | 0.000–1.300  | – | ✅ | 586 KB / 1735 KB |
+| Kuscheltier-Dateien vollständig | 1.000  | 1.000–1.000  | – | ✅ |  |
+| ?figuren=menschen: Rocketbox-Mensch mit eigenem Leibchen wie bisher | 1.000  | 1.000–1.000  | – | ✅ |  |
+
+ALLE GRÜN (1
+### n
+### n4 Fuß-IK (Löser und Regeln)
+
+| Prüfung | Messwert | Fenster | Ziel | Ergebnis | Hinweis |
+|---|---|---|---|---|---|
+| Quaternion-Helfer = three.js (200 Zufallsfälle) | 0.000  | 0.000–0.000  | – | ✅ |  |
+| erreichbare Ziele: Abstand Knöchel → Ziel (431 Fälle) | 0.000 m | 0.000–0.000 m | – | ✅ |  |
+| Knochenlängen bleiben | 0.000 m | 0.000–0.000 m | – | ✅ |  |
+| Knie bleibt vorn (Anteil) | 1.000  | 0.970–1.000  | – | ✅ |  |
+| unerreichbar: Bein zeigt zum Ziel (Winkelfehler °) | 0.000 ° | 0.000–0.010 ° | – | ✅ |  |
+| unerreichbar: Bein (fast) gestreckt | 0.854 m | 0.853–0.854 m | – | ✅ |  |
+| unerreichbar wird gemeldet | 1.000  | 1.000–1.000  | – | ✅ |  |
+| gestrecktes Bein: Knie beugt zum Pol (+z) | 0.277 m | 0.050–1.000 m | – | ✅ | Knöchel-Fehler 7.9e-17 |
+| Ziel = Knöchel: Drehung (Winkel °) | 0.000 ° | 0.000–0.010 ° | – | ✅ |  |
+| Boden: Knöchel 3 cm zu tief → 3 cm anheben | 0.030 m | 0.030–0.030 m | – | ✅ |  |
+| Boden: Zehen 2 cm im Rasen → 2 cm anheben | 0.020 m | 0.020–0.020 m | – | ✅ |  |
+| Boden: Fuß in der Luft → nichts | 0.000 m | 0.000–0.000 m | – | ✅ |  |
+| Ballkontakt: Gewicht voll beim Kontakt, weg nach KICK_T, nie bei kt < 0 | 1.000  | 1.000–1.000  | – | ✅ |  |
+| Ballkontakt: Knöchel-Ziel hinter dem Ball, in Ruhehöhe | 1.000  | 1.000–1.000  | – | ✅ |  |
+
+ALLE GRÜN (1
+### n10 Ballmagnet und Pässe (gegen 0.7.0)
+
+| Prüfung | Messwert | Fenster | Ziel | Ergebnis | Hinweis |
+|---|---|---|---|---|---|
+| Standard: Ballmagnet 2,4, Abschirmen 0,6 m, Pass 13,5 m/s | 1.000  | 1.000–1.000  | 1.000  | ✅ |  |
+| ?magnet=1.8 = Ballmagnet wie 0.7.0 (auch schirmVor 0,3), ausdrücklich gesetztes schirmVor bleibt | 1.000  | 1.000–1.000  | 1.000  | ✅ |  |
+| ?pass=10.5 = Pässe wie 0.7.0 (Schärfe 1) | 1.000 × | 1.000–1.000 × | 1.000 × | ✅ |  |
+| Bot-Spiel: Ballverluste beim Führen je Minute ÷ 0.7.0 | 0.941 × | 0.000–0.950 × | 0.750 × | ✅ | 1,66 → 1,56 (Zweikampf 1,46 → 1,36); gemessen mit 160 Spielen −11 % |
+| … Grätschen mit Ballgewinn ≥ 70 % von 0.7.0 | 0.993 × | 0.700–9.000 × | – | ✅ | 7,4 → 7,4 je Spiel |
+| … Bot-Pässe kommen an: höchstens 3 Punkte schlechter | -0.862 Punkte | -3.000–99.00 Punkte | 0.000 Punkte | ✅ | 65 → 64 % |
+| … Hänger / Numerik | 0.000  | 0.000–0.000  | 0.000  | ✅ |  |
+| Pass-Probe: Abspieltempo p50 ÷ 0.7.0 | 1.149 × | 1.100–1.400 × | – | ✅ | 10,4 → 12,0 m/s |
+| … kommt beim Gemeinten an: nicht schlechter | 1.420 Punkte | -1.000–99.00 Punkte | 0.000 Punkte | ✅ | 76,6 → 78,0 % (abgefangen 18,6 → 17,4 %) |
+| … Annahme gelingt: nicht schlechter | 1.959 Punkte | -2.000–99.00 Punkte | 0.000 Punkte | ✅ | 47,8 → 49,7 % |
+| Kinder-Stick gegen Bot: Ball springt weg je Minute ÷ 0.7.0 | 0.984 × | 0.000–1.100 × | – | ✅ | 6,3 → 6,2 |
+
+ALLE GRÜN (11/11)
+
+### n10 Tierform (Kindchenschema)
+
+| Prüfung | Messwert | Fenster | Ziel | Ergebnis | Hinweis |
+|---|---|---|---|---|---|
+| ?tierform=0 lädt die Figuren von 0.7.0 | 1.000  | 1.000–1.000  | – | ✅ |  |
+| Kopf-Volumen neu ÷ 0.7.0 (alle 6 Tiere, kleinster Wert; Auftrag +25–35 %, gewählt +37 %) | 1.365 × | 1.250–1.450 × | – | ✅ | Teddy 1,37, Fuchs 1,37, Katze 1,37, Hase 1,37, Panda 1,37, Elefant 1,37 |
+| Arme (Ober- + Unterarm) neu ÷ 0.7.0 (größter Wert) | 0.750 × | 0.700–0.800 × | – | ✅ | alle 0,75–0,75 |
+| Beine (Ober- + Unterschenkel) neu ÷ 0.7.0 (größter Wert) | 0.750 × | 0.700–0.800 × | – | ✅ | alle 0,75–0,75 |
+| Sohle in der Ruhepose (tiefster Punkt, wie 0.7.0 ≈ −1,2 cm) | -1.201 cm | -2.500–-0.500 cm | – | ✅ |  |
+| liegend (Hechtsprung, am Boden, Grätsche, nach Fallrückzieher/Flugkopfball): höchstens 2 cm tiefer im Rasen als 0.7.0 | -0.462 cm | -99.00–2.000 cm | – | ✅ | Elefant liegen_flugkopf: tiefster Punkt 0.7.0 1,1 cm, neu 0,5 cm |
+| Kopfball im Stand: höchster Kopf neu − 0.7.0 (Hüpfer gleicht die kürzeren Beine aus) | -4.258 cm | -8.000–8.000 cm | – | ✅ | bis -3,2 cm |
+| Ball halten: weitere Pfote ↔ Ball (m), neu höchstens 3 cm weiter als 0.7.0 | 1.006 cm | -99.00–3.000 cm | – | ✅ | Teddy 0,24→0,24, Fuchs 0,19→0,20, Katze 0,24→0,24, Hase 0,24→0,24, Panda 0,19→0,20, Elefant 0,24→0,24 |
+| Laufen 2,0 m/s: Tatze am Boden gleitet (Median der Tiere) höchstens wie 0.7.0 + 0,3 m/s | 0.071 m/s | -99.00–0.300 m/s | – | ✅ | 0.7.0 0,15 m/s, neu 0,22 m/s (Läufer 2,0 m/s) |
+| Laufen 4,5 m/s: Tatze am Boden gleitet (Median der Tiere) höchstens wie 0.7.0 + 0,3 m/s | 0.086 m/s | -99.00–0.300 m/s | – | ✅ | 0.7.0 0,22 m/s, neu 0,30 m/s (Läufer 4,5 m/s) |
+| Laufen 7,0 m/s: Tatze am Boden gleitet (Median der Tiere) höchstens wie 0.7.0 + 0,3 m/s | 0.075 m/s | -99.00–0.300 m/s | – | ✅ | 0.7.0 0,39 m/s, neu 0,47 m/s (Läufer 7,0 m/s) |
+
+ALLE GRÜN (11/11)
+
+### n11 Gelenke und Kontakt (Körperteil am Ball)
+
+| Prüfung | Messwert | Fenster | Ziel | Ergebnis | Hinweis |
+|---|---|---|---|---|---|
+| Rechnung (1600 Lagen, 8 Techniken): Hüftbeugung in [-45,150]° | 150.4 ° | -45.00–150.5 ° | – | ✅ | kleinste -46,4° |
+| … Hüftbeugung nicht unter der Grenze (Rechen-Toleranz der IK 2°) | -46.41 ° | -47.00–150.0 ° | – | ✅ |  |
+| … Abspreizen in [-30,90]° | 76.90 ° | -30.00–90.50 ° | – | ✅ | kleinstes -33,0° |
+| … Knie in [0,160]° | 155.6 ° | 0.000–160.5 ° | – | ✅ | ferse Ball (-0,17, 0,36, 0,16) |
+| … Knie nie nach vorn durchgedrückt (Lagen) | 0.000  | 0.000–0.000  | – | ✅ |  |
+| Tabelle: jede Technik hat ein Körperteil (Innenseite, Außenrist, Spann, Ferse, Kopf, Brust, Oberschenkel) | 1.000  | 1.000–1.000  | – | ✅ |  |
+| Kontaktbild innen: innenseite ↔ Ballmitte (alle 6 Tiere, größter Wert) ≤ Ballradius + 3 cm | 13.13 cm | 0.000–14.00 cm | – | ✅ | Hase; kleinster 13,0 cm |
+| Kontaktbild aussenrist: aussenrist ↔ Ballmitte (alle 6 Tiere, größter Wert) ≤ Ballradius + 3 cm | 12.69 cm | 0.000–14.00 cm | – | ✅ | Hase; kleinster 12,3 cm |
+| Kontaktbild vollspann: spann ↔ Ballmitte (alle 6 Tiere, größter Wert) ≤ Ballradius + 3 cm | 13.68 cm | 0.000–14.00 cm | – | ✅ | Hase; kleinster 13,2 cm |
+| Kontaktbild ferse: ferse ↔ Ballmitte (alle 6 Tiere, größter Wert) ≤ Ballradius + 3 cm | 6.464 cm | 0.000–14.00 cm | – | ✅ | Hase; kleinster 3,8 cm |
+| Kontaktbild volley: spann ↔ Ballmitte (alle 6 Tiere, größter Wert) ≤ Ballradius + 3 cm | 10.94 cm | 0.000–14.00 cm | – | ✅ | Panda; kleinster 10,8 cm |
+| Kontaktbild seitfall: spann ↔ Ballmitte (alle 6 Tiere, größter Wert) ≤ Ballradius + 3 cm | 9.403 cm | 0.000–14.00 cm | – | ✅ | Panda; kleinster 5,6 cm |
+| Kontaktbild fallrueck: spann ↔ Ballmitte (alle 6 Tiere, größter Wert) ≤ 24 cm (Ziel 14 cm offen) | 19.75 cm | 0.000–24.00 cm | – | ✅ | Panda; kleinster 4,8 cm |
+| Kontaktbild salto: ferse ↔ Ballmitte (alle 6 Tiere, größter Wert) ≤ 34 cm (Ziel 14 cm offen) | 31.30 cm | 0.000–34.00 cm | – | ✅ | Elefant; kleinster 30,1 cm |
+| Figuren beim Kontakt: Knie höchstens 160° | 135.2 ° | 0.000–161.0 ° | – | ✅ |  |
+| Figuren beim Kontakt: Hüftbeugung höchstens 150° | 149.7 ° | -90.00–151.0 ° | – | ✅ |  |
+| Figuren beim Kontakt: Abspreizen höchstens 90° | 9.666 ° | -90.00–91.00 ° | – | ✅ |  |
+
+ALLE GRÜN (17/17)
+
+### n11 Akrobatik: Ball, Sprünge, Effet, hohe Pässe, automatische Technik
+
+| Prüfung | Messwert | Fenster | Ziel | Ergebnis | Hinweis |
+|---|---|---|---|---|---|
+| ?akro=0 setzt alle n11-Werte auf 0.8.0 | 1.000  | 1.000–1.000  | – | ✅ | {"turfEn":0.621,"jumpMax":0.6,"sprungAkro":1,"spinMax":10,"backspinMax":7,"bananeSpinMax":1.2,"aussenSpin":0.75,"autotech":0,"einknopf":0,"salto":0,"hochpass":0,"kurvenpass":0,"clSteig":0,"mitnahme":0} |
+| ?akro=0: Tormann-Fanghöhe wie 0.8.0 | 1.000  | 1.000–1.000  | – | ✅ |  |
+| Einzelregler gewinnen gegen ?akro=0 (z. B. ?akro=0&effet=18) | 1.000  | 1.000–1.000  | – | ✅ |  |
+| Kurzform ?sprungkraft= → jumpMax, ?abprall= → turfEn, ?effet= → spinMax | 1.000  | 1.000–1.000  | – | ✅ |  |
+| Tormann springt so hoch wie alle: Fanghöhe + (jumpMax − 0,6) | 0.400 m | 0.390–0.410 m | – | ✅ |  |
+| Abprall aus 2 m (Scheitel über dem Rasen) | 0.974 m | 0.900–1.100 m | – | ✅ | 0.8.0: 0,67 m (FIFA 0,60–0,85) |
+| Effet: seitliche Ablenkung Innenseit-Schuss 25 m/s über 20 m ÷ 0.8.0 (Ziel 1,6–2) | 1.770 × | 1.600–2.000 × | – | ✅ | 2,87 → 5,08 m |
+| Kopfball-Fenster: 2,7 m hoher Ball (nur mit Sprung 1,0 m) | 1.000  | 0.200–1.000  | – | ✅ |  |
+| … 0.8.0: 2,7 m hoher Ball nicht mehr per Kopf | 0.000  | 0.000–0.000  | – | ✅ |  |
+| Salto-Hacke nur, wo Volley/Kopf nicht passen: 1,3 m, Ball aus Zielrichtung | 0.800  | 0.500–1.000  | – | ✅ |  |
+| Freier Weg: hoher Pass zum Mitspieler | 1.000  | 1.000–1.000  | – | ✅ | lupfer, 20°, 13,7 m/s |
+| … Ankunft in Volley-, Brust- oder Kopfhöhe | 1.000  | 1.000–1.000  | – | ✅ | 1.3 m |
+| … Zeitreserve der Gegner | 0.590 s | 0.060–9.000 s | – | ✅ |  |
+| Empfänger zugestellt (Gegner direkt am Empfänger): kein Pass zu ihm bzw. als unsicher markiert | 1.000  | 1.000–1.000  | – | ✅ | to 2, Reserve 0,13 s |
+| Auto-Schuss: Erfolgschance der Wahl ÷ beste Option (40 Lagen, kleinster Wert) | 0.905 × | 0.900–1.000 × | – | ✅ | {"innenrist":21,"vollspann":11,"ferse":8} |
+| Ein Knopf: 4 m vor dem Tor, Blick zum Tor → Schuss | 1.000  | 1.000–1.000  | – | ✅ |  |
+| Ein Knopf: weit weg, Mitspieler in Blickrichtung → Pass | 1.000  | 1.000–1.000  | – | ✅ |  |
+| Bots: Ballkontakte in der Luft je Minute ÷ 0.8.0 | 1.831 × | 1.500–9.000 × | – | ✅ | 12,4 → 22,8 |
+| Bots: Pässe abgefangen (höchstens die Hälfte von 0.8.0 + 3 Punkte Streuung bei 8 Spielen) | 19.06 % | 0.000–20.63 % | – | ✅ | 0.8.0 35,3 % |
+| Bots: Pässe kommen beim Gemeinten an | 80.24 % | 75.00–100.0 % | – | ✅ | 0.8.0 63,5 % |
+| Bots: Tore je Spiel ÷ 0.8.0 (±30 %) | 1.068 × | 0.700–1.300 × | – | ✅ | 16,6 → 17,8 |
+| Bots: Ball außerhalb / NaN | 0.000  | 0.000–0.000  | – | ✅ |  |
+| Mensch-Pässe: abgefangen (0.8.0: 16 %) | 7.581 % | 0.000–9.000 % | – | ✅ | kein Pass 5,8 %, anderer Mitspieler 17,7 % |
+| Mensch-Pässe: kommen beim Gemeinten an | 74.37 % | 66.00–100.0 % | – | ✅ | (Ziel 75 % nicht ganz: bei zugestelltem Weg geht der Pass zum freien Mitspieler, siehe Bericht; Streuung ±3 Punkte) |
+
+ALLE GRÜN (24/24)
+
+### n12 Mitnahme: Laufpass im Lauf nach vorn mitnehmen
+
+| Prüfung | Messwert | Fenster | Ziel | Ergebnis | Hinweis |
+|---|---|---|---|---|---|
+| Standard: Mitnahme an, ab 1,5 m/s, Vorlage 0,8 m nach 0,7 s | 1.000  | 1.000–1.000  | 1.000  | ✅ |  |
+| ?mitnahme=0 = Annahme wie 0.9.0, ?akro=0 schaltet sie mit aus (0.8.0) | 1.000  | 1.000–1.000  | 1.000  | ✅ |  |
+| Laufpass hoch: Ball nach der Annahme hinter dem Empfänger (0.9.0: 73,3 %) | 0.000 % | 0.000–5.000 % | 0.000 % | ✅ | 45 → 45 Annahmen im Lauf |
+| … hoch: mitgenommen (0,5 s danach 0,2–2,5 m vor ihm, kein Gegner dran) | 93.33 % | 85.00–100.0 % | – | ✅ | 0.9.0: 15,6 % |
+| … hoch: Vorlage vor dem Fuß 0,7 s nach der Annahme | 0.528 m | 0.150–1.200 m | 0.800 m | ✅ | nach 0,5 s 0,33 m |
+| … hoch: Ball etwas schneller als der Läufer (m/s mehr) | 2.341 m/s | 0.300–3.000 m/s | – | ✅ | Ball 7,2 / Lauf 4,9 (0.9.0: 3,9 / 4,9) |
+| … hoch: Pass kommt an (nicht schlechter) | 0.000 Szenen | -1.000–99.00 Szenen | 0.000 Szenen | ✅ | 45 → 45 von 48 |
+| Laufpass flach: Ball nach der Annahme hinter dem Empfänger (0.9.0: 37,1 %) | 0.000 % | 0.000–5.000 % | 0.000 % | ✅ | 35 → 34 Annahmen im Lauf |
+| … flach: mitgenommen (0,5 s danach 0,2–2,5 m vor ihm, kein Gegner dran) | 94.12 % | 85.00–100.0 % | – | ✅ | 0.9.0: 57,1 % |
+| … flach: Vorlage vor dem Fuß 0,7 s nach der Annahme | 0.209 m | 0.150–1.200 m | 0.800 m | ✅ | nach 0,5 s 0,25 m |
+| … flach: Ball etwas schneller als der Läufer (m/s mehr) | 1.610 m/s | 0.300–3.000 m/s | – | ✅ | Ball 4,8 / Lauf 3,2 (0.9.0: 2,3 / 3,2) |
+| … flach: Pass kommt an (nicht schlechter) | 0.000 Szenen | -1.000–99.00 Szenen | 0.000 Szenen | ✅ | 35 → 35 von 48 |
+| Empfänger steht: Ballweg gleich wie 0.9.0 | 1.000 × | 1.000–1.000 × | 1.000 × | ✅ | 8 von 8 Szenen |
+| Ball vom Gegner (Plan zu mir): gleicher Ballweg wie 0.9.0 | 1.000  | 1.000–1.000  | 1.000  | ✅ |  |
+| Ball vom Mitspieler ohne Pass-Plan: gleicher Ballweg wie 0.9.0 | 1.000  | 1.000–1.000  | 1.000  | ✅ |  |
+| Gegenprobe: dieselbe Szene als Pass vom Mitspieler wird mitgenommen (Ball danach weiter vorn als 0.9.0) | 1.000  | 1.000–1.000  | 1.000  | ✅ | x 0,72 → 1,65 m |
+| Bots: Ball 0,25 s nach der Annahme im Lauf hinter dem Empfänger | 5.074 % | 0.000–8.000 % | – | ✅ | 0.9.0: 32,1 % |
+| Bots: angekommene Pässe ÷ 0.9.0 | 0.992 × | 0.950–9.000 × | – | ✅ | 662 → 657 |
+| Bots: Ballverlust ≤ 1,5 s nach der Annahme (Punkte gegen 0.9.0) | -4.874 Punkte | -99.00–2.000 Punkte | – | ✅ | 59,5 → 54,6 % |
+
+ALLE GRÜN (19/19)
+
+1 Testdatei(en) rot
+) rot

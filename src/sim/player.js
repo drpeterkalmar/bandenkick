@@ -43,6 +43,8 @@ export class Player {
     this.plant = 0;               // Stemmschritt 0…1 (Grafik: Körper stemmt sich in die neue Richtung)
     this.plantX = 1; this.plantZ = 0; this.plantT = 99;
     this.bodyOffT = 0;            // kurz keine Körper-Kollision mit dem Ball (nach Mitnahme im Stemmschritt)
+    this.mitT = 0;                // n12: nach der Mitnahme eines Laufpasses ohne Stick noch … s weiterlaufen …
+    this.mitX = 1; this.mitZ = 0; // … in diese Richtung (wie vorgelegt)
     this.hand = { mode: 'none', t: 0, dx: 1, dz: 0 }; // Tormann: none | hold | dive | ground
     this.strong = id === 2 || id === 4 ? -1 : 1;    // starkes Bein (+1 rechts, −1 links): je Mannschaft ein Linksfuß
     this.chargeKind = 'shot'; this.chargeMode = 'std'; this.armed = null; // Geste: was lädt, Tipp wartet
@@ -130,7 +132,7 @@ export class Player {
 
   step(dt, inp, game) {
     const P = this.P, ball = game.ball, t = game.t;
-    this.touchCd -= dt; this.kickT += dt; this.touchT += dt; this.clearT += dt; this.plantT += dt; this.techT += dt;
+    this.touchCd -= dt; this.mitT -= dt; this.kickT += dt; this.touchT += dt; this.clearT += dt; this.plantT += dt; this.techT += dt;
     // Sprung (Kopfball, Absprung beim Fallrückzieher): Füße über dem Boden
     if (this.jumpY > 0 || this.jumpV > 0) { this.jumpY += this.jumpV * dt; this.jumpV -= P.g * dt; if (this.jumpY <= 0) { this.jumpY = 0; this.jumpV = 0; } }
     if (this.hand.mode === 'dive' || this.hand.mode === 'ground') { this.stepDive(dt, game); return; }
@@ -241,8 +243,9 @@ export class Player {
     this.assistW += (targetW - this.assistW) * (1 - Math.exp(-dt / tau));
     // Pass/Schuss lädt oder Tipp-Fenster läuft, Stick los: in der Laufrichtung weiter statt abrupt zu bremsen
     // (sonst rollt der vorgelegte Ball davon, bevor der Kick kommt)
-    const carry = !want && !recv && !(targetW > 0 && this.pending) && (this.charging || this.armed) && this.speed > 1.2 && !held;
-    if (carry) { dirX = this.hx; dirZ = this.hz; }
+    // n12: ebenso kurz nach der Mitnahme eines Laufpasses (der vorgelegte Ball läuft sonst davon)
+    const carry = !want && !recv && !(targetW > 0 && this.pending) && (this.charging || this.armed || this.mitT > 0) && this.speed > 1.2 && !held;
+    if (carry) { dirX = this.mitT > 0 ? this.mitX : this.hx; dirZ = this.mitT > 0 ? this.mitZ : this.hz; } // (n12: dem vorgelegten Ball nach)
     const moving = want || (targetW > 0 && this.pending) || recv || carry;
 
     // --- Bewegung ---
@@ -323,11 +326,29 @@ export class Player {
     // n11: Empfänger eines hohen Passes nimmt ihn auch mit dem Kopf an (bis Kopfhöhe + Sprung) und etwas weiter neben dem Körper
     const hochEmpf = P.hochpass && pp && pp.hoch && pp.to === this.id;
     const ctrlTop = hochEmpf ? P.headH + 0.25 + 0.5 * this.jumpY : 1.55;
-    if (!handsFirst && !inReach && this.touchCd <= 0 && !this.air && ball.p.y > P.reachH && ball.p.y < ctrlTop && ball.v.y < 0.5 && bd < (hochEmpf ? 0.9 : 0.75) && rel < (hochEmpf ? 13 : 11) &&
-        (hochEmpf || (bx * Math.cos(this.face) + bz * Math.sin(this.face)) > -0.15) && !this.pending) { // (Empfänger dreht sich zum Ball)
+    // n12: laufender Empfänger eines Passes vom Mitspieler → Mitnahme in die Laufrichtung (Stick, sonst Laufrichtung)
+    const mit = P.mitnahme && pp && pp.to === this.id && pp.from !== this.id && game.lastTouch === pp.from && game.players[pp.from] &&
+      game.players[pp.from].team === this.team && this.speed >= P.mitnahmeV && !this.pending && !handsFirst;
+    // (Stick – auch der während des Passes nur zielende, inp.recvAim –: in Stick-Richtung, der Läufer beschleunigt danach; ohne Stick:
+    // Laufrichtung, etwas zum gegnerischen Tor gedreht, wenn es grob vor ihm liegt – mitnahmeTor)
+    const mStick = want ? [sx, sz] : inp.recvAim || null;
+    const mWant = want ? vd : mStick ? P.vRun : 0;
+    let mdx = mStick ? mStick[0] : this.hx, mdz = mStick ? mStick[1] : this.hz;
+    if (mit && !mStick && game.match) {
+      const tgx = goalX(game, this) - this.x, tgz = -this.z, tl = Math.hypot(tgx, tgz) || 1;
+      if ((tgx * mdx + tgz * mdz) / tl > 0) {
+        const nx = mdx + P.mitnahmeTor * tgx / tl, nz = mdz + P.mitnahmeTor * tgz / tl, nl = Math.hypot(nx, nz) || 1;
+        mdx = nx / nl; mdz = nz / nl;
+      }
+    }
+    // (holt ein Ball von hinten den Läufer noch ein, wartet die Mitnahme, bis er auf Körperhöhe ist – sonst müsste er hinter dem
+    // Rücken angenommen und um den Läufer herum beschleunigt werden)
+    const mitJetzt = mit && (bx * mdx + bz * mdz > -0.3 || (ball.v.x - this.vx) * mdx + (ball.v.z - this.vz) * mdz < 0.5);
+    if (!handsFirst && !inReach && this.touchCd <= 0 && !this.air && ball.p.y > P.reachH && ball.p.y < ctrlTop && ball.v.y < 0.5 &&  (!mit || mitJetzt) && bd < (hochEmpf || mit ? 0.9 : 0.75) && rel < (hochEmpf || mit ? 13 : 11) && !(this.mitT > 0 && game.lastTouch === this.id) &&
+        (hochEmpf || mit || (bx * Math.cos(this.face) + bz * Math.sin(this.face)) > -0.15) && !this.pending) { // (Empfänger dreht sich zum Ball)
       const k = 0.7, part = ball.p.y > 1.55 ? 'kopf' : ball.p.y > 1.05 ? 'brust' : 'oberschenkel';
-      ball.v.set(this.vx * k + Math.cos(this.face) * 0.6, -1.2, this.vz * k + Math.sin(this.face) * 0.6);
-      ball.w.set(0, 0, 0);
+      if (mit) this.mitnahmeBall(game, mdx, mdz, -1.2, mWant);
+      else { ball.v.set(this.vx * k + Math.cos(this.face) * 0.6, -1.2, this.vz * k + Math.sin(this.face) * 0.6); ball.w.set(0, 0, 0); }
       this.tech = part; this.techT = 0;
       this.afterTouch(game, 0.25, rel);
       game.events.push({ type: 'control', part, player: this.id, x: ball.p.x, y: ball.p.y, z: ball.p.z });
@@ -340,6 +361,9 @@ export class Player {
       const fxf = Math.cos(this.face), fzf = Math.sin(this.face);
       const ahead = bx * fxf + bz * fzf, closing = (ball.v.x - this.vx) * fxf + (ball.v.z - this.vz) * fzf;
       settle = ahead > 0.6 && closing < -0.8 && this.pending.age < 0.25 && !oppNear(game, this, 1.4);
+      // n12: eben mitgenommen, der Ball liegt noch vorgelegt vor dem Fuß → den Schritt zum Ball abwarten (sonst Schuss vom Rand der
+      // Reichweite mit schlechter Lage; gemessen in der Doppelpass-Challenge q 0,35 statt 0,88)
+      if (this.mitT > 0 && game.lastTouch === this.id && ahead > 0.6 && !oppNear(game, this, 1.4)) settle = true;
     } else if (this.pending && this.pending.api && this.pending.kind === 'shot' && inReach && !cut) {
       const fxf = Math.cos(this.face), fzf = Math.sin(this.face);
       const ahead = bx * fxf + bz * fzf, closing = (ball.v.x - this.vx) * fxf + (ball.v.z - this.vz) * fzf;
@@ -353,14 +377,52 @@ export class Player {
       } else if (this.pending && this.touchCd <= 0.1 && this.kick(this.pending, game, rel) !== false) {
         this.pending = null;
         touched = true;
+      } else if (this.touchCd <= 0 && mit && !want) {
+        // n12: ohne Stick nicht stoppen (der Läufer liefe am Ball vorbei), sondern in der Laufrichtung vorlegen
+        this.mitnahmeBall(game, mdx, mdz, Math.min(ball.v.y, 0), mWant);
+        this.tech = 'innen'; this.techT = 0;
+        this.afterTouch(game, 0.2, rel);
+        touched = true;
+      } else if (this.touchCd <= 0 && !want && this.mitT > 0 && game.lastTouch === this.id) {
+        // n12: eben mitgenommen, kein Stick – der Läufer läuft weiter, den vorgelegten Ball nicht gleich wieder stoppen
       } else if (this.touchCd <= 0) {
         touched = this.dribbleTouch(game, want, sx, sz, vd, fd, rel);
         // Stemmschritt mit Ball: Sohle/Außenseite führt den Ball am Körper vorbei in die neue Richtung
         if (touched && cut) this.bodyOffT = 0.35;
       }
     }
+    // n12: Laufpass kommt (oft von hinten) an den Körper, bevor Fuß oder Annahme dran sind → nicht abprallen, sondern mitnehmen
+    if (!touched && mit && this.touchCd <= 0 && !this.air && ball.p.y < ctrlTop && bd < ball.r + 0.28 && rel < 13) {
+      const part = ball.p.y > 1.55 ? 'kopf' : ball.p.y > 1.05 ? 'brust' : ball.p.y > P.reachH ? 'oberschenkel' : 'innen';
+      this.mitnahmeBall(game, mdx, mdz, part === 'innen' ? Math.min(ball.v.y, 0) : -1.2, mWant);
+      this.tech = part; this.techT = 0;
+      this.afterTouch(game, 0.25, rel);
+      if (part !== 'innen') game.events.push({ type: 'control', part, player: this.id, x: ball.p.x, y: ball.p.y, z: ball.p.z });
+      touched = true;
+    }
     this.bodyOffT -= dt;
     if (!touched && this.bodyOffT <= 0) this.bodyCollision(game);
+  }
+
+  // n12: Ball in Laufrichtung (dx, dz) vorlegen – auf den Punkt der Laufbahn, an dem der weiterlaufende Empfänger nach mitnahmeZeit s
+  // den Ball mitnahmeVor m vor dem Fuß hat (seitlicher Versatz wird mit eingesammelt, sonst läuft er am Ball vorbei). Tempo am Boden
+  // nach dem Rollmodell wie beim Führen, in der Luft ohne Bremsen; höchstens 2,5 m/s schneller als der Läufer. Der Ball dreht wie
+  // ein rollender (springt beim Aufsetzen nicht zurück), der Körper blockt ihn kurz nicht (er kommt oft von hinten durch den Läufer).
+  mitnahmeBall(game, dx, dz, vy, vWant = 0) {
+    const P = this.P, ball = game.ball, T = P.mitnahmeZeit;
+    // (Stick gedrückt: der Läufer beschleunigt weiter bis zum Wunschtempo – grob im Mittel über die Vorlagezeit)
+    const sAl = Math.max(0, this.vx * dx + this.vz * dz), sRun = (sAl + Math.max(sAl, vWant)) / 2;
+    // (wer nur trabt, legt kürzer vor: volle Vorlage erst ab mitnahmeVoll m/s – sonst rollt der Ball dem Läufer davon)
+    const vor = P.mitnahmeVor * (0.25 + 0.75 * smoothstep(P.mitnahmeV, P.mitnahmeVoll, sAl));
+    const L = sRun * T + P.footAhead + vor;
+    const ex = this.x + dx * L - ball.p.x, ez = this.z + dz * L - ball.p.z;
+    const D = Math.max(0.3, Math.hypot(ex, ez)), ux = ex / D, uz = ez / D;
+    // (aus der Luft: Aufsetzen kostet etwas Tempo)
+    const u = clamp(ball.p.y > P.reachH ? 1.1 * D / T : solveRollSpeed(P, D, T), 0.3, sRun + 2.5);
+    ball.v.set(ux * u, vy, uz * u);
+    ball.w.set(uz * u / ball.r, 0, -ux * u / ball.r);
+    this.bodyOffT = 0.3;
+    this.mitT = P.mitnahmeT; this.mitX = dx; this.mitZ = dz;
   }
 
   // Bewegungsmodell „zack“ (Standard): Geschwindigkeit als Vektor. Kleine Winkel zur Wunschrichtung = Kurve
@@ -487,6 +549,7 @@ export class Player {
   magnetPull(game, want, sx, sz, dt) {
     const P = this.P, b = game.ball;
     if ((game.match && game.lastTouch !== this.id) || game.t - this.lastTouchT > 2.5 || this.kickT < 0.4) return;
+    if (this.mitT > 0) return; // n12: eben mitgenommener Laufpass – die Vorlage nicht gleich wieder an den Fuß ziehen
     if (this.air || this.fall || this.hand.mode !== 'none' || b.p.y > 0.25 || Math.abs(b.v.y) > 1.5) return;
     const [fx, fz] = this.footPoint();
     if (Math.hypot(b.p.x - fx, b.p.z - fz) > 1.4) return;                     // weg ist weg

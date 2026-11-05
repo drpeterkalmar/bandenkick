@@ -1,0 +1,12 @@
+Query "hochpass=0&mitnahme=0", 40 Szenen je Variante
+mensch los: angekommen 40/40, im Lauf 40, rückwärts 45,0 %, mitgenommen 50,0 %, Ball in Laufrichtung 2,2 m/s (Lauf 2,8), Gegner zuerst 0,0 %, hoch 0 % {"body ↩":17,"body":7,"touch":15,"touch ↩":1}
+mensch vor: angekommen 27/40, im Lauf 27, rückwärts 66,7 %, mitgenommen 18,5 %, Ball in Laufrichtung 1,0 m/s (Lauf 3,5), Gegner zuerst 30,0 %, hoch 0 % {"body ↩":18,"body":5,"touch":4}
+bot    los: angekommen 40/40, im Lauf 40, rückwärts 27,5 %, mitgenommen 62,5 %, Ball in Laufrichtung 2,0 m/s (Lauf 2,9), Gegner zuerst 0,0 %, hoch 0 % {"touch":26,"body ↩":11,"body":3}
+bot    vor: angekommen 17/40, im Lauf 17, rückwärts 35,3 %, mitgenommen 35,3 %, Ball in Laufrichtung 4,3 m/s (Lauf 4,9), Gegner zuerst 57,5 %, hoch 0 % {"body ↩":6,"control/oberschenkel":1,"touch":4,"body":6}
+GESAMT: angekommen 124/160, im Lauf 124, rückwärts 42,7 %, mitgenommen 45,2 % (Vorlage vor dem Fuß nach 0,5 s 0,07 m, nach 0,7 s 0,09 m), Ball 2,2 m/s vs. Lauf 3,3, Gegner zuerst 21,9 %
+Query "hochpass=0", 40 Szenen je Variante
+mensch los: angekommen 40/40, im Lauf 40, rückwärts 0,0 %, mitgenommen 97,5 %, Ball in Laufrichtung 4,1 m/s (Lauf 2,8), Gegner zuerst 0,0 %, hoch 0 % {"touch":40}
+mensch vor: angekommen 29/40, im Lauf 28, rückwärts 0,0 %, mitgenommen 96,4 %, Ball in Laufrichtung 7,0 m/s (Lauf 3,8), Gegner zuerst 25,0 %, hoch 0 % {"touch":28}
+bot    los: angekommen 40/40, im Lauf 40, rückwärts 0,0 %, mitgenommen 92,5 %, Ball in Laufrichtung 4,1 m/s (Lauf 2,9), Gegner zuerst 0,0 %, hoch 0 % {"touch":40}
+bot    vor: angekommen 19/40, im Lauf 19, rückwärts 0,0 %, mitgenommen 84,2 %, Ball in Laufrichtung 8,4 m/s (Lauf 5,7), Gegner zuerst 52,5 %, hoch 0 % {"touch":18,"control/oberschenkel":1}
+GESAMT: angekommen 128/160, im Lauf 127, rückwärts 0,0 %, mitgenommen 93,7 % (Vorlage vor dem Fuß nach 0,5 s 0,26 m, nach 0,7 s 0,23 m), Ball 5,4 m/s vs. Lauf 3,5, Gegner zuerst 19,4 %

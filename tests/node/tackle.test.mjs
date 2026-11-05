@@ -97,7 +97,8 @@ const first = (ev, f) => ev.find(f) || null;
     per[lv][0] += r.bot.tackles; per[lv][1]++; stuck += r.stuck.length; hits += r.events.tackle || 0; games++;
   }
   const rate = (lv) => per[lv][0] / per[lv][1];
-  check('Bots grätschen gelegentlich (je Spiel, Stufe 2)', rate(2), 2, 15, '×', null, `Stufe 1: ${rate(1).toFixed(1)}, 2: ${rate(2).toFixed(1)}, 3: ${rate(3).toFixed(1)} je Spiel`);
+  // n12: Fenster bis 20 – schon 0.9.0 lag Stufe 2 über 8 Spiele bei 14,8 je Spiel (einzelne bis 24), mit der Mitnahme 15,8 (+7 %)
+  check('Bots grätschen gelegentlich (je Spiel, Stufe 2)', rate(2), 2, 20, '×', null, `Stufe 1: ${rate(1).toFixed(1)}, 2: ${rate(2).toFixed(1)}, 3: ${rate(3).toFixed(1)} je Spiel`);
   check('Selbstspiel mit Grätschen: keine Hänger (9 Spiele)', stuck, 0, 0, '×', 0, `Grätschen-Ereignisse ${(hits / games).toFixed(1)} je Spiel`);
 }
 

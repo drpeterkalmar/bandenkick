@@ -1,0 +1,8 @@
+| Variante | Luftkontakte/min | Akrobatik-Anteil | Effet-Anteil | Tore/Spiel | Schüsse/Spiel | Paraden/Spiel | Pässe/Spiel | Pass kommt an | abgefangen | hoch | nach Abfangen Schuss / Tor (8 s) | Ankunftshöhe p50 | aus / NaN |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Standard | 22.6 | 16.9 % | 20.7 % | 15.8 | 59.4 | 67.8 | 50.3 | 81.2 % | 18.0 % | 61.0 % | 47.6 / 17.6 % | 0.52 m | 0 / 0 |
+Physik: {"bounce":0.9736818545063147,"kurve20":5.083947224300192,"spinMax":18}
+(139 s)
+| Variante | Luftkontakte/min | Akrobatik-Anteil | Effet-Anteil | Tore/Spiel | Schüsse/Spiel | Paraden/Spiel | Pässe/Spiel | Pass kommt an | abgefangen | hoch | nach Abfangen Schuss / Tor (8 s) | Ankunftshöhe p50 | aus / NaN |
+| mitnahme=0 | 22.8 | 16.2 % | 20.2 % | 15.0 | 58.3 | 65.0 | 48.7 | 82.4 % | 16.7 % | 61.3 % | 45.9 / 17.5 % | 0.65 m | 0 / 0 |
+(88 s)

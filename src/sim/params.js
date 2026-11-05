@@ -291,6 +291,18 @@ export const DEFAULTS = {
   direktLuft: 0.8,        // × Chance (Stufe: airTry), dass ein Bot einen hohen Pass direkt aus der Luft weiterspielt
   botSicher: -0.03,        // s: Bots passen nur ab dieser Zeitreserve (Stufe 1: × 2,5, Stufe 3: × 0,4)          [?botSicher=]
   kurvenpass: 1,          // Kurvenpass mit Effet um einen Gegner herum (zusätzliche Option für freie Passwege)
+  // n12 (Peter 05.11.: „der schöne Laufpass an die Spitze … prallt an ihm nach hinten ab“): Der laufende Empfänger eines Passes vom
+  // Mitspieler legt den Ball mit der ersten Berührung (Kopf/Brust/Oberschenkel bzw. Fuß, auch wenn der Ball von hinten an den Körper
+  // kommt) in seine Laufrichtung vor – Balltempo so, dass er nach mitnahmeZeit s mitnahmeVor m vor dem Fuß liegt. Bis 0.9.0 bekam der Ball
+  // bei der Annahme nur ~80 % des Lauftempos (der Läufer lief an ihm vorbei) bzw. prallte vom Körper ab. Ohne Stick läuft der Empfänger
+  // danach mitnahmeT s weiter. Steht er (< mitnahmeV), bleibt die Annahme wie bisher; Schüsse und Bälle vom Gegner prallen weiter ab.
+  mitnahme: 1,            // 0 = Annahme wie 0.9.0                                                    [?mitnahme=0]
+  mitnahmeV: 1.5,         // m/s ab diesem Lauftempo
+  mitnahmeVor: 0.8,       // m Vorlage vor dem Fuß …
+  mitnahmeZeit: 0.7,      // … nach dieser Zeit
+  mitnahmeTor: 1.0,       // ohne Stick: Laufrichtung + 1 × Richtung gegnerisches Tor (liegt es grob vor ihm)
+  mitnahmeVoll: 4.0,      // m/s: volle Vorlage erst ab diesem Lauftempo (darunter bis ¼ kürzer)
+  mitnahmeT: 0.6,         // s ohne Stick weiterlaufen
   // Grätsche (Nacht 2c, Peter: „wenn nicht am ball hingrätschen für pass und schuss“): nicht am Ball, Pass oder Schuss
   // gedrückt, Ball bzw. ballführender Gegner ≤ tackleReach m und ein Gegner näher am Ball → Grätsche in Ballrichtung
   graetsche: 1,           // 0 = aus (dann läuft der Spieler wie bisher hin und merkt den Kick vor)    [?graetsche=0]
@@ -447,7 +459,7 @@ const SPRINTFREI1 = { slideSpeed: 8 };
 // n10: ?magnet= bis 1,8 (0.7.0-Wert) = Ballmagnet wie 0.7.0, auch das Abschirmen (schirmVor), sofern nicht ausdrücklich übersteuert
 const MAGNET07 = { schirmVor: 0.3 };
 // n11 ?akro=0: alles wie 0.8.0, sofern nicht ausdrücklich übersteuert
-export const AKRO0 = { turfEn: 0.621, jumpMax: 0.6, sprungAkro: 1, spinMax: 10, backspinMax: 7, bananeSpinMax: 1.2, aussenSpin: 0.75, autotech: 0, einknopf: 0, salto: 0, hochpass: 0, kurvenpass: 0, clSteig: 0 };
+export const AKRO0 = { turfEn: 0.621, jumpMax: 0.6, sprungAkro: 1, spinMax: 10, backspinMax: 7, bananeSpinMax: 1.2, aussenSpin: 0.75, autotech: 0, einknopf: 0, salto: 0, hochpass: 0, kurvenpass: 0, clSteig: 0, mitnahme: 0 }; // (n12: Mitnahme gab es in 0.8.0 nicht)
 
 // Liest Overrides aus einem Query-String (oder Objekt) und gibt ein vollständiges Parameter-Objekt zurück.
 function parseQuery(s) {

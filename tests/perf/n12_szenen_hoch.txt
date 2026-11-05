@@ -1,0 +1,12 @@
+Query "mitnahme=0", 40 Szenen je Variante
+mensch los: angekommen 40/40, im Lauf 40, rückwärts 57,5 %, mitgenommen 27,5 %, Ball in Laufrichtung 3,5 m/s (Lauf 4,1), Gegner zuerst 0,0 %, hoch 100 % {"control/brust":11,"control/oberschenkel ↩":7,"control/brust ↩":12,"body ↩":3,"control/oberschenkel":4,"control/kopf ↩":1,"body":2}
+mensch vor: angekommen 39/40, im Lauf 39, rückwärts 100,0 %, mitgenommen 0,0 %, Ball in Laufrichtung 4,2 m/s (Lauf 5,3), Gegner zuerst 2,5 %, hoch 100 % {"control/brust ↩":32,"control/oberschenkel ↩":3,"body ↩":2,"control/kopf ↩":2}
+bot    los: angekommen 40/40, im Lauf 40, rückwärts 52,5 %, mitgenommen 20,0 %, Ball in Laufrichtung 3,6 m/s (Lauf 4,4), Gegner zuerst 0,0 %, hoch 100 % {"control/brust":14,"control/brust ↩":13,"control/oberschenkel ↩":5,"control/kopf":1,"body ↩":1,"control/oberschenkel":3,"body":1,"control/kopf ↩":2}
+bot    vor: angekommen 38/40, im Lauf 38, rückwärts 94,7 %, mitgenommen 0,0 %, Ball in Laufrichtung 5,1 m/s (Lauf 6,4), Gegner zuerst 5,0 %, hoch 100 % {"control/brust ↩":31,"control/oberschenkel ↩":3,"control/brust":2,"control/kopf ↩":1,"body ↩":1}
+GESAMT: angekommen 157/160, im Lauf 157, rückwärts 75,8 %, mitgenommen 12,1 % (Vorlage vor dem Fuß nach 0,5 s 0,14 m, nach 0,7 s 0,32 m), Ball 4,1 m/s vs. Lauf 5,0, Gegner zuerst 1,9 %
+Query "", 40 Szenen je Variante
+mensch los: angekommen 40/40, im Lauf 40, rückwärts 0,0 %, mitgenommen 90,0 %, Ball in Laufrichtung 6,1 m/s (Lauf 4,1), Gegner zuerst 0,0 %, hoch 100 % {"control/brust":27,"control/oberschenkel":12,"control/kopf":1}
+mensch vor: angekommen 39/40, im Lauf 39, rückwärts 0,0 %, mitgenommen 92,3 %, Ball in Laufrichtung 8,6 m/s (Lauf 5,3), Gegner zuerst 2,5 %, hoch 100 % {"control/brust":33,"control/oberschenkel":5,"control/kopf":1}
+bot    los: angekommen 40/40, im Lauf 40, rückwärts 0,0 %, mitgenommen 92,5 %, Ball in Laufrichtung 6,3 m/s (Lauf 4,4), Gegner zuerst 0,0 %, hoch 100 % {"control/brust":30,"control/oberschenkel":7,"control/kopf":3}
+bot    vor: angekommen 36/40, im Lauf 36, rückwärts 0,0 %, mitgenommen 77,8 %, Ball in Laufrichtung 9,1 m/s (Lauf 6,5), Gegner zuerst 10,0 %, hoch 100 % {"control/brust":29,"control/oberschenkel":5,"touch":2}
+GESAMT: angekommen 155/160, im Lauf 155, rückwärts 0,0 %, mitgenommen 88,4 % (Vorlage vor dem Fuß nach 0,5 s 0,31 m, nach 0,7 s 0,52 m), Ball 7,5 m/s vs. Lauf 5,0, Gegner zuerst 3,1 %

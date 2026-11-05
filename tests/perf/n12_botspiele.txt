@@ -1,0 +1,6 @@
+== Query "mitnahme=0"
+Bot-Spiele (48): Pässe angekommen 1933, davon im Lauf 1805: rückwärts 18,2 % (Ball läuft sofort zurück 2,2 %, hinten schon nach 0,25 s 33,5 %, hinten nach 0,5 s obwohl der Empfänger weiter vorwärts läuft 2,4 %), mitgenommen 37,0 %; Ballverlust ≤ 1,5 s nach Annahme 57,7 % (im Lauf 58,4 %)
+  je Art [Anzahl, rückwärts]: {"touch":[902,21],"control":[682,233],"kick":[134,31],"body":[87,43]} → Annahmen (ohne Direktspiel kick/air): rückwärts 17,8 % von 1671
+== Query ""
+Bot-Spiele (48): Pässe angekommen 1984, davon im Lauf 1850: rückwärts 10,5 % (Ball läuft sofort zurück 2,9 %, hinten schon nach 0,25 s 6,9 %, hinten nach 0,5 s obwohl der Empfänger weiter vorwärts läuft 3,0 %), mitgenommen 52,4 %; Ballverlust ≤ 1,5 s nach Annahme 53,0 % (im Lauf 53,1 %)
+  je Art [Anzahl, rückwärts]: {"touch":[961,35],"control":[699,111],"kick":[176,45],"body":[14,3]} → Annahmen (ohne Direktspiel kick/air): rückwärts 8,9 % von 1674

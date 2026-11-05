@@ -254,6 +254,7 @@ Ball mit (Sohle/Außenseite). `?zack=0` = altes Gefühl aus Nacht 1 zum Vergleic
 ## URL-Schalter
 | Schalter | Wirkung |
 |---|---|
+| `?mitnahme=0` | n12 aus: Annahme wie 0.9.0 (der laufende Empfänger stoppt den Laufpass bzw. lässt ihn vom Körper abprallen, statt ihn nach vorn mitzunehmen). Feinregler: `?mitnahmeVor=` (0,8 m Vorlage), `?mitnahmeZeit=` (0,7 s), `?mitnahmeV=` (ab 1,5 m/s), `?mitnahmeTor=` (1 = ohne Stick halb zum Tor gedreht) |
 | `?akro=0` | n11 aus: alles wie 0.8.0 (Abprall, Sprünge, Effet, flache Pässe, Tipp/Doppeltipp). Einzeln: `?abprall=0.621`, `?sprungkraft=0.6`, `?effet=10`, `?hochpass=0`, `?salto=0`, `?autotech=0`, `?gelenke=0`; `?einknopf=1` = Ein-Kick-Knopf-Test (auch im Pause-Menü) |
 | `?solo=1` | Training allein (Ball und Käfig wie Nacht 1) |
 | `?bots=1` … `3` | Stärke der Bots (Reaktion, Tempo, Streuung, Fangsicherheit, Fehlerquote), Standard 2 |
@@ -453,6 +454,11 @@ python3 tools/fetch_assets.py && python3 tools/make_assets.py   # Assets neu bau
 Browser-Tests laufen headless über die GPU (ANGLE/Metal), nie zwei Browser gleichzeitig.
 
 ## Änderungen
+- **n12 Mitnahme (05.11., Version VERSION_N12)** – Peter: „der schöne Laufpass an die Spitze … prallt an ihm nach hinten ab“. Der
+  laufende Empfänger eines Passes legt den Ball jetzt mit der ersten Berührung (Kopf, Brust, Oberschenkel oder Fuß, auch wenn der Ball
+  von hinten an den Körper kommt) in seine Laufrichtung vor. Szene „Laufpass in die Spitze“: Ball danach hinter dem Empfänger
+  76 → 0 % (hoch) bzw. 43 → 0 % (flach). Steht er, bleibt alles wie bisher; Bälle vom Gegner prallen weiter ab. `?mitnahme=0` = 0.9.0.
+  Bericht: [`N12_MITNAHME_BERICHT.md`](N12_MITNAHME_BERICHT.md).
 - **n11 Akrobatik (05.11., Version 0.9.0)** – Ball springt höher, Spieler springen bis 1,0 m, viel mehr Effet; Schuss- und
   Pass-Knopf vollautomatisch (1 Tipp: Erfolg zuerst, dann das Spektakulärste), Pässe immer hoch und nur über freie Wege
   (Mensch-Pässe abgefangen 16 → 7 %), Salto-Hacke und Hackenschuss, Füße treffen den Ball mit dem passenden Körperteil
