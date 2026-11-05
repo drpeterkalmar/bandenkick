@@ -453,7 +453,7 @@ python3 tools/fetch_assets.py && python3 tools/make_assets.py   # Assets neu bau
 Browser-Tests laufen headless über die GPU (ANGLE/Metal), nie zwei Browser gleichzeitig.
 
 ## Änderungen
-- **n11 Akrobatik (05.11., Version VERSION_N11)** – Ball springt höher, Spieler springen bis 1,0 m, viel mehr Effet; Schuss- und
+- **n11 Akrobatik (05.11., Version 0.9.0)** – Ball springt höher, Spieler springen bis 1,0 m, viel mehr Effet; Schuss- und
   Pass-Knopf vollautomatisch (1 Tipp: Erfolg zuerst, dann das Spektakulärste), Pässe immer hoch und nur über freie Wege
   (Mensch-Pässe abgefangen 16 → 7 %), Salto-Hacke und Hackenschuss, Füße treffen den Ball mit dem passenden Körperteil
   (Gelenkgrenzen in `src/render/gelenke.js`). `?akro=0` = 0.8.0. Bericht: [`N11_AKROBATIK_BERICHT.md`](N11_AKROBATIK_BERICHT.md).

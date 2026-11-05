@@ -1,4 +1,4 @@
-# Bandenkick n11 – Akrobatik-Fußball (05.11.2026, Version VERSION_N11)
+# Bandenkick n11 – Akrobatik-Fußball (05.11.2026, Version 0.9.0)
 
 Peters Wunsch (02.11. und 04.11.): „ball springt höher und spieler auch … mit ferse schiessen und passen, zb im Rahmen eines
 vorwärtssaltos … Pässe gehen immer hoch“ – und dazu: „separater schuss und pass knopf der aber mit 1x drauftippen alles automatisch
