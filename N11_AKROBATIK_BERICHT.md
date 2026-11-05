@@ -127,3 +127,9 @@ Die Simulation rechnet für die Pass-Sicherheit mehr (Bot-Spiel im Zeitraffer ~3
 2. Werden deine Pässe noch abgefangen? (Vergleich `?akro=0`)
 3. Gefällt dir der höhere Ball und das viele Effet? (`?abprall=0.621`, `?effet=10` zum Vergleich)
 4. Ein-Kick-Knopf im Pause-Menü ausprobieren – bleibt es bei zwei Knöpfen?
+
+## Live
+Version 0.9.0 ist live (Pages-Build von Commit 1859cce, Service-Worker `dab1fc6af2` live = Repo; `package.json` 0.9.0; Code-Marker
+`bestLob` in `src/sim/hochpass.js` und `GELENK_GRENZEN` in `src/render/gelenke.js` per curl geprüft). `tests/test_live.py` grün
+(Start hoch/quer ohne Fehler, Spielablauf, PWA, offline; Fotos `tests/shots/final/live_*.jpg`). Eine Einbindung in der Spielebox gibt
+es weiterhin nicht (siehe N10) – dort war nichts zu prüfen.
