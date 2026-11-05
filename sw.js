@@ -1,5 +1,5 @@
 // Service-Worker: offline spielbar, Cache-Busting über Inhalts-Hash (tools/update_sw.py)
-const VERSION = '70529bcf59';
+const VERSION = '84cc53c269';
 const CACHE = 'bandenkick-' + VERSION;
 const ASSETS = [
   './',
@@ -23,6 +23,13 @@ const ASSETS = [
   'assets/kuscheltiere/Panda.glb',
   'assets/kuscheltiere/Teddy.glb',
   'assets/kuscheltiere/kuscheltiere.json',
+  'assets/kuscheltiere_n9/Elefant.glb',
+  'assets/kuscheltiere_n9/Fuchs.glb',
+  'assets/kuscheltiere_n9/Hase.glb',
+  'assets/kuscheltiere_n9/Katze.glb',
+  'assets/kuscheltiere_n9/Panda.glb',
+  'assets/kuscheltiere_n9/Teddy.glb',
+  'assets/kuscheltiere_n9/kuscheltiere.json',
   'assets/tex/grass_color.jpg',
   'assets/tex/grass_normal.jpg',
   'assets/tex/turf_color.jpg',

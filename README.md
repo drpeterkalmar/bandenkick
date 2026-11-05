@@ -452,7 +452,7 @@ python3 tools/fetch_assets.py && python3 tools/make_assets.py   # Assets neu bau
 Browser-Tests laufen headless über die GPU (ANGLE/Metal), nie zwei Browser gleichzeitig.
 
 ## Änderungen
-- **n10 Magnet, Pässe, Kindchenschema (05.11., Version VERSION_N10)** – Ballmagnet 2,4 (Ball enger vor dem Fuß, schärferes
+- **n10 Magnet, Pässe, Kindchenschema (05.11., Version 0.8.0)** – Ballmagnet 2,4 (Ball enger vor dem Fuß, schärferes
   Abschirmen; Ballverluste beim Führen −11 %), Pässe 13,5 m/s (flache Pässe schärfer, kommen etwas öfter an), Kuscheltiere mit
   größerem Kopf und kürzeren Armen/Beinen (nur Optik). `?magnet=1.8`, `?pass=10.5`, `?tierform=0` = 0.7.0. Bericht: [`N10_BERICHT.md`](N10_BERICHT.md).
 - **n9 Kuscheltiere (01.11., Version 0.7.0)** – alle Menschen (Spieler, Tormann, Zuschauer, Trainingspuppe) sind

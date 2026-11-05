@@ -1,4 +1,4 @@
-# Bandenkick n10 – mehr Ballmagnet, schärfere Pässe, Kuscheltiere im Kindchenschema (05.11.2026, Version VERSION_N10)
+# Bandenkick n10 – mehr Ballmagnet, schärfere Pässe, Kuscheltiere im Kindchenschema (05.11.2026, Version 0.8.0)
 
 Peters Wunsch (02.11.): „Bandenkick mehr ballmagnet, schärfere Pässe, tiere haben größere köpfe und kürzere ärmchen und
 Beinchen“. Alles ist drin und gilt für dich und die Bots gleich. **Handy-Hinweis:** einmal neu laden (bzw. die App einmal schließen
