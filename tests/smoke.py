@@ -5,6 +5,7 @@ sys.path.insert(0, 'tests')
 from util import *
 fails = []
 ZUSATZ = sys.argv[1] if len(sys.argv) > 1 else ''  # n9: z. B. &figuren=menschen
+AKRO = 'akro=0' not in ZUSATZ and 'autotech=0' not in ZUSATZ  # n11: ein Tipp, Technik automatisch (sonst Tipp/Doppeltipp wie 0.8.0)
 def ok(cond, msg):
     print(('  ✅ ' if cond else '  ❌ ') + msg, flush=True)
     if not cond: fails.append(msg)
@@ -42,14 +43,16 @@ with Server() as srv, sync_playwright() as pw:
         try: s.pg.wait_for_function("__game.state().lastKick && __game.state().lastKick.kind === 'shot'", timeout=15000)
         except Exception: pass
         lk = s.state()['lastKick']
-        ok(lk and lk['kind'] == 'shot' and lk['tech'] == 'vollspann' and abs(lk['sideRps']) < 0.3, f"Schuss tippen = Vollspann: {lk and lk['tech']}, {lk and round(lk['speed'], 1)} m/s, {lk and round(lk['sideRps'], 2)} U/s")
+        if AKRO: ok(lk and lk['kind'] == 'shot' and lk['tech'] in ('vollspann', 'innenrist', 'aussenrist', 'ferse'), f"n11 Schuss 1 Tipp = Technik automatisch: {lk and lk['tech']}, {lk and round(lk['speed'], 1)} m/s, {lk and round(lk['sideRps'], 2)} U/s")
+        else: ok(lk and lk['kind'] == 'shot' and lk['tech'] == 'vollspann' and abs(lk['sideRps']) < 0.3, f"Schuss tippen = Vollspann: {lk and lk['tech']}, {lk and round(lk['speed'], 1)} m/s, {lk and round(lk['sideRps'], 2)} U/s")
         s.ev("__game.placePlayer(-5, 1, 0); __game.placeBall(-4.6, 0.11, 1)")
         s.ev("__game.game.players[0].lastKick = null")
         s.ev("__game.press([[0, 0.06, 'shot'], [0.14, 0.2, 'shot']])")
         try: s.pg.wait_for_function("__game.state().lastKick && __game.state().lastKick.kind === 'shot'", timeout=15000)
         except Exception: pass
         lk = s.state()['lastKick']
-        ok(lk and lk['tech'] in ('innenrist', 'aussenrist') and abs(lk['sideRps']) > 4, f"Doppeltipp = angeschnitten: {lk and lk['tech']}, {lk and round(lk['sideRps'], 1)} U/s")
+        if AKRO: ok(lk and lk['kind'] == 'shot', f"n11 zwei Tipps = ein Schuss, Technik automatisch: {lk and lk['tech']}, {lk and round(lk['sideRps'], 1)} U/s")
+        else: ok(lk and lk['tech'] in ('innenrist', 'aussenrist') and abs(lk['sideRps']) > 4, f"Doppeltipp = angeschnitten: {lk and lk['tech']}, {lk and round(lk['sideRps'], 1)} U/s")
         # Bande und Dach: Ball bleibt im Käfig
         r = s.ev("__game.kick({from:[-2, 0.11, 0], v:[4, 3, 28], w:[0, 50, 0]}); __game.sim(3)")
         ev = [e['type'] for e in r['events']]

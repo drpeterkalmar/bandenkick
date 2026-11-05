@@ -170,7 +170,7 @@ export class Player {
     // Luftball: Schuss gehalten oder vorgemerkt, Ball kommt in der Luft → Kopfball/Volley/… planen (Timing ab dem Druck)
     // n11 (autotech): gibt es für den Tipp einen Luftball, dessen bester Moment noch kommt, wartet der Kick (kein Bodenschuss vorher)
     const lw = {};
-    if (!this.air && !held && !P.treffpunkt && (ball.p.y > P.reachH || ball.v.y > 1.5 || (P.autotech && this.pending && this.pending.tap && !ball.contact))) {
+    if (!this.air && !held && !P.treffpunkt && (ball.p.y > P.reachH || ball.v.y > 1.5 || (P.autotech && this.pending && this.pending.tap && !ball.contact && (ball.p.y > ball.r + 0.03 || Math.abs(ball.v.y) > 0.3)))) {
       if (this.charging && this.chargeKind === 'shot' && !this.airPress) { if (this.tryAir(game, this.chargeT0 ?? game.t)) this.airPress = true; }
       else if (this.pending && this.pending.kind === 'shot' && !this.pending.api) { if (this.tryAir(game, this.pending.t ?? game.t, 'shot', null, lw)) this.pending = null; }
       else if (P.autotech && this.pending && this.pending.kind === 'pass' && this.pending.tap && !this.pending.api) { if (this.tryAir(game, this.pending.t ?? game.t, 'pass', this.pending.stick, lw)) this.pending = null; } // n11: Direktpass aus der Luft

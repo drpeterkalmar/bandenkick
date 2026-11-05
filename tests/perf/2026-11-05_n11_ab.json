@@ -1,0 +1,143 @@
+{
+ "datum": "2026-11-05T14:28:58",
+ "stand": "n11_ab",
+ "modus": "ab",
+ "runden": 3,
+ "varianten": [
+  {
+   "name": "vorher",
+   "wurzel": "/Users/wohnzimmer/dev/.wt/bandenkick-bandenkick-n11-akrobatik",
+   "zusatz": "&akro=0"
+  },
+  {
+   "name": "nachher",
+   "wurzel": "/Users/wohnzimmer/dev/.wt/bandenkick-bandenkick-n11-akrobatik",
+   "zusatz": ""
+  }
+ ],
+ "profil": {
+  "drossel": 4,
+  "dpr": 2.6,
+  "sek": 8.0,
+  "start": "open",
+  "vsync": false
+ },
+ "szenen": {
+  "spiel_s1": {
+   "hoch": {
+    "vorher": {
+     "p50": 4.1,
+     "p95": 5.4,
+     "fps": 236.7,
+     "calls": 42,
+     "tris": 67274,
+     "runden_p95": [
+      5.3,
+      5.4,
+      5.4
+     ],
+     "fehler": []
+    },
+    "nachher": {
+     "p50": 4,
+     "p95": 5.3,
+     "fps": 240.6,
+     "calls": 41,
+     "tris": 67191,
+     "runden_p95": [
+      5.2,
+      5.4,
+      5.3
+     ],
+     "fehler": []
+    }
+   },
+   "quer": {
+    "vorher": {
+     "p50": 4.1,
+     "p95": 5.3,
+     "fps": 240.2,
+     "calls": 41,
+     "tris": 63838,
+     "runden_p95": [
+      6.2,
+      5.2,
+      5.3
+     ],
+     "fehler": []
+    },
+    "nachher": {
+     "p50": 3.9,
+     "p95": 5.2,
+     "fps": 249.6,
+     "calls": 39,
+     "tris": 59833,
+     "runden_p95": [
+      5.2,
+      5,
+      5.4
+     ],
+     "fehler": []
+    }
+   }
+  },
+  "spiel_s2": {
+   "hoch": {
+    "vorher": {
+     "p50": 5.1,
+     "p95": 6.4,
+     "fps": 191.9,
+     "calls": 54,
+     "tris": 117815,
+     "runden_p95": [
+      7.5,
+      6.4,
+      6.4
+     ],
+     "fehler": []
+    },
+    "nachher": {
+     "p50": 5.2,
+     "p95": 7.2,
+     "fps": 176.1,
+     "calls": 54,
+     "tris": 117911,
+     "runden_p95": [
+      8.9,
+      7.2,
+      6
+     ],
+     "fehler": []
+    }
+   },
+   "quer": {
+    "vorher": {
+     "p50": 5.3,
+     "p95": 6.9,
+     "fps": 185.8,
+     "calls": 53,
+     "tris": 112569,
+     "runden_p95": [
+      6.9,
+      6.5,
+      7
+     ],
+     "fehler": []
+    },
+    "nachher": {
+     "p50": 5.2,
+     "p95": 6.6,
+     "fps": 179.6,
+     "calls": 52,
+     "tris": 107114,
+     "runden_p95": [
+      6.6,
+      6.6,
+      6.5
+     ],
+     "fehler": []
+    }
+   }
+  }
+ }
+}
