@@ -21,8 +21,8 @@ export function buildHud(root, canvas) {
   const stickBase = h('div', 'stickbase');
   const stickKnob = h('div', 'stickknob');
   stickBase.append(stickKnob);
-  const bShot = h('button', 'tb', '<span class="ring"></span><span class="mini"><i class="dot"></i></span><span class="sym"></span><span class="kw">Fangen</span><span class="lbl">Schuss</span>'); bShot.id = 'bShot';
-  const bPass = h('button', 'tb', '<span class="ring"></span><span class="sym"></span><span class="pl">Pass</span>'); bPass.id = 'bPass';
+  const bShot = h('button', 'tb', '<span class="ring"></span><span class="mini"><i class="dot"></i></span><span class="sym"></span><span class="kw">Fangen</span><span class="lbl">Schuss</span><span class="auto"></span>'); bShot.id = 'bShot';
+  const bPass = h('button', 'tb', '<span class="ring"></span><span class="sym"></span><span class="pl">Pass</span><span class="auto"></span>'); bPass.id = 'bPass';
   const bSprint = h('button', 'tb', 'Sprint'); bSprint.id = 'bSprint';
   const bSwitch = h('button', 'tb', '⇄'); bSwitch.id = 'bSwitch'; bSwitch.setAttribute('aria-label', 'Spieler wechseln');
   const hold = h('div', 'holdbar', '<i></i><span>Abwurf in 3 s</span>'); hold.id = 'hold';
@@ -53,7 +53,7 @@ export function buildHud(root, canvas) {
       <button class="btn sec" data-act="help">Steuerung</button>
     </div>
     <div class="row"><button class="btn sec" data-act="slowmo">Zeitlupe: an</button><button class="btn sec" data-act="replay">Tor-Wiederholung: Fan-Edit</button><button class="btn sec" data-act="licht">Licht: Tag</button></div>
-    <div class="row"><button class="btn sec" data-act="blitze">Blitze reduzieren: aus</button><button class="btn sec" data-act="cliphoch">Clip im Hochformat: aus</button></div>
+    <div class="row"><button class="btn sec" data-act="blitze">Blitze reduzieren: aus</button><button class="btn sec" data-act="cliphoch">Clip im Hochformat: aus</button><button class="btn sec" data-act="einknopf">Ein Kick-Knopf (Test): aus</button></div>
     <div class="row"><button class="btn sec" data-act="trainmenu">Training</button></div>
     <p class="small lastshot"></p>
     <p class="small physics"></p>
@@ -150,18 +150,18 @@ export function buildHud(root, canvas) {
 
   // n7: ohne Sprint (sprintfrei) kein Hinweis auf Sprint-Knopf, Stick-Rand, Shift oder LB/RB
   // n8: ohne ⇄-Knopf (Standard) wechselt der Spieler nur automatisch
-  const howto = (touchUI, frei, wechsel) => touchUI
+  const howto = (touchUI, frei, wechsel, akro = akro0) => touchUI
     ? `<li><b>Stick links:</b> laufen${frei ? ' (ein Tempo für alle, kein Sprint)' : ' · ganz außen oder Knopf = Sprint'} · ${wechsel ? '<b>⇄</b> Spieler wechseln (sonst automatisch)' : 'du steuerst automatisch den Spieler am nächsten zum Ball, nach deinem Pass den Empfänger'}</li>
-       <li><b>Pass/Schuss:</b> tippen = flach/Vollspann, <b>doppeltippen</b> = hoch/angeschnitten (Ring zeigt den Modus)</li>
+       <li>${akro ? '<b>Pass/Schuss:</b> <b>ein Tipp</b> – das Spiel wählt alles selbst: Mitspieler mit freiem Weg, Technik (Innen-/Außenrist, Volley, Kopfball, Fallrückzieher, Hacke, Salto-Hacke), Höhe und Effet. Über dem Knopf steht, was gerade käme; ✋ = kein freier Pass, der Ball bleibt am Fuß' : '<b>Pass/Schuss:</b> tippen = flach/Vollspann, <b>doppeltippen</b> = hoch/angeschnitten (Ring zeigt den Modus)'}</li>
        <li><b>Torwart</b> (letzte Hand im Torraum): fängt und hechtet von selbst. Mit Ball: Pass = <b>Abwurf</b>, Schuss = <b>Abschlag</b> – sonst wirft er nach 1 s selbst ab</li>`
     : `<li><b>WASD / Pfeile:</b> laufen${frei ? '' : ', <b>Shift:</b> Sprint'}, <b>C / Tab:</b> Spieler wechseln</li>
-       <li><b>J / Enter / Linksklick:</b> Pass · <b>Leertaste / K / Rechtsklick:</b> Schuss – tippen = flach/Vollspann, <b>doppeltippen</b> = hoch/angeschnitten; Maus zielt</li>
+       <li><b>J / Enter / Linksklick:</b> Pass · <b>Leertaste / K / Rechtsklick:</b> Schuss – ${akro ? 'ein Tipp, Technik/Höhe/Effet wählt das Spiel' : 'tippen = flach/Vollspann, <b>doppeltippen</b> = hoch/angeschnitten'}; Maus zielt</li>
        <li><b>Torwart</b> (letzte Hand im Torraum): fängt und hechtet von selbst; mit Ball J = Abwurf, Leertaste = Abschlag (sonst nach 1 s von selbst)</li>
        <li><b>Gamepad:</b> Stick laufen, A Pass/Abwurf, X/RT Schuss/Abschlag, Y Wechsel${frei ? '' : ', LB/RB Sprint'}</li>`;
-  let frei0 = false, wechsel0 = false;
-  const setHowto = (touchUI, frei = frei0, wechsel = wechsel0) => { frei0 = frei; wechsel0 = wechsel; root.querySelectorAll('.howto').forEach((u) => { u.innerHTML = howto(touchUI, frei, wechsel); }); };
+  let frei0 = false, wechsel0 = false, akro0 = true;
+  const setHowto = (touchUI, frei = frei0, wechsel = wechsel0, akro = akro0) => { frei0 = frei; wechsel0 = wechsel; akro0 = akro; root.querySelectorAll('.howto').forEach((u) => { u.innerHTML = howto(touchUI, frei, wechsel, akro); }); };
 
-  let bannerT = 0, kickT = 0, lastScore = '', lastKeeper = '', lastCharge = null, lastStatus = '';
+  let bannerT = 0, kickT = 0, lastScore = '', lastKeeper = '', lastCharge = null, lastStatus = '', lastAuto = '';
   const clock = (sec) => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, '0')}`;
   const rpLabel = replay.querySelector('.rp-label span'), rpFlash = replay.querySelector('.flash');
   const F = Object.fromEntries(['frame', 'lines', 'puls', 'flash', 'spot', 'ring', 'pov', 'big', 'kmh', 'stamp', 'name', 'gag', 'emoji', 'prog', 'fade', 'again'].map((k) => [k, fe.querySelector('.fe-' + k)]));
@@ -357,6 +357,18 @@ export function buildHud(root, canvas) {
         chargeLbl.textContent = `${st.sym ? st.sym + ' ' : ''}${st.label || ''}${st.air ? '' : ` ${Math.round(st.p * 100)} %`}`;
       }
     },
+    // n11: was ein Tipp gerade spielen würde (Symbol + Technik über dem Knopf), je Knopf {sym, label} oder null
+    setAuto(shot, pass) {
+      const key = `${shot ? shot.sym + shot.label : ''}|${pass ? pass.sym + pass.label : ''}`;
+      if (key === lastAuto) return;
+      lastAuto = key;
+      for (const [b, v] of [[bShot, shot], [bPass, pass]]) {
+        const el = b.querySelector('.auto');
+        el.textContent = v ? `${v.sym} ${v.label}` : '';
+        el.classList.toggle('on', !!v); el.classList.toggle('warn', !!(v && v.warn));
+      }
+    },
+    setEinknopf(on) { document.body.classList.toggle('einknopf', !!on); bShot.querySelector('.lbl').textContent = on ? 'Kick' : 'Schuss'; },
     setContact(cx, cy) {
       const dot = bShot.querySelector('.dot');
       dot.style.left = (50 + cx * 38) + '%'; dot.style.top = (50 - cy * 38) + '%';

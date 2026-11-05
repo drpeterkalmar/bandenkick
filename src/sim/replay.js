@@ -15,7 +15,8 @@ import { federKritVek } from '../render/glatt.js';
 export const REC_SECS = 10;     // s Ringpuffer (n6: 10 statt 8 – der Fan-Edit braucht Anlauf und Jubel)
 export const REC_HZ = 120;      // je Spieltakt (DT = 1/120 s)
 const TECHS = ['', 'volley', 'dropkick', 'seitfall', 'fallrueck', 'kopf', 'flugkopf', 'vollspann', 'innenrist', 'aussenrist',
-  'innen', 'aussen', 'ferse', 'chip', 'brust', 'oberschenkel', 'graetsche', 'stolpern', 'heber'];
+  'innen', 'aussen', 'ferse', 'chip', 'brust', 'oberschenkel', 'graetsche', 'stolpern', 'heber',
+  'salto', 'lupfer', 'kurve', 'kopfpass', 'volleypass']; // n11 (hinten angehängt: alte Aufzeichnungen behalten ihre Nummern)
 const TECH_ID = Object.fromEntries(TECHS.map((t, i) => [t, i]));
 const HAND = ['none', 'hold', 'dive', 'ground'];
 const HAND_ID = { none: 0, hold: 1, dive: 2, ground: 3 };
@@ -58,7 +59,7 @@ export class ReplayRecorder {
       B[q + 10] = Math.min(p.techT, 99); B[q + 11] = TECH_ID[p.tech] || 0;
       B[q + 12] = HAND_ID[p.hand.mode] || 0; B[q + 13] = p.hand.t; B[q + 14] = p.hand.T || 0; B[q + 15] = p.hand.dx; B[q + 16] = p.hand.dz;
       B[q + 17] = a ? TECH_ID[a.tech] || 0 : 0; B[q + 18] = a && a.go ? 1 : 0; B[q + 19] = a && a.t0 != null ? a.t0 - game.t : 0;
-      B[q + 20] = a ? a.tc - game.t : 0; B[q + 21] = a ? a.cy : 0;
+      B[q + 20] = a ? a.tc - game.t : 0; B[q + 21] = a ? a.cy : f && f.cy != null ? f.cy : 0; // (n11: nach dem Treffpunkt die Höhe für die Treff-Pose)
       B[q + 22] = f ? TECH_ID[f.tech] || 0 : 0; B[q + 23] = f ? f.t : 0; B[q + 24] = f ? f.dur : 0;
       B[q + 25] = s ? (s.phase === 'slide' ? 1 : 2) : 0; B[q + 26] = s ? s.t : 0;
       B[q + 27] = R && R.keeper[p.team] === p.id && R.handsOffTeam !== p.team ? 1 : 0;
@@ -119,7 +120,7 @@ export class ReplayRecorder {
         if (!ar.go) ar.t0 = null;
         p.air = ar;
       } else p.air = null;
-      if (B[q0 + 22]) { const fl = p._fall || (p._fall = {}); fl.tech = TECHS[B[q0 + 22]]; fl.t = B[q0 + 23] + a / REC_HZ; fl.dur = B[q0 + 24]; p.fall = fl; } else p.fall = null;
+      if (B[q0 + 22]) { const fl = p._fall || (p._fall = {}); fl.tech = TECHS[B[q0 + 22]]; fl.t = B[q0 + 23] + a / REC_HZ; fl.dur = B[q0 + 24]; fl.cy = !B[q0 + 17] && B[q0 + 21] ? B[q0 + 21] : null; p.fall = fl; } else p.fall = null;
       if (B[q0 + 25]) { const sl = p._slide || (p._slide = {}); sl.phase = SLIDE[B[q0 + 25]]; sl.t = B[q0 + 26] + a / REC_HZ; p.slide = sl; } else p.slide = null;
       p.keeper = !!B[q0 + 27];
     }
@@ -132,7 +133,7 @@ export class ReplayRecorder {
       if ((e.type !== 'kick' && e.type !== 'air') || e.player !== player || e.t < t - 1e-6 || e.t > t + fenster) continue;
       const L = this.locate(e.t + 1.5 / REC_HZ);
       out = out || {};
-      out.dt = e.t - t; out.x = e.x; out.y = e.y; out.z = e.z;
+      out.dt = e.t - t; out.x = e.x; out.y = e.y; out.z = e.z; out.tech = e.tech || ''; // n11: Technik → Körperteil der Schuss-IK
       out.fuss = L ? this.buf[L.i1 * this.stride + HF + player * NPF + 7] : 1;
       return out;
     }

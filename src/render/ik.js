@@ -65,9 +65,10 @@ export const KICK_T = 0.12;
 // Ruck in einem Bild gemessen); an = 0 = wie n4
 export const KICK_AN = 0.04, KICK_T_GLATT = 0.15;
 const ss = (u) => (u <= 0 ? 0 : u >= 1 ? 1 : u * u * (3 - 2 * u));
-export function kickGewicht(kt, an = 0) {
-  if (an > 0) return kt >= 0 && kt < KICK_T_GLATT ? 0.85 * (kt < an ? ss(kt / an) : 1 - ss((kt - an) / (KICK_T_GLATT - an))) : 0;
-  return kt >= 0 && kt < KICK_T ? 0.85 * (1 - kt / KICK_T) ** 1.5 : 0;
+// n11: spitze = höchstes Gewicht (n4/n5: 0,85; mit den Gelenkgrenzen 1 – das Körperteil trifft die Balloberfläche ganz)
+export function kickGewicht(kt, an = 0, spitze = 0.85) {
+  if (an > 0) return kt >= 0 && kt < KICK_T_GLATT ? spitze * (kt < an ? ss(kt / an) : 1 - ss((kt - an) / (KICK_T_GLATT - an))) : 0;
+  return kt >= 0 && kt < KICK_T ? spitze * (1 - kt / KICK_T) ** 1.5 : 0;
 }
 // Knöchel-Ziel beim Ballkontakt: hinter dem Ball (Spann trifft), aus Richtung Spieler → Ball, nicht unter Ruhehöhe
 export function kickZiel(ball, spieler, r, ruheKnoechel) {

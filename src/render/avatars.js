@@ -12,6 +12,7 @@ import { AIR_POSE } from '../sim/technique.js';
 import { figureShadowTexture, figureShadowGeometry } from './stimmung.js';
 import { KTX2_AVATARE } from './avatar_ktx2.js';
 import { zweiKnochen, bodenHub, kickGewicht, kickZiel, KICK_AN } from './ik.js';
+import { kontaktTeil, zielFuerTeil, begrenzeZiel } from './gelenke.js';
 import { federKrit, federKritVek } from './glatt.js';
 
 export const TEAM_COLORS = [0xff6a13, 0x1f6fff];   // Leibchen: Orange / Blau (auch farbfehlsichtig gut trennbar)
@@ -35,6 +36,7 @@ const LOCO = ['walk', 'jog', 'run', 'sprint'];
 export const BOUND_R = 1.25; // m: Begrenzungskugel der Figuren um die Hüfte (Node-Test: schlimmste Pose füllt ~84 %)
 const TORSO = new Set(['Bip01_Spine', 'Bip01_Spine1', 'Bip01_Spine2', 'Bip01_L_Clavicle', 'Bip01_R_Clavicle', 'Bip01_Pelvis']);
 const _v = new THREE.Vector3(), _w = new THREE.Vector3(), _s = new THREE.Vector3(), _q = new THREE.Quaternion(), _q2 = new THREE.Quaternion(), _m = new THREE.Matrix4();
+const _qk = new THREE.Quaternion(), _vk = new THREE.Vector3();
 // Fuß-IK (n4): Hilfswerte ohne Neuanlage je Bild
 const IK = { a: new THREE.Vector3(), b: new THREE.Vector3(), c: new THREE.Vector3(), z: new THREE.Vector3(), p: new THREE.Vector3(), s: new THREE.Vector3(),
   qT: new THREE.Quaternion(), qC: new THREE.Quaternion(), qF: new THREE.Quaternion(), qP: new THREE.Quaternion(), qH: new THREE.Quaternion(), qK: new THREE.Quaternion(),
@@ -47,6 +49,7 @@ const W_DREH = 30;   // Blickrichtung: Feder 1/s (halber Weg ~0,06 s) – Bots k
 const W_TECH = 25;   // Technik-Pose: Werte folgen dem Ziel über eine Feder 1/s (Wechsel Luftball → Schuss → am Boden ohne Sprung)
 const W_IK = 30;     // Fuß-IK beim Ballkontakt: Versatz zum Ball über eine Feder (Dribbel-Kontakte folgen im 0,3-s-Takt) …
 const IK_MAX = 0.35; // … und höchstens 0,35 m weit: weiter in 2–3 Bildern zum Ball zu greifen ist selbst ein Sprung
+const IK_MAX_LUFT = 0.6; // n11: Luftball (Volley, Fallrückzieher, Salto-Hacke) – die Pose bringt das Bein nur grob hin
 const IKZ = [0, 0, 0];
 // Sicherheitsnetz (Inertialisierung, n5 im Spiel aus – kostet am Handy-Profil ~1 fps quer, ?traeg=1 schaltet es zu; Node-
 // Tests nutzen es weiter): springt ein Knochen (lokale Drehung) in einem Bild weiter als TR_GRENZE rad je 1/60 s
@@ -59,7 +62,7 @@ const TR_KNOCHEN = ['Bip01_L_Thigh', 'Bip01_L_Calf', 'Bip01_L_Foot', 'Bip01_R_Th
 const TR_GRENZE = 0.45, TR_WEG = 0.08, TR_TAU = 0.04;
 const _qi = new THREE.Quaternion(), _qa = new THREE.Quaternion(), _va = new THREE.Vector3();
 const GLOVE_GRAU = new THREE.Color(0x5f625a); // n7 E1: Handschuhe eines müden Tormanns
-const TECH_WERTE = ['pitch', 'roll', 'drop', 'thigh', 'calf', 'twist', 'thigh2', 'arms', 'nod', 'spreiz', 'hop'];
+const TECH_WERTE = ['pitch', 'roll', 'drop', 'thigh', 'calf', 'twist', 'thigh2', 'calf2', 'arms', 'nod', 'spreiz', 'hop'];
 const KERN = new Set([...LOCO, 'idle', 'crouch']);
 // Knochennamen je Seite (statt je Bild per Zeichenkette zusammengesetzt)
 const BN = Object.fromEntries(['L', 'R'].map((sd) => [sd, Object.fromEntries(['Thigh', 'Calf', 'Foot', 'UpperArm', 'Forearm'].map((k) => [k, `Bip01_${sd}_${k}`]))]));
@@ -437,6 +440,7 @@ export class Avatar {
     // n4 Fuß-IK (Audit #5): Ruhehöhen von Knöchel und Zehen (Sohle auf dem Rasen) einmal messen; ?ik=0 = aus
     const beine = ['L', 'R'].every((s) => this.bones[`Bip01_${s}_Thigh`] && this.bones[`Bip01_${s}_Calf`] && this.bones[`Bip01_${s}_Foot`] && this.bones[`Bip01_${s}_Toe0`]);
     this.ik = opts.ik !== false && beine;
+    this.gelenke = opts.gelenke !== false; // n11: Schuss-IK je Körperteil + Gelenkgrenzen (?gelenke=0 = wie 0.8.0)
     if (beine) {
       this.root.updateMatrixWorld(true);
       const h = (n) => (this.bones[`Bip01_L_${n}`].getWorldPosition(_v).y + this.bones[`Bip01_R_${n}`].getWorldPosition(_w).y) / 2;
@@ -571,7 +575,8 @@ export class Avatar {
     if (kb) {
       this.kickPunkt = [kb.x, kb.y, kb.z]; this.kickVon = [st.x, 0, st.z]; this.kickFussVor = kb.fuss; this.vorKick = true;
       this.kontaktT = (st.t ?? 0) + kb.dt; this.kickWeit = !(kb.rate < 0.5); // Echtzeit: Reichweite begrenzt wie im Spiel
-    } else if (kt < this.ktPrev - 1e-4 && kt < 0.05 && st.ball && !sofort && !this.vorKick) { this.kickPunkt = [st.ball[0], st.ball[1], st.ball[2]]; this.kickVon = [st.x, 0, st.z]; }
+    } else if (kt < this.ktPrev - 1e-4 && kt < 0.05 && st.ball && !sofort && !this.vorKick) { this.kickPunkt = [st.ball[0], st.ball[1], st.ball[2]]; this.kickVon = [st.x, 0, st.z]; this.kickTech = pl.tech || ''; }
+    if (kb) this.kickTech = kb.tech || pl.tech || '';
     // nach dem Kontakt zählt die Zeit ab dem Kontakt-Ereignis (der aufgezeichnete Schuss-Takt kann einen Takt daneben liegen)
     this.seitKontakt = this.vorKick && !kb ? (st.t ?? 0) - this.kontaktT : -1;
     if (this.vorKick && !kb && this.seitKontakt > 0.2) this.vorKick = false;
@@ -664,6 +669,7 @@ export class Avatar {
         if (T.calf) this.rotBoneWorld(BN[leg].Calf, 'side', T.calf * tl);
         if (T.twist) this.rotBoneWorld(BN[leg].Thigh, 'up', T.twist * (leg === 'R' ? 1 : -1) * tl);
         if (T.thigh2) this.rotBoneWorld(BN[other].Thigh, 'side', T.thigh2 * tl);
+        if (T.calf2) this.rotBoneWorld(BN[other].Calf, 'side', T.calf2 * tl);
         if (T.arms) for (const sd of ['L', 'R']) this.rotBoneWorld(BN[sd].UpperArm, 'side', -T.arms * tl);
         if (T.nod) this.rotBoneWorld('Bip01_Head', 'side', T.nod * tl);
         if (T.spreiz) for (const sd of ['L', 'R']) this.rotBoneWorld(BN[sd].Thigh, 'fwd', (sd === 'L' ? 1 : -1) * T.spreiz * tl); // n7: Beine seitlich
@@ -682,6 +688,7 @@ export class Avatar {
       if (T.calf) this.rotBoneWorld(BN[leg].Calf, 'side', T.calf * tw);
       if (T.twist) this.rotBoneWorld(BN[leg].Thigh, 'up', T.twist * (leg === 'R' ? 1 : -1) * tw);
       if (T.thigh2) this.rotBoneWorld(BN[other].Thigh, 'side', T.thigh2 * tw);
+      if (T.calf2) this.rotBoneWorld(BN[other].Calf, 'side', T.calf2 * tw);
       if (T.arms) for (const sd of ['L', 'R']) this.rotBoneWorld(BN[sd].UpperArm, 'side', -T.arms * tw);
       if (T.nod) this.rotBoneWorld('Bip01_Head', 'side', T.nod * tw);
       if (T.spreiz) for (const sd of ['L', 'R']) this.rotBoneWorld(BN[sd].Thigh, 'fwd', (sd === 'L' ? 1 : -1) * T.spreiz * tw);
@@ -704,6 +711,7 @@ export class Avatar {
     // n6 Fan-Edit: Jubel mit hochgerissenen Armen (V über dem Kopf), st.armeHoch 0…1
     const ah = st.armeHoch || 0;
     if (ah > 0.01) for (const s of ['L', 'R']) { const sg = s === 'L' ? 1 : -1; this.rotBoneWorld(BN[s].UpperArm, 'side', -2.55 * ah); this.rotBoneWorld(BN[s].UpperArm, 'fwd', sg * 0.5 * ah); this.rotBoneWorld(BN[s].Forearm, 'side', -0.25 * ah); }
+    if (this.ik && this.gelenke) this.ausfall(kt);
     if (this.ik) this.fussIK(pl, kt, dt);
     if (this.glatt && this.traeg) this.traegheit(dt, ds === 1);
   }
@@ -763,8 +771,9 @@ export class Avatar {
     const aufrecht = this.dive < 0.2 && !pl.slide && !pl.fall && !(pl.air && pl.air.go);
     // Gewicht: vor dem Kontakt (nur Wiederholung) weich ein, danach vom vollen Gewicht weich aus; sonst Kontakt-Kurve
     const ein = (u) => (u <= 0 ? 0 : u >= 1 ? 1 : u * u * (3 - 2 * u));
-    const kw = !this.kickPunkt ? 0 : this.kickVor !== null ? 0.85 * ein(1 - this.kickVor / 0.12)
-      : this.vorKick ? (this.seitKontakt < 0.15 ? 0.85 * (1 - ein(Math.max(0, this.seitKontakt) / 0.15)) : 0) : kickGewicht(kt, this.glatt ? KICK_AN : 0);
+    const sp = this.gelenke ? 1 : 0.85; // n11: mit Gelenkgrenzen trifft das Körperteil ganz
+    const kw = !this.kickPunkt ? 0 : this.kickVor !== null ? sp * ein(1 - this.kickVor / 0.12)
+      : this.vorKick ? (this.seitKontakt < 0.15 ? sp * (1 - ein(Math.max(0, this.seitKontakt) / 0.15)) : 0) : kickGewicht(kt, this.glatt ? KICK_AN : 0, sp);
     const vorher = this.kickVor !== null || this.vorKick; // Ziel bewegt sich schon stetig → ohne Feder (die liefe hinterher)
     const rest = this.glatt && (this.ikOff.L[0] || this.ikOff.L[1] || this.ikOff.L[2] || this.ikOff.R[0] || this.ikOff.R[1] || this.ikOff.R[2]);
     if (!aufrecht && kw <= 0 && !rest) return;
@@ -781,9 +790,11 @@ export class Avatar {
         // n5: Versatz zum Ball folgt einer Feder – bei Dribbel-Kontakten im 0,3-s-Takt und weit entferntem Ball sprang
         // der Fuß sonst in 1–2 Bildern bis 1 m
         if (kick) {
-          const k = kickZiel(this.kickPunkt, this.kickVon, BALL_R, R.knoechel);
+          const k = this.kickZielTeil(s, R);
           IKZ[0] = (k[0] - tx) * kw; IKZ[1] = (k[1] - ty) * kw; IKZ[2] = (k[2] - tz) * kw;
-          const l = Math.hypot(IKZ[0], IKZ[1], IKZ[2]); if (l > IK_MAX && !(vorher && !this.kickWeit)) { IKZ[0] *= IK_MAX / l; IKZ[1] *= IK_MAX / l; IKZ[2] *= IK_MAX / l; }
+          // (n11: Luftball-Treffer dürfen weiter greifen – die Pose bringt das Bein nur grob hin)
+          const iM = this.gelenke && this.kickPunkt[1] > 0.45 ? IK_MAX_LUFT : IK_MAX;
+          const l = Math.hypot(IKZ[0], IKZ[1], IKZ[2]); if (l > iM && !(vorher && !this.kickWeit)) { IKZ[0] *= iM / l; IKZ[1] *= iM / l; IKZ[2] *= iM / l; }
         } else IKZ[0] = IKZ[1] = IKZ[2] = 0;
         const o = this.ikOff[s], ov = this.ikVel[s];
         if (vorher) { o[0] = IKZ[0]; o[1] = IKZ[1]; o[2] = IKZ[2]; ov.fill(0); }
@@ -792,7 +803,7 @@ export class Avatar {
         if (!kick && Math.abs(o[0]) + Math.abs(o[1]) + Math.abs(o[2]) < 0.008 && Math.abs(ov[0]) + Math.abs(ov[1]) + Math.abs(ov[2]) < 0.15) { o.fill(0); ov.fill(0); }
         if (Math.abs(o[0]) + Math.abs(o[1]) + Math.abs(o[2]) > 0.001) { tx += o[0]; ty += o[1]; tz += o[2]; an = true; }
       } else if (kick) {
-        const k = kickZiel(this.kickPunkt, this.kickVon, BALL_R, R.knoechel);
+        const k = this.kickZielTeil(s, R);
         tx += (k[0] - tx) * kw; ty += (k[1] - ty) * kw; tz += (k[2] - tz) * kw; an = true;
       }
       if (aufrecht && !kick && !(this.glatt && an && ty > IK.c.y + 0.02)) {
@@ -801,7 +812,9 @@ export class Avatar {
         if (hub > 0.002) { ty += hub; an = true; }
       }
       if (!an) continue;
-      const L = zweiKnochen(IK.a.toArray(), IK.b.toArray(), IK.c.toArray(), [tx, ty, tz], pol);
+      // n11: Gelenkgrenzen (gelenke.js) – Hüfte (Beugung, Abspreizen) und Knie bleiben in der Tabelle
+      if (this.gelenke) { const z = begrenzeZiel(IK.a.toArray(), IK.a.distanceTo(IK.b), IK.b.distanceTo(IK.c), [tx, ty, tz], this.koerperAchsen(), s === 'R' ? 1 : -1); tx = z[0]; ty = z[1]; tz = z[2]; }
+      const L = zweiKnochen(IK.a.toArray(), IK.b.toArray(), IK.c.toArray(), [tx, ty, tz], this.koerperAchsen().fwd);
       for (const b of [T, C, F]) if (!this.touched.has(b)) this.touched.set(b, b.quaternion.clone());
       T.matrixWorld.decompose(IK.p, IK.qT, IK.s); C.matrixWorld.decompose(IK.p, IK.qC, IK.s); F.matrixWorld.decompose(IK.p, IK.qF, IK.s);
       T.parent.matrixWorld.decompose(IK.p, IK.qP, IK.s);
@@ -815,6 +828,38 @@ export class Avatar {
       this.ikN++;
     }
     if (t0) this.ikZeit += performance.now() - t0;
+  }
+
+  // n11 Ausfallschritt: liegt der Treffpunkt beim Kontakt weiter weg, als das kurze Kuscheltier-Bein reicht, rückt die ganze Figur
+  // bis 0,2 m zum Ball (nur Grafik, so lange der Kontakt dauert) – die Sim-Reichweite ist für die alten, längeren Beine gebaut
+  ausfall(kt) {
+    if (!this.kickPunkt) return;
+    const kv = this.kickVor, w = kv !== null ? 1 - kv / 0.12 : this.vorKick ? Math.max(0, 1 - this.seitKontakt / 0.15) : kt < 0.15 ? 1 - kt / 0.15 : 0;
+    if (w <= 0) return;
+    const [T, C, F] = this.bein.R;
+    if (!this.beinL) { IK.a.setFromMatrixPosition(T.matrixWorld); IK.b.setFromMatrixPosition(C.matrixWorld); IK.c.setFromMatrixPosition(F.matrixWorld); this.beinL = IK.a.distanceTo(IK.b) + IK.b.distanceTo(IK.c); }
+    IK.a.setFromMatrixPosition(T.matrixWorld);
+    const dx = this.kickPunkt[0] - IK.a.x, dy = this.kickPunkt[1] - IK.a.y, dz = this.kickPunkt[2] - IK.a.z, d = Math.hypot(dx, dy, dz);
+    const need = Math.min(0.2, Math.max(0, d - (this.beinL + BALL_R + 0.04)));
+    if (need < 0.005) return;
+    const k = need * w / (d || 1);
+    this.root.position.x += dx * k; this.root.position.y += Math.max(0, dy) * k; this.root.position.z += dz * k;
+    this.root.updateMatrixWorld(true);
+  }
+  // n11: Körperachsen (Welt) aus root + tilt: vorn, oben, rechts (Becken-Rahmen für die Gelenkgrenzen)
+  koerperAchsen() {
+    const q = _qk.copy(this.root.quaternion).multiply(this.tilt.quaternion);
+    const f = _vk.set(0, 0, 1).applyQuaternion(q).toArray(), u = _vk.set(0, 1, 0).applyQuaternion(q).toArray(), l = _vk.set(1, 0, 0).applyQuaternion(q).toArray();
+    return { fwd: f, up: u, right: [-l[0], -l[1], -l[2]] };
+  }
+  // n11: Knöchel-Ziel beim Ballkontakt je Technik: das passende Körperteil (Innenseite, Außenrist, Spann, Ferse) an der
+  // Balloberfläche; ohne ?gelenke (Standard an) wie n4 der Spann hinter dem Ball
+  kickZielTeil(s, R) {
+    if (!this.gelenke) return kickZiel(this.kickPunkt, this.kickVon, BALL_R, R.knoechel);
+    const teil = kontaktTeil(this.kickTech);
+    if (teil === 'kopf' || teil === 'brust' || teil === 'oberschenkel') return kickZiel(this.kickPunkt, this.kickVon, BALL_R, R.knoechel);
+    const hoch = this.kickPunkt[1] > 0.45;
+    return zielFuerTeil(this.kickPunkt, this.kickVon, BALL_R, R.knoechel, teil, this.koerperAchsen(), s === 'R' ? 1 : -1, hoch);
   }
 
   // n9: Ohren wippen im Laufschritt (2 Schläge je Zyklus) und wehen nach hinten, der Schwanz wedelt; im Stand leises Schaukeln.
@@ -857,16 +902,22 @@ function techPose(pl, t, beinF = 1) {
     return { pitch: -0.95 * lie, roll: -side * 0.2 * lie, drop: -0.62 * lie, legs: true, thigh: -1.2 * lie, thigh2: -0.4 * lie, arms: 0.55 * lie };
   }
   const a = pl.air;
-  if (a && a.go) {
-    const u = ease((t - a.t0) / Math.max(0.05, a.tc - a.t0)); // 0 Absprung … 1 Treffpunkt
-    switch (a.tech) {
+  // n11: kurz nach dem Treffpunkt (fall.t < 0,12 s) bleibt die Treff-Pose stehen – das Kontaktbild zeigt das Körperteil am Ball
+  const fk = pl.fall && pl.fall.t < 0.12 && pl.fall.cy != null ? pl.fall : null;
+  if ((a && a.go) || fk) {
+    const u = fk ? 1 : ease((t - a.t0) / Math.max(0.05, a.tc - a.t0)); // 0 Absprung … 1 Treffpunkt
+    const tech = fk ? fk.tech : a.tech, cy = fk ? fk.cy : a.cy;
+    switch (tech) {
       case 'fallrueck': { // Hüfte so tief, dass der Fuß des über den Kopf schwingenden Beins den Ball trifft
-        const A = AIR_POSE.fallrueck, drop = (a.cy ?? 1.4) - A.hipBelow * beinF - 0.95 - (pl.jumpY || 0); // n10: kürzeres Bein → Hüfte näher am Ball
+        const A = AIR_POSE.fallrueck, drop = (cy ?? 1.4) - A.hipBelow * beinF - 0.95 - (pl.jumpY || 0); // n10: kürzeres Bein → Hüfte näher am Ball
         return { pitch: A.pitch * u, roll: 0, drop: drop * u, legs: true, thigh: -2.12 * u, thigh2: -0.6 * u, calf: 0.1, arms: 0.9 * u };
       }
       case 'seitfall': { const A = AIR_POSE.seitfall; return { pitch: A.pitch * u, roll: -side * A.roll * u, drop: A.drop * u, legs: true, thigh: -0.5 - 1.3 * u, thigh2: -0.3 * u, arms: 0.7 * u }; }
       case 'flugkopf': { const A = AIR_POSE.flugkopf; return { pitch: A.pitch * u, roll: 0, drop: A.drop * u, legs: true, thigh: 0.35 * u, thigh2: 0.35 * u, arms: -0.4 * u, nod: -0.3 * u }; }
       case 'kopf': return { pitch: -0.25 * (1 - u) + 0.35 * u, roll: 0, drop: 0, hop: u, legs: true, thigh: -0.3 * u, arms: 0.8 * (1 - u) + 0.3, nod: 0.45 * u };
+      // n11 Salto-Hacke (Skorpion-Kick): Vorwärtssalto – kopfüber nach vorn, beide Knie stark gebeugt, die Fersen schlagen hinter dem
+      // Rücken nach oben an den Ball; Arme nach vorn unten (fangen die Landung ab). Rocketbox hat keinen Clip: prozedural
+      case 'salto': { const A = AIR_POSE.salto, w = u * u * (3 - 2 * u); return { pitch: 1.35 * u + (A.pitch - 1.35) * w * w, roll: 0, drop: -0.1 * u, legs: true, thigh: 0.55 * u, thigh2: 0.45 * u, calf: 2.0 * u, calf2: 1.8 * u, arms: -1.5 * u, nod: -0.5 * u }; }
       default: return { pitch: -0.3 * u, roll: -side * 0.15 * u, drop: -0.05 * u, legs: true, thigh: 0.4 - 1.7 * u, calf: 0.9 * (1 - u), arms: 0.5 * u }; // Volley/Dropkick: ausholen, durchziehen
     }
   }
@@ -875,6 +926,7 @@ function techPose(pl, t, beinF = 1) {
     const up = ease((f.t - (f.dur - 0.35)) / 0.35), lie = 1 - up;
     if (f.tech === 'fallrueck') return { pitch: -1.5 * lie, roll: 0, drop: -0.72 * lie, legs: true, thigh: -0.9 * lie, thigh2: -0.5 * lie, arms: 0.5 * lie };
     if (f.tech === 'seitfall') return { pitch: 0, roll: -side * 1.45 * lie, drop: -0.72 * lie, legs: true, thigh: -0.6 * lie, arms: 0.4 * lie };
+    if (f.tech === 'salto') { const r = 1 - ease(f.t / 0.3); return { pitch: 1.5 * lie + 0.6 * r * lie, roll: 0, drop: -0.74 * lie, legs: true, thigh: 0.4 * lie, calf: 1.2 * r * lie, calf2: 1.0 * r * lie, arms: -1.2 * lie }; } // n11: rollt über die Arme ab
     return { pitch: 1.5 * lie, roll: 0, drop: -0.74 * lie, legs: true, thigh: 0.2 * lie, arms: -0.6 * lie }; // Flugkopfball: bäuchlings
   }
   const k = pl.techT ?? 9;
@@ -888,9 +940,9 @@ function techPose(pl, t, beinF = 1) {
     const u = Math.sin(Math.min(1, k / 0.45) * Math.PI);
     switch (pl.tech) {
       case 'ferse': return { pitch: 0.1 * u, roll: 0, drop: 0, legs: true, thigh: 0.75 * u, calf: 1.3 * u };
-      case 'chip': return { pitch: -0.12 * u, roll: 0, drop: -0.03 * u, legs: true, thigh: -0.75 * u, calf: 0.25 * u };
+      case 'chip': case 'lupfer': return { pitch: -0.12 * u, roll: 0, drop: -0.03 * u, legs: true, thigh: -0.75 * u, calf: 0.25 * u, twist: -0.35 * u };
       case 'aussen': case 'aussenrist': return { pitch: -0.05 * u, roll: side * 0.12 * u, drop: 0, legs: true, thigh: -0.9 * u, twist: 0.55 * u, calf: 0.3 * u };
-      case 'innen': case 'innenrist': return { pitch: -0.05 * u, roll: -side * 0.12 * u, drop: 0, legs: true, thigh: -0.9 * u, twist: -0.6 * u, calf: 0.3 * u };
+      case 'innen': case 'innenrist': case 'kurve': return { pitch: -0.05 * u, roll: -side * 0.12 * u, drop: 0, legs: true, thigh: -0.9 * u, twist: -0.6 * u, calf: 0.3 * u };
       case 'vollspann': return { pitch: -0.12 * u, roll: 0, drop: -0.03 * u, legs: true, thigh: -1.15 * u, calf: 0.5 * u * (1 - k / 0.45), arms: 0.35 * u };
       case 'brust': return { pitch: -0.32 * u, roll: 0, drop: -0.04 * u, legs: true, thigh: 0, arms: 0.6 * u };
       case 'oberschenkel': return { pitch: -0.08 * u, roll: 0, drop: 0, legs: true, thigh: -1.0 * u, calf: 0.9 * u };

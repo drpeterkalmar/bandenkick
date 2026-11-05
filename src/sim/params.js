@@ -286,7 +286,7 @@ export const DEFAULTS = {
   // Mitspieler, sonst behalten (Hinweis). hochSicher = Zeitreserve (s), die jeder Gegner zu spät kommen muss.
   hochpass: 1,            // 0 = flache Pässe wie 0.8.0                                               [?hochpass=0]
   hochSicher: 0.06,       // s                                                                        [?hochSicher=]
-  hochGemeint: 0.2,       // s weniger Reserve für den gemeinten Empfänger (Stick) als für einen anderen  [?hochGemeint=]
+  hochGemeint: 0.1,       // s weniger Reserve für den gemeinten Empfänger (Stick) als für einen anderen  [?hochGemeint=]
   hochLesen: 0.3,         // s bis ein Gegner auf den hohen Pass reagiert (Reaktion + Lesen)
   direktLuft: 0.8,        // × Chance (Stufe: airTry), dass ein Bot einen hohen Pass direkt aus der Luft weiterspielt
   botSicher: -0.03,        // s: Bots passen nur ab dieser Zeitreserve (Stufe 1: × 2,5, Stufe 3: × 0,4)          [?botSicher=]

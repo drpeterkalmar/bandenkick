@@ -5,6 +5,8 @@ import { makeParams } from './sim/params.js';
 import { Game, DT } from './sim/step.js';
 import { EMPTY_INPUT } from './sim/player.js';
 import { previewShot, autoShotPower, attackGoalX } from './sim/shot.js';
+import { autoShot } from './sim/akro.js';
+import { planAir } from './sim/air.js';
 import { planPass } from './sim/pass.js';
 import { techName, CHALLENGES, challengeDef } from './sim/challenges.js';
 import { TrainingProps, AimMarkers } from './render/training.js';
@@ -81,7 +83,7 @@ document.body.classList.toggle('solo', solo);
 
 const canvas = document.getElementById('c');
 const hud = buildHud(document.getElementById('ui'), canvas);
-hud.setHowto(isTouch, !!P.sprintfrei, !!P.wechsel);
+hud.setHowto(isTouch, !!P.sprintfrei, !!P.wechsel, !!P.autotech);
 const loadMsg = document.createElement('div');
 loadMsg.style.cssText = 'position:fixed;inset:0;display:grid;place-items:center;font:600 18px system-ui;color:#fff;background:#10251a';
 loadMsg.textContent = 'Bandenkick lädt …';
@@ -171,6 +173,12 @@ let clipHoch = qs.has('clip') ? qs.get('clip') === 'hoch' : localStorage.getItem
 const clipBtn = hud.menu.querySelector('[data-act="cliphoch"]');
 const clipLabel = () => { clipBtn.textContent = 'Clip im Hochformat: ' + (clipHoch ? 'an' : 'aus'); };
 clipLabel();
+// n11 Ein-Knopf-Test (Peter 02.11.: „beim 1knopf bin ich skeptisch“): Schalter im Pause-Menü, Standard aus (localStorage bk_einknopf,
+// ?einknopf=1). An: der Schuss-Knopf ist der Kick (Schuss oder Pass nach Lage), der Pass-Knopf verschwindet
+if (!qs.has('einknopf') && localStorage.getItem('bk_einknopf') === '1') P.einknopf = 1;
+const einBtn = hud.menu.querySelector('[data-act="einknopf"]');
+const einLabel = () => { einBtn.textContent = 'Ein Kick-Knopf (Test): ' + (P.einknopf ? 'an' : 'aus'); einBtn.style.display = P.autotech ? '' : 'none'; hud.setEinknopf(!!P.einknopf && !!P.autotech); };
+einLabel();
 const lichtBtn = hud.menu.querySelector('[data-act="licht"]');
 function lichtLabel() { if (lichtBtn) lichtBtn.textContent = 'Licht: ' + (lichtPref === 'auto' ? `automatisch (${lichtMode() === 'abend' ? 'Abend' : 'Tag'})` : lichtPref === 'abend' ? 'Abend' : 'Tag'); }
 let helpBack = 'menu', helpThen = null;
@@ -226,6 +234,7 @@ hud.root.addEventListener('click', (e) => {
     localStorage.setItem('bk_replay_art', replayArt); localStorage.setItem('bk_replay', replayOn ? '1' : '0'); replayLabel();
   }
   if (a === 'blitze') { blitzeSanft = !blitzeSanft; localStorage.setItem('bk_blitze', blitzeSanft ? '1' : '0'); blitzLabel(); }
+  if (a === 'einknopf') { P.einknopf = P.einknopf ? 0 : 1; localStorage.setItem('bk_einknopf', P.einknopf ? '1' : '0'); einLabel(); }
   if (a === 'cliphoch') { clipHoch = !clipHoch; localStorage.setItem('bk_cliphoch', clipHoch ? '1' : '0'); clipLabel(); }
   if (a === 'clipnochmal') clipNochmal();
   if (a === 'tordesspiels') torDesSpiels();
@@ -301,7 +310,7 @@ async function boot() {
   if (A) {
     for (let team = 0; team < 2; team++) for (let i = 0; i < 3; i++) {
       const R = A.roster || SAETZE.menschen.roster;
-      const av = new Avatar(A, R[team][i % R[team].length], team, { shadows: quality.avatarShadows, cull: AV_CULL, ik: AV_IK, glatt: GLATT, traeg: qs.get('traeg') === '1' /* n5: Sicherheitsnetz nur auf Wunsch (Bildrate) */, deko: DEKO ? { sunDir, num: BIB_NUMS[team][i], extShadow: true } : null });
+      const av = new Avatar(A, R[team][i % R[team].length], team, { shadows: quality.avatarShadows, cull: AV_CULL, ik: AV_IK, gelenke: qs.get('gelenke') !== '0' && !!P.akro, glatt: GLATT, traeg: qs.get('traeg') === '1' /* n5: Sicherheitsnetz nur auf Wunsch (Bildrate) */, deko: DEKO ? { sunDir, num: BIB_NUMS[team][i], extShadow: true } : null });
       figs.push(av); scene.add(av.root);
     }
   } else {
@@ -451,6 +460,8 @@ function handleEvents(ev) {
     } else if (e.type === 'end') {
       if (rp.besterClip && rp.besterClip.game === game) document.body.classList.add('tordesspiels'); // n6: „Tor des Spiels“ ansehen
       hud.flash('Abpfiff', e.winner < 0 ? `Unentschieden ${e.score[0]} : ${e.score[1]}` : `${TEAM_NAMES[e.winner]} gewinnt ${e.score[0]} : ${e.score[1]}`, 6);
+    } else if (e.type === 'passsperre' && e.human) {
+      hud.flash('Kein freier Pass', 'Ball bleibt am Fuß – der Pass geht, sobald ein Weg frei ist', 1.0); // n11
     } else if (e.type === 'tackle' && e.phase === 'hit' && e.human) {
       hud.flash('Grätsche!', e.result === 'ball' ? 'Ball erobert' : 'Ball frei', 0.9);
     } else if (e.type === 'rueckpass' && R && e.team === me().team && !game.bpToast) {
@@ -470,8 +481,30 @@ const MODE_LOOK = {
 // Tipp-Grammatik (Nacht 2c): nach dem ersten Druck zeigt der Ring den Modus (Standard; nach dem Doppeltipp die
 // Zweitfunktion) mit voller Stärke (automatisch) – ohne Aufladen
 const tapPower = (pl) => autoShotPower(Math.hypot(attackGoalX(game, pl) - game.ball.p.x, game.ball.p.z));
+// n11 (autotech): kein Ring – über den Knöpfen steht, was ein Tipp gerade spielen würde (alle 0,2 s aus denselben Planern)
+const AUTO_SYM = { vollspann: '⚡', innenrist: '↪', aussenrist: '↩', ferse: '🦶', lupfer: '⌒', aussen: '↩', kurve: '↪', chip: '⌒',
+  volley: '✦', dropkick: '✦', seitfall: '✦', fallrueck: '✦', kopf: '●', flugkopf: '✦', salto: '✦', innen: '→' };
+const autoV = { t: -9, shot: null, pass: null };
+function autoFrame(pl, raw) {
+  if (!P.autotech || mode !== 'play' || game.human < 0 || keeperMode() || rp.dir) { hud.setAuto(null, null); return; }
+  if (game.t - autoV.t < 0.2 && autoV.t <= game.t) { hud.setAuto(autoV.shot, autoV.pass); return; }
+  autoV.t = game.t;
+  const b = game.ball, d = Math.hypot(b.p.x - pl.x, b.p.z - pl.z), w = worldInput(raw), st = Math.hypot(w.mx, w.mz) > 0.12 ? [w.mx, w.mz] : null;
+  const v = (tech, warn = false) => ({ sym: warn ? '✋' : AUTO_SYM[tech] || '•', label: warn ? 'kein freier Pass' : techName(tech), warn });
+  autoV.shot = autoV.pass = null;
+  if (pl.air) autoV.shot = v(pl.air.tech);
+  else if (b.held < 0 && d < 6 && (b.p.y > 0.45 || !b.contact)) {
+    const ps = planAir(game, pl, { purpose: 'shot' }); if (ps) autoV.shot = v(ps.tech);
+    const pp = game.match ? planAir(game, pl, { purpose: 'pass', aim: st }) : null; if (pp) autoV.pass = v(pp.tech === 'kopf' || pp.tech === 'flugkopf' ? 'kopf' : pp.tech);
+  } else if (b.held < 0 && d < 1.6 && b.p.y < 0.5 && (game.lastTouch === pl.id || game.lastTouch < 0)) {
+    autoV.shot = v(autoShot(game, pl, st).tech);
+    if (game.match) { const pp = planPass(game, pl, { stick: st, power: null }); autoV.pass = v(pp.tech, !!pp.unsicher); }
+  }
+  hud.setAuto(autoV.shot, autoV.pass);
+}
 function chargeView(pl, raw) {
   if (pl.air) return { kind: 'shot', p: 1, sym: '✦', color: '#ffe27a', label: techName(pl.air.tech), air: true };
+  if (P.autotech) return null; // n11: kein Lade-Ring (Vorschau über dem Knopf, autoFrame)
   if (!P.laden && !P.treffpunkt) {
     const pd = pl.pending && pl.pending.tap ? pl.pending : null;
     if (!pd) return null;
@@ -748,6 +781,7 @@ function frame() {
   if (touchUI && P.treffpunkt) hud.setContact(raw.shotDown ? raw.cx : 0, raw.shotDown ? raw.cy : 0);
   challengeFrame();
   aimFrame(pl, raw, km);
+  autoFrame(pl, raw);
   if (game.match && !game.challenge) {
     const R = game.rules;
     const rest = R.half === 1 ? R.halfLen - R.clock : 2 * R.halfLen - R.clock;

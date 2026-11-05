@@ -26,6 +26,7 @@ export const EDIT_TECH = {
   volley: 'VOLLEY', dropkick: 'DROPKICK', seitfall: 'SEITFALL-|ZIEHER', fallrueck: 'FALLRÜCK-|ZIEHER', kopf: 'KOPFBALL',
   flugkopf: 'FLUG-|KOPFBALL', ferse: 'HACKE', chip: 'LUPFER', heber: 'LUPFER', brust: 'BRUST', oberschenkel: 'OBER-|SCHENKEL',
   graetsche: 'GRÄTSCHE', stolpern: 'STOLPER-|TOR',
+  salto: 'SALTO-|HACKE', lupfer: 'LUPFER', kurve: 'KURVEN-|PASS', kopfpass: 'KOPFBALL-|PASS', volleypass: 'VOLLEY-|PASS', // n11
 };
 // Untertitel-Gags (Bildunterschrift oben wie bei TikTok und kurzer Spruch beim Jubel)
 export const EDIT_POV = [

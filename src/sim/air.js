@@ -202,7 +202,7 @@ export function stepAir(pl, dt, game, want, sx, sz) {
     pl.air = null;
     pl.tech = tech; pl.techT = 0; pl.kickT = 0;
     const g = AIR_PROPS[tech].ground;
-    if (g > 0) pl.fall = { tech, t: 0, dur: g + 0.25 }; // Flug + Landung + am Boden
+    if (g > 0) pl.fall = { tech, t: 0, dur: g + 0.25, cy: a.cy }; // Flug + Landung + am Boden (n11: cy für die Treff-Pose der Grafik)
     return true;
   }
   return true;

@@ -19,8 +19,9 @@ export const AKTION = {
   ramp: 1.18, bullet: 1.45, // s Echtzeit
   langsam: 0.12,         // Tempo in der Zeitlupe
 };
-const SPEKTAKEL_TECH = { fallrueck: 0.95, seitfall: 0.85, flugkopf: 0.8, volley: 0.7, dropkick: 0.6, innenrist: 0.55, aussenrist: 0.6, ferse: 0.6, chip: 0.45, kopf: 0.45 };
-const BULLET_TECH = new Set(['fallrueck', 'seitfall', 'flugkopf']);
+// n11: Salto-Hacke (Skorpion) ganz oben, Direktpässe aus der Luft und der Kurvenpass zählen mit
+const SPEKTAKEL_TECH = { salto: 1.0, fallrueck: 0.95, seitfall: 0.85, flugkopf: 0.8, volley: 0.7, dropkick: 0.6, innenrist: 0.55, aussenrist: 0.6, ferse: 0.6, chip: 0.45, kopf: 0.45, volleypass: 0.55, kopfpass: 0.45, kurve: 0.4 };
+const BULLET_TECH = new Set(['salto', 'fallrueck', 'seitfall', 'flugkopf']);
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const ss = (u) => (u <= 0 ? 0 : u >= 1 ? 1 : u * u * (3 - 2 * u));
 

@@ -329,3 +329,9 @@ body.quer:not(.cliphoch) .fe-stamp.wort { top: 56% !important; }
 /* Querformat: Varianten ohne Kollisionen (GOLAZO! oben, zweites Wort Mitte, Titel oben links neben der Bildunterschrift) */
 body.quer:not(.cliphoch) .fe.vb .fe-big.golazo { top: 27%; }
 body.quer:not(.cliphoch) .fe-stamp.wort.titel { top: 30% !important; left: 30% !important; font-size: min(13cqmin, 4.5cqw) !important; }
+
+/* n11: was ein Tipp gerade spielen würde (über dem Knopf), Ein-Knopf-Test */
+.tb .auto { position: absolute; top: -24px; left: 50%; transform: translateX(-50%); font-size: 12px; font-weight: 800; white-space: nowrap; color: #fff; text-shadow: 0 1px 4px #000, 0 0 2px #000; opacity: 0; transition: opacity .15s; pointer-events: none; }
+.tb .auto.on { opacity: 1; }
+.tb .auto.warn { color: #ffb4a8; }
+body.einknopf #bPass { display: none; }
