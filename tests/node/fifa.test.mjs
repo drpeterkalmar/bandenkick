@@ -1,5 +1,7 @@
 // FIFA-Prüfungen für den Kunstrasen – so wie im Labor (Handbook of Test Methods 2015), Fenster aus dem
 // FIFA Test Manual 2024 Teil II, „FIFA Quality Pro“, trocken. Aufruf: node tests/node/fifa.test.mjs
+// n11: FIFA-Kalibrierung = Verhalten bis 0.8.0 (?akro=0, Rasen-Abprall 0,621); der Spektakel-Abprall steht in n11.test.mjs
+globalThis.BK_BASIS = 'akro=0';
 import { makeParams } from '../../src/sim/params.js';
 import { dropTestFine, angleTest, rollTest, reducedRollTest } from '../../src/sim/lab.js';
 import { report } from './report.mjs';

@@ -8,6 +8,7 @@ import { perfektPass } from './perfekt.js';
 import { clampCorner } from './world.js';
 import { planPass } from './pass.js';
 import { planShot } from './shot.js';
+import { autoShot, einKnopfArt } from './akro.js';
 import { planAir, planAirHelp, stepAir, stepFall } from './air.js';
 const DEG = Math.PI / 180;
 const wrap = (a) => { while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI; return a; };
@@ -110,8 +111,9 @@ export class Player {
   //    'innen' | 'vollspann' | 'heber', speed/elev/spinY/spinBack optional, noise = Streuungs-Faktor, to = Empfänger
   //  - geplant wie beim Menschen (Nacht 2b): {kind: 'pass', to, lead: true, mode: 'std'|'var'} = Pass in den
   //    Laufweg (flach/Chip), {kind: 'shot', auto: true, mode, power} = Schuss mit automatischem Ziel und Qualität q
-  kickAt({ kind = 'pass', target = [0, 0], technique = 'innen', speed, elev, spinY = 0, spinBack = 0, noise = 1, to = -1, lead = false, auto = false, mode = 'std', power = 0.8, skill = 1 } = {}) {
-    this.pending = { kind, api: true, target: [...target], technique, speed, elev, spinY, spinBack, noise, to, lead, auto, mode, power, skill, dir: [1, 0], age: 0 };
+  //  - n11: minSlack = hoher Pass nur, wenn die Zeitreserve der Gegner beim Kontakt noch so groß ist (sonst Ball behalten)
+  kickAt({ kind = 'pass', target = [0, 0], technique = 'innen', speed, elev, spinY = 0, spinBack = 0, noise = 1, to = -1, lead = false, auto = false, mode = 'std', power = 0.8, skill = 1, minSlack = -Infinity } = {}) {
+    this.pending = { kind, api: true, target: [...target], technique, speed, elev, spinY, spinBack, noise, to, lead, auto, mode, power, skill, minSlack, dir: [1, 0], age: 0 };
   }
 
   place(x, z, face = 0) {
@@ -166,10 +168,14 @@ export class Player {
       if (!inp.shootHeld && !inp.shootRelease && this.charging) { this.charging = false; this.charge = 0; }
     }
     // Luftball: Schuss gehalten oder vorgemerkt, Ball kommt in der Luft → Kopfball/Volley/… planen (Timing ab dem Druck)
-    if (!this.air && !held && !P.treffpunkt && (ball.p.y > P.reachH || ball.v.y > 1.5)) {
+    // n11 (autotech): gibt es für den Tipp einen Luftball, dessen bester Moment noch kommt, wartet der Kick (kein Bodenschuss vorher)
+    const lw = {};
+    if (!this.air && !held && !P.treffpunkt && (ball.p.y > P.reachH || ball.v.y > 1.5 || (P.autotech && this.pending && this.pending.tap && !ball.contact))) {
       if (this.charging && this.chargeKind === 'shot' && !this.airPress) { if (this.tryAir(game, this.chargeT0 ?? game.t)) this.airPress = true; }
-      else if (this.pending && this.pending.kind === 'shot' && !this.pending.api) { if (this.tryAir(game, this.pending.t ?? game.t)) this.pending = null; }
+      else if (this.pending && this.pending.kind === 'shot' && !this.pending.api) { if (this.tryAir(game, this.pending.t ?? game.t, 'shot', null, lw)) this.pending = null; }
+      else if (P.autotech && this.pending && this.pending.kind === 'pass' && this.pending.tap && !this.pending.api) { if (this.tryAir(game, this.pending.t ?? game.t, 'pass', this.pending.stick, lw)) this.pending = null; } // n11: Direktpass aus der Luft
     }
+    const luftWarten = !!lw.wait && P.autotech;
     if (this.air) { // Anlauf, Absprung, Treffpunkt – die Hilfe steuert, deutliche Gegen-Eingabe bricht nach 0,3 s ab
       if (stepAir(this, dt, game, want, sx, sz)) { this.plant = 0; this.gait += this.speed * dt / 1.1; return; }
     }
@@ -216,7 +222,8 @@ export class Player {
     if (!want && !held && pp && pp.to === this.id && !(this.pending && bd < 3) && game.t < pp.t + 1.2) {
       const tRem = pp.t - game.t;
       const bvx = ball.v.x, bvz = ball.v.z, lead = clamp(bd / 9, 0.1, 0.35);
-      const near = bd < 3.2 && (ball.p.y < 1.8 || tRem < 0.4);
+      // n11: hoher Pass – am Treffpunkt bleiben, bis der Ball fast da ist (nicht unter dem steigenden Ball herlaufen)
+      const near = pp.hoch ? tRem < 0.3 || (bd < 1.5 && ball.p.y < 1.6) : bd < 3.2 && (ball.p.y < 1.8 || tRem < 0.4);
       let tx = near ? ball.p.x + bvx * lead : pp.x, tz = near ? ball.p.z + bvz * lead : pp.z, tGo = tRem;
       // Nacht 2e: flacher Pass – dem Ball entgegen: frühester Punkt der Rollbahn, den der Empfänger rechtzeitig erreicht
       // (Lauftempo, 0,15 s Reserve). Kürzer unterwegs = seltener abgefangen, der Ball verhungert nicht im Laufweg.
@@ -313,9 +320,12 @@ export class Player {
     const handsFirst = game.match && (inp.hand || inp.autoCatch) && game.rules.handsFirst(this, inp);
     // Ballannahme aus der Luft (Brust, Oberschenkel): Ball kommt vor dem Körper herunter, nicht zu schnell → er fällt
     // kontrolliert vor die Füße. Harte Schüsse prallen weiter vom Körper ab (bodyCollision).
-    if (!handsFirst && !inReach && this.touchCd <= 0 && !this.air && ball.p.y > P.reachH && ball.p.y < 1.55 && ball.v.y < 0.5 && bd < 0.75 && rel < 11 &&
-        (bx * Math.cos(this.face) + bz * Math.sin(this.face)) > -0.15 && !this.pending) {
-      const k = 0.7, part = ball.p.y > 1.05 ? 'brust' : 'oberschenkel';
+    // n11: Empfänger eines hohen Passes nimmt ihn auch mit dem Kopf an (bis Kopfhöhe + Sprung) und etwas weiter neben dem Körper
+    const hochEmpf = P.hochpass && pp && pp.hoch && pp.to === this.id;
+    const ctrlTop = hochEmpf ? P.headH + 0.25 + 0.5 * this.jumpY : 1.55;
+    if (!handsFirst && !inReach && this.touchCd <= 0 && !this.air && ball.p.y > P.reachH && ball.p.y < ctrlTop && ball.v.y < 0.5 && bd < (hochEmpf ? 0.9 : 0.75) && rel < (hochEmpf ? 13 : 11) &&
+        (hochEmpf || (bx * Math.cos(this.face) + bz * Math.sin(this.face)) > -0.15) && !this.pending) { // (Empfänger dreht sich zum Ball)
+      const k = 0.7, part = ball.p.y > 1.55 ? 'kopf' : ball.p.y > 1.05 ? 'brust' : 'oberschenkel';
       ball.v.set(this.vx * k + Math.cos(this.face) * 0.6, -1.2, this.vz * k + Math.sin(this.face) * 0.6);
       ball.w.set(0, 0, 0);
       this.tech = part; this.techT = 0;
@@ -338,8 +348,9 @@ export class Player {
     if (!touched && !handsFirst && inReach && rel < P.ctrlRelMax && !settle && !this.shieldBlocked(game)) {
       if (this.pending && this.pending.locked) {
         // Tipp: Modus steht noch nicht fest (≤ doppel s) – Ball nicht wegspielen, gleich kommt der Kick
-      } else if (this.pending && this.touchCd <= 0.1) {
-        this.kick(this.pending, game, rel);
+      } else if (this.pending && luftWarten && this.pending.tap) {
+        // n11: gleich kommt der Luftball (Volley, Dropkick, …) – Ball nicht vorher flach wegschießen
+      } else if (this.pending && this.touchCd <= 0.1 && this.kick(this.pending, game, rel) !== false) {
         this.pending = null;
         touched = true;
       } else if (this.touchCd <= 0) {
@@ -612,8 +623,8 @@ export class Player {
   }
 
   // Luftball versuchen (Schuss gedrückt): Plan aus air.js übernehmen → true
-  tryAir(game, tPress) {
-    const plan = this.P.timinghilfe > 0 && !this.P.laden ? planAirHelp(game, this, this.P.timinghilfe) : planAir(game, this, { tPress });
+  tryAir(game, tPress, purpose = 'shot', aim = null, out = null) {
+    const plan = this.P.timinghilfe > 0 && !this.P.laden ? planAirHelp(game, this, this.P.timinghilfe, purpose, aim, out) : planAir(game, this, { tPress, purpose, aim });
     if (!plan) return false;
     this.air = plan; this.pending = null; this.charging = false;
     return true;
@@ -653,14 +664,19 @@ export class Player {
   taps(inp, game, aimDir, stick) {
     for (const e of inp.gest) {
       const kind = e.btn === 'pass' ? 'pass' : 'shot';
-      const mine = this.pending && this.pending.tap && this.pending.kind === kind;
+      const mine = this.pending && this.pending.tap && (this.pending.btn || this.pending.kind) === kind;
+      const auto = this.P.autotech;
       if (e.type === 'start' && e.mode === 'std') {
         this.armed = null; this.charging = false; this.clearT = 0; this.airPress = false;
-        if (kind === 'shot' && this.tryAir(game, game.t)) { this.airPress = true; this.pending = null; continue; }
-        if (this.tackleOk(game)) { this.startTackle(game, kind, stick()); this.pending = null; continue; } // Grätsche
-        this.pending = { kind, mode: 'std', power: null, stick: stick(), dir: aimDir(), cx: 0, cy: 0, age: 0, t: game.t, locked: true, tap: true };
+        // n11 Ein-Knopf-Test (?einknopf=1): der Schuss-Knopf ist der Kick – Schuss oder Pass nach Lage
+        const k2 = this.P.einknopf && kind === 'shot' ? einKnopfArt(game, this, stick()) : kind;
+        if (k2 === 'shot' && this.tryAir(game, game.t)) { this.airPress = true; this.pending = null; continue; }
+        if (auto && k2 === 'pass' && this.tryAir(game, game.t, 'pass', stick())) { this.airPress = true; this.pending = null; continue; }
+        if (this.tackleOk(game)) { this.startTackle(game, k2, stick()); this.pending = null; continue; } // Grätsche
+        // n11 (autotech): ein Tipp, alles automatisch – kein Warten auf einen Doppeltipp, der Kick ist sofort frei
+        this.pending = { kind: k2, mode: auto ? 'auto' : 'std', power: null, stick: stick(), dir: aimDir(), cx: 0, cy: 0, age: 0, t: game.t, locked: !auto, tap: true, btn: kind };
       } else if (e.type === 'start') { // zweiter Druck: Zweitfunktion
-        if (mine) this.pending.mode = 'var';
+        if (mine && !auto) this.pending.mode = 'var';
       } else if (e.type === 'tap' || e.type === 'release') {
         if (this.airPress) { this.airPress = false; continue; }
         if (mine) this.pending.locked = false;
@@ -774,15 +790,28 @@ export class Player {
   }
 
   // Pass oder Schuss ausführen
+  // Gibt false zurück, wenn der Kick (noch) nicht gespielt wird – n11: kein freier Pass, der Spieler behält den Ball, der Tipp bleibt
+  // vorgemerkt (geht, sobald ein Weg frei ist)
   kick(pd, game, rel) {
+    // n11 (autotech): Schuss-Technik automatisch (Vollspann, Innen-/Außenrist mit Effet, Hacke) nach Erfolgschance + Spektakel
+    const shotOpts = (stick) => {
+      if (pd.mode !== 'auto' && !(pd.api && this.P.autotech)) return { mode: pd.mode };
+      const a = autoShot(game, this, stick);
+      return { mode: a.mode, tech: a.tech === 'ferse' ? 'ferse' : undefined };
+    };
     if (pd.api && (pd.lead || pd.auto)) {
-      const plan = pd.kind === 'shot' ? planShot(game, this, { mode: pd.mode, power: pd.power, noiseMul: pd.noise, skill: pd.skill })
+      const plan = pd.kind === 'shot' ? planShot(game, this, { ...shotOpts(null), power: pd.power, noiseMul: pd.noise, skill: pd.skill })
         : planPass(game, this, { mode: pd.mode, to: pd.to, noiseMul: pd.noise, power: null });
+      if (plan.hoch && plan.slack < pd.minSlack) { pd.age = 99; return false; } // n11: Weg inzwischen zu → Ball behalten
       return this.applyPlan(plan, game, rel);
     }
     if (!pd.api && !this.P.treffpunkt) {
       const plan = pd.kind === 'pass' ? planPass(game, this, { mode: pd.mode, power: pd.power, stick: pd.stick, prefer: pd.lock || null })
-        : planShot(game, this, { mode: pd.mode, power: pd.power, stick: pd.stick });
+        : planShot(game, this, { ...shotOpts(pd.stick), power: pd.power, stick: pd.stick });
+      if (plan.unsicher) {
+        if (!pd.sperre) { pd.sperre = true; game.events.push({ type: 'passsperre', player: this.id, human: game.human === this.id, x: this.x, z: this.z }); }
+        return false;
+      }
       return this.applyPlan(plan, game, rel);
     }
     const P = this.P, ball = game.ball, rng = game.rng;
@@ -906,8 +935,9 @@ export class Player {
     let to = plan.kind === 'pass' ? (plan.to ?? -1) : -1;
     if (to < -1) to = -1; // Challenge-Ziel (virtuell)
     if (game.match) { game.rules.touch(this); game.passTo = to; if (plan.tech !== 'kopf' && plan.tech !== 'flugkopf' && plan.to !== this.id) game.rules.markKick(this, dx, dz, to); }
-    game.passPlan = plan.kind === 'pass' && plan.meet ? { to: plan.to ?? -1, from: this.id, x: plan.meet[0], z: plan.meet[1], t: game.t + (plan.T || 1), chip: !!plan.chip, bank: plan.bank || 0 } : null;
-    game.events.push({ type: 'kick', kind: plan.kind === 'air' ? 'shot' : plan.kind, tech: plan.tech, player: this.id, human: game.human === this.id, speed, x: ball.p.x, y: ball.p.y, z: ball.p.z, dx, dz, to, q: plan.q ?? null, perfekt: !!plan.perfekt });
+    game.passPlan = plan.kind === 'pass' && plan.meet ? { to: plan.to ?? -1, from: this.id, x: plan.meet[0], z: plan.meet[1], t: game.t + (plan.T || 1), chip: !!plan.chip, bank: plan.bank || 0, hoch: !!plan.hoch, h: plan.hArr ?? 0 } : null;
+    this.lastKick.hoch = !!plan.hoch; this.lastKick.hArr = plan.hArr ?? null; this.lastKick.slack = plan.slack ?? null;
+    game.events.push({ type: 'kick', kind: plan.kind === 'air' ? 'shot' : plan.kind, tech: plan.tech, player: this.id, human: game.human === this.id, speed, x: ball.p.x, y: ball.p.y, z: ball.p.z, dx, dz, to, q: plan.q ?? null, perfekt: !!plan.perfekt, kurve: Math.abs(plan.side || 0) > 18, hoch: !!plan.hoch });
     if (game.match && plan.kind === 'pass') {
       perfektPass(game, this, plan, ball.p.x, ball.p.z); // n7 E3: Traumpass?
       game.lastPass = { from: this.id, to: plan.to ?? -1, t: game.t }; // n7 E3: für Geben und Gehen

@@ -6,6 +6,7 @@
 // Technik nach Lage: vor dem Körper Innenseite/Vorfuß, seitlich Außenrist, hinter dem Körper (Ball am Standbein) Hacke.
 import { passDist, passSpeedAt, passSpeedFor, passTimeTo, passScharf, chipTime, chipApex, chipSpeedFor, chipBack, bankRatio, clamp } from './kickplan.js';
 import { passTechnique, PASS_PROPS } from './technique.js';
+import { bestLob, flatSlack } from './hochpass.js';
 
 const DEG = Math.PI / 180;
 
@@ -213,6 +214,58 @@ function pickReceiver(game, pl, ad, from, prefer = null, stickAim = true) {
   return banks[0] || null;
 }
 
+// n11 (Peter 02.11.: „Pässe gehen immer hoch“, NACHTRAG 1: „die Pässe wurden bisher immer abgefangen“): hoher Pass mit freiem
+// Passweg. Erst der gemeinte Empfänger (Stick bzw. pickReceiver), dann die anderen Mitspieler (mit Stick ±70° um ihn), je: hoher
+// Pass sicher (Gegner kommen um ≥ hochSicher s zu spät, hochpass.js) → nehmen; sonst ein flacher Pass, wenn DER sicher ist; sonst
+// der nächste. Keiner sicher: fester Empfänger (Bots, Grätsche) → der beste trotzdem, sonst Plan mit unsicher = true (der Spieler
+// behält den Ball, player.kick). Kein Mitspieler: null (Lupfer in den freien Raum wie bisher).
+function planHoch(game, pl, opts, ad, from) {
+  const P = game.P, cage = game.cage, b = game.ball, R = game.match ? game.rules : null;
+  const y0 = opts.y0 ?? Math.max(b.r, b.p.y);
+  let list;
+  if (opts.to != null && opts.to >= 0) { const m = game.players[opts.to]; list = [{ id: m.id, x: m.x, z: m.z, vx: m.vx, vz: m.vz }]; }
+  else {
+    const stickAim = !!(opts.aim || opts.stick);
+    const first = P.passfix ? pickReceiver(game, pl, ad, from, opts.prefer, stickAim) : passCandidates(game, pl, ad, from)[0] || null;
+    const seen = new Set(), all = [];
+    const add = (c) => { if (c && !seen.has(c.id)) { seen.add(c.id); all.push(c); } };
+    add(first);
+    for (const c of passCandidates(game, pl, ad, from, stickAim ? 70 : 180)) add(c);
+    list = all.filter((c) => !(R && !c.virtual && R.isBackPassTarget(game.players[c.id])));
+  }
+  if (!list.length) return null;
+  const must = opts.to != null && opts.to >= 0 || opts.must;
+  let pick = null, any = null;
+  for (let i = 0; i < list.length; i++) {
+    const c = list[i], m = c.virtual ? { ...c, vx: 0, vz: 0 } : c;
+    // der gemeinte Empfänger (erster) bekommt den Pass schon mit etwas weniger Reserve (hochGemeint), ein anderer nur sicher
+    const need = i === 0 ? P.hochSicher - P.hochGemeint : P.hochSicher;
+    const lob = bestLob(game, pl, from, m, runPath, { y0, maxU: opts.maxU ?? 26 });
+    if (lob && (!any || lob.slack > any.lob.slack)) any = { c, lob };
+    if (lob && lob.slack >= need) { pick = { c, lob }; break; }
+    // kurzer flacher Pass, wenn der hohe nicht sicher ist, der flache aber schon (nicht aus der Luft)
+    if (y0 < 0.4) {
+      const f = leadFlat(P, cage, from, [m.x, m.z], [m.vx || 0, m.vz || 0]);
+      if (f) {
+        const D = Math.hypot(f.meet[0] - from[0], f.meet[1] - from[1]) || 1;
+        const fs = flatSlack(game, pl.team, from, [(f.meet[0] - from[0]) / D, (f.meet[1] - from[1]) / D], f.u, f.T, passDist);
+        if (fs >= need) { pick = { c, flat: f, slack: fs }; break; }
+      }
+    }
+  }
+  const unsicher = !pick;
+  if (!pick) pick = any || (must ? null : null);
+  if (!pick) return null;
+  const c = pick.c;
+  if (pick.flat) {
+    const f = pick.flat;
+    return { to: c.id, bank: 0, target: f.meet, meet: f.meet, T: f.T, u: f.u, el: 1.5, back: -0.3 * f.u / b.r, vArr: f.vArr, virtual: !!c.virtual, slack: pick.slack, flach: true };
+  }
+  const L = pick.lob;
+  return { to: c.id, bank: 0, target: L.meet, meet: L.meet, T: L.T, u: L.u, el: L.el, back: chipBack(P), chip: true, hoch: true, hArr: L.hArr, apex: L.apex,
+    side: L.side, curve: L.curve, dirH: L.dir, slack: L.slack, unsicher: unsicher && !must, virtual: !!c.virtual };
+}
+
 // Kompletter Pass-Plan. opts: mode 'std' (flach) | 'var' (hoch), power (null = Auto-Stärke), stick [x,z]|null,
 // to (fester Empfänger, Bots), aim (Richtung überschreiben), noiseMul
 export function planPass(game, pl, opts = {}) {
@@ -222,10 +275,15 @@ export function planPass(game, pl, opts = {}) {
   const aim = opts.aim || opts.stick || [fx, fz];
   const al = Math.hypot(aim[0], aim[1]) || 1;
   const ad = [aim[0] / al, aim[1] / al];
-  const chip = opts.mode === 'var';
+  // (Challenges behalten den flachen Pass: Bandenpass, Doppelpass usw. sind dafür gebaut, die Bestwerte bleiben vergleichbar)
+  const hoch = P.hochpass && !opts.flach && opts.power == null && !game.challenge;
+  const chip = opts.mode === 'var' || hoch;
   const power = opts.power;
   let cand = null, freeD = null;
-  if (opts.to != null && opts.to >= 0) {
+  let plan;
+  if (hoch) plan = planHoch(game, pl, opts, ad, from);
+  if (plan) { /* n11: hoher (bzw. sicherer flacher) Pass steht */ }
+  else if (opts.to != null && opts.to >= 0) {
     const m = game.players[opts.to];
     cand = { id: m.id, x: m.x, z: m.z, vx: m.vx, vz: m.vz, bank: 0 };
   } else {
@@ -257,8 +315,7 @@ export function planPass(game, pl, opts = {}) {
       }
     }
   }
-  let plan;
-  if (cand) {
+  if (!plan && cand) {
     const r0 = [cand.x, cand.z], rv = [cand.vx || 0, cand.vz || 0];
     if (cand.bank && !chip) {
       const bk = leadBank(P, cage, from, r0, rv, cand.bank);
@@ -299,13 +356,19 @@ export function planPass(game, pl, opts = {}) {
   const ang = Math.acos(clamp((kx * fx + kz * fz) / kl, -1, 1)) / DEG;
   const bd = Math.hypot(b.p.x - pl.x, b.p.z - pl.z);
   let tech = chip ? 'chip' : passTechnique(ang, bd, P);
-  const props = PASS_PROPS[tech];
+  if (plan.flach) tech = passTechnique(ang, bd, P);
+  else if (hoch) { // n11: Technik des hohen Passes nach Lage – Lupfer (Innenseite), Außenrist, Hacke (kurz), mit Effet Kurvenpass
+    const t0 = passTechnique(ang, bd, P);
+    tech = t0 === 'ferse' && plan.u <= 8.5 ? 'ferse' : t0 === 'aussen' && plan.u <= 18 ? 'aussen' : plan.curve ? 'kurve' : 'lupfer';
+  }
+  const props = PASS_PROPS[tech] || PASS_PROPS.chip;
   if (plan.u > props.maxSpeed) plan.u = props.maxSpeed; // Hacke: höchstens ~8 m
   // Nacht 2e (passfix): Streuung der Tipp-Pässe kleiner (Grundwert passNoise statt 1,1°, Sprint × 1,3 statt × 1,6) – gemessen
   // lag die Abweichung Vorschau ↔ Abflug bei p90 2–6°, bei 10 m bis 1 m neben dem Laufweg
   let noise = (P.passfix ? P.passNoise : 1.1) * props.noise * (pl.sprinting ? (P.passfix ? 1.3 : 1.6) : 1) * (opts.noiseMul ?? 1);
-  if (chip && ang > P.passHackeDeg) noise *= 2.5; // Chip über die Schulter: selten und ungenau
-  plan.dir = [kx / kl, kz / kl];
-  Object.assign(plan, { kind: 'pass', mode: chip ? 'var' : 'std', tech, ang, noiseDeg: noise, power, elRad: plan.el * DEG, speed: plan.u });
+  if (chip && ang > P.passHackeDeg && tech !== 'ferse') noise *= 2.5; // Chip über die Schulter: selten und ungenau
+  plan.dir = plan.dirH || [kx / kl, kz / kl];
+  Object.assign(plan, { kind: 'pass', mode: chip && !plan.flach ? 'var' : 'std', tech, ang, noiseDeg: noise, power, elRad: plan.el * DEG, speed: plan.u });
+  if (plan.flach) plan.chip = false;
   return plan;
 }

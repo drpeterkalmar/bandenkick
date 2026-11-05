@@ -1,0 +1,4 @@
+| Standard | 11.7 | 13.5 % | 14.0 % | 15.8 | 52.3 | 55.1 | 92.6 | 63.7 % | 35.4 % | 6.0 % | 34.9 / 13.9 % | 0.11 m | 0 / 0 |
+Physik: {"bounce":0.6717491470649596,"kurve20":2.8723863809974404,"spinMax":10}
+{"luftMin":11.657062897670638,"akroAnteil":13.468372423596303,"effetAnteil":14.036958066808813,"toreSpiel":15.775,"schuesseSpiel":52.2875,"paradenSpiel":55.075,"passeSpiel":92.6125,"passAn":63.70630314482386,"passAb":35.38939128087461,"passHoch":5.952220272641382,"nachAbfangSchuss":34.935163996948894,"nachAbfangTor":13.920671243325705,"gegentoreNachFehlpassSpiel":4.5625,"ankunftHoeheMed":0.11,"aus":0,"nan":0,"tech":{"ferse":2203,"innen":3204,"vollspann":12675,"aussen":1899,"chip":441,"flugkopf":128,"aussenrist":450,"dropkick":71,"volley":474,"innenrist":811,"fallrueck":19,"kopf":44,"seitfall":93},"games":80}
+(43 s)

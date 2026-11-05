@@ -42,7 +42,9 @@ export const DEFAULTS = {
   // Anforderungen (FIFA Test Manual 2024 Teil II): Ballabprall 0,60–0,85 m aus 2,00 m, schräger Abprall
   // 45–60 %, Ballrollen 4,0–8,0 m. Prüfmethoden: FIFA Handbook of Test Methods 2015 (Methoden 01, 02, 03, 17).
   // Die vier Rasenwerte unten sind per tools/calibrate.mjs auf die Zielwerte 0,72 m / 52 % / 6,0 m gestellt.
-  turfEn: 0.621,          // Stoßzahl normal (Ball + Rasen)
+  // n11 (Peter 02.11.: „ball springt höher“): 0,75 statt 0,621 – Spektakel vor FIFA (aus 2 m springt er ~1,0 statt 0,67 m hoch);
+  // die anderen drei Rasenwerte bleiben kalibriert. ?abprall=0.621 bzw. ?akro=0 = FIFA-Wert wie bis 0.8.0
+  turfEn: 0.75,           // Stoßzahl normal (Ball + Rasen)                                          [?abprall=]
   turfEx: 0.20,           // tangentiale Stoßzahl (Cross 2002, Grip-Slip-Modell): Kontaktpunkt kehrt um → Überdrall
   turfMuImp: 1.2,         // wirksame Reibung beim Aufprall (Fasern + Granulat „pflügen“)
   turfMuSlide: 0.55,      // Gleitreibung Ball auf Rasen (Schätzung)
@@ -186,8 +188,13 @@ export const DEFAULTS = {
   wucht: 1.5,             //                                                                         [?wucht=]
   wuchtDrall: 1,          // Drall der Banane × wucht^wuchtDrall (1 = gleiche Kurve trotz kürzerer Flugzeit, 0 = wie Nacht 2c)
   chargeT: 1.0,           // s bis voll aufgeladen
-  spinMax: 10,            // U/s Innenseite (Kurve)
-  backspinMax: 7,         // U/s Heber/Chip
+  // n11 (Peter 04.11.: „die bälle können auch viel mehr effet bekommen“): 18 statt 10 U/s, Rückdrall 11 statt 7; die Ziel-Löser
+  // (aimAt, Hochpass-Löser) rechnen den Magnus-Effekt mit, damit mehr Effet nicht mehr Fehlschüsse heißt. ?effet=10 = 0.8.0
+  spinMax: 18,            // U/s Innenseite (Kurve)                                                  [?effet=]
+  backspinMax: 11,        // U/s Heber/Chip
+  // n11: Magnus über dem Plateau (src/sim/aero.js clOf): cL steigt ab Sp 0,27 mit clSteig weiter bis clMaxAkro. Gemessen: seitliche
+  // Ablenkung eines Innenseit-Schusses (25 m/s, voller Effet) über 20 m: 0.8.0 2,9 m; nur 18 U/s 3,0 m; mit clSteig 0,7 5,1 m (× 1,77)
+  clSteig: 0.7, clMaxAkro: 0.6,
   kickBuffer: 0.9,        // s: Pass/Schuss wird so lange vorgemerkt, bis der Ball erreichbar ist
 
   // ---------------- Nacht 2b: Gesten, Pass, Schuss, Luftbälle ----------------
@@ -252,15 +259,38 @@ export const DEFAULTS = {
   banane: 1,              // 1 = feste Banane, 0 = wie Nacht 2b (Zwischenwerte mischen)            [?banane=]
   bananeSpeed: 1.0,       // angeschnitten: Grundtempo wie Vollspann (die Lage-Qualität q kostet etwas mehr)
   bananeSpin: 25,         // m/s: bis zu diesem Tempo wächst der Drall mit (Nacht 2b: bis 25 m/s, dann fest) …
-  bananeSpinMax: 1.2,     // … höchstens × 1,2
-  aussenSpin: 0.75,       // Außenrist: Drall × 0,75 …
+  bananeSpinMax: 1.35,    // … höchstens × 1,35 (n11 mitgezogen, 0.8.0: 1,2)
+  aussenSpin: 0.85,       // Außenrist: Drall × 0,85 (n11, 0.8.0: 0,75) …
   aussenNoise: 1.35,      // … und Streuung × 1,35
   // Luftbälle: Kopfball, Volley, Dropkick, Seitfallzieher, Fallrückzieher, Flugkopfball
   luft: 1,                // Faktor auf alle Höhenfenster                                            [?luft=]
   airHorizon: 0.9,        // s Vorschau: Ball in dieser Zeit erreichbar → Luftball-Technik
-  jumpMax: 0.6,           // m Sprunghöhe beim Kopfball
+  // n11 (Peter 02.11.: „ball springt höher und spieler auch“): 1,0 statt 0,6 m – Spektakel, nicht realistisch. Gilt für alle (auch
+  // den Tormann: seine Fanghöhe catchHigh wächst um dieselbe Differenz). Seit-/Fallrückzieher, Flugkopfball, Salto-Hacke und hohe
+  // Volleys springen mit sprungAkro × höher ab (länger in der Luft). ?sprungkraft=0.6 bzw. ?akro=0 = 0.8.0
+  jumpMax: 1.0,           // m Sprunghöhe beim Kopfball                                               [?sprungkraft=]
+  sprungAkro: 1.3,        // × Absprungtempo der Akrobatik-Sprünge (0.8.0: 1)
   headH: 1.78,            // m Ballmitte am Kopf im Stand
   fallT: 0.8,             // s am Boden nach Seit-/Fallrückzieher
+  // ---------------- n11 Akrobatik (Peter 02./04.11.2026) ----------------
+  // ?akro=0 = alles aus dieser Nacht aus (0.8.0-Verhalten, siehe AKRO0 unten), sonst einzeln:
+  akro: 1,                //                                                                          [?akro=0]
+  // Schuss- und Pass-Knopf vollautomatisch (1 Tipp, kein Doppeltipp/Halten): Technik, Ecke, Tempo und Effet wählt das Spiel –
+  // Erfolgschance zuerst, unter fast gleich guten Optionen (höchstens spektakel × schlechter) die spektakulärste (src/sim/akro.js)
+  autotech: 1,            // 0 = Tipp/Doppeltipp wie 0.8.0                                            [?autotech=0]
+  spektakel: 0.1,         // höchstens 10 % weniger Erfolgschance fürs Spektakel                     [?spektakel=]
+  einknopf: 0,            // 1 = Test: EIN Kick-Knopf (Schuss oder Pass nach Lage), Standard aus      [?einknopf=1]
+  salto: 1,               // Salto-Hacke (Skorpion-Kick) als seltene Luft-Technik, Hackenschuss am Boden [?salto=0]
+  // Pässe immer hoch (src/sim/hochpass.js): Lupfer/Flanke, Ankunft beim Mitspieler in Volley-, Brust- oder Kopfhöhe. Empfänger nur
+  // über einen freien Passweg: Flugbahn gegen die Erreichbarkeit der Gegner (inkl. Sprung) geprüft, sonst der nächste freie
+  // Mitspieler, sonst behalten (Hinweis). hochSicher = Zeitreserve (s), die jeder Gegner zu spät kommen muss.
+  hochpass: 1,            // 0 = flache Pässe wie 0.8.0                                               [?hochpass=0]
+  hochSicher: 0.06,       // s                                                                        [?hochSicher=]
+  hochGemeint: 0.2,       // s weniger Reserve für den gemeinten Empfänger (Stick) als für einen anderen  [?hochGemeint=]
+  hochLesen: 0.3,         // s bis ein Gegner auf den hohen Pass reagiert (Reaktion + Lesen)
+  direktLuft: 0.8,        // × Chance (Stufe: airTry), dass ein Bot einen hohen Pass direkt aus der Luft weiterspielt
+  botSicher: -0.03,        // s: Bots passen nur ab dieser Zeitreserve (Stufe 1: × 2,5, Stufe 3: × 0,4)          [?botSicher=]
+  kurvenpass: 1,          // Kurvenpass mit Effet um einen Gegner herum (zusätzliche Option für freie Passwege)
   // Grätsche (Nacht 2c, Peter: „wenn nicht am ball hingrätschen für pass und schuss“): nicht am Ball, Pass oder Schuss
   // gedrückt, Ball bzw. ballführender Gegner ≤ tackleReach m und ein Gegner näher am Ball → Grätsche in Ballrichtung
   graetsche: 1,           // 0 = aus (dann läuft der Spieler wie bisher hin und merkt den Kick vor)    [?graetsche=0]
@@ -402,7 +432,7 @@ export const ALIASES = {
   schuss: 'shotMax', pass: 'passSpeed', bande: 'boardEn', netz: 'netH', dachhoehe: 'roofH',
   abprall: 'turfEn', rollen: 'turfRoll0', effet: 'spinMax', torbreite: 'goalW', torhoehe: 'goalH',
   stemm: 'aPlant', bremse: 'aBrake', kurve: 'curveDeg', bots: 'botLevel',
-  ein: 'vEin', tipp: 'tapMax', autotorwart: 'autoTorwart', autowurf: 'autoWurf', kegel: 'passCone', innen: 'passInnenDeg', hacke: 'passHackeDeg', chipmin: 'chipElevMin', chipmax: 'chipElevMax',
+  ein: 'vEin', sprungkraft: 'jumpMax', tipp: 'tapMax', autotorwart: 'autoTorwart', autowurf: 'autoWurf', kegel: 'passCone', innen: 'passInnenDeg', hacke: 'passHackeDeg', chipmin: 'chipElevMin', chipmax: 'chipElevMax',
 };
 // ?zack=0: Werte des alten Bewegungsmodells (Nacht 1), sofern nicht ausdrücklich übersteuert
 const ZACK0 = { aLat: 6.0, aBrake: 6.5 };
@@ -416,22 +446,30 @@ const ZACK0_ALIAS = { antritt: 'tauAcc' };
 const SPRINTFREI1 = { slideSpeed: 8 };
 // n10: ?magnet= bis 1,8 (0.7.0-Wert) = Ballmagnet wie 0.7.0, auch das Abschirmen (schirmVor), sofern nicht ausdrücklich übersteuert
 const MAGNET07 = { schirmVor: 0.3 };
+// n11 ?akro=0: alles wie 0.8.0, sofern nicht ausdrücklich übersteuert
+export const AKRO0 = { turfEn: 0.621, jumpMax: 0.6, sprungAkro: 1, spinMax: 10, backspinMax: 7, bananeSpinMax: 1.2, aussenSpin: 0.75, autotech: 0, einknopf: 0, salto: 0, hochpass: 0, kurvenpass: 0, clSteig: 0 };
 
 // Liest Overrides aus einem Query-String (oder Objekt) und gibt ein vollständiges Parameter-Objekt zurück.
+function parseQuery(s) {
+  const src = {};
+  const q = s.replace(/^\?/, '');
+  for (const part of q.split('&')) {
+    if (!part) continue;
+    const i = part.indexOf('=');
+    const k = decodeURIComponent(i < 0 ? part : part.slice(0, i));
+    const v = i < 0 ? '1' : decodeURIComponent(part.slice(i + 1));
+    src[k] = v;
+  }
+  return src;
+}
+// n11: Grundeinstellung für Tests, die das Verhalten bis 0.8.0 prüfen (globalThis.BK_BASIS bzw. Umgebung BK_BASIS, z. B. 'akro=0');
+// ausdrückliche Werte des Aufrufs gewinnen. Im Spiel nicht gesetzt.
+const basisQuery = () => globalThis.BK_BASIS ?? (typeof process !== 'undefined' && process.env ? process.env.BK_BASIS : '') ?? '';
 export function makeParams(overrides = {}) {
   const P = { ...DEFAULTS };
-  let src = overrides;
-  if (typeof overrides === 'string') {
-    src = {};
-    const q = overrides.replace(/^\?/, '');
-    for (const part of q.split('&')) {
-      if (!part) continue;
-      const i = part.indexOf('=');
-      const k = decodeURIComponent(i < 0 ? part : part.slice(0, i));
-      const v = i < 0 ? '1' : decodeURIComponent(part.slice(i + 1));
-      src[k] = v;
-    }
-  }
+  let src = typeof overrides === 'string' ? parseQuery(overrides) : overrides;
+  const basis = basisQuery();
+  if (basis) src = { ...parseQuery(basis), ...src };
   const zack0 = String(src.zack ?? '1') === '0';
   const set = new Set();
   for (const [k0, v0] of Object.entries(src)) {
@@ -448,6 +486,9 @@ export function makeParams(overrides = {}) {
   if (zack0) for (const [k, v] of Object.entries(ZACK0)) if (!set.has(k)) P[k] = v;
   if (P.laden) for (const [k, v] of Object.entries(LADEN1)) if (!set.has(k)) P[k] = v;
   if (!P.halten) for (const [k, v] of Object.entries(HALTEN0)) if (!set.has(k)) P[k] = v;
+  if (!P.akro) for (const [k, v] of Object.entries(AKRO0)) if (!set.has(k)) P[k] = v;
+  // n11: der Tormann springt so hoch wie alle (Fanghöhe mit Strecken + Sprung über 0.8.0 hinaus)
+  if (!set.has('catchHigh')) P.catchHigh += Math.max(0, P.jumpMax - 0.6);
   if (set.has('magnet') && P.magnet <= P.magnetEng0) for (const [k, v] of Object.entries(MAGNET07)) if (!set.has(k)) P[k] = v;
   P.zack = P.zack ? 1 : 0;
   // n7: ein Lauftempo (vEin) statt Laufen/Sprint, ?lauf= übersteuert weiter ausdrücklich. vTop = höchstes Lauftempo, das

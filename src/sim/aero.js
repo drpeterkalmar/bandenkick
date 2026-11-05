@@ -39,7 +39,14 @@ export const CL_TABLE = [
   [0.49, 0.285],
   [0.71, 0.310],
 ];
-export function clOf(Sp) {
+// n11 (Peter 04.11.: „viel mehr effet“, Spektakel vor Realismus): über dem Plateau (Sp > 0,27) steigt cL mit clSteig weiter an,
+// höchstens bis clMaxAkro – sonst brächte mehr Drall kaum mehr Kurve (bei 25 m/s liegt Sp mit 10 U/s schon auf dem Plateau).
+// P fehlt oder clSteig = 0 (?akro=0) → Windkanal-Werte wie bis 0.8.0
+export function clOf(Sp, P = null) {
+  const c = clBase(Sp);
+  return P && P.clSteig > 0 && Sp > 0.27 ? Math.min(Math.max(c, P.clMaxAkro), 0.29 + P.clSteig * (Sp - 0.27)) : c;
+}
+function clBase(Sp) {
   const T = CL_TABLE;
   if (Sp <= 0) return 0;
   for (let i = 1; i < T.length; i++) {

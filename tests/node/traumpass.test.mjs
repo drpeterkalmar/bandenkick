@@ -7,6 +7,8 @@ import { perfektWertung, perfektPass } from '../../src/sim/perfekt.js';
 import { planShot } from '../../src/sim/shot.js';
 import { runProbe, summary } from './n7_probe.mjs';
 import { report } from './report.mjs';
+// n11: prüft das Verhalten bis 0.8.0 (Akrobatik-Nacht aus, ?akro=0) – das Neue prüft n11.test.mjs
+process.env.BK_BASIS = 'akro=0';
 
 const rows = [];
 const check = (name, value, lo, hi, unit, target, note = '') => { const ok = value >= lo && value <= hi; rows.push({ name, value, lo, hi, unit, target, ok, note }); return ok; };

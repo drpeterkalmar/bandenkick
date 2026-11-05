@@ -149,12 +149,15 @@ export function planShot(game, pl, opts = {}) {
   else ({ tech, foot } = shotTechnique(mode, curveLeft, ballSide, pl.strong || 1));
   const feat = shotFeatures(game, pl, [corner.x, corner.y, corner.z], foot, opts.from);
   if (opts.featMod) opts.featMod(feat);
+  // n11 Hackenschuss: mit dem Rücken zum Tor ist die Hacke die passende Technik (Körper-Faktor gespiegelt, Güte × 0,8)
+  const ferse = tech === 'ferse';
+  if (ferse) { feat.bodyAng = 180 - feat.bodyAng; feat.ballAhead = 0.3; feat.ballSide = 0; feat.crossed = false; }
   const Q = shotQuality(feat, P);
   // Technik des Schützen (Bots je Stufe, Mensch 1): wirkt wie ?schusshilfe= – gute Technik platziert auch aus
   // mittelmäßiger Lage noch gut
   // n7 E3: Direktabnahme nach einem Traumpass – Qualität + perfektQ, Wucht × perfektWucht
   const pf = opts.preview ? null : perfektAbnahme(game, pl);
-  const q = clamp(Math.pow(Q.qEff, 1 / (opts.skill || 1)) * (opts.qMul ?? 1) + (pf ? pf.dq : 0), 0.02, 1);
+  const q = clamp(Math.pow(Q.qEff, 1 / (opts.skill || 1)) * (opts.qMul ?? (ferse ? 0.8 : 1)) + (pf ? pf.dq : 0), 0.02, 1);
   const af = aimFactor(q);
   const aim = [gx, 0.6 + (corner.y - 0.6) * af, corner.z * af];
   let speed, side = 0, back = 0, noiseDeg;
@@ -163,6 +166,9 @@ export function planShot(game, pl, opts = {}) {
     speed = opts.speed * speedFactor(q);
     side = opts.side || 0; back = opts.back || 0;
     noiseDeg = (opts.noiseBase ?? 2) * noiseFactor(q);
+  } else if (ferse) {
+    speed = Math.min(19, P.shotMin + (P.shotMax * 0.62 - P.shotMin) * power) * speedFactor(q);
+    noiseDeg = 2.2 * noiseFactor(q);
   } else if (tech === 'vollspann') {
     // Nacht 2d (Peter: „1,5x härterer Vollspannschuss und Effetschuss“): Endtempo × wucht (?wucht=1 = Nacht 2c)
     speed = (P.shotMin + (P.shotMax - P.shotMin) * power) * speedFactor(q) * W;

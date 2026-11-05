@@ -9,7 +9,8 @@ import { passSpeedFor } from './player.js';
 import { passScharf } from './kickplan.js';
 import { bankRatio } from './kickplan.js';
 import { shotFeatures, shotQuality } from './shot.js';
-import { planAir } from './air.js';
+import { planAir, airPassSlack } from './air.js';
+import { planPass } from './pass.js';
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 // nachdrall (n7 E2): Anteil der Schüsse mit Nachdrall vom Tormann weg
@@ -253,17 +254,21 @@ export class Bots {
     const lt = g.lastTouch >= 0 ? g.players[g.lastTouch] : null;
     const fromOwnKeeper = lt && lt.team === pl.team && lt.id === R.keeper[pl.team];   // Abwurf/Abschlag: annehmen
     const ownGoalD = Math.hypot(R.goalX(pl.team) - b.p.x, b.p.z);
-    const purpose = Dg < 9 && (Dg < 6 || press < 2.5) && !fromOwnKeeper ? 'shot'
+    // n11: hoher Pass zu mir → direkt aus der Luft weiterspielen (Volley-, Kopfball-, Salto-Pass), wenn ein Mitspieler frei ist
+    const pp = g.passPlan, hochZuMir = g.P.hochpass && pp && pp.hoch && pp.to === pl.id && lt && lt.team === pl.team;
+    let purpose = Dg < (hochZuMir ? 10 : 9) && (Dg < 6 || press < 2.5 || hochZuMir) && !fromOwnKeeper ? 'shot'
       : ownGoalD < 8 && press < 2.5 && lt && lt.team !== pl.team ? 'clear' : null;
+    if (!purpose && hochZuMir) purpose = 'pass';
     if (!purpose) return false;
-    const plan = planAir(g, pl, { tPress: g.t, purpose, minScore: 0.4, minSpeed: 4 });
+    const plan = planAir(g, pl, { tPress: g.t, purpose, minScore: 0.4, minSpeed: purpose === 'pass' ? 2 : 4 });
     if (!plan) return false;
+    if (purpose === 'pass') { const ps = airPassSlack(g, pl, plan); if (!ps || ps.slack < g.P.botSicher) return false; }
     const need = L.err > 0.3 ? 0.55 : L.err > 0.1 ? 0.8 : 0.95;
     if (plan.tq < need || plan.score < 0.85 * plan.maxScore) return false; // auf die beste Technik warten
     // einmal je Luftball-Situation entscheiden (seit der letzten Ballberührung): nicht jeder nimmt direkt
     if (br.airEp === g.lastTouchT) return false;
     br.airEp = g.lastTouchT;
-    if (g.rng.next() > (purpose === 'shot' ? L.airTry : 0.7)) return false;
+    if (g.rng.next() > (purpose === 'shot' ? L.airTry : purpose === 'pass' ? L.airTry * g.P.direktLuft : 0.7)) return false;
     // nur wer am schnellsten an der Körperposition ist (grob: kein Mitspieler deutlich näher)
     const dMe = Math.hypot(plan.bx - pl.x, plan.bz - pl.z);
     if (g.players.some((m) => m.team === pl.team && m.id !== pl.id && Math.hypot(plan.bx - m.x, plan.bz - m.z) < dMe - 0.8)) return false;
@@ -538,6 +543,19 @@ export class Bots {
       const val = this.keepVal(team, tx, tz) - (isKp ? 0.03 : 0);
       // n7 E3: der Mitspieler, der mir eben zugespielt hat, läuft in die Tiefe → Rückpass × (1 + ggBonus)
       const mb = this.brain[m.id], back = g.P.gebengehen && mb.gg && mb.gg.run && mb.gg.to === pl.id ? 1 + g.P.ggBonus : 1;
+      if (g.P.hochpass) {
+        // n11: hoher Pass – Erfolg aus der Zeitreserve der Gegner auf der geplanten Bahn (hochpass.js), wie beim Menschen. Schwache Bots
+        // schätzen die Reserve ungenauer (± L.noise · 0,06 s)
+        const hp = planPass(g, pl, { to: m.id });
+        if (!hp || hp.to !== m.id) continue;
+        const sl = (hp.slack ?? -1) + L.noise * 0.06 * rng.gauss();
+        const thr = g.P.botSicher * (L.err > 0.3 ? 2.5 : L.err > 0.1 ? 1 : 0.4);
+        if (sl < thr) continue; // n11: Weg zu → kein Pass (schwache Bots wagen mehr)
+        const sc = clamp(0.5 + sl * 1.8, 0.03, 0.97) * clamp(open / 1.6, 0.4, 1) * (1 - D0 / 40);
+        const vh = sc * val + (1 - sc) * mid;
+        opts.push({ kind: 'pass', u: vh * (vh > 0 ? back : 1), act: () => { pl.kickAt({ kind: 'pass', lead: true, to: m.id, noise: L.noise / 1.3, minSlack: thr - 0.04 }); this.stats.passes++; } });
+        continue;
+      }
       if (lane > 1.0) opts.push({ kind: 'pass', u: (succ * val + (1 - succ) * mid) * (succ * val + (1 - succ) * mid > 0 ? back : 1), act: () => { pl.kickAt({ kind: 'pass', lead: true, to: m.id, noise: L.noise / 1.3 }); this.stats.passes++; } });
       else {
         // Passweg zu: Chip über den Gegner in den Laufweg, wenn der Gegner nicht direkt vor dem Ball steht

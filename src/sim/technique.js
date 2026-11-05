@@ -8,7 +8,15 @@ export const TECH_NAMES = {
   innen: 'Innenseite', aussen: 'Außenrist', ferse: 'Hacke', chip: 'Chip', vollspann: 'Vollspann',
   innenrist: 'Innenrist', aussenrist: 'Außenrist', volley: 'Volley', dropkick: 'Dropkick', seitfall: 'Seitfallzieher',
   fallrueck: 'Fallrückzieher', kopf: 'Kopfball', flugkopf: 'Flugkopfball',
+  salto: 'Salto-Hacke', lupfer: 'Lupfer', kurve: 'Kurvenpass', kopfpass: 'Kopfballpass', volleypass: 'Volleypass',
 };
+// n11 (Peter 04.11.: „das Beste und Spektakulärste“): Rang fürs Spektakel – unter Optionen mit fast gleicher Erfolgschance gewinnt
+// der höhere Rang (Salto-Hacke > Fallrückzieher > Seitfall/Flugkopf > Volley/Hacke > Außenrist-Effet > Innenseite)
+export const SPEKTAKEL = {
+  salto: 7, fallrueck: 6, seitfall: 5, flugkopf: 5, volley: 4, dropkick: 4, ferse: 4, kopf: 3.5, volleypass: 4, kopfpass: 3.5,
+  aussenrist: 3, aussen: 3, kurve: 3, innenrist: 2.5, chip: 2, lupfer: 2, vollspann: 1.5, innen: 1,
+};
+export const spektakelRang = (tech) => SPEKTAKEL[tech] ?? 0;
 export const MODE_SYMBOL = { vollspann: '⚡', innenrist: '↪', aussenrist: '↩', chip: '⌒', flach: '→' };
 
 // ---------------- Pass: Technik nach Lage ----------------
@@ -26,6 +34,9 @@ export const PASS_PROPS = {
   aussen: { noise: 1.6, maxSpeed: 18, maxDist: 99 },
   ferse: { noise: 3.0, maxSpeed: 8.5, maxDist: 8 },
   chip: { noise: 1.8, maxSpeed: 22, maxDist: 99 },
+  // n11 hohe Pässe: Lupfer mit der Innenseite (genauer als der alte Chip), Kurvenpass mit Effet
+  lupfer: { noise: 1.2, maxSpeed: 26, maxDist: 99 },
+  kurve: { noise: 1.4, maxSpeed: 26, maxDist: 99 },
 };
 
 // ---------------- Schuss: Vollspann oder angeschnitten (Innen-/Außenrist) ----------------
@@ -64,6 +75,9 @@ export const AIR_TECH = {
   fallrueck: { h: [1.05, 1.2, 1.75, 1.95], ang: [[0, 0.1], [110, 0.1], [140, 1], [180, 1]], prior: 0.9, dist: 0.5, extra: 0.15, lead: [0.28, 0.65] },
   kopf: { h: [1.45, 1.6, 2.35, 2.55], ang: [[0, 1], [110, 1], [150, 0.2], [180, 0.15]], prior: 1.0, dist: 0.22, extra: 0.15, lead: [0.18, 0.6] },
   flugkopf: { h: [0.5, 0.6, 0.9, 1.0], ang: [[0, 0.7], [30, 1], [125, 1], [150, 0.1], [180, 0.1]], prior: 0.72, dist: 0.95, extra: 1.0, lead: [0.24, 0.6] },
+  // n11 Salto-Hacke (Skorpion-Kick): der Ball kommt aus Zielrichtung und ist schon über/hinter dem Körper – Vorwärtssalto, die
+  // Fersen treffen ihn hinter dem Rücken und schlagen ihn nach vorn zurück. Selten (prior 0,8, nur wo Volley/Kopf nicht passen)
+  salto: { h: [0.75, 0.95, 1.4, 1.6], ang: [[0, 1], [45, 1], [75, 0.3], [100, 0]], prior: 0.8, dist: 0.5, extra: 0.3, lead: [0.24, 0.6] },
 };
 export const AIR_KEYS = Object.keys(AIR_TECH);
 // Körperhaltung am Treffpunkt (Grafik: render/avatars.js techPose; Tests prüfen damit die Fallrichtung). pitch in rad:
@@ -74,7 +88,11 @@ export const AIR_POSE = {
   fallrueck: { pitch: -1.75, roll: 0, hipBelow: 0.5 },
   seitfall: { pitch: -0.2, roll: 1.35, drop: 0.1 },
   flugkopf: { pitch: 1.4, roll: 0, drop: -0.35 },
+  salto: { pitch: 2.6, roll: 0, drop: 0 },   // n11: kopfüber nach vorn (Vorwärtssalto), Fersen hinter dem Rücken am Ball
 };
+// n11: Sprung-Fenster – mit mehr Sprungkraft (ext = jumpMax − 0,6 m) reichen Kopfball (+ext) und Volley/Seitfall/Fallrückzieher
+// (+ext/2) höher hinauf
+export const AIR_EXT = { kopf: 1, volley: 0.5, seitfall: 0.5, fallrueck: 0.5 };
 
 function interp(tab, x) {
   if (x <= tab[0][0]) return tab[0][1];
@@ -100,17 +118,19 @@ export function timingFit(tech, lead) {
 }
 // Punktwerte aller Techniken für Höhe h, Winkel theta, Aufsetzer (bounced). Optional: scale = Höhen-Faktor
 // (Regler ?luft=, verschiebt alle Fenster), P für Überschreibungen.
-export function airScores(h, theta, bounced = false, scale = 1) {
+export function airScores(h, theta, bounced = false, scale = 1, ext = 0, salto = false) {
   const out = {};
   for (const k of AIR_KEYS) {
     const T = AIR_TECH[k];
-    if (T.bounce && !bounced) { out[k] = 0; continue; }
-    out[k] = heightFit(T.h.map((x) => x * scale), h) * angleFit(k, theta) * T.prior;
+    if ((T.bounce && !bounced) || (k === 'salto' && !salto)) { out[k] = 0; continue; }
+    const e = ext * (AIR_EXT[k] || 0);
+    const w = e ? [T.h[0] * scale, T.h[1] * scale, T.h[2] * scale + e, T.h[3] * scale + e] : T.h.map((x) => x * scale);
+    out[k] = heightFit(w, h) * angleFit(k, theta) * T.prior;
   }
   return out;
 }
-export function airTechnique(h, theta, bounced = false, scale = 1) {
-  const s = airScores(h, theta, bounced, scale);
+export function airTechnique(h, theta, bounced = false, scale = 1, ext = 0, salto = false) {
+  const s = airScores(h, theta, bounced, scale, ext, salto);
   let best = null, bs = 0;
   for (const k of AIR_KEYS) if (s[k] > bs) { bs = s[k]; best = k; }
   return best ? { tech: best, score: bs, scores: s } : null;
@@ -126,4 +146,5 @@ export const AIR_PROPS = {
   fallrueck: { v0: 18, vin: 0.1, vmax: 23, noise: 4.8, ground: 0.8, name: 'Fallrückzieher' },
   kopf: { v0: 10, vin: 0.4, vmax: 17, noise: 2.8, ground: 0, name: 'Kopfball' },
   flugkopf: { v0: 11, vin: 0.35, vmax: 16, noise: 3.2, ground: 0.6, name: 'Flugkopfball' },
+  salto: { v0: 15, vin: 0.2, vmax: 21, noise: 5.0, ground: 0.9, name: 'Salto-Hacke' },
 };

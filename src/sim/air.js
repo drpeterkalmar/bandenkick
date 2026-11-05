@@ -5,21 +5,34 @@
 // idealen Vorlauf kostet Tempo und Genauigkeit. Die Ballbahn kommt aus der echten Physik (predictBall), der Schuss
 // aus shot.js (Ziel im Tor, Qualität) – danach fliegt der Ball normal weiter.
 import { predictBall, clamp, setKick } from './kickplan.js';
-import { airScores, AIR_TECH, AIR_KEYS, AIR_PROPS, timingFit } from './technique.js';
+import { airScores, AIR_TECH, AIR_KEYS, AIR_PROPS, timingFit, spektakelRang } from './technique.js';
 import { planShot, attackGoalX } from './shot.js';
+import { planPass, passCandidates } from './pass.js';
 
 const DEG = Math.PI / 180;
 const _pred = [];
 const _predKey = { g: null, tick: -1 };
 // Anlauf-Zeitpunkt vor dem Treffpunkt (Absprung, Fallen, Hechten, Ausholen)
-export const TAKEOFF = { volley: 0.14, dropkick: 0.14, seitfall: 0.26, fallrueck: 0.3, kopf: 0.3, flugkopf: 0.3 };
+export const TAKEOFF = { volley: 0.14, dropkick: 0.14, seitfall: 0.26, fallrueck: 0.3, kopf: 0.3, flugkopf: 0.3, salto: 0.32 };
 // Technik-Güte (zusätzlicher q-Faktor: riskante Techniken ungenauer) und Kontakt-Toleranz (m)
-const TECH_Q = { volley: 1, dropkick: 0.95, seitfall: 0.84, fallrueck: 0.74, kopf: 0.9, flugkopf: 0.82 };
-const TOL = { volley: 0.42, dropkick: 0.4, seitfall: 0.45, fallrueck: 0.42, kopf: 0.34, flugkopf: 0.5 };
+export const TECH_Q = { volley: 1, dropkick: 0.95, seitfall: 0.84, fallrueck: 0.74, kopf: 0.9, flugkopf: 0.82, salto: 0.66 };
+const TOL = { volley: 0.42, dropkick: 0.4, seitfall: 0.45, fallrueck: 0.42, kopf: 0.34, flugkopf: 0.5, salto: 0.45 };
+// n11 (Peter 02.11.: „spieler springen höher“): Absprungtempo je Technik (m/s) vor sprungAkro; Kopfball nach Höhe, Volley springt
+// über 0,85 m (Ballmitte) hoch
+const JUMP_V = { seitfall: 2.6, fallrueck: 2.6, flugkopf: 1.8, salto: 2.4 };
+export function jumpFor(P, tech, h) {
+  if (tech === 'kopf') { const jh = Math.max(0, h - P.headH); return jh > 0.02 ? Math.sqrt(2 * P.g * jh) : 0; }
+  if (tech === 'volley') return P.akro && h > 0.85 ? Math.sqrt(2 * P.g * (h - 0.85)) : 0;
+  return (JUMP_V[tech] || 0) * (P.sprungAkro || 1);
+}
+// Erfolgs-Maß eines Luftball-Plans für die Spektakel-Wahl: Planwert × Technik-Güte
+const succOf = (c) => c.total * (TECH_Q[c.tech] ?? 1);
 
 // Luftball-Plan: bester Treffpunkt (Zeit, Technik) für diesen Spieler. purpose 'shot' (aufs Tor) | 'clear' (weg vom
 // eigenen Tor). tPress = Zeitpunkt des Drucks (Timing). Gibt null zurück, wenn kein Luftball sinnvoll ist.
-export function planAir(game, pl, { tPress = game.t, purpose = 'shot', minScore = 0.22, minSpeed = 0 } = {}) {
+// n11: purpose 'pass' = Direktpass aus der Luft (Kopfballpass, Volleypass, …) zum Mitspieler in Stick-/Blickrichtung (aim). Unter
+// Techniken mit fast gleichem Erfolg (≥ 1 − spektakel) nimmt der Plan die spektakulärste (SPEKTAKEL in technique.js).
+export function planAir(game, pl, { tPress = game.t, purpose = 'shot', minScore = 0.22, minSpeed = 0, aim = null } = {}) {
   const P = game.P, b = game.ball;
   if (b.held >= 0 || pl.fall || pl.hand.mode !== 'none') return null;
   // Ball ist oder wird in der Vorschau hoch genug und nah genug
@@ -29,24 +42,34 @@ export function planAir(game, pl, { tPress = game.t, purpose = 'shot', minScore 
   const pred = _pred;
   const gx = purpose === 'clear' ? -attackGoalX(game, pl) : attackGoalX(game, pl);
   const scale = P.luft || 1;
+  const ext = P.akro ? Math.max(0, P.jumpMax - 0.6) : 0, hMax = Math.max(2.7, P.headH + P.jumpMax + 0.1), salto = !!P.salto;
+  // Pass aus der Luft: Ziel = bester Mitspieler in Stick-/Blickrichtung (die Bahn plant planPass beim Kontakt)
+  let passT = null;
+  if (purpose === 'pass') {
+    const a0 = aim || [Math.cos(pl.face), Math.sin(pl.face)];
+    const c = passCandidates(game, pl, a0, [b.p.x, b.p.z], aim ? 70 : 180).find((m) => !m.bank && !m.virtual);
+    if (!c) return null;
+    passT = [c.x + (c.vx || 0) * 0.6, c.z + (c.vz || 0) * 0.6];
+  }
   let best = null, maxScore = 0; // maxScore: bester Technik-Wert ohne Timing (für Bots/Skripte: auf die beste warten)
+  const byTech = {};
   let lastBounce = -9;
   for (let k = 1; k < pred.length; k++) {
     const s = pred[k];
     if (s.bounce) lastBounce = s.t;
     if (s.t < 0.08) continue;
     const h = s.y;
-    if (h < 0.12 || h > 2.7) continue;
+    if (h < 0.12 || h > hMax) continue;
     const vxz = Math.hypot(s.vx, s.vz);
     if (minSpeed && Math.hypot(vxz, s.vy) < minSpeed) continue;
     let sx, sz; // Richtung, aus der der Ball kommt
     if (vxz > 1.0) { sx = -s.vx / vxz; sz = -s.vz / vxz; } else { const dx = pl.x - s.x, dz = pl.z - s.z, dl = Math.hypot(dx, dz) || 1; sx = dx / dl; sz = dz / dl; }
     // Ziel: Tormitte (Schuss) bzw. gegnerische Hälfte (Befreiung)
-    const tx = purpose === 'clear' ? -gx * 0.4 : gx, tz = purpose === 'clear' ? s.z * 0.5 : 0;
+    const tx = passT ? passT[0] : purpose === 'clear' ? -gx * 0.4 : gx, tz = passT ? passT[1] : purpose === 'clear' ? s.z * 0.5 : 0;
     const gdx = tx - s.x, gdz = tz - s.z, gl = Math.hypot(gdx, gdz) || 1;
     const theta = Math.acos(clamp((sx * gdx + sz * gdz) / gl, -1, 1)) / DEG;
     const bounced = s.t - lastBounce < 0.2 && lastBounce > 0;
-    const sc = airScores(h, theta, bounced, scale);
+    const sc = airScores(h, theta, bounced, scale, ext, salto && purpose !== 'clear');
     const lead = game.t + s.t - tPress;
     for (const tech of AIR_KEYS) {
       if (sc[tech] < 0.12) continue;
@@ -59,20 +82,41 @@ export function planAir(game, pl, { tPress = game.t, purpose = 'shot', minScore 
       const reach = pl.travel(va, P.vTop, s.t) + T.extra + 0.25;
       if (d > reach) continue;
       // Kopfball über Kopfhöhe: Sprung nötig (Scheitel am Treffpunkt), braucht Zeit
+      let takeoff = TAKEOFF[tech];
       if (tech === 'kopf' && h > P.headH + 0.02) {
         const jh = h - P.headH;
         if (jh > P.jumpMax || s.t < Math.sqrt(2 * jh / P.g) + 0.04) continue;
+        if (P.akro) takeoff = Math.min(0.36, Math.max(takeoff, Math.sqrt(2 * jh / P.g))); // n11: Absprung früher (Kopf nahe am Scheitel, höchstens 0,36 s vorher)
       }
       if (s.t < TAKEOFF[tech] * 0.6) continue; // zu spät für die Bewegung
       const tq = timingFit(tech, lead);
       const margin = clamp(1 - d / (reach + 0.01), 0, 1);
       if (sc[tech] > maxScore) maxScore = sc[tech];
       const total = sc[tech] * (0.35 + 0.65 * tq) * (0.75 + 0.25 * margin) * (1 - 0.12 * s.t);
-      if (!best || total > best.total) best = { tech, total, score: sc[tech], tq, t: s.t, tc: game.t + s.t, bx, bz, cx: s.x, cy: h, cz: s.z, sx, sz, fx: fr.fx, fz: fr.fz, foot: fr.foot, theta, h, bounced, lead, vin: Math.hypot(s.vx, s.vy, s.vz), purpose, goalX: attackGoalX(game, pl) };
+      const c = { tech, total, score: sc[tech], tq, t: s.t, tc: game.t + s.t, bx, bz, cx: s.x, cy: h, cz: s.z, sx, sz, fx: fr.fx, fz: fr.fz, foot: fr.foot, theta, h, bounced, lead, vin: Math.hypot(s.vx, s.vy, s.vz), purpose, goalX: attackGoalX(game, pl), takeoff, aim };
+      if (!best || total > best.total) best = c;
+      if (!byTech[tech] || total > byTech[tech].total) byTech[tech] = c;
     }
   }
-  if (best) best.maxScore = maxScore;
-  return best && best.total >= minScore ? best : null;
+  if (!best) return null;
+  // n11 Spektakel: unter fast gleich erfolgreichen Techniken die spektakulärste (nie eine klar schlechtere)
+  if (P.akro && P.spektakel > 0) {
+    const lim = (1 - P.spektakel) * succOf(best);
+    for (const k in byTech) { const c = byTech[k]; if (c.total >= minScore && succOf(c) >= lim && spektakelRang(c.tech) > spektakelRang(best.tech)) best = c; }
+  }
+  best.maxScore = maxScore;
+  return best.total >= minScore ? best : null;
+}
+
+// n11: Zeitreserve der Gegner für einen Direktpass aus der Luft vom Treffpunkt des Plans aus (Ball dafür kurz an den Treffpunkt
+// gesetzt) → {slack, to} oder null
+export function airPassSlack(game, pl, plan) {
+  const b = game.ball, sx = b.p.x, sy = b.p.y, sz = b.p.z;
+  b.p.x = plan.cx; b.p.y = plan.cy; b.p.z = plan.cz;
+  let r = null;
+  try { const pp = planPass(game, pl, { stick: plan.aim, must: true, maxU: AIR_PROPS[plan.tech].vmax }); if (pp && pp.hoch && pp.to >= 0) r = { slack: pp.slack, to: pp.to }; }
+  finally { b.p.x = sx; b.p.y = sy; b.p.z = sz; }
+  return r;
 }
 
 // Ausrichtung je Technik (Nacht 2d, Peter: „Fallrückzieher in die richtige Richtung“). Bis Nacht 2c schaute jeder Spieler
@@ -88,6 +132,7 @@ export function airFrame(tech, sx, sz, gx, gz, d) {
   const norm = (x, z, fx, fz) => { const l = Math.hypot(x, z); return l > 0.2 ? [x / l, z / l] : [fx, fz]; };
   let f, ox, oz, foot = 0;
   if (tech === 'fallrueck') { f = [sx, sz]; ox = sx * d; oz = sz * d; }
+  else if (tech === 'salto') { f = [gx, gz]; ox = gx * d; oz = gz * d; } // n11: Blick zum Ziel, Ball schon hinter dem Rücken
   else if (tech === 'seitfall') {
     f = [sx, sz]; ox = -gx * d; oz = -gz * d;
     foot = -gx * Math.sin(Math.atan2(sz, sx)) + gz * Math.cos(Math.atan2(sz, sx)) > 0 ? -1 : 1; // Tor links → linkes Bein
@@ -100,11 +145,12 @@ export function airFrame(tech, sx, sz, gx, gz, d) {
 // Technik-Hilfe wählt den besten Moment – geplant wird, als drücke der Spieler jetzt; übernommen wird der Plan erst,
 // wenn der Zeitpunkt ideal ist (bestes Technik-Fenster) oder gleich keine Zeit mehr bleibt. Ein zu später Druck kostet
 // dann höchstens 15 % Timing-Wert (help = 1). Gibt den Plan oder null (weiter warten) zurück.
-export function planAirHelp(game, pl, help = 1) {
-  const plan = planAir(game, pl, { tPress: game.t });
+// out.wait = true: es gibt einen Luftball, nur der beste Moment kommt noch (n11: der Tipp-Kick wartet dann am Boden nicht)
+export function planAirHelp(game, pl, help = 1, purpose = 'shot', aim = null, out = null) {
+  const plan = planAir(game, pl, { tPress: game.t, purpose, aim });
   if (!plan) return null;
   const ideal = plan.tq >= 0.999 && plan.score >= 0.85 * plan.maxScore;
-  if (!ideal && plan.t > AIR_TECH[plan.tech].lead[0] + 0.1) return null; // der beste Moment kommt noch
+  if (!ideal && plan.t > AIR_TECH[plan.tech].lead[0] + 0.1) { if (out) out.wait = true; return null; } // der beste Moment kommt noch
   plan.tq = 1 - (1 - plan.tq) * (1 - 0.85 * clamp(help, 0, 1));
   return plan;
 }
@@ -122,11 +168,9 @@ export function stepAir(pl, dt, game, want, sx, sz) {
       a.against = agree < 0.3 ? (a.against || 0) + dt : 0;
       if (a.against > 0.3) { pl.air = null; return false; }
     }
-    if (tRem <= TAKEOFF[a.tech]) {
+    if (tRem <= (a.takeoff ?? TAKEOFF[a.tech])) {
       a.go = true; a.t0 = game.t;
-      if (a.tech === 'kopf') { const jh = Math.max(0, a.h - P.headH); pl.jumpV = jh > 0.02 ? Math.sqrt(2 * P.g * jh) : 0; }
-      else if (a.tech === 'seitfall' || a.tech === 'fallrueck') pl.jumpV = 2.6;
-      else if (a.tech === 'flugkopf') pl.jumpV = 1.8;
+      pl.jumpV = jumpFor(P, a.tech, a.h);
       if (a.foot) pl.kickFoot = a.foot; // Seitfallzieher: Schussbein auf der Torseite (Pose kippt zur anderen Seite)
       game.events.push({ type: 'airstart', tech: a.tech, player: pl.id, x: pl.x, z: pl.z });
     }
@@ -173,6 +217,19 @@ function airKick(pl, game, a, errFrac) {
   const tq = 0.45 + 0.55 * a.tq;                                    // Timing
   const sp = Math.min(T.vmax, T.v0 + T.vin * vin) * (T.wucht ? Math.max(0.3, P.wucht ?? 1) : 1);
   const qMul = tq * cq * TECH_Q[a.tech];
+  if (a.purpose === 'pass') { // n11: Direktpass aus der Luft – hohe Bahn zum Mitspieler wie am Boden (planPass ab dem Treffpunkt)
+    const plan = planPass(game, pl, { stick: a.aim, must: true, maxU: T.vmax, noiseMul: (pl.airNoise ?? 1) * (2 - qMul) });
+    if (plan && plan.to !== -1 && plan.hoch) {
+      plan.tech = a.tech === 'kopf' || a.tech === 'flugkopf' ? 'kopfpass' : a.tech === 'volley' || a.tech === 'dropkick' ? 'volleypass' : a.tech;
+      plan.timing = a.tq;
+      pl.applyPlan(plan, game, 0);
+      if (b.p.y < b.r + 0.02) b.p.y = b.r + 0.02;
+      b.contact = false;
+      game.events.push({ type: 'air', tech: a.tech, pass: true, player: pl.id, speed: plan.speed, q: qMul, timing: a.tq, x: b.p.x, y: b.p.y, z: b.p.z });
+      return;
+    }
+    a.purpose = 'clear'; // kein Mitspieler erreichbar: wegschlagen
+  }
   if (a.purpose === 'clear') {
     const gx = -attackGoalX(game, pl);
     const tx = -gx * 0.4 - b.p.x, tz = b.p.z * 0.5 - b.p.z, tl = Math.hypot(tx, tz) || 1;

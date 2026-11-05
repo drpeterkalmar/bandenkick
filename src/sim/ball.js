@@ -57,7 +57,7 @@ export class Ball {
     const cd = cdOf(Re, Sp, P);
     out.addScaled(v, -qA * cd / (this.m * sp));
     if (wperp > 1e-9) {
-      const cl = clOf(Sp);
+      const cl = clOf(Sp, P);
       _F.cross(_wp, v).scale(1 / (wperp * sp)); // Richtung ω × v
       out.addScaled(_F, qA * cl / this.m);
     }
