@@ -115,4 +115,6 @@ besser. Die Mitnahme wirkt erst nach der ersten Berührung, an der Flugbahn der 
 3. Wirkt die Vorlage zu kurz/zu lang? Zum Vergleich `?mitnahmeVor=1.2` bzw. `?mitnahme=0`.
 
 ## Live
-LIVE_N12
+Version 0.9.1 ist live (Pages-Build von Commit 09d40be, Service-Worker `fb1576713c` live = Repo; `package.json` 0.9.1; Code-Marker
+`mitnahmeTor` in `src/sim/params.js` per curl geprüft). `tests/test_live.py` grün (Start hoch/quer ohne Fehler, Spielablauf, PWA,
+offline; Fotos `tests/shots/final/live_*.jpg`).
