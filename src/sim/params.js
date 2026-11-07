@@ -72,7 +72,7 @@ export const DEFAULTS = {
   fieldL: 24, fieldW: 15, // m Kunstrasen
   boardH: 1.0,            // m Bande
   netH: 2.0,              // m Ballfangnetz über der Bande (ohne Dach); mit Dach reicht das Netz bis zum Dach
-  roof: 1,                // Dachnetz an/aus (?dach=0)
+  roof: 0,                // Dachnetz an/aus (?dach=1). Peter 07.11.: „Mach das Dach ganz weg“ – Ball raus = Torwartball (Abwurf)
   roofH: 8.0,             // m (Peter 07.11.: 5 m bremste hohe Bälle „an der imaginären Decke“; ?dachhoehe=5 = alt)
   goalW: 3, goalH: 2, goalD: 1.0, // Tor 3 × 2 m in der Bande, 1 m tief
   torraum: 4,             // m Halbkreis-Radius um die Tormitte: nur dort darf die „letzte Hand“ die Hände nehmen

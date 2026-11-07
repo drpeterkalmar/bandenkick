@@ -1,4 +1,5 @@
 // n8 Etappe 2 (Peter 26.10.: „Pässe gehen irgendwohin“): Stick bildschirmtreu, Reaktionszeit (Gegner treten einen eben gespielten
+// Seit 07.11.2026 ist der Käfig standardmäßig ohne Dach; dieser Test misst Pass-/Eck-Logik im Käfig mit Dach (dach=1).
 // Ball nicht im selben Takt weg), Bots lesen Pässe mit Reaktionszeit, Empfänger-Treue (Steuerung springt nach dem Pass nicht zum
 // Passgeber zurück), Richtungstreue (Rückpass-/Banden-Umweg ohne Mitspieler höchstens passTreue° neben dem Stick). Gemessen gegen
 // den Stand n8 Etappe 1 (alle Regler aus). Aufruf: node tests/node/n8_paesse.test.mjs
@@ -25,7 +26,7 @@ for (const form of ['hoch', 'quer']) {
 }
 // 2) Reaktionszeit: Gegner presst 0,7 m neben dem Ball, Pass an ihm vorbei – im selben Takt kein Wegtreten
 function press(qs) {
-  const g = new Game(makeParams(qs), 7, { match: true, human: 0, perTeam: [2, 1], bots: false });
+  const g = new Game(makeParams('dach=1&' + qs), 7, { match: true, human: 0, perTeam: [2, 1], bots: false });
   g.rules.phase = 'play';
   const [a, m, o] = g.players;
   a.place(-2, 0, 0); m.place(6, 0, Math.PI); o.place(-0.9, 0.65, -Math.PI / 2); g.ball.place(-1.6, g.ball.r, 0);
@@ -44,7 +45,7 @@ function press(qs) {
 }
 // 3) Empfänger-Treue: nach dem Pass bleibt die Steuerung beim Empfänger, auch wenn der Passgeber dem Ball näher ist
 function treue(qs) {
-  const g = new Game(makeParams(qs), 8, { match: true, human: 0, perTeam: [2, 1], bots: false });
+  const g = new Game(makeParams('dach=1&' + qs), 8, { match: true, human: 0, perTeam: [2, 1], bots: false });
   g.rules.phase = 'play'; g.switchT = 5;
   const [a, m, o] = g.players;
   a.place(-6, 0, 0); m.place(8, 4, Math.PI); o.place(9, -6, Math.PI); g.ball.place(-5.6, g.ball.r, 0);
@@ -67,7 +68,7 @@ function treue(qs) {
 }
 // 4) Richtungstreue: Stick aufs eigene Tor, kein Mitspieler dort → Pass bleibt in Stick-Richtung (kürzer), nicht 90° zur Seite
 {
-  const P = makeParams(''), P0 = makeParams('passTreue=0');
+  const P = makeParams('dach=1'), P0 = makeParams('dach=1&passTreue=0');
   const dev = (PP) => {
     const g = new Game(PP, 9, { match: true, human: 0, perTeam: [3, 1], bots: false }); g.rules.phase = 'play';
     const [a, k, m, o] = g.players; const gx = g.rules.goalX(0);

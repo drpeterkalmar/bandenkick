@@ -17,7 +17,7 @@ const segD = (px, pz, ax, az, bx, bz) => { const ex = bx - ax, ez = bz - az, L2 
 const angDiff = (a, b) => { let d = a - b; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; return Math.abs(d); };
 
 export function spielPaesse(qs = '', games = 8, form = 'quer', seed0 = 1) {
-  const P = makeParams('dauer=4&' + qs);
+  const P = makeParams('dach=1&dauer=4&' + qs);
   const all = [];
   for (let s = 0; s < games; s++) {
     const g = new Game(P, 'ps' + (seed0 + s), { match: true, human: 1, botLevel: 2 });

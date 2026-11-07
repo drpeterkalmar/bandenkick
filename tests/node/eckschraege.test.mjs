@@ -1,4 +1,5 @@
 // n7 Vorlagen E5 (abgeschrägte Käfig-Ecken): Geometrie, Ball in die Ecke (prallt schräg heraus statt hin und her), harte
+// Seit 07.11.2026 ist der Käfig standardmäßig ohne Dach; dieser Test misst Pass-/Eck-Logik im Käfig mit Dach (dach=1).
 // Schüsse in die Ecken bleiben im Käfig (Bande, Ecknetz, Fuge), Spieler bleiben vor der Schräge, Bot-Spiel (Ballkontakte in
 // den Ecken, eingeklemmt, Hänger). Aufruf: node tests/node/eckschraege.test.mjs
 import { makeParams } from '../../src/sim/params.js';
@@ -11,7 +12,7 @@ import { report } from './report.mjs';
 
 const rows = [];
 const check = (name, value, lo, hi, unit, target, note = '') => { const ok = value >= lo && value <= hi; rows.push({ name, value, lo, hi, unit, target, ok, note }); return ok; };
-const P = makeParams('');
+const P = makeParams('dach=1');
 
 // 1) Geometrie
 {
@@ -19,12 +20,12 @@ const P = makeParams('');
   check('Vier Eck-Banden und vier Ecknetze', k.length + kn.length, 8, 8, '', 8, `Schenkel ${c.ecke} m`);
   const R = k[0], len = 2 * R.hu;
   check('… Eck-Bande so lang wie die Schräge (Schenkel · √2)', len, c.ecke * Math.SQRT2 - 1e-6, c.ecke * Math.SQRT2 + 1e-6, 'm', c.ecke * Math.SQRT2);
-  const g0 = new Game(makeParams('eckschraege=0'), 1);
+  const g0 = new Game(makeParams('dach=1&eckschraege=0'), 1);
   check('?eckschraege=0: eckig wie bisher', g0.cage.rects.filter((R) => R.tag === 'corner').length, 0, 0, '', 0);
 }
 // 2) Flacher Ball diagonal in die Ecke (8 m/s): mit Schräge kommt er in einem Abprall zurück ins Feld, eckig in zwei
 function corner(qs, v = 8) {
-  const g = new Game(makeParams(qs), 2); g.players.length = 0;
+  const g = new Game(makeParams('dach=1&' + qs), 2); g.players.length = 0;
   const b = g.ball, hx = g.cage.hx, hz = g.cage.hz;
   b.place(hx - 5, b.r, hz - 5); b.v.set(v * Math.SQRT1_2, 0, v * Math.SQRT1_2); b.w.set(0, 0, 0); b.contact = true;
   let boards = 0, t = 0, maxS = 0;

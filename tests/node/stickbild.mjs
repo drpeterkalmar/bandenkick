@@ -43,7 +43,7 @@ export function stickWelt(c, me, s, neu) {
 }
 
 export function messen(form, N = 400, seed = 1) {
-  const g = new Game(makeParams(''), 1, { match: true, human: 0 });
+  const g = new Game(makeParams('dach=1'), 1, { match: true, human: 0 });
   const R = new Rng('sb' + form + seed), hx = g.cage.hx, hz = g.cage.hz;
   const c = kamera(form, g.cage);
   const out = { alt: [], neu: [], n: 0 };

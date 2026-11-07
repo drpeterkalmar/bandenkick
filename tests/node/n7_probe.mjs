@@ -145,7 +145,7 @@ export function measureGame(qs, mix, s) {
 export function humanHold(qs = '', seeds = 20, secs = 90) {
   const o = { att: 0, lost: 0, free: 0, ok: 0, timeout: 0, holdT: 0 };
   for (let s = 1; s <= seeds; s++) {
-    const g = new Game(makeParams(qs), 300 + s, { match: true, human: 0, perTeam: [1, 2], botLevels: [2, 2], kickoffTeam: 0 });
+    const g = new Game(makeParams('dach=1&' + qs), 300 + s, { match: true, human: 0, perTeam: [1, 2], botLevels: [2, 2], kickoffTeam: 0 });
     const me = g.players[0], kp = g.players[1], df = g.players[2], b = g.ball, hx = g.cage.hx, rng = new Rng(77 + s);
     let t0 = 0, z0 = 0, ph = 0;
     const reset = () => {
@@ -251,7 +251,7 @@ if (self && process.argv[2] === '--worker') {
 export function oneOnOne(qs = '', n = 60, lv = 2) {
   const o = { n: 0, saved: 0, goals: 0, block: 0, parry: 0, catch: 0, shots: 0 };
   for (let s = 1; s <= n; s++) {
-    const g = new Game(makeParams(qs), 700 + s, { match: true, human: -1, perTeam: [2, 2], botLevels: [lv, lv], kickoffTeam: 0 });
+    const g = new Game(makeParams('dach=1&' + qs), 700 + s, { match: true, human: -1, perTeam: [2, 2], botLevels: [lv, lv], kickoffTeam: 0 });
     const rng = new Rng(900 + s), hx = g.cage.hx;
     const att = g.players[0], own = g.players[1], kp = g.players[2], df = g.players[3], b = g.ball;
     const d0 = rng.range(6.5, 9.5), z0 = rng.range(-2.5, 2.5);

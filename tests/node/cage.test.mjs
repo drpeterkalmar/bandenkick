@@ -35,7 +35,7 @@ function shot(P, { from = [0, 0.11, 0], v = [0, 0, 0], w = [0, 0, 0], T = 6, see
   return { g, b, ev, maxY, maxAX, maxAZ, out };
 }
 
-const P = makeParams({});
+const P = makeParams('?dach=1'); // Käfig-Tests mit Dach (Standard seit 07.11.2026: ohne Dach)
 const hx = P.fieldL / 2, hz = P.fieldW / 2;
 
 // 1) Schuss gegen die Seitenbande: 30 m/s flach

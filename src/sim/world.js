@@ -98,5 +98,6 @@ export function goalSide(cage, p, r) {
 export function outOfCage(cage, p) {
   const inGoal = Math.abs(p.z) < cage.gw + 0.3 && Math.abs(p.x) < cage.hx + cage.gD + 0.5 && p.y < cage.gH + 0.3;
   if (inGoal) return false;
-  return Math.abs(p.x) > cage.hx + 0.4 || Math.abs(p.z) > cage.hz + 0.4 || p.y > cage.top + 1.5 || p.y < -0.5;
+  // ohne Dach: hoch über dem Käfig ist nicht aus – nur wer seitlich über das Netz hinausfliegt (07.11.2026)
+  return Math.abs(p.x) > cage.hx + 0.4 || Math.abs(p.z) > cage.hz + 0.4 || (cage.roof && p.y > cage.top + 1.5) || p.y < -0.5;
 }
