@@ -69,7 +69,7 @@ const hx = P.fieldL / 2, hz = P.fieldW / 2;
   const s = shot(P, { v: [2, 29.5, 1], T: 8 });
   const roof = s.ev.find((e) => e.type === 'net' && e.tag === 'roof');
   check('Dachnetz: steiler Schuss 30 m/s trifft das Dach', roof ? 1 : 0, 1, 1, '', 1, roof ? `mit ${roof.speed.toFixed(1)} m/s` : '');
-  check('Dachnetz: max. Höhe (Dach 5 m + Eindellung)', s.maxY, 0, P.roofH + P.netMaxDepth, 'm', null, `${s.maxY.toFixed(2)} m`);
+  check('Dachnetz: max. Höhe (Dach + Eindellung)', s.maxY, 0, P.roofH + P.netMaxDepth, 'm', null, `${s.maxY.toFixed(2)} m`);
   check('Dachnetz: Ball bleibt im Käfig', s.out ? 1 : 0, 0, 0, '', 0);
   const vUp = s.ev.find((e) => e.type === 'net');
   check('Netz schluckt Energie (Rückprall ÷ Aufprall)', netCOR(P), 0, 0.2, '', 0.1, 'Feder-Dämpfer, einseitig, ζ = 1,2');

@@ -73,7 +73,7 @@ export const DEFAULTS = {
   boardH: 1.0,            // m Bande
   netH: 2.0,              // m Ballfangnetz über der Bande (ohne Dach); mit Dach reicht das Netz bis zum Dach
   roof: 1,                // Dachnetz an/aus (?dach=0)
-  roofH: 5.0,             // m
+  roofH: 8.0,             // m (Peter 07.11.: 5 m bremste hohe Bälle „an der imaginären Decke“; ?dachhoehe=5 = alt)
   goalW: 3, goalH: 2, goalD: 1.0, // Tor 3 × 2 m in der Bande, 1 m tief
   torraum: 4,             // m Halbkreis-Radius um die Tormitte: nur dort darf die „letzte Hand“ die Hände nehmen
 
