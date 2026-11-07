@@ -129,6 +129,13 @@ body.sprintfrei.wechselknopf.quer #bSwitch { right: calc(env(safe-area-inset-rig
 .btn { min-height: 48px; min-width: 48px; padding: 0 18px; border-radius: 14px; border: 0; background: #ffd84a; color: #1a1a1a; font-weight: 800; font-size: 17px; }
 .btn.sec { background: rgba(255,255,255,.14); color: #fff; font-weight: 700; }
 .small { font-size: 12px; opacity: .75; }
+/* Startbildschirm schlicht (07.11.2026): mittig, ein großer Spielen-Knopf */
+.card.start-simpel { width: min(360px, 100%); text-align: center; }
+.card.start-simpel .row { justify-content: center; }
+.card.start-simpel .sub { margin-bottom: 20px; }
+.card.start-simpel .row .btn.sec { flex: 1; }
+.btn.big { width: 100%; min-height: 64px; font-size: 22px; }
+.card.start-simpel .ver { margin-top: 12px; opacity: .45; }
 /* Knopf der Hilfekarte bleibt sichtbar, auch wenn die Karte (quer) rollt */
 .card .row.stick { position: sticky; bottom: -16px; margin: 8px -20px -16px; padding: 10px 20px 12px; background: #0c1e15; border-radius: 0 0 18px 18px; }
 .card a { color: #ffe27a; }

@@ -32,17 +32,14 @@ export function buildHud(root, canvas) {
 
   // Karten
   const start = h('div', 'overlay');
-  start.innerHTML = `<div class="card">
+  // Startbildschirm schlicht (Peter 07.11.2026: „mach das bandenkick intromenü jetzt simpler“): Titel, ein großer
+  // Spielen-Knopf, darunter Training/Steuerung. Erklärtext und Steuerungsliste stehen unter „Steuerung“, Credits im Pause-Menü.
+  start.innerHTML = `<div class="card start-simpel">
     <h1>Bandenkick</h1>
-    <div class="sub">Kleinfeld im Käfig mit Bande, Netz und Dach – der Ball bleibt immer im Spiel.</div>
-    <div class="cols">
-      <p><b>3 gegen 3</b> mit Trainingsleibchen: du spielst <b style="color:#ff8a3d">Orange</b> gegen <b style="color:#5d9bff">Blau</b>.
-      Der hinterste Spieler ist die „letzte Hand“ (leuchtende Handschuhe) und darf im eigenen Torraum die Hände nehmen.
-      Ball fliegt nach Windkanal-Messungen, Kunstrasen nach FIFA-Prüfnorm.</p>
-      <ul class="howto"></ul>
-    </div>
-    <div class="row"><button class="btn" data-act="play">Spielen</button><button class="btn sec" data-act="trainmenu">Training</button><button class="btn sec" data-act="help">Steuerung</button><button class="btn sec" data-act="credits">Credits</button></div>
-    <div class="small" style="margin-top:10px">Version ${BUILD}</div>
+    <div class="sub">3 gegen 3 im Käfig – <b style="color:#ff8a3d">Orange</b> gegen <b style="color:#5d9bff">Blau</b></div>
+    <div class="row"><button class="btn big" data-act="play">Spielen</button></div>
+    <div class="row"><button class="btn sec" data-act="trainmenu">Training</button><button class="btn sec" data-act="help">Steuerung</button></div>
+    <div class="small ver">${BUILD}</div>
   </div>`;
   const menu = h('div', 'overlay');
   menu.innerHTML = `<div class="card">
