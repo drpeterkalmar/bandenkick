@@ -1,9 +1,9 @@
-# Bandenkick n13 – Gummiwände, Spielgefühl, niedlichere Tiere, Schusskegel + Spektakel, Zufallsteams (08.11.2026, Version VERSION_N13Z)
+# Bandenkick n13 – Gummiwände, Spielgefühl, niedlichere Tiere, Schusskegel + Spektakel, Zufallsteams (08.11.2026, Version 0.10.0)
 
 **Am Handy einmal neu laden** (bzw. die App einmal schließen und öffnen), dann ist alles da. Live: https://drpeterkalmar.github.io/bandenkick/
 
 Jede Etappe ist einzeln fertig geworden und live gegangen: 0.9.2 Gummiwände · 0.9.3 Spielgefühl · 0.9.4 Tiere · 0.9.5 Schusskegel/Spektakel ·
-VERSION_N13Z Zufallsteams. Jeder Teil hat einen eigenen Schalter, mit dem du den alten Stand vergleichen kannst.
+0.10.0 Zufallsteams. Jeder Teil hat einen eigenen Schalter, mit dem du den alten Stand vergleichen kannst.
 
 | Wunsch | Schalter für den alten Stand |
 |---|---|

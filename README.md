@@ -465,7 +465,7 @@ python3 tools/fetch_assets.py && python3 tools/make_assets.py   # Assets neu bau
 Browser-Tests laufen headless über die GPU (ANGLE/Metal), nie zwei Browser gleichzeitig.
 
 ## Änderungen
-- **n13 Zufallsteams + Tiernamen (08.11., Version VERSION_N13Z)** – Peter 07.11.: „Spielfiguren spielen bei jedem neuen Match
+- **n13 Zufallsteams + Tiernamen (08.11., Version 0.10.0)** – Peter 07.11.: „Spielfiguren spielen bei jedem neuen Match
   zufällig in oranger oder blauer Mannschaft“, „Spieler heißen wie das Tier“. Bei jedem neuen Match (Spielen, Neues Spiel) mischt das
   Spiel die sechs Tiere: drei nach Orange, drei nach Blau; welches Tier du (Orange Mitte, stößt an) steuerst, ist auch zufällig.
   Halbzeit und Tor mischen nicht. Leibchenfarbe und Rückennummer folgen der Mannschaft, nicht dem Tier (Teddy kann Blau tragen) –
