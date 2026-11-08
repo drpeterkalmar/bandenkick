@@ -1,5 +1,5 @@
 # Rauchtest im Browser (Pixel 7 hoch/quer, Desktop): Laden ohne Fehler, Spielstart, Führen, Pass, Schuss,
-# Schüsse gegen Bande und ins Dachnetz (Ball bleibt im Käfig), Tor. Aufruf: python3 tests/smoke.py [url-zusatz, z. B. "&figuren=menschen"]
+# Schüsse gegen Bande und an die Gummi-Decke (n13, ohne Dach; Ball bleibt im Käfig), Tor. Aufruf: python3 tests/smoke.py [url-zusatz, z. B. "&figuren=menschen"]
 import sys, time, json
 sys.path.insert(0, 'tests')
 from util import *
@@ -61,10 +61,10 @@ with Server() as srv, sync_playwright() as pw:
         ok(abs(z) < 6.5, f'Ball danach im Feld (z = {z:.2f} m)')
         r = s.ev("__game.kick({from:[0, 0.11, 0], v:[3, 29, -2], w:[0, 0, 0]}); __game.sim(4)")
         ev = [e['type'] for e in r['events']]
-        tags = [e.get('tag') for e in r['events'] if e['type'] == 'net']
-        ok('roof' in tags and r['state']['state'] == 'play' and r['state']['faults'] == 0, f"Schuss 29 m/s ins Dachnetz: Netz-Treffer {tags}, Zustand {r['state']['state']}")
+        # n13: ohne Dach (seit 07.11.) prallt er an der unsichtbaren Gummi-Decke (12 m) ab statt ins Dachnetz
+        ok('gummi' in ev and r['state']['state'] == 'play' and r['state']['faults'] == 0, f"Schuss 29 m/s an die Gummi-Decke: {sorted(set(ev))}, Zustand {r['state']['state']}")
         p = r['state']['ball']['p']
-        ok(abs(p[0]) < 10 and abs(p[2]) < 6.5 and p[1] < 5.5, f'Ball danach im Käfig ({p[0]:.1f}, {p[1]:.2f}, {p[2]:.1f})')
+        ok(abs(p[0]) < 12 and abs(p[2]) < 7.5 and p[1] < 12, f'Ball danach im Käfig ({p[0]:.1f}, {p[1]:.2f}, {p[2]:.1f})')
         # Tor
         r = s.ev("__game.kick({from:[5, 0.11, 0], v:[20, 2, 0.4], w:[0, 0, 0]}); __game.sim(1.5)")
         ok(any(e['type'] == 'goal' for e in r['events']), 'Tor erkannt')
