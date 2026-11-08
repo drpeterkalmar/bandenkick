@@ -326,6 +326,12 @@ export const DEFAULTS = {
   // Torbereich“): Wiederholung nach jedem Tor im Spiel (nicht im Training), nach replayDelay s Live-Jubel; Tippen überspringt
   replay: 1,              // 0 = aus (sonst im Pause-Menü umschaltbar)                              [?replay=0]
   replayDelay: 1.0,       // s Live-Jubel vor der Wiederholung
+  // n13 (Peter 07.11.: „replayzoom weiter entfernt“): Abstand der nahen Replay-Kameras (Fan-Edit-Makro, Kontakt-Zoom) × replayweit,
+  // Blick zur Körpermitte, damit Schütze und Ball ganz im Bild sind. 1 = 0.9.1                              [?replayweit=1]
+  replayweit: 2,
+  // n13 (Peter 07.11.: „Fancam default aus“): die klassische Wiederholung zeigt den Einschlag in Zeitlupe aus der TV-Kamera statt aus
+  // der wackelnden Fan-Cam hinter dem Tor. Die Art (Normal / mit Fan-Cam = Fan-Edit / Aus) wählt das Pause-Menü, ?fancam=1 = Fan-Edit
+  fancam: 0,
   // Verschönerung (Peter 05.10.: „mehr Details und Eye Candy“, reine Optik): Himmel, Rasen, Schatten, Umgebung,
   // Zuschauer, Effekte. 0 = Aussehen wie Nacht 2e (A/B-Vergleich)                                        [?deko=0]
   deko: 1,

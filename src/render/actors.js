@@ -2,6 +2,10 @@
 // (Kapsel mit Leibchen, Schuhe mit einfachem Laufzyklus und Tritt), Granulat-Partikel.
 import * as THREE from 'three';
 
+// n13: Schwerkraft der Granulat-Partikel wie in der Simulation (P.g, ?g=), main.js setzt sie beim Start
+let SCHWERE = 9.81;
+export function setSchwere(g) { SCHWERE = g; }
+
 // Abgestumpftes Ikosaeder: 12 Fünfecke (Ikosaeder-Ecken) + 20 Sechsecke (Flächenmitten)
 function ballCenters() {
   const f = (1 + Math.sqrt(5)) / 2;
@@ -220,7 +224,7 @@ export class Granulate {
       any = true;
       this.life[i] -= dt;
       const o = i * 3;
-      this.vel[o + 1] -= 9.81 * dt;
+      this.vel[o + 1] -= SCHWERE * dt;
       this.vel[o] *= 1 - 1.5 * dt; this.vel[o + 2] *= 1 - 1.5 * dt;
       this.pos[o] += this.vel[o] * dt; this.pos[o + 1] += this.vel[o + 1] * dt; this.pos[o + 2] += this.vel[o + 2] * dt;
       if (this.pos[o + 1] < 0.004) { this.pos[o + 1] = 0.004; this.vel[o] *= 0.3; this.vel[o + 2] *= 0.3; this.vel[o + 1] = 0; }

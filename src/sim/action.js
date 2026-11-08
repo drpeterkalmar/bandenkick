@@ -31,7 +31,7 @@ function zielImTor(e, game) {
   if (!(Math.abs(b.v.x) > 1)) return null;
   const t = (gx - b.p.x) / b.v.x;
   if (!(t > 0 && t < 1.5)) return null;
-  return { y: b.p.y + b.v.y * t - 4.9 * t * t, z: b.p.z + b.v.z * t, t };
+  return { y: b.p.y + b.v.y * t - 0.5 * game.P.g * t * t, z: b.p.z + b.v.z * t, t };
 }
 
 // Torwart frontal: Fokus zwischen Torwart und Ball, Kamera vom Feld her schräg vor ihm

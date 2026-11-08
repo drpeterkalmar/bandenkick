@@ -240,7 +240,7 @@ export class ReplayDirector {
       { name: 'aufbau', t0: a0, t1: k0, rate: 1, cam: 'tv' },
       { name: 'kontakt', t0: k0, t1: k1, rate: S.kontaktRate, cam: 'zoom' },
       { name: 'flug', t0: k1, t1: f0, rate: 1, cam: 'tv' },
-      { name: 'fancam', t0: f0, t1: f1, rate: S.fanRate, cam: 'fan' },
+      { name: 'fancam', t0: f0, t1: f1, rate: S.fanRate, cam: opts.fancam === false ? 'tv' : 'fan' }, // n13: ohne Fan-Cam TV-Kamera in Zeitlupe
     ].filter((s) => s.t1 - s.t0 > 1e-3);
     this.realTotal = this.dauer();
     if (this.regie && this.segs.length && this.segs[0].name === 'aufbau' && this.realTotal > S.maxReal) {
@@ -316,13 +316,15 @@ export function replayCamera(kind, f, ctx) {
     const nx = -uz * sd, nz = ux * sd; // quer zur Schussrichtung
     const ox = nx * ca - ux * sa, oz = nz * ca - uz * sa;
     const run = Math.max(0, (b.x - c.x) * ux + (b.z - c.z) * uz); // Weg des Balls seit dem Kontakt
-    const fx = c.x + ux * (0.1 + run * 0.55), fz = c.z + uz * (0.1 + run * 0.55), fy = Math.max(0.2, c.y + (b.y - c.y) * 0.5);
+    // n13: ctx.weit × Abstand (Standard 2, 1 = 0.9.1), Blick etwas höher (Körpermitte), Winkel etwas weiter – Schütze ganz im Bild
+    const W = Math.max(0.5, ctx.weit || 1), wu = clamp(W - 1, 0, 1.5);
+    const fx = c.x + ux * (0.1 + run * 0.55), fz = c.z + uz * (0.1 + run * 0.55), fy = Math.max(0.2, c.y + (b.y - c.y) * 0.5) + 0.35 * Math.min(1, wu);
     if (hoch) { // Hochformat: knapp hinter und neben dem Schützen, Blick über den Fuß dem Ball nach in die Tiefe
       const lx = c.x + ux * (0.6 + run * 0.85), lz = c.z + uz * (0.6 + run * 0.85);
-      return { pos: [c.x - ux * 1.5 + nx * 0.45, Math.max(0.35, c.y + 0.3), c.z - uz * 1.5 + nz * 0.45], look: [lx, Math.max(0.15, c.y + (b.y - c.y) * 0.8), lz], fov: 42 };
+      return { pos: [c.x - ux * 1.5 * W + nx * 0.45 * W, Math.max(0.35, c.y + 0.3) + 0.5 * wu, c.z - uz * 1.5 * W + nz * 0.45 * W], look: [lx, Math.max(0.15, c.y + (b.y - c.y) * 0.8), lz], fov: 42 * (1 + 0.1 * wu) };
     }
-    const D = 2.0 + run * 0.45, h = Math.max(0.3, fy + 0.18);
-    return { pos: [fx + ox * D, h, fz + oz * D], look: [fx, fy, fz], fov: 22 };
+    const D = (2.0 + run * 0.45) * W, h = Math.max(0.3, fy + 0.18);
+    return { pos: [fx + ox * D, h, fz + oz * D], look: [fx, fy, fz], fov: 22 * (1 + 0.25 * wu) };
   }
   if (kind === 'fan') {
     // Fan-Cam: Handkamera außerhalb des Käfigs schräg hinter dem Tor auf Zuschauerhöhe, Blick durch Netz und Zaun

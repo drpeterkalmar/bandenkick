@@ -4,6 +4,8 @@ import { makeParams } from '../../src/sim/params.js';
 import { Game, DT } from '../../src/sim/step.js';
 import { Rng } from '../../src/sim/rng.js';
 import { report } from './report.mjs';
+import { replayCamera } from '../../src/sim/replay.js';
+import { editCamera } from '../../src/sim/fanedit.js';
 
 const rows = [];
 const check = (name, value, lo, hi, unit, target, note = '') => { const ok = value >= lo && value <= hi; rows.push({ name, value, lo, hi, unit, target, ok, note }); return ok; };
@@ -65,6 +67,25 @@ function flug(P, from, v, w = [0, 0, 0], T = 6, seed = 1) {
   }
   // Mit Dach (?dach=1) keine Gummiwände (Dachnetz wie bisher)
   check('Gummi: mit Dach keine Gummiwände', new Game(makeParams('dach=1'), 1).cage.gummi ? 1 : 0, 0, 0, '', 0);
+}
+
+// ---------- 2) Replay-Zoom weiter weg, Fan-Cam/Action-Standard (Nachtrag 1, Punkte 1–3) ----------
+{
+  const P = makeParams('');
+  check('Replay: replayweit Standard 2, Fan-Cam aus', P.replayweit === 2 && P.fancam === 0 ? 1 : 0, 1, 1, '', 1);
+  const cage = new Game(P, 1).cage;
+  const c = { t: 1, x: 3, y: 0.11, z: 1, dx: 1, dz: 0.2 };
+  const f = { t: 1.05, ball: { p: { x: 3.6, y: 0.3, z: 1.1 }, v: { x: 20, y: 2, z: 4 } } };
+  const dist = (cam) => Math.hypot(cam.pos[0] - cam.look[0], cam.pos[1] - cam.look[1], cam.pos[2] - cam.look[2]);
+  for (const mode of ['quer', 'hoch']) {
+    const ctx = { cage, mode, contact: c, goal: { side: 1 }, time: 0, frac: 0.5, side: 1 };
+    const a = replayCamera('zoom', f, { ...ctx, weit: 1 }), b = replayCamera('zoom', f, { ...ctx, weit: 2 });
+    check(`Replay-Zoom (${mode}): Abstand weit 2 ÷ 0.9.1`, dist(b) / dist(a), 1.5, 2.4, '×', 2, `${dist(a).toFixed(2)} → ${dist(b).toFixed(2)} m`);
+    const e1 = editCamera('makro', f, { cage, hoch: mode === 'hoch', contact: c, goal: { side: 1 }, u: 0.2, dur: 1, side: 1, weit: 1 });
+    const e2 = editCamera('makro', f, { cage, hoch: mode === 'hoch', contact: c, goal: { side: 1 }, u: 0.2, dur: 1, side: 1, weit: 2 });
+    const dp = (e) => Math.hypot(e.pos[0] - c.x, e.pos[2] - c.z);
+    check(`Fan-Edit-Makro (${mode}): Abstand zum Kontakt weit 2 ÷ 0.9.1`, dp(e2) / dp(e1), 1.7, 2.3, '×', 2, `${dp(e1).toFixed(2)} → ${dp(e2).toFixed(2)} m`);
+  }
 }
 
 process.exit(report('n13 – Gummiwände, Spielgefühl, Zufallsteams', rows) ? 0 : 1);

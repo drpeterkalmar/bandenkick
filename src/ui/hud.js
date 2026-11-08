@@ -49,7 +49,7 @@ export function buildHud(root, canvas) {
       <button class="btn sec" data-act="newgame">Neu starten</button>
       <button class="btn sec" data-act="help">Steuerung</button>
     </div>
-    <div class="row"><button class="btn sec" data-act="slowmo">Zeitlupe: an</button><button class="btn sec" data-act="replay">Tor-Wiederholung: Fan-Edit</button><button class="btn sec" data-act="licht">Licht: Tag</button></div>
+    <div class="row"><button class="btn sec" data-act="slowmo">Zeitlupe: an</button><button class="btn sec" data-act="replay">Tor-Wiederholung: Normal</button><button class="btn sec" data-act="licht">Licht: Tag</button></div>
     <div class="row"><button class="btn sec" data-act="blitze">Blitze reduzieren: aus</button><button class="btn sec" data-act="cliphoch">Clip im Hochformat: aus</button><button class="btn sec" data-act="einknopf">Ein Kick-Knopf (Test): aus</button></div>
     <div class="row"><button class="btn sec" data-act="trainmenu">Training</button></div>
     <p class="small lastshot"></p>

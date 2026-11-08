@@ -20,3 +20,8 @@ tests/tmp/
 !tests/shots/n10/
 tests/shots/n10/pose_*
 !tests/shots/n10/pose_stehen.jpg
+!tests/shots/n13/
+tests/shots/n13/raw/
+!tests/shots/zufallsteams/
+!tests/shots/fallrueck/
+tests/shots/fallrueck/raw/

@@ -898,7 +898,7 @@ export class Player {
         speed = pd.speed ?? 26;
         const h = pd.target[2] ?? 0.5;
         // Abflugwinkel für die Zielhöhe (Fallkurve grob ausgeglichen)
-        elev = pd.elev != null ? pd.elev * DEG : Math.atan2(h - ball.p.y + 4.9 * (D / speed) ** 2, D);
+        elev = pd.elev != null ? pd.elev * DEG : Math.atan2(h - ball.p.y + 0.5 * P.g * (D / speed) ** 2, D);
         if (pd.technique === 'innen') spinSide = pd.spinY || 0;
         if (pd.technique === 'heber') { spinBack = 5 * 2 * Math.PI; }
         noiseDeg = (0.8 + 1.2 * (speed / P.shotMax) ** 2 + sprintPen) * pd.noise;

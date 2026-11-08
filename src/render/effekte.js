@@ -5,6 +5,10 @@
 import * as THREE from 'three';
 import { mulberry32 } from './stimmung.js';
 
+// n13: Schwerkraft der Ballspur wie in der Simulation (P.g, ?g=), main.js setzt sie beim Start
+let SCHWERE = 9.81;
+export function setSchwere(g) { SCHWERE = g; }
+
 const fogU = () => THREE.UniformsUtils.clone(THREE.UniformsLib.fog);
 
 // ---------------- Konfetti ----------------
@@ -131,9 +135,9 @@ export class BallSpur {
     const P = this.pos, A = this.alpha, cp = cam.position;
     for (let s = 0; s < NT; s++) {
       const u = s / (NT - 1), t = tau * u; // s = 0: am Ball, s = NT − 1: ältester Punkt
-      const x = p.x - v.x * t, y = Math.max(0.11, p.y - v.y * t - 4.905 * t * t), z = p.z - v.z * t;
+      const x = p.x - v.x * t, y = Math.max(0.11, p.y - v.y * t - 0.5 * SCHWERE * t * t), z = p.z - v.z * t;
       // Breite quer zu Blick und Flugrichtung
-      const dx = v.x, dy = v.y + 9.81 * t, dz = v.z, vx = x - cp.x, vy = y - cp.y, vz = z - cp.z;
+      const dx = v.x, dy = v.y + SCHWERE * t, dz = v.z, vx = x - cp.x, vy = y - cp.y, vz = z - cp.z;
       let sx = dy * vz - dz * vy, sy = dz * vx - dx * vz, sz = dx * vy - dy * vx;
       const sl = Math.hypot(sx, sy, sz) || 1, w = 0.1 * (1 - 0.8 * u);
       sx *= w / sl; sy *= w / sl; sz *= w / sl;

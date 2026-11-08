@@ -18,6 +18,8 @@ with Server() as srv, sync_playwright() as pw:
         s.open('?nosw&solo=1&seed=11&q=' + ('2' if form == 'desktop' else '1') + ZUSATZ)
         ok(any(n in str(s.gl) for n in GPU_NAME), f'WebGL auf der GPU ({s.gl})')
         ok(s.boot_s < 15, f'Boot {s.boot_s:.1f} s')
+        # n13: Standard Action-Momente aus, Tor-Wiederholung „Normal“ (ohne Fan-Cam)
+        ok(s.ev("__game.aktion().stufe") == 'aus' and s.ev("__game.replay().art") == 'klassisch', f"n13 Standard: Action {s.ev('__game.aktion().stufe')}, Wiederholung {s.ev('__game.replay().art')}")
         s.tap('[data-act="play"]')
         s.frames(3)
         # erster Start: Hilfekarte (Steuerung/Gesten), einmal bestätigen
@@ -114,7 +116,7 @@ with Server() as srv, sync_playwright() as pw:
             time.sleep(0.05)
         s.wait_sim(2.2, timeout=60000)
         st = s.state()
-        # n6: Standard ist der Fan-Edit (Einstellungen anlauf … jubel), ?edit=0 die klassische Wiederholung (… fancam)
+        # n13: Standard ist die klassische Wiederholung (… fancam-Abschnitt mit TV-Kamera), ?fancam=1 der Fan-Edit (anlauf … jubel)
         ok('kontakt' in seen and ('fancam' in seen or 'jubel' in seen) and st['rules']['phase'] in ('kickoff', 'play') and st['score'] == [1, 0],
            f"Tor-Wiederholung: Abschnitte {seen} ({r.get('label', '')}), danach Phase {st['rules']['phase']}, Stand {st['score']}")
         goal_shot()

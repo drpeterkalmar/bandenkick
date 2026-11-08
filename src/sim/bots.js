@@ -770,7 +770,7 @@ export class Bots {
     if (vtow > 4 && b.held < 0) {
       const tc = (pl.x - b.p.x) / (b.v.x || 1e-6);
       if (tc > 0 && tc < 1.2) {
-        const zc = b.p.z + b.v.z * tc, yc = b.p.y + b.v.y * tc - 4.9 * tc * tc;
+        const zc = b.p.z + b.v.z * tc, yc = b.p.y + b.v.y * tc - 0.5 * P.g * tc * tc;
         if (Math.abs(zc) < cage.gw + 0.5 && yc < cage.gH + 0.3) {
           if (br.shotSeen < 0) br.shotSeen = g.t;
           const seen = g.t - br.shotSeen;

@@ -14,7 +14,8 @@ import { createRenderer, loadEnvironment, makeSky, makeSun, dirFromUV, sonnenSch
 import { makeSkyDeko } from './render/stimmung.js';
 import { Deko } from './render/deko.js';
 import { buildField } from './render/field.js';
-import { makeBall, makeBlob, poseBlob, makePlayer, posePlayer, Granulate } from './render/actors.js';
+import { makeBall, makeBlob, poseBlob, makePlayer, posePlayer, Granulate, setSchwere as setSchwereKrumen } from './render/actors.js';
+import { setSchwere as setSchwereSpur } from './render/effekte.js';
 import { loadAvatarAssets, Avatar, SAETZE, figurenSatz, TEAM_NAMES } from './render/avatars.js';
 import { GameCamera } from './render/camera.js';
 import { Input } from './input/input.js';
@@ -34,6 +35,7 @@ import { RuckMessung } from './render/ruckmess.js';
 
 const qs = new URLSearchParams(location.search);
 const P = makeParams(location.search);
+setSchwereKrumen(P.g); setSchwereSpur(P.g); // n13: Effekte fallen mit derselben Schwerkraft wie der Ball (?g=)
 // Verschönerung (Deko, ab 06.10.): ?deko=0 = Aussehen wie Nacht 2e (A/B)
 const DEKO = !!P.deko;
 // n9: Figuren-Satz – Standard Kuscheltiere, ?figuren=menschen = Rocketbox-Menschen wie bis 0.6.x
@@ -143,24 +145,28 @@ function setMode(m) {
 const records = {};
 for (const c of CHALLENGES) { try { records[c.id] = JSON.parse(localStorage.getItem('bk_ch_' + c.id) || '{}'); } catch (_) { records[c.id] = {}; } }
 const fmtScore = (def, v) => (v == null ? '–' : def.unit === 's' ? `${Number(v).toFixed(1).replace('.', ',')} s` : `${v} ${def.unit}`);
-// n6 Action-Momente (ersetzt die Zeitlupe aus Nacht 2): Aus / Selten (Standard) / Oft – localStorage bk_action,
-// ?action=0|1|2 (aus/selten/oft); ?zeitlupe=0 bzw. die alte Einstellung „Zeitlupe: aus“ = Aus
+// n6 Action-Momente (ersetzt die Zeitlupe aus Nacht 2): Aus / Selten / Oft – ?action=0|1|2 (aus/selten/oft); ?zeitlupe=0 = Aus.
+// n13 (Peter 07.11.: „Actionszenen default aus“): Standard Aus; die Wahl im Pause-Menü merkt sich localStorage bk_action13 (die alte
+// Einstellung bk_action aus 0.9.1 zählt nicht mehr, sonst bliebe bei allen, die nie umgeschaltet haben, „Selten“ stehen)
 const ACTION_STUFEN = ['aus', 'selten', 'oft'];
 const qa = qs.get('action');
 let actionStufe = !P.zeitlupe ? 'aus' : qa != null ? (qa === '0' || qa === 'aus' ? 'aus' : qa === '2' || qa === 'oft' ? 'oft' : 'selten')
-  : ACTION_STUFEN.includes(localStorage.getItem('bk_action')) ? localStorage.getItem('bk_action') : localStorage.getItem('bk_zeitlupe') === '0' ? 'aus' : 'selten';
+  : ACTION_STUFEN.includes(localStorage.getItem('bk_action13')) ? localStorage.getItem('bk_action13') : 'aus';
 const aktion = new ActionRegie(actionStufe);
 const slowBtn = hud.menu.querySelector('[data-act="slowmo"]');
 const slowLabel = () => { slowBtn.textContent = '🎬 Action-Momente: ' + { aus: 'Aus', selten: 'Selten', oft: 'Oft' }[actionStufe]; };
 slowLabel();
-// Tor-Wiederholung (Nacht 2d): im Pause-Menü (localStorage bk_replay), ?replay=0. n6: Art Fan-Edit (Standard) / Klassisch
-// (ruhige TV-Wiederholung wie n5) / Aus (localStorage bk_replay_art), ?edit=0 = Klassisch
-const REPLAY_ARTEN = ['edit', 'klassisch', 'aus'];
-let replayArt = !P.replay ? 'aus' : qs.get('edit') === '0' ? 'klassisch' : qs.get('edit') === '1' ? 'edit'
-  : REPLAY_ARTEN.includes(localStorage.getItem('bk_replay_art')) ? localStorage.getItem('bk_replay_art') : localStorage.getItem('bk_replay') === '0' ? 'aus' : 'edit';
+// Tor-Wiederholung (Nacht 2d): im Pause-Menü, ?replay=0. n6: Art Fan-Edit / Klassisch (ruhige TV-Wiederholung wie n5) / Aus,
+// ?edit=0 = Klassisch, ?edit=1 = Fan-Edit. n13 (Peter 07.11.: „Fancam default aus“): Standard Klassisch, und die Fan-Cam hinter dem
+// Tor fällt auch dort weg (TV-Kamera in Zeitlupe, P.fancam); ?fancam=1 bzw. „Fan-Cam“ im Pause-Menü = Fan-Edit mit allen Fan-Kameras.
+// Gemerkt in localStorage bk_replay_art13 (bk_replay_art aus 0.9.1 zählt nicht mehr; nur ein altes „Aus“ bleibt Aus)
+const REPLAY_ARTEN = ['klassisch', 'edit', 'aus'];
+const qfan = qs.get('fancam') ?? qs.get('edit');
+let replayArt = !P.replay ? 'aus' : qfan === '0' ? 'klassisch' : qfan === '1' ? 'edit'
+  : REPLAY_ARTEN.includes(localStorage.getItem('bk_replay_art13')) ? localStorage.getItem('bk_replay_art13') : localStorage.getItem('bk_replay') === '0' ? 'aus' : 'klassisch';
 let replayOn = replayArt !== 'aus';
 const replayBtn = hud.menu.querySelector('[data-act="replay"]');
-const replayLabel = () => { replayBtn.textContent = 'Tor-Wiederholung: ' + { edit: 'Fan-Edit', klassisch: 'Klassisch', aus: 'Aus' }[replayArt]; };
+const replayLabel = () => { replayBtn.textContent = 'Tor-Wiederholung: ' + { edit: 'mit Fan-Cam', klassisch: 'Normal', aus: 'Aus' }[replayArt]; };
 replayLabel();
 // n6 Verträglichkeit: „Blitze reduzieren“ (localStorage bk_blitze, Standard nach Systemeinstellung „Bewegung reduzieren“,
 // ?blitze=sanft|voll): Flashes → sanftes Aufhellen, kein RGB-Zucken, weniger Wackler
@@ -228,10 +234,10 @@ hud.root.addEventListener('click', (e) => {
   if (a === 'chagain') startChallenge(challengeId || pendingCh);
   if (a === 'help') { helpBack = mode; helpThen = null; setMode('help'); }
   if (a === 'helpok') { localStorage.setItem('bk_hilfe', '1'); if (helpThen) { const f = helpThen; helpThen = null; f(); } else setMode(helpBack); }
-  if (a === 'slowmo') { actionStufe = ACTION_STUFEN[(ACTION_STUFEN.indexOf(actionStufe) + 1) % 3]; aktion.stufe = actionStufe; aktion.abbrechen(); localStorage.setItem('bk_action', actionStufe); slowLabel(); }
+  if (a === 'slowmo') { actionStufe = ACTION_STUFEN[(ACTION_STUFEN.indexOf(actionStufe) + 1) % 3]; aktion.stufe = actionStufe; aktion.abbrechen(); localStorage.setItem('bk_action13', actionStufe); slowLabel(); }
   if (a === 'replay') {
     replayArt = REPLAY_ARTEN[(REPLAY_ARTEN.indexOf(replayArt) + 1) % 3]; replayOn = replayArt !== 'aus';
-    localStorage.setItem('bk_replay_art', replayArt); localStorage.setItem('bk_replay', replayOn ? '1' : '0'); replayLabel();
+    localStorage.setItem('bk_replay_art13', replayArt); localStorage.setItem('bk_replay', replayOn ? '1' : '0'); replayLabel();
   }
   if (a === 'blitze') { blitzeSanft = !blitzeSanft; localStorage.setItem('bk_blitze', blitzeSanft ? '1' : '0'); blitzLabel(); }
   if (a === 'einknopf') { P.einknopf = P.einknopf ? 0 : 1; localStorage.setItem('bk_einknopf', P.einknopf ? '1' : '0'); einLabel(); }
@@ -844,7 +850,7 @@ function startReplay() {
   if (aktion.moment) { aktion.abbrechen(); amEnde(); }
   if (!rp.rec || !rp.goal || rp.recGame !== game || mode !== 'play') return;
   if (replayArt === 'edit') { startEdit(); return; }
-  const D = new ReplayDirector(rp.rec, rp.goal, { regie: !RCAM_ALT });
+  const D = new ReplayDirector(rp.rec, rp.goal, { regie: !RCAM_ALT, fancam: !!P.fancam });
   rp.kam = new ReplayKamera(rp.rec, !RCAM_ALT);
   if (D.done) return;
   rp.dir = D; rp.held = false;
@@ -852,7 +858,7 @@ function startReplay() {
   // Kamera beim Kontakt auf der Feldseite (nicht hinter dem Zaun), Text: Schütze · Technik · km/h
   let side = 1;
   if (c) { const dl = Math.hypot(c.dx, c.dz) || 1, nx = -c.dz / dl, nz = c.dx / dl; side = nx * -c.x + nz * -c.z >= 0 ? 1 : -1; }
-  rp.ctx = { cage: game.cage, mode: gcam.mode, contact: c, goal: { side: g.side }, time: 0, frac: 0, side, calm: DEKO && reduceMotion };
+  rp.ctx = { cage: game.cage, mode: gcam.mode, contact: c, goal: { side: g.side }, time: 0, frac: 0, side, calm: DEKO && reduceMotion, weit: P.replayweit };
   const sc = g.scorer >= 0 ? game.players[g.scorer] : null;
   const idx = sc ? game.players.filter((p) => p.team === sc.team).indexOf(sc) + 1 : 0;
   const who = g.own ? 'Eigentor' : sc ? `${TEAM_NAMES[sc.team]} ${idx}${sc.id === game.human ? ' (du)' : ''}` : TEAM_NAMES[g.team];
@@ -871,7 +877,7 @@ const ED_NAHFADE = new Set(['keeper', 'netz', 'ecke', 'pfosten']); // Kameras am
 const ED_KNOCHEN = ['Bip01_Head', 'Bip01_Pelvis', 'Bip01_L_Hand', 'Bip01_R_Hand', 'Bip01_L_Foot', 'Bip01_R_Foot'];
 function startEdit(D0 = null) {
   const g = rp.goal;
-  const D = D0 || new FanEdit(rp.rec, g, { reduce: blitzeSanft, cage: game.cage, seed: Math.round(g.t * 997) + game.score[0] * 7 + game.score[1] * 13 });
+  const D = D0 || new FanEdit(rp.rec, g, { reduce: blitzeSanft, cage: game.cage, weit: P.replayweit, seed: Math.round(g.t * 997) + game.score[0] * 7 + game.score[1] * 13 });
   if (D.done) return;
   rp.dir = D; rp.held = false; rp.kam = null;
   const c = D.contact;
@@ -885,7 +891,7 @@ function startEdit(D0 = null) {
   // Standbild: Nahaufnahme von vorn-seitlich (Richtung zum Tor ± frei von Verdeckung)
   const sF = D.shots.find((s) => s.freeze), Sf = D.schuetze >= 0 && sF ? rp.rec.spielerGlatt(D.schuetze, D.ti, 0.05) : null;
   const freezeDir = Sf ? jubelRichtung(rp.rec, D.schuetze, sF.keys, hochJ ? 3.0 : 2.7, Math.atan2(fI.ball.p.z - Sf.z, fI.ball.p.x - Sf.x) - Sf.face + 0.6, game.cage) : null;
-  rp.ctx = { cage: game.cage, hoch: gcam.mode === 'hoch' || hochClip, contact: c, goal: { side: g.side }, side, makroDir: D.makroDir, impact: [fI.ball.p.x, fI.ball.p.y, fI.ball.p.z],
+  rp.ctx = { cage: game.cage, hoch: gcam.mode === 'hoch' || hochClip, contact: c, goal: { side: g.side }, side, makroDir: D.makroDir, weit: P.replayweit, impact: [fI.ball.p.x, fI.ball.p.y, fI.ball.p.z],
     jubelDir: jub != null ? jub : 0, jubel2Dir: jub2, freezeDir, kopfY: null, u: 0, dur: 1, ball: null, schuetze: null };
   const sc = D.schuetze >= 0 ? game.players[D.schuetze] : null;
   const idx = sc ? game.players.filter((p) => p.team === sc.team).indexOf(sc) : 0;
@@ -920,7 +926,7 @@ function torDesSpiels() {
   const B = rp.besterClip;
   if (!B || B.game !== game || rp.dir || mode !== 'play') return;
   rp.recSicher = rp.rec; rp.rec = B.rec; rp.goal = B.goal;
-  const D = new FanEdit(B.rec, B.goal, { reduce: blitzeSanft, cage: game.cage, seed: Math.round(B.goal.t * 997) + 5 });
+  const D = new FanEdit(B.rec, B.goal, { reduce: blitzeSanft, cage: game.cage, weit: P.replayweit, seed: Math.round(B.goal.t * 997) + 5 });
   D.pov = '🏆 TOR DES SPIELS';
   startEdit(D);
   if (!rp.dir) { rp.rec = rp.recSicher; rp.recSicher = null; }

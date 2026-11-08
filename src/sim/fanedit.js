@@ -230,7 +230,7 @@ export class FanEdit {
     const ti = clamp(einschlag(rec, tg), tc + 0.05, tLast);
     this.tc = tc; this.ti = ti;
     this.schuetze = goal.scorer >= 0 ? goal.scorer : c ? c.player : -1;
-    this.makroDir = c ? freieSicht(rec, [tc - 0.1, tc, tc + 0.08], [c.x, c.z], makroWinkel(c), 1.75, c.player) : null;
+    this.makroDir = c ? freieSicht(rec, [tc - 0.1, tc, tc + 0.08], [c.x, c.z], makroWinkel(c), 1.75 * (opts.weit || 1), c.player) : null;
     // Jubel erst, wenn der Schütze wieder steht (nach Fallrückzieher, Flugkopfball, Hechten), sonst ≈ 1 s nach dem Tor
     let tu = Math.max(ti + 0.25, tg + 0.15);
     if (this.schuetze >= 0) {
@@ -403,14 +403,17 @@ export function editCamera(kind, f, ctx) {
   if (kind === 'makro') {
     // Extreme Nahaufnahme Fuß/Ball: Blick fest auf den Kontaktpunkt, langsame Fahrt heran (Ball am Kontakt sicher im Bild)
     // Luftbälle (Kopfball, Volley, Fallrückzieher): weiter weg, damit der Spieler mit ins Bild kommt
-    const D = (hoch ? 1.75 : 1.45) * (c.y > 0.45 ? 1.5 : 1) - fr * 0.25, ca = Math.cos(0.5), sa = Math.sin(0.5);
+    // n13 (Peter 07.11.: „replayzoom weiter entfernt“): ctx.weit × Abstand (Standard 2, 1 = 0.9.1), Blick zur Körpermitte des Schützen
+    // angehoben und etwas weiterer Winkel – Figur UND Ball ganz im Bild
+    const W = Math.max(0.5, ctx.weit || 1), wu = clamp(W - 1, 0, 1.5);
+    const D = ((hoch ? 1.75 : 1.45) * (c.y > 0.45 ? 1.5 : 1) - fr * 0.25) * W, ca = Math.cos(0.5), sa = Math.sin(0.5);
     let ox = nx * ca - ux * sa, oz = nz * ca - uz * sa; // schräg von vorn-seitlich
     if (ctx.makroDir != null) { ox = Math.cos(ctx.makroDir); oz = Math.sin(ctx.makroDir); } // ohne Verdeckung (FanEdit.makroDir)
-    const ly = Math.max(0.14, c.y + 0.05);
+    const ly0 = Math.max(0.14, c.y + 0.05), ly = ly0 + (Math.max(ly0, Math.min(1.1, c.y * 0.5 + 0.6)) - ly0) * Math.min(1, wu);
     // nach dem Kontakt reißt die Kamera dem Ball hinterher (Ball bleibt länger im Bild)
     const kk = c.t != null && f.t > c.t ? 0.85 * ss((f.t - c.t) / 0.12) : 0;
     const lx = c.x - ux * 0.08, lz = c.z - uz * 0.08;
-    return { pos: [c.x + ox * D, ly + 0.16, c.z + oz * D], look: [lx + (b.x - lx) * kk, ly + (Math.max(0.15, b.y) - ly) * kk, lz + (b.z - lz) * kk], fov: hoch ? 44 : 30 };
+    return { pos: [c.x + ox * D, ly + 0.16 + 0.25 * wu, c.z + oz * D], look: [lx + (b.x - lx) * kk, ly + (Math.max(0.15, b.y) - ly) * kk, lz + (b.z - lz) * kk], fov: (hoch ? 44 : 30) * (1 + 0.2 * wu) };
   }
   if (kind === 'keeper') {
     // Torwart-Sicht: im Tor knapp unter der Latte, über die Schulter des Tormanns, der Ball fliegt auf die Kamera zu
