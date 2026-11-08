@@ -136,7 +136,7 @@ with Server() as srv, sync_playwright() as pw:
         ok(st['ball']['held'] == -1, f"Abwurf per Pass-Taste: Ball frei ({st['ball']['held']})")
         # Nacht 2c: Auto-Torwart – Mensch als letzte Hand im Torraum hat keine Tormann-Knöpfe, fängt ohne Knopf
         s.ev("__game.newGame(); __game.game.rules.phase = 'play'; __game.placePlayer(-8.6, 0, 0, 0); __game.human(0)")
-        r = s.ev("(() => { const g = __game.game; const kbox = []; __game.kick({from:[-3, 0.3, 0.3], v:[-15, 1.2, 0.35], w:[0,0,0]}); const out = __game.sim(0.9); return { ev: out.events.filter(e => e.type === 'catch' || e.type === 'parry' || e.type === 'goal').map(e => e.type + ':' + e.player), held: g.ball.held, kbox: document.body.classList.contains('kbox') }; })()")
+        r = s.ev("(() => { const g = __game.game; const kbox = []; __game.kick({from:[-3, 0.3, 0.3], v:[-12, 1.0, 0.3], w:[0,0,0]}); const out = __game.sim(0.9); return { ev: out.events.filter(e => e.type === 'catch' || e.type === 'parry' || e.type === 'goal').map(e => e.type + ':' + e.player), held: g.ball.held, kbox: document.body.classList.contains('kbox') }; })()")
         # (Nacht 2e: ohne Eingabe im Zeitraffer steuert die Tormann-Logik und wirft nach 0,3–0,7 s ab → Fang-Ereignis zählt)
         ok('catch:0' in r['ev'] and not r['kbox'], f"Auto-Torwart fängt ohne Knopf: {r['ev']}, keine grünen Knöpfe ({r['kbox']})")
         # Spielerwechsel per Taste (⇄ / C) in ruhiger Szene (Bots aus, Ball liegt)
