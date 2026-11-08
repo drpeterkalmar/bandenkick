@@ -84,7 +84,8 @@ Mannschaft, Tiername in der Wiederholung, `?zufallsteams=0` = feste Besetzung, 0
   0.9.2, Schusskegel/Spektakel, Zufallsteams). Die Spielgefühl-Messungen laufen wieder im Standard-Käfig ohne Dach; Ziele, die sich dadurch oder
   durch vorsichtigere Bot-Pässe verschoben, habe ich mit Begründung im Test neu gesetzt (Eck-Kontakte ≤ 0,8 statt 0,73, Luftkontakte ≥ 1,4 statt
   1,5 × 0.8.0, Traumpass-Stichprobe 32 statt 20 Spiele, zwei n12-Fenster wegen Streuung bei 16 Spielen).
-- Browser: Rauchtest grün (Standard und `?figuren=menschen`), Zufallsteams-Prüfung grün, Live-Prüfung je Etappe grün.
+- Browser: Rauchtest grün (Standard und `?figuren=menschen`), Zufallsteams-Prüfung grün, Live-Prüfung je Etappe grün; 0.10.0 live geprüft
+  (Build ff2f2d2692: Version, Boot hoch/quer ohne Fehler, Schuss, PWA, offline).
 - Neue Werkzeuge: `tests/node/n13_gummi_probe.mjs`, `tests/node/n13_spektakel_probe.mjs`, `tests/n13_replay_bilder.py`,
   `tests/n13_spektakel_bilder.py`, `tests/n13_zufallsteams_bilder.py`.
 
