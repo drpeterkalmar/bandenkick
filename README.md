@@ -463,7 +463,7 @@ python3 tools/fetch_assets.py && python3 tools/make_assets.py   # Assets neu bau
 Browser-Tests laufen headless über die GPU (ANGLE/Metal), nie zwei Browser gleichzeitig.
 
 ## Änderungen
-- **n13 Tiere noch niedlicher (08.11., Version VERSION_N13T)** – Peter 07.11.: „mach die Proportionen der Tiere noch niedlicher“.
+- **n13 Tiere noch niedlicher (08.11., Version 0.9.4)** – Peter 07.11.: „mach die Proportionen der Tiere noch niedlicher“.
   Zweite Stufe Kindchenschema für alle sechs Tiere (und die Zuschauer, die aus denselben Figuren entstehen; Trainingspuppe Kopf × 1,2):
   Kopf × 1,3 statt 1,11 (Volumen ≈ doppelt so groß wie 0.7.0), Ärmchen und Beinchen × 0,62 statt 0,75 und etwas dicker, rundes
   Bäuchlein, Knopfaugen × 1,45 und tiefer im Gesicht, Schnauze kürzer, Pfoten und Tatzen runder. Nur Optik: Spielphysik und Hitboxen
