@@ -1,5 +1,5 @@
 // Service-Worker: offline spielbar, Cache-Busting über Inhalts-Hash (tools/update_sw.py)
-const VERSION = '3931d5757d';
+const VERSION = '07d5f01ae1';
 const CACHE = 'bandenkick-' + VERSION;
 const ASSETS = [
   './',

@@ -462,7 +462,7 @@ python3 tools/fetch_assets.py && python3 tools/make_assets.py   # Assets neu bau
 Browser-Tests laufen headless über die GPU (ANGLE/Metal), nie zwei Browser gleichzeitig.
 
 ## Änderungen
-- **n13 Spielgefühl (08.11., Version VERSION_N13S)** – Peter 07.11.: „replayzoom weiter entfernt. Fancam default aus. Actionszenen
+- **n13 Spielgefühl (08.11., Version 0.9.3)** – Peter 07.11.: „replayzoom weiter entfernt. Fancam default aus. Actionszenen
   default aus. Ballmagnet noch stärker. Schwerkraft etwas senken“. (1) Kontakt-Zoom und Fan-Edit-Makro doppelt so weit weg, Blick
   zur Körpermitte – Schütze und Ball ganz im Bild (`?replayweit=1` = alt). (2) Tor-Wiederholung standardmäßig „Normal“ ohne Fan-Cam
   (Einschlag in TV-Zeitlupe), Fan-Edit im Pause-Menü bzw. `?fancam=1`. (3) Action-Momente standardmäßig aus (Pause-Menü, `?action=1`).
