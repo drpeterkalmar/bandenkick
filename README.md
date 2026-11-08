@@ -256,6 +256,7 @@ Ball mit (Sohle/Außenseite). `?zack=0` = altes Gefühl aus Nacht 1 zum Vergleic
 ## URL-Schalter
 | Schalter | Wirkung |
 |---|---|
+| `?zufallsteams=0` | n13: feste Besetzung wie 0.9.x (Orange Teddy/Fuchs/Katze, Blau Hase/Panda/Elefant). Standard: bei jedem neuen Match werden die sechs Tiere zufällig auf Orange und Blau verteilt (auch welches du steuerst); `?seed=` macht die Mischung reproduzierbar |
 | `?schusskegel=0` | n13: Schuss wie 0.9.x in jede Richtung (kein 120°-Kegel, keine Megaferse, kein Lupfer-Pass, kein Jonglier-Fallrückzieher). `?fallrueck=0` = nur der Jonglier-Fallrückzieher aus (Rücken zum Tor → Megaferse). Feinregler: `?schusskegel=60` (halber Kegel in °), `?jonglApex=2.3`, `?megaferseV=27`, `?jonglUeberrascht=0.12` |
 | `?tierform=1` | n13: Kuscheltiere wie 0.9.1 (erste Kindchenschema-Stufe); `?tierform=0` = wie 0.7.0. Standard seit n13: zweite Stufe (Kopf × 1,3, Ärmchen/Beinchen × 0,62, Bäuchlein, große Knopfaugen tiefer im Gesicht, kurze Schnauze, runde Pfoten) |
 | `?replayweit=1` | n13: nahe Replay-Kameras (Kontakt-Zoom, Fan-Edit-Makro) wie 0.9.1 – Standard 2 = doppelt so weit, Schütze und Ball ganz im Bild |
@@ -464,6 +465,14 @@ python3 tools/fetch_assets.py && python3 tools/make_assets.py   # Assets neu bau
 Browser-Tests laufen headless über die GPU (ANGLE/Metal), nie zwei Browser gleichzeitig.
 
 ## Änderungen
+- **n13 Zufallsteams + Tiernamen (08.11., Version VERSION_N13Z)** – Peter 07.11.: „Spielfiguren spielen bei jedem neuen Match
+  zufällig in oranger oder blauer Mannschaft“, „Spieler heißen wie das Tier“. Bei jedem neuen Match (Spielen, Neues Spiel) mischt das
+  Spiel die sechs Tiere: drei nach Orange, drei nach Blau; welches Tier du (Orange Mitte, stößt an) steuerst, ist auch zufällig.
+  Halbzeit und Tor mischen nicht. Leibchenfarbe und Rückennummer folgen der Mannschaft, nicht dem Tier (Teddy kann Blau tragen) –
+  umgefärbt zur Laufzeit (Farbe + Nummern-Textur), ohne Neuladen und ohne Shader-Neukompilieren. Beim Anpfiff steht kurz „Du bist
+  Fuchs“ mit der Aufstellung. Namen: Torschütze in der Tor-Einblendung („Fuchs · Orange · 86 km/h“), Wiederholung („Teddy · Volley ·
+  108 km/h“), Fan-Edit-Einblendung und Namensschild („PANDA (DU)“). Mit `?figuren=menschen` bleiben die alten Namen. Ein Online-Modus
+  existiert im Spiel nicht, daher entfällt das Mitschicken der Verteilung. `?zufallsteams=0` = feste Besetzung, `?seed=` = reproduzierbar.
 - **n13 Schusskegel + Spektakel (08.11., Version 0.9.5)** – Peter 07.11.: „Vollspann und Innenrist Außenrist können nur max 120
   Grad vom Tor abgefeuert werden. Alles andere kann zum Beispiel eine ‚Megaferse' oder ein skripted lofted pass zu einem besser postierten
   Mitspieler sein … Generell alles bitte comichaft spektakulärer“ und „wenn man verkehrt zum Tor steht … jongliertrick … danach

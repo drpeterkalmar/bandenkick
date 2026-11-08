@@ -11,6 +11,7 @@ import { runProbe as luftProbe, summary as luftSummary } from './n11_probe.mjs';
 import { parcours } from './dribble_probe.mjs';
 import { szene as spekSzene, probe as spekProbe } from './n13_spektakel_probe.mjs';
 import { kegelWinkel } from '../../src/sim/spektakel.js';
+import { mischeBesetzung, besetzungsRng, tierName } from '../../src/sim/besetzung.js';
 
 const rows = [];
 const check = (name, value, lo, hi, unit, target, note = '') => { const ok = value >= lo && value <= hi; rows.push({ name, value, lo, hi, unit, target, ok, note }); return ok; };
@@ -173,6 +174,28 @@ function flug(P, from, v, w = [0, 0, 0], T = 6, seed = 1) {
   check('?schusskegel=0: kein Fallrückzieher/Megaferse, Hacke/Schuss wie 0.9.x', arten(alt).jongl || arten(alt).mega ? 0 : 1, 1, 1, '', 1);
   const af = spekSzene('fallrueck=0', { x: 4, z: 1, face: Math.PI, seed: 5 });
   check('?fallrueck=0: Rücken zum Tor ohne Fallrückzieher (Megaferse)', !arten(af).jongl && arten(af).mega ? 1 : 0, 1, 1, '', 1);
+}
+
+// ---------- 5) Zufallsteams + Tiernamen ----------
+{
+  const R = [['Teddy', 'Fuchs', 'Katze'], ['Hase', 'Panda', 'Elefant']];
+  const tiere = R.flat(), farben = Object.fromEntries(tiere.map((t) => [t, new Set()]));
+  let ok33 = 0, verschieden = new Set(), menschTiere = new Set();
+  for (let m = 0; m < 20; m++) {
+    const b = mischeBesetzung(R, besetzungsRng('20', m));
+    if (new Set(b).size === 6 && b.every((t) => tiere.includes(t))) ok33++;
+    b.forEach((t, i) => farben[t].add(i < 3 ? 0 : 1));
+    verschieden.add(b.join(',')); menschTiere.add(b[1]);
+  }
+  check('Zufallsteams: 20 Matches, jede Verteilung 3 Orange / 3 Blau mit allen 6 Tieren', ok33, 20, 20, 'von 20', 20);
+  check('Zufallsteams: jedes Tier spielt in beiden Farben', tiere.filter((t) => farben[t].size === 2).length, 6, 6, 'Tiere', 6);
+  check('Zufallsteams: verschiedene Verteilungen in 20 Matches', verschieden.size, 15, 20, '', null);
+  check('Zufallsteams: der Mensch (Orange Mitte) steuert verschiedene Tiere', menschTiere.size, 4, 6, 'Tiere', 6);
+  const a = mischeBesetzung(R, besetzungsRng('20', 3)).join(), b2 = mischeBesetzung(R, besetzungsRng('20', 3)).join();
+  check('Zufallsteams: ?seed= reproduzierbar', a === b2 ? 1 : 0, 1, 1, '', 1);
+  check('?zufallsteams=0: feste Besetzung wie 0.9.x', mischeBesetzung(R, null, false).join() === tiere.join() ? 1 : 0, 1, 1, '', 1);
+  const bs = ['Panda', 'Teddy', 'Hase', 'Fuchs', 'Katze', 'Elefant'];
+  check('Tiernamen: Einblendung groß mit (DU), sonst Tiername', tierName(bs, 1, { gross: true, du: true }) === 'TEDDY (DU)' && tierName(bs, 4) === 'Katze' && tierName(null, 1) === null ? 1 : 0, 1, 1, '', 1);
 }
 
 process.exit(report('n13 – Gummiwände, Spielgefühl, Zufallsteams', rows) ? 0 : 1);

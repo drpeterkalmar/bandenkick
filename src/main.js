@@ -24,6 +24,7 @@ import { Sound } from './audio/sound.js';
 import { ReplayRecorder, ReplayDirector, ReplayKamera } from './sim/replay.js';
 import { FanEdit, editCamera, editCameraFx, jubelRichtung, waehleWinkel, EDIT_DELAY } from './sim/fanedit.js';
 import { ActionRegie, bewerte } from './sim/action.js';
+import { mischeBesetzung, besetzungsRng, tierName } from './sim/besetzung.js';
 import { ReplayFx } from './render/replayfx.js';
 import { BUILD } from './build.js';
 import { makeKino, kinoLicht, kinoStufeSetzen, KontaktSchatten } from './render/kino.js';
@@ -118,6 +119,19 @@ input.sprintfrei = !!P.sprintfrei;
 const sound = new Sound(); // Nacht 2e: stumm (Stub), kein AudioContext
 
 const BIB_NUMS = [[7, 10, 4], [9, 11, 5]]; // Deko: Rückennummern der Leibchen (Mensch = Orange Mitte → 10)
+// n13 Zufallsteams (Peter 07.11.): bei jedem neuen Match die sechs Tiere neu auf die Plätze verteilen (3 Orange, 3 Blau, auch welches
+// der Mensch steuert); Leibchen/Nummer folgen dem Platz. ?zufallsteams=0 = feste Besetzung wie 0.9.x, ?seed= = reproduzierbar.
+// besetzung[platz] = Tiername (null ohne Kuscheltiere: dann bleiben die alten Namen)
+const ZUFALLSTEAMS = qs.get('zufallsteams') !== '0';
+let besetzung = null, matchNr = 0, figNach = null; // figNach: Tiername → Avatar (je Tier einmal gebaut)
+function mischeTeams() {
+  if (!figNach) return;
+  const R = SAETZE.kuscheltiere.roster;
+  besetzung = mischeBesetzung(R, besetzungsRng(qs.get('seed'), matchNr++), ZUFALLSTEAMS);
+  for (let i = 0; i < 6; i++) { const f = figNach[besetzung[i]]; f.setTeam(i < 3 ? 0 : 1, BIB_NUMS[i < 3 ? 0 : 1][i % 3]); figs[i] = f; if (f.schnitt) f.schnitt(); }
+  G.besetzung = besetzung;
+}
+const anzeigeName = (pl, gross = false) => (besetzung && pl ? tierName(besetzung, pl.id, { gross, du: pl.id === game.human }) : null);
 const G = window.__game = {
   ready: false, frames: 0, build: BUILD, P, quality, errors: window.__errors,
   get game() { return game; },
@@ -268,9 +282,11 @@ function startPlay(fresh = false) {
   if (rp.dir) endReplay();
   document.body.classList.remove('tordesspiels');
   rp.wait = -1; hud.editVorbereiten(false);
-  if (fresh || game.match === solo) { game = newGame(); resetPrev(); if (aktion.moment) { aktion.abbrechen(); amEnde(); } } // n13: kein Action-/Comic-Moment aus dem alten Spiel
+  if (fresh || game.match === solo) { game = newGame(); resetPrev(); if (aktion.moment) { aktion.abbrechen(); amEnde(); } if (game.match) mischeTeams(); } // n13: kein Action-/Comic-Moment aus dem alten Spiel; neues Match → neu gemischt
   setMode('play');
   if (!game.match && (game.state !== 'play' || game.t < 0.01)) game.kickoff();
+  // n13: Aufstellung des neuen Matches kurz einblenden (welches Tier du bist, wer in welcher Farbe spielt)
+  if (fresh && besetzung && ZUFALLSTEAMS && game.match) hud.flash(`Du bist ${besetzung[Math.max(0, game.human)]}`, `Orange: ${besetzung.slice(0, 3).join(', ')} · Blau: ${besetzung.slice(3).join(', ')}`, 2.4);
 }
 const me = () => game.players[Math.max(0, game.human)];
 {
@@ -315,11 +331,14 @@ async function boot() {
   goldRing.position.y = 0.03; goldRing.visible = false; goldRing.renderOrder = 3; goldRing.name = 'traumpass';
   scene.add(goldRing);
   if (A) {
+    if (A.satz === 'kuscheltiere') figNach = {};
     for (let team = 0; team < 2; team++) for (let i = 0; i < 3; i++) {
       const R = A.roster || SAETZE.menschen.roster;
       const av = new Avatar(A, R[team][i % R[team].length], team, { shadows: quality.avatarShadows, cull: AV_CULL, ik: AV_IK, gelenke: qs.get('gelenke') !== '0' && !!P.akro, glatt: GLATT, traeg: qs.get('traeg') === '1' /* n5: Sicherheitsnetz nur auf Wunsch (Bildrate) */, deko: DEKO ? { sunDir, num: BIB_NUMS[team][i], extShadow: true } : null });
       figs.push(av); scene.add(av.root);
+      if (figNach) figNach[R[team][i % R[team].length]] = av;
     }
+    if (figNach && game.match) mischeTeams(); // n13: erstes Match
   } else {
     for (let i = 0; i < 6; i++) { const c = i ? makePlayer(i < 3 ? 0xff6a13 : 0x1f6fff) : capsule; figs.push({ capsule: c }); scene.add(c.group); }
   }
@@ -464,7 +483,8 @@ function handleEvents(ev) {
       }
       if (R) {
         const mine = e.team === me().team;
-        hud.flash(mine ? 'TOR!' : 'Gegentor', `${TEAM_NAMES[e.team]} · ${Math.round(e.speed * 3.6)} km/h${e.own ? ' · Eigentor' : e.saved ? ' · Tormann war noch dran' : ''}`, 2.4, DEKO ? `tor t${e.team}` : '');
+        const tn = !e.own && e.scorer >= 0 ? anzeigeName(game.players[e.scorer]) : null; // n13: Torschütze heißt wie sein Tier
+        hud.flash(mine ? 'TOR!' : 'Gegentor', `${tn ? tn + ' · ' : ''}${TEAM_NAMES[e.team]} · ${Math.round(e.speed * 3.6)} km/h${e.own ? ' · Eigentor' : e.saved ? ' · Tormann war noch dran' : ''}`, 2.4, DEKO ? `tor t${e.team}` : '');
       } else { hud.flash('TOR!', `${Math.round(e.speed * 3.6)} km/h`, 2.2, DEKO ? 'tor t0' : ''); hud.setScore(game.score); }
     } else if (e.type === 'out') {
       hud.flash('Aus', R ? 'Abwurf' : 'Ball kommt zurück', 1.2);
@@ -870,7 +890,7 @@ function startReplay() {
   rp.ctx = { cage: game.cage, mode: gcam.mode, contact: c, goal: { side: g.side }, time: 0, frac: 0, side, calm: DEKO && reduceMotion, weit: P.replayweit };
   const sc = g.scorer >= 0 ? game.players[g.scorer] : null;
   const idx = sc ? game.players.filter((p) => p.team === sc.team).indexOf(sc) + 1 : 0;
-  const who = g.own ? 'Eigentor' : sc ? `${TEAM_NAMES[sc.team]} ${idx}${sc.id === game.human ? ' (du)' : ''}` : TEAM_NAMES[g.team];
+  const who = g.own ? 'Eigentor' : sc ? (anzeigeName(sc) || `${TEAM_NAMES[sc.team]} ${idx}${sc.id === game.human ? ' (du)' : ''}`) : TEAM_NAMES[g.team];
   const tech = c && c.tech ? techName(c.tech) : '';
   rp.label = [who, tech ? tech + (c.tech === 'fallrueck' || c.tech === 'seitfall' || c.tech === 'flugkopf' ? '!' : '') : '', c && c.speed ? `${Math.round(c.speed * 3.6)} km/h` : ''].filter(Boolean).join(' · ');
   hud.replayShow(true, rp.label);
@@ -904,7 +924,7 @@ function startEdit(D0 = null) {
     jubelDir: jub != null ? jub : 0, jubel2Dir: jub2, freezeDir, kopfY: null, u: 0, dur: 1, ball: null, schuetze: null };
   const sc = D.schuetze >= 0 ? game.players[D.schuetze] : null;
   const idx = sc ? game.players.filter((p) => p.team === sc.team).indexOf(sc) : 0;
-  const name = sc ? (sc.id === game.human ? 'DU' : EDIT_NAMEN[sc.team][idx] || 'NR. ' + BIB_NUMS[sc.team][idx]) : TEAM_NAMES[g.team].toUpperCase();
+  const name = sc ? (anzeigeName(sc, true) || (sc.id === game.human ? 'DU' : EDIT_NAMEN[sc.team][idx] || 'NR. ' + BIB_NUMS[sc.team][idx])) : TEAM_NAMES[g.team].toUpperCase(); // n13: Tiername
   // ×1–×3: die drei Winkel mit Ball im Bild und großem, unverdecktem Schützen (einmal je Clip gerechnet)
   if (!D0 || !D.winkelGewaehlt) {
     const W = waehleWinkel(D, rp.rec, rp.ctx, hochJ ? (hochClip ? 9 / 16 : innerWidth / innerHeight) : innerWidth / innerHeight);
@@ -1252,6 +1272,7 @@ Object.assign(G, {
     if (opts.solo !== undefined) setSolo(opts.solo);
     game = opts.bots ? new Game(P, opts.seed ?? seed, { match: true, human: -1, botLevels: opts.botLevels || [2, 2] }) : newGame();
     document.body.classList.remove('tordesspiels'); if (aktion.moment) { aktion.abbrechen(); amEnde(); }
+    if (game.match) mischeTeams();
     resetPrev(); setMode('play'); if (!game.match) game.kickoff();
   },
   // n6: Simulation synchron bis zum Ereignis typ (mit Aufzeichnung für die Wiederholung), höchstens maxSec Spielzeit
@@ -1312,6 +1333,7 @@ Object.assign(G, {
   freeze(f = true) { frozen = f; },
   handschuh(i) { const f = figs[i]; return f && f.gloveMat ? { e: f.gloveMat.emissiveIntensity, c: f.gloveMat.color.getHexString(), gloveE: f.gloveE } : null; }, // n7 E1: Test der Müdigkeits-Anzeige
   frozen() { return frozen; },
+  teams() { return figs.map((f, i) => ({ platz: i, tier: f.name || null, team: f.team ?? null, farbe: f.bib ? f.bib.material.color.getHex() : null, num: f.num ?? null, name: anzeigeName(game.players[i]) })); }, // n13 Tests
   comicNochmal() { if (hud.comicLetzt) hud.comic(hud.comicLetzt, blitzeSanft); return hud.comicLetzt || ''; }, // n13 Tests: Einblendung fürs Foto erneut
   freezeWhen(src) { G.freezeFn = new Function('g', 'return (' + src + ')'); },
   cam(pos, look) { gcam.override = pos ? { pos, look } : null; },

@@ -302,9 +302,10 @@ function bibAusFertig(mesh, color, num) {
 function bibMaterial(color, num) {
   const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.82, metalness: 0, map: bibTexture(), side: THREE.DoubleSide });
   if (num) {
-    const numTex = numberTexture(num);
+    const numU = { value: numberTexture(num) }; // n13: Rückennummer zur Laufzeit tauschbar (Zufallsteams), ohne Neukompilieren
+    mat.userData.numU = numU;
     mat.onBeforeCompile = (sh) => {
-      sh.uniforms.uNum = { value: numTex };
+      sh.uniforms.uNum = numU;
       sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute vec2 aNum; varying vec2 vNum;')
         .replace('#include <uv_vertex>', '#include <uv_vertex>\nvNum = aNum;');
       sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform sampler2D uNum; varying vec2 vNum;')
@@ -316,8 +317,13 @@ function bibMaterial(color, num) {
   return mat;
 }
 
-// Rückennummer als kleine Textur (weiß, Rest durchsichtig)
+// Rückennummer als kleine Textur (weiß, Rest durchsichtig); n13: je Nummer einmal (Zufallsteams tauschen nur die Textur)
+const _numTex = new Map();
 function numberTexture(num) {
+  if (!_numTex.has(num)) _numTex.set(num, numberTexture0(num));
+  return _numTex.get(num);
+}
+function numberTexture0(num) {
   const c = document.createElement('canvas'); c.width = 64; c.height = 96;
   const g = c.getContext('2d');
   g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle';
@@ -356,7 +362,7 @@ function blobTexture() {
 
 export class Avatar {
   constructor(A, name, team, opts = {}) {
-    this.name = name; this.team = team; this.sex = sexOf(name);
+    this.name = name; this.team = team; this.sex = sexOf(name); this.num = (opts.deko && opts.deko.num) || 0;
     this.model = SkeletonUtils.clone(A.avatars[name].scene);
     this.root = new THREE.Group(); this.root.name = 'avatar_' + name;
     this.tilt = new THREE.Group(); // Neigung (Hechtsprung, Stemmschritt) um den Körperschwerpunkt
@@ -469,6 +475,14 @@ export class Avatar {
   // n4 Kino-Look: Kontaktschatten aller Figuren in einem Draw-Call (kino.js) statt des eigenen runden Flecks
   setContact(on) { this.contact = !!on; this.setShadows(!!this.shadowsOn); }
   // Deko-Abend: eigene Flutlicht-Schatten (abend.js) statt Fleck/Schattenkarte
+  // n13 Zufallsteams: Leibchen der Mannschaft team mit Rückennummer num (Farbe + Nummern-Textur tauschen, kein Neuaufbau)
+  setTeam(team, num = this.num) {
+    this.team = team; this.num = num;
+    const m = this.bib && this.bib.material;
+    if (!m) return;
+    m.color.setHex(TEAM_COLORS[team]);
+    if (m.userData.numU && num) m.userData.numU.value = numberTexture(num);
+  }
   setNight(on, shadows) { this.night = on; this.setShadows(on ? false : shadows); }
 
   // Figur für den Sim-Zustand stellen. st: {x, z, face, speed, vx, vz, plant, plantX, plantZ, kickT, kickFoot,
