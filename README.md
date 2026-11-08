@@ -457,7 +457,7 @@ python3 tools/fetch_assets.py && python3 tools/make_assets.py   # Assets neu bau
 Browser-Tests laufen headless über die GPU (ANGLE/Metal), nie zwei Browser gleichzeitig.
 
 ## Änderungen
-- **n13 Gummiwände (08.11., Version VERSION_N13G)** – Peter 07.11.: „Torwarte pfeffern ständig ins Aus. Mach einfach unsichtbare
+- **n13 Gummiwände (08.11., Version 0.9.2)** – Peter 07.11.: „Torwarte pfeffern ständig ins Aus. Mach einfach unsichtbare
   Gummiwände seitlich und oberhalb.“ Ohne Dach verlängern unsichtbare, elastische Wände Bande und Netz bis 12 m, darüber eine
   unsichtbare Decke (Stoßzahl 0,65, kaum Griff: Effet bleibt zu gut der Hälfte – nicht bremsen wie das alte Dachnetz). Dazu landet
   der Abschlag des Tormanns am Ziel (Tempo nach der Weite statt immer 21 m/s). 12 Bot-Spiele (2 × 4 min) ohne → mit: Aus-Bälle
