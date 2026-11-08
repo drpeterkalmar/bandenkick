@@ -256,6 +256,11 @@ Ball mit (Sohle/Außenseite). `?zack=0` = altes Gefühl aus Nacht 1 zum Vergleic
 ## URL-Schalter
 | Schalter | Wirkung |
 |---|---|
+| `?replayweit=1` | n13: nahe Replay-Kameras (Kontakt-Zoom, Fan-Edit-Makro) wie 0.9.1 – Standard 2 = doppelt so weit, Schütze und Ball ganz im Bild |
+| `?fancam=1` | n13: Tor-Wiederholung mit Fan-Cam (Fan-Edit mit Netz-, Pfosten-, Jubel-Kameras). Standard seit n13: „Normal“ = ruhige TV-Wiederholung, Einschlag in Zeitlupe aus der TV-Kamera; im Pause-Menü umschaltbar (Normal / mit Fan-Cam / Aus, wird gemerkt) |
+| `?action=1` (`2` = oft) | n13: Action-Momente im laufenden Spiel an (Zoom-Punch, Zeitlupe, Bullet-Time). Standard seit n13: aus; im Pause-Menü umschaltbar (wird gemerkt) |
+| `?magnet=2.4` | n13: Ballmagnet wie 0.9.1 (Abschirmen ohne die n13-Stärkung: Ball frei ab 0,9 m vor dem Fuß, Gegnerfuß 0,6 m näher, Tormann greift in den Ball am Fuß). Feinregler `?schirmNah=1.3`, `?schirmVor=0.9`, `?schirmRel=12`, `?schirmT=1.5`, `?schirmHand=0.6` |
+| `?g=9.81` | n13: Schwerkraft wie 0.9.1 (Standard 8,8 m/s²: höhere, längere Bögen für Ball und Sprünge). `?botSicher=-0.03` = Bot-Pässe so riskant wie 0.9.1 |
 | `?gummi=0` | n13 aus: keine unsichtbaren Gummiwände über dem Netz, Abschlag immer mit voller Kraft (Stand cac623e: hoher Ball seitlich raus = Aus/Torwartball). `?gummiH=12` Höhe der Decke (m), `?gummiEn=0.65` Stoßzahl, `?puntZiel=0` = nur der Abschlag wie bisher |
 | `?mitnahme=0` | n12 aus: Annahme wie 0.9.0 (der laufende Empfänger stoppt den Laufpass bzw. lässt ihn vom Körper abprallen, statt ihn nach vorn mitzunehmen). Feinregler: `?mitnahmeVor=` (0,8 m Vorlage), `?mitnahmeZeit=` (0,7 s), `?mitnahmeV=` (ab 1,5 m/s), `?mitnahmeTor=` (1 = ohne Stick halb zum Tor gedreht) |
 | `?akro=0` | n11 aus: alles wie 0.8.0 (Abprall, Sprünge, Effet, flache Pässe, Tipp/Doppeltipp). Einzeln: `?abprall=0.621`, `?sprungkraft=0.6`, `?effet=10`, `?hochpass=0`, `?salto=0`, `?autotech=0`, `?gelenke=0`; `?einknopf=1` = Ein-Kick-Knopf-Test (auch im Pause-Menü) |
@@ -457,6 +462,20 @@ python3 tools/fetch_assets.py && python3 tools/make_assets.py   # Assets neu bau
 Browser-Tests laufen headless über die GPU (ANGLE/Metal), nie zwei Browser gleichzeitig.
 
 ## Änderungen
+- **n13 Spielgefühl (08.11., Version VERSION_N13S)** – Peter 07.11.: „replayzoom weiter entfernt. Fancam default aus. Actionszenen
+  default aus. Ballmagnet noch stärker. Schwerkraft etwas senken“. (1) Kontakt-Zoom und Fan-Edit-Makro doppelt so weit weg, Blick
+  zur Körpermitte – Schütze und Ball ganz im Bild (`?replayweit=1` = alt). (2) Tor-Wiederholung standardmäßig „Normal“ ohne Fan-Cam
+  (Einschlag in TV-Zeitlupe), Fan-Edit im Pause-Menü bzw. `?fancam=1`. (3) Action-Momente standardmäßig aus (Pause-Menü, `?action=1`).
+  (4) Magnet: Ursachen gemessen – ¾ der Ballverluste im Zweikampf, davon viele, weil der Ball etwas weiter (> 0,9 m) bzw. schneller
+  vorgelegt war, und ein Viertel aller Verluste waren Tormänner, die den Ball vom Fuß des Dribblers griffen. Jetzt schirmt der
+  Führende bis 1,3 m vor dem Fuß und bei schnelleren Vorlagen ab, und der Tormann greift höchstens nach 0,8 s in einen Ball am Fuß.
+  Die Feder selbst bleibt (stärker machte den Slalom langsamer). Bot-Spiele (48 × 2 × 4 min): Ballverluste beim Führen 1,29 → 1,02
+  je Spielminute (−21 %), je Minute Ball am Fuß −33 %; Grätschen mit Ballgewinn 7,9 → 8,1 je Spiel; Slalom-Parcours gleich
+  (8,33 s). (5) Schwerkraft 8,8 statt 9,81 m/s² für Ball und Sprünge, alle Planer/Bots/Effekte rechnen mit `?g=`. Hohe Bot-Pässe
+  fliegen dadurch länger – Bots passen etwas vorsichtiger (`botSicher` 0,015): Pässe kommen an 84 → 89 %, abgefangen 15 → 9 %,
+  hohe Pässe beim Mitspieler in Volley-/Brust-/Kopfhöhe 70 → 77 %, dafür 54 → 45 Pässe je Spiel; Tore je Schuss 31 → 31 %.
+  Dazu: Netze greifen auch ohne Dach an den Fugen übereinander (800 harte Eckschüsse: 15 → 0 draußen). Spielgefühl-Messungen
+  (Bot-Probes, Pass-/Eck-Tests) laufen wieder im Standard-Käfig ohne Dach.
 - **n13 Gummiwände (08.11., Version 0.9.2)** – Peter 07.11.: „Torwarte pfeffern ständig ins Aus. Mach einfach unsichtbare
   Gummiwände seitlich und oberhalb.“ Ohne Dach verlängern unsichtbare, elastische Wände Bande und Netz bis 12 m, darüber eine
   unsichtbare Decke (Stoßzahl 0,65, kaum Griff: Effet bleibt zu gut der Hälfte – nicht bremsen wie das alte Dachnetz). Dazu landet

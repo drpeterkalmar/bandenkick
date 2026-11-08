@@ -76,7 +76,8 @@ check('Salto-Hacke nur, wo Volley/Kopf nicht passen: 1,3 m, Ball aus Zielrichtun
 // Bot-Selbstspiel im Kleinen (gleiche Seeds; große Messung mit n11_probe.mjs): 8 Spiele je Variante
 const run = (qs) => { const acc = []; for (let s = 1; s <= 8; s++) acc.push(measure(qs, s)); return summary(acc.reduce((a, b) => { for (const k of Object.keys(a)) { if (Array.isArray(a[k])) a[k].push(...b[k]); else if (k === 'tech') for (const t in b.tech) a.tech[t] = (a.tech[t] || 0) + b.tech[t]; else a[k] += b[k]; } return a; })); };
 const S = run(''), S0 = run('akro=0');
-check('Bots: Ballkontakte in der Luft je Minute ÷ 0.8.0', S.luftMin / S0.luftMin, 1.5, 9, '×', `${f(S0.luftMin)} → ${f(S.luftMin)}`);
+  // n13: Fenster ab 1,4 statt 1,5 – Bots passen seit n13 vorsichtiger (botSicher 0,015: weniger, aber sicherere hohe Pässe), gemessen 1,47
+check('Bots: Ballkontakte in der Luft je Minute ÷ 0.8.0', S.luftMin / S0.luftMin, 1.4, 9, '×', `${f(S0.luftMin)} → ${f(S.luftMin)}`);
 check('Bots: Pässe abgefangen (höchstens die Hälfte von 0.8.0 + 3 Punkte Streuung bei 8 Spielen)', S.passAb, 0, S0.passAb / 2 + 3, '%', `0.8.0 ${f(S0.passAb)} %`);
 check('Bots: Pässe kommen beim Gemeinten an', S.passAn, 75, 100, '%', `0.8.0 ${f(S0.passAn)} %`);
 check('Bots: Tore je Spiel ÷ 0.8.0 (±30 %)', S.toreSpiel / S0.toreSpiel, 0.7, 1.3, '×', `${f(S0.toreSpiel)} → ${f(S.toreSpiel)}`);

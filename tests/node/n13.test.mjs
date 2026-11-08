@@ -6,6 +6,9 @@ import { Rng } from '../../src/sim/rng.js';
 import { report } from './report.mjs';
 import { replayCamera } from '../../src/sim/replay.js';
 import { editCamera } from '../../src/sim/fanedit.js';
+import { runProbe as botProbe, summary as botSummary } from './n7_probe.mjs';
+import { runProbe as luftProbe, summary as luftSummary } from './n11_probe.mjs';
+import { parcours } from './dribble_probe.mjs';
 
 const rows = [];
 const check = (name, value, lo, hi, unit, target, note = '') => { const ok = value >= lo && value <= hi; rows.push({ name, value, lo, hi, unit, target, ok, note }); return ok; };
@@ -86,6 +89,32 @@ function flug(P, from, v, w = [0, 0, 0], T = 6, seed = 1) {
     const dp = (e) => Math.hypot(e.pos[0] - c.x, e.pos[2] - c.z);
     check(`Fan-Edit-Makro (${mode}): Abstand zum Kontakt weit 2 ÷ 0.9.1`, dp(e2) / dp(e1), 1.7, 2.3, '×', 2, `${dp(e1).toFixed(2)} → ${dp(e2).toFixed(2)} m`);
   }
+}
+
+// ---------- 3) Ballmagnet stärker + Schwerkraft 8,8 (Nachtrag 1, Punkte 4–5), gemeinsam gemessen ----------
+{
+  const P = makeParams(''), P0 = makeParams('g=9.81&magnet=2.4&botSicher=-0.03');
+  check('Schwerkraft: Standard 8,8 m/s², ?g=9.81 = 0.9.1', P.g === 8.8 && P0.g === 9.81 ? 1 : 0, 1, 1, '', 1);
+  check('Magnet: ?magnet=2.4 = Abschirmen wie 0.9.1', P0.schirmNah === 0.9 && P0.schirmHand === 0 && P0.schirmVor === 0.6 ? 1 : 0, 1, 1, '', 1);
+  // freier Fall aus 3 m ohne Luft-Einfluss nennenswert: Fallzeit ∝ 1/√g
+  const fall = (Pq) => { const g = new Game(Pq, 1); const b = g.ball; b.place(0, 3, 0); b.contact = false; b.v.set(0, 0, 0); b.w.set(0, 0, 0); let t = 0; while (b.v.y <= 0 && t < 3) { b.step(DT, g.cage); t += DT; } return t; }; // bis zum ersten Aufsetzer
+  check('Schwerkraft: Fallzeit aus 3 m ÷ 0.9.1', fall(P) / fall(P0), 1.03, 1.08, '×', Math.sqrt(9.81 / 8.8));
+  const N = +(process.env.N13_N || 32);
+  const a = botSummary(await botProbe('g=9.81&magnet=2.4&botSicher=-0.03', N, 'st2', 6)), n = botSummary(await botProbe('', N, 'st2', 6));
+  const f2 = (x) => x.toFixed(2);
+  check('Magnet: Ballverluste beim Führen je Spielminute ÷ 0.9.2', n.lossMin / a.lossMin, 0, 0.85, '×', 0.75, `${f2(a.lossMin)} → ${f2(n.lossMin)} (Zweikampf ${f2(a.duelMin)} → ${f2(n.duelMin)}), ${N} Bot-Spiele; gemessen mit 48 Spielen −21 %`);
+  check('Magnet: Ballverluste je Minute Ball am Fuß ÷ 0.9.2', (n.lossMin / n.footSMin) / (a.lossMin / a.footSMin), 0, 0.8, '×', 0.67, `Ball am Fuß ${f2(a.footSMin)} → ${f2(n.footSMin)} s je Spielminute; gemessen −33 %`);
+  check('Magnet: Grätschen mit Ballgewinn ÷ 0.9.2', n.tackleBallPerGame / a.tackleBallPerGame, 0.9, 9, '×', 1, `${a.tackleBallPerGame.toFixed(1)} → ${n.tackleBallPerGame.toFixed(1)} je Spiel`);
+  check('Tore je Schuss: Unterschied zu 0.9.2', n.goalsPerShot - a.goalsPerShot, -4, 4, 'Punkte', 0, `${a.goalsPerShot.toFixed(1)} → ${n.goalsPerShot.toFixed(1)} %`);
+  check('Bot-Spiele: Hänger/Numerik', n.stuck + n.faults, 0, 0, '×', 0);
+  const pt = (q) => { const pc = parcours(q, [1, 2, 3, 4, 5, 6]); return { t: pc.reduce((s, x) => s + x.time, 0) / pc.length, lost: pc.reduce((s, x) => s + x.lost, 0) }; };
+  const p0 = pt('g=9.81&magnet=2.4'), p1 = pt('');
+  check('Slalom-Parcours (Skript): nicht langsamer', p1.t - p0.t, -9, 0.2, 's', 0, `${p0.t.toFixed(2)} → ${p1.t.toFixed(2)} s, verpasst ${p0.lost} → ${p1.lost}`);
+  check('Slalom-Parcours: keine Ballverluste mehr als vorher', p1.lost - p0.lost, -9, 0, '×', 0);
+  const la = luftSummary(await luftProbe('g=9.81&magnet=2.4&botSicher=-0.03', N, 6)), ln = luftSummary(await luftProbe('', N, 6));
+  check('Hochpässe: beim Mitspieler in Volley-/Brust-/Kopfhöhe ÷ 0.9.2', ln.hochKoerper / la.hochKoerper, 0.9, 9, '×', 1, `${la.hochKoerper.toFixed(1)} → ${ln.hochKoerper.toFixed(1)} % der hohen Pässe (0,45–2,4 m beim Gemeinten)`);
+  check('Bot-Pässe kommen an: Unterschied zu 0.9.2', ln.passAn - la.passAn, -3, 99, 'Punkte', null, `${la.passAn.toFixed(1)} → ${ln.passAn.toFixed(1)} %, abgefangen ${la.passAb.toFixed(1)} → ${ln.passAb.toFixed(1)} %, Pässe/Spiel ${la.passeSpiel.toFixed(1)} → ${ln.passeSpiel.toFixed(1)}`);
+  check('Ball über der Gummi-Decke/außerhalb (Bilder)', ln.aus, 0, 0, '×', 0);
 }
 
 process.exit(report('n13 – Gummiwände, Spielgefühl, Zufallsteams', rows) ? 0 : 1);

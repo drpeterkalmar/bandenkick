@@ -30,11 +30,12 @@ function scene(qs, ox, oz, { ballAhead = 0.35 } = {}) {
   const s2 = scene('', 0.75, 0.75);
   check('Gegner seitlich, nicht klar früher am Ball: gesperrt', s2.o.shieldBlocked(s2.g) ? 1 : 0, 1, 1, '', 1);
   // Gegner vorn, sein Fuß klar näher (Ball weit vorgelegt) → erlaubt
-  const s3 = scene('', 1.6, 0.0, { ballAhead: 0.8 });
+  // n13: Fuß des Gegners ≥ schirmVor 0,9 m näher, Ball noch ≤ schirmNah 1,3 m vor dem Führenden (bis 0.9.1: 1,6 m / 0,8 m)
+  const s3 = scene('', 1.9, 0.0, { ballAhead: 1.2 });
   check('Gegner vorn, Fuß klar früher am Ball: darf spielen', s3.o.shieldBlocked(s3.g) ? 1 : 0, 0, 0, '', 0);
   // Ball nicht mehr am Fuß (> schirmNah) → frei
-  const s4 = scene('', 0.75, 0.75, { ballAhead: 1.2 });
-  check('Ball weg vom Fuß (> 0,9 m): frei für alle', s4.o.shieldBlocked(s4.g) ? 1 : 0, 0, 0, '', 0);
+  const s4 = scene('', 0.75, 0.75, { ballAhead: 1.5 });
+  check('Ball weg vom Fuß (> 1,3 m, n13; bis 0.9.1 0,9 m): frei für alle', s4.o.shieldBlocked(s4.g) ? 1 : 0, 0, 0, '', 0);
   // Pass/Schuss des Führenden (kein Mitnehmen) → frei
   const s5 = scene('', -0.6, 0.05); s5.c.kickT = 0.1;
   check('nach Pass/Schuss des Führenden: frei', s5.o.shieldBlocked(s5.g) ? 1 : 0, 0, 0, '', 0);

@@ -9,7 +9,9 @@ export const DEFAULTS = {
   ballK: 2 / 3,           // Trägheitsmoment I = k·m·r² (dünnwandige Hohlkugel)
 
   // ---------------- Luft ----------------
-  g: 9.81,                // m/s²
+  // n13 (Peter 07.11.: „Schwerkraft etwas senken“): 8,8 statt 9,81 (−10 %) für Ball UND Sprünge – höhere, längere Bögen, mehr Zeit
+  // für Luftbälle. Alles, was mit g plant (Pass/Hochpass, Schuss, Bots, Tormann, Annahme, Effekte), rechnet mit P.g. ?g=9.81 = 0.9.1
+  g: 8.8,                 // m/s²                                                                    [?g=9.81]
   rho: 1.2,               // kg/m³ (Hong & Asai 2014, Methods)
   nu: 1.5e-5,             // m²/s kinematische Zähigkeit bei 20 °C → Re = v·d/ν ≈ 14 700·v
 
@@ -146,6 +148,11 @@ export const DEFAULTS = {
   // n10 (Peter 02.11.: „mehr ballmagnet“): 2,4 statt 1,8 – darüber wächst nicht nur die Feder, sie zieht den Ball auch enger vor den
   // Fuß (magnetEng), dazu schärferes Abschirmen (schirmVor 0,6 statt 0,3). Mehr Feder allein (2,4 / 3,0) änderte die Ballverluste
   // nicht (1,66 → 1,66 / 1,67 je Minute), magnet 3 verpasste im Skript-Parcours ein Slalom-Tor mehr. ?magnet=1.8 = 0.7.0 (auch schirmVor)
+  // n13 (Peter 07.11.: „Ballmagnet noch stärker“): die Feder bleibt bei 2,4 (2,5/2,6 machten den Slalom-Parcours 0,5/1 s langsamer),
+  // gestärkt wird, wo die Ballverluste entstehen (gemessen): der Führende schirmt den Ball auch weiter vor dem Fuß (schirmNah 1,3) und
+  // bei schnelleren Vorlagen (schirmRel 12 m/s) länger nach dem Kontakt (schirmT 1,5 s) ab, der Gegnerfuß muss klar näher sein
+  // (schirmVor 0,9), und der Tormann greift nicht in einen Ball am Fuß des Dribblers (schirmHand 0,6). Bot-Spiel: −27 % Ballverluste,
+  // Grätschen erobern weiter. ?magnet=2.4 = 0.9.1 (alte Schirm-Werte, MAGNET091)
   magnet: 2.4,            // Stärke 0…3                                                             [?magnet=]
   magnetK: 112,           // 1/s² Federkonstante quer zur Stick-Richtung bei Stärke 1 (0,3 m daneben → 17 m/s² bei 0,5)
   magnetC: 30,            // 1/s Dämpfung (Tempo des Balls quer ans Tempo des Spielers angleichen); n7: 30 statt 20 – mit Stärke
@@ -174,9 +181,13 @@ export const DEFAULTS = {
   schirmR: 1.5,           // m Gegner am Ball
   schirmVorlage: 0.5,     // Vorlage kürzer, Anteil bei Gegner ganz nah (≤ 0,5 m)
   schirmSeite: 0.35,      // m Ball zur abgewandten Seite
-  schirmVor: 0.6,         // m: so viel näher muss der Fuß des Gegners am Ball sein (Startwert 0,15; n7 gemessen 0,3; n10: 0,6)
-  schirmNah: 0.9,         // m: Ball höchstens so weit vom Fuß des Führenden, sonst ist er frei
-  schirmT: 1.0,           // s seit dem letzten Kontakt des Führenden
+  schirmVor: 0.9,         // m: so viel näher muss der Fuß des Gegners am Ball sein (Startwert 0,15; n7 gemessen 0,3; n10: 0,6; n13: 0,9)
+  schirmNah: 1.3,         // m: Ball höchstens so weit vom Fuß des Führenden, sonst ist er frei (n13: 1,3, bis 0.9.1: 0,9)
+  schirmT: 1.5,           // s seit dem letzten Kontakt des Führenden (n13: 1,5, bis 0.9.1: 1,0)
+  schirmHand: 0.6,        // n13: m Ball so nah am Fuß des Dribblers → der Tormann greift nicht hinein (0 = aus wie bis 0.9.1)
+  schirmHandT: 0.6,       // n13: s seit dem letzten Kontakt des Dribblers
+  schirmHandMax: 0.8,     // n13: s höchstens am Stück – danach greift er doch zu (sonst Gedränge an der Bande ohne Ende)
+  schirmRel: 12,          // n13: m/s höchstes Relativtempo Ball ↔ Führender, bis zu dem er abschirmt (0 = ctrlRel 8 wie bis 0.9.1)
   // Bots wissen davon: Ball behalten ist mit Abschirmen sicherer (Gegner zählt erst ab schirmKeep m weniger als bisher), und gegen
   // einen abschirmenden Führenden grätschen sie öfter (Rate × schirmGraetsche, auch wenn der Ball eng am Fuß ist)
   schirmKeep: 0,          // m
@@ -297,7 +308,7 @@ export const DEFAULTS = {
   hochGemeint: 0.1,       // s weniger Reserve für den gemeinten Empfänger (Stick) als für einen anderen  [?hochGemeint=]
   hochLesen: 0.3,         // s bis ein Gegner auf den hohen Pass reagiert (Reaktion + Lesen)
   direktLuft: 0.8,        // × Chance (Stufe: airTry), dass ein Bot einen hohen Pass direkt aus der Luft weiterspielt
-  botSicher: -0.03,        // s: Bots passen nur ab dieser Zeitreserve (Stufe 1: × 2,5, Stufe 3: × 0,4)          [?botSicher=]
+  botSicher: 0.015,       // s: Bots passen nur ab dieser Zeitreserve (Stufe 1: × 2,5, Stufe 3: × 0,4); n13: 0,015 statt −0,03 – mit g 8,8 fliegen hohe Pässe länger, sonst 22 % abgefangen [?botSicher=-0.03]
   kurvenpass: 1,          // Kurvenpass mit Effet um einen Gegner herum (zusätzliche Option für freie Passwege)
   // n12 (Peter 05.11.: „der schöne Laufpass an die Spitze … prallt an ihm nach hinten ab“): Der laufende Empfänger eines Passes vom
   // Mitspieler legt den Ball mit der ersten Berührung (Kopf/Brust/Oberschenkel bzw. Fuß, auch wenn der Ball von hinten an den Körper
@@ -475,8 +486,10 @@ const ZACK0_ALIAS = { antritt: 'tauAcc' };
 const SPRINTFREI1 = { slideSpeed: 8 };
 // n10: ?magnet= bis 1,8 (0.7.0-Wert) = Ballmagnet wie 0.7.0, auch das Abschirmen (schirmVor), sofern nicht ausdrücklich übersteuert
 const MAGNET07 = { schirmVor: 0.3 };
+// n13: ?magnet= bis 2,4 ausdrücklich = Ballmagnet wie 0.9.1 (Abschirmen ohne die n13-Stärkung), sofern nicht ausdrücklich übersteuert
+const MAGNET091 = { schirmNah: 0.9, schirmRel: 0, schirmT: 1.0, schirmVor: 0.6, schirmHand: 0 };
 // n11 ?akro=0: alles wie 0.8.0, sofern nicht ausdrücklich übersteuert
-export const AKRO0 = { turfEn: 0.621, jumpMax: 0.6, sprungAkro: 1, spinMax: 10, backspinMax: 7, bananeSpinMax: 1.2, aussenSpin: 0.75, autotech: 0, einknopf: 0, salto: 0, hochpass: 0, kurvenpass: 0, clSteig: 0, mitnahme: 0 }; // (n12: Mitnahme gab es in 0.8.0 nicht)
+export const AKRO0 = { turfEn: 0.621, jumpMax: 0.6, sprungAkro: 1, spinMax: 10, backspinMax: 7, bananeSpinMax: 1.2, aussenSpin: 0.75, autotech: 0, einknopf: 0, salto: 0, hochpass: 0, kurvenpass: 0, clSteig: 0, mitnahme: 0, g: 9.81 }; // (n12: Mitnahme gab es in 0.8.0 nicht; n13: Schwerkraft 9,81 wie bis 0.9.1)
 
 // Liest Overrides aus einem Query-String (oder Objekt) und gibt ein vollständiges Parameter-Objekt zurück.
 function parseQuery(s) {
@@ -519,6 +532,7 @@ export function makeParams(overrides = {}) {
   if (!P.gummi && !set.has('puntZiel')) P.puntZiel = 0; // n13: ?gummi=0 = Verhalten wie cac623e (auch der Abschlag)
   // n11: der Tormann springt so hoch wie alle (Fanghöhe mit Strecken + Sprung über 0.8.0 hinaus)
   if (!set.has('catchHigh')) P.catchHigh += Math.max(0, P.jumpMax - 0.6);
+  if (set.has('magnet') && P.magnet <= 2.4) for (const [k, v] of Object.entries(MAGNET091)) if (!set.has(k)) P[k] = v;
   if (set.has('magnet') && P.magnet <= P.magnetEng0) for (const [k, v] of Object.entries(MAGNET07)) if (!set.has(k)) P[k] = v;
   P.zack = P.zack ? 1 : 0;
   // n7: ein Lauftempo (vEin) statt Laufen/Sprint, ?lauf= übersteuert weiter ausdrücklich. vTop = höchstes Lauftempo, das

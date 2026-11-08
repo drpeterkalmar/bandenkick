@@ -17,7 +17,7 @@ const f = (x, d = 1) => x.toFixed(d).replace('.', ',');
 // 1) Regler
 {
   const P = makeParams(''), A = makeParams(ALT), M = makeParams('magnet=1.8'), M2 = makeParams('magnet=1.8&schirmVor=0.5');
-  check('Standard: Ballmagnet 2,4, Abschirmen 0,6 m, Pass 13,5 m/s', P.magnet === 2.4 && P.schirmVor === 0.6 && P.passSpeed === 13.5 ? 1 : 0, 1, 1, '', 1);
+  check('Standard: Ballmagnet 2,4, Abschirmen 0,9 m (n13, vorher 0,6), Pass 13,5 m/s', P.magnet === 2.4 && P.schirmVor === 0.9 && P.passSpeed === 13.5 ? 1 : 0, 1, 1, '', 1);
   check('?magnet=1.8 = Ballmagnet wie 0.7.0 (auch schirmVor 0,3), ausdrücklich gesetztes schirmVor bleibt', M.schirmVor === 0.3 && M2.schirmVor === 0.5 ? 1 : 0, 1, 1, '', 1);
   check('?pass=10.5 = Pässe wie 0.7.0 (Schärfe 1)', passScharf(A), 1, 1, '×', 1);
 }

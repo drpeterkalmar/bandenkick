@@ -1,5 +1,5 @@
 // n7 Vorlagen E3: Traumpass → Direktabnahme und Geben und Gehen. Reine Wertung (frei, Schussweg, Passweg, Abstand),
-// Seit 07.11.2026 ist der Käfig standardmäßig ohne Dach; dieser Test misst Pass-/Eck-Logik im Käfig mit Dach (dach=1).
+// n13: wieder im Standard-Käfig (ohne Dach, mit Gummiwänden über dem Netz – der Ball bleibt drin wie früher mit Dach).
 // Direktabnahme-Bonus (Qualität, Tempo), Lauf des Passgebers, Bot-Spiel mit Messgrößen aus dem Datenblatt.
 // Aufruf: node tests/node/traumpass.test.mjs
 import { makeParams } from '../../src/sim/params.js';
@@ -17,7 +17,7 @@ const check = (name, value, lo, hi, unit, target, note = '') => { const ok = val
 // Lage: Mannschaft 0 greift nach +x an. Passgeber 0 bei (hx − 12, 0), Empfänger 1 trifft den Ball bei (hx − 5, 2),
 // Gegner 3 (Tormann) im Tor, Gegner 4/5 je nach Fall
 function lage(qs, opp = [[-8, -5], [-8, 5]], kp = null) {
-  const g = new Game(makeParams('dach=1&' + qs), 3, { match: true, human: -1, perTeam: [3, 3], botLevels: [2, 2] });
+  const g = new Game(makeParams(qs), 3, { match: true, human: -1, perTeam: [3, 3], botLevels: [2, 2] });
   g.rules.phase = 'play';
   const hx = g.cage.hx, P = g.players;
   P[0].place(hx - 12.4, 0, 0); P[1].place(hx - 6, 2, 0); P[2].place(-hx + 1, 0, 0);
@@ -27,7 +27,7 @@ function lage(qs, opp = [[-8, -5], [-8, 5]], kp = null) {
   return g;
 }
 {
-  const hx = new Game(makeParams('dach=1'), 1, { match: true, human: -1, perTeam: [1, 1] }).cage.hx;
+  const hx = new Game(makeParams(''), 1, { match: true, human: -1, perTeam: [1, 1] }).cage.hx;
   const w = (g, mx = hx - 5, mz = 2) => perfektWertung(g, g.players[0], g.players[1], g.ball.p.x, g.ball.p.z, mx, mz);
   const a = w(lage(''));
   check('Empfänger 5 m vor dem Tor, frei, Wege frei → Traumpass', a.ok ? 1 : 0, 1, 1, '', 1, `Wertung ${a.w.toFixed(2)}, Abstand ${a.D.toFixed(1)} m`);
@@ -76,7 +76,8 @@ function lauf(qs) {
 
 // Bot-Spiel Stufe 2 (20 Spiele): Datenblatt-Messgrößen 8 und 9
 {
-  const s = summary(await runProbe('', 20, 'st2', 6)), s0 = summary(await runProbe('perfekt=0&gebengehen=0', 20, 'st2', 6));
+  // n13: 32 statt 20 Spiele für die eigene Messung – mit 20 Spielen schwankten die „Tore nach Traumpass“ um ± 8 Punkte (48 Spiele: 43 %)
+  const s = summary(await runProbe('', 32, 'st2', 6)), s0 = summary(await runProbe('perfekt=0&gebengehen=0', 20, 'st2', 6));
   check('Bot-Spiel: Traumpässe je Spiel', s.perfektPerGame, 2, 5, '', null, `direkt abgenommen ${s.perfektShotShare.toFixed(0)} %`);
   check('… Tore nach Traumpass', s.perfektGoalShare, 30, 65, '%', 45, 'Datenblatt 40–55 % (kleine Stichprobe, ± 8 Punkte je 20 Spiele)');
   check('… Geben und Gehen (Anteil der Pässe ≥ 4 m)', s.ggShare, 27, 50, '%', 35, `ohne: ${s0.ggShare.toFixed(0)} %`);

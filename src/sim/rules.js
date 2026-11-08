@@ -47,6 +47,20 @@ export class Rules {
     return this.keeper[pl.team] === pl.id && this.inBox(pl.team, pl.x, pl.z) && this.phase !== 'end';
   }
 
+  // n13 (Peter 07.11.: „Ballmagnet noch stärker“): Führt ein Gegner den Ball eng am Fuß (zuletzt berührt ≤ schirmHandT s, Ball flach
+  // ≤ schirmHand m vor seinem Fuß, nicht weggeschossen), greifen die Hände des Tormanns nicht hinein – wie beim Abschirmen gegen Füße.
+  // Er muss den Ball mit dem Fuß spielen, grätschen oder auf die nächste Vorlage warten. Ein Viertel der Ballverluste beim Führen im
+  // Bot-Spiel waren Tormänner, die den Ball vom Fuß des Dribblers aufhoben.
+  handShield(pl) {
+    const g = this.g, P = g.P, b = g.ball;
+    if (!(P.schirmHand > 0) || g.lastTouch < 0 || g.challenge) return false;
+    const c = g.players[g.lastTouch];
+    if (!c || c.team === pl.team || c.slide || c.fall || c.stumbleT > 0 || c.hand.mode !== 'none' || g.t - c.lastTouchT > P.schirmHandT || (c.kickT < 0.5 && !c.selfKick)) return false;
+    if (b.p.y > 0.5 || Math.hypot(b.v.x - c.vx, b.v.z - c.vz) > P.ctrlRel) return false;
+    const [cx, cz] = c.footPoint();
+    return Math.hypot(b.p.x - cx, b.p.z - cz) <= P.schirmHand;
+  }
+
   // ---------- Rückpass (Nacht 2e, Peter: „erlaube keinen Rückpass“) ----------
   // Ein Spieler kickt den Ball absichtlich (Pass, Schuss, Befreiung, Volley – kein Kopfball): zählt als Rückpass, wenn er
   // zum eigenen Tormann geht, Richtung eigenes Tor rollt oder nah am eigenen Torraum gespielt wird. Danach darf die letzte
@@ -123,6 +137,10 @@ export class Rules {
       const { dx, dz, d, reach, hi } = this.handReach(pl, inp);
       if (d > reach || b.p.y > hi || b.p.y < 0) continue;
       if (!this.inBox(team, b.p.x, b.p.z, 0.4)) continue;
+      if (this.handShield(pl)) { // n13: Ball klebt am Fuß eines dribbelnden Gegners – höchstens schirmHandMax s am Stück (Gedränge löst sich)
+        pl.handSchirmT = (pl.handSchirmT || 0) + dt;
+        if (pl.handSchirmT < P.schirmHandMax) continue;
+      } else pl.handSchirmT = 0;
       const rel = Math.hypot(b.v.x - pl.vx, b.v.y, b.v.z - pl.vz);
       const skill = inp.catchSkill ?? 1;
       // Nur mit den Fingerspitzen dran (äußerer Anteil inp.tip der Reichweite, Nacht 2c: CPU-Tormänner): ein

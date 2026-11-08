@@ -606,7 +606,7 @@ export class Player {
     const c = game.players[game.lastTouch];
     // (ein Kick zu sich selbst – Mitnehmen – zählt als Führen; ein Führ-Kontakt schiebt den Ball bis ctrlRel m/s an)
     if (!c || c.team === this.team || c.slide || c.fall || c.stumbleT > 0 || c.hand.mode !== 'none' || game.t - c.lastTouchT > P.schirmT || (c.kickT < 0.5 && !c.selfKick)) return false;
-    if (b.p.y > 0.5 || Math.hypot(b.v.x - c.vx, b.v.z - c.vz) > P.ctrlRel) return false;
+    if (b.p.y > 0.5 || Math.hypot(b.v.x - c.vx, b.v.z - c.vz) > (P.schirmRel || P.ctrlRel)) return false;
     const [cx, cz] = c.footPoint(), dc = Math.hypot(b.p.x - cx, b.p.z - cz);
     if (dc > P.schirmNah) return false;
     const [fx, fz] = this.footPoint(), dm = Math.hypot(b.p.x - fx, b.p.z - fz);

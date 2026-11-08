@@ -56,12 +56,14 @@ export function buildCage(P) {
       else R.ext = [...back, e, e];                                                  // Tordach
     }
   }
-  if (P.roof) {
-    const e = P.netMaxDepth + 0.3;
+  // n13: auch ohne Dach greifen Seiten-, Stirn- und Ecknetz seitlich übereinander (nur nach oben nicht) – sonst schlüpft ein harter
+  // Eckschuss durch die Fuge zwischen Ecknetz und Seiten-/Stirnnetz (800 Eckschüsse: 15 draußen, ohne Gummiwände 273)
+  {
+    const e = P.netMaxDepth + 0.3, up = P.roof ? e : 0;
     for (const R of rects) {
       if (R.kind !== 'net') continue;
       if (R.tag === 'roof') R.ext = [e, e, e, e];                                   // [u−, u+, v−, v+]
-      else if (R.tag === 'sidenet' || R.tag === 'cornernet' || R.o[1] > gH) R.ext = [e, e, 0, e]; // Seiten-/Stirn-/Ecknetz bis zum Dach
+      else if (R.tag === 'sidenet' || R.tag === 'cornernet' || R.o[1] > gH) R.ext = [e, e, 0, up]; // Seiten-/Stirn-/Ecknetz (mit Dach bis zum Dach)
       else R.ext = R.o[2] > 0 ? [0, e, 0, 0] : [e, 0, 0, 0];                        // Netz neben dem Tor: nur nach außen
     }
   }
