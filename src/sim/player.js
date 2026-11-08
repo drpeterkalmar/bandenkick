@@ -10,6 +10,7 @@ import { planPass } from './pass.js';
 import { planShot } from './shot.js';
 import { autoShot, einKnopfArt } from './akro.js';
 import { planAir, planAirHelp, stepAir, stepFall } from './air.js';
+import { schussWahl, planMegaferse, jongliere, lupferGespielt } from './spektakel.js';
 const DEG = Math.PI / 180;
 const wrap = (a) => { while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI; return a; };
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
@@ -178,6 +179,12 @@ export class Player {
       else if (P.autotech && this.pending && this.pending.kind === 'pass' && this.pending.tap && !this.pending.api) { if (this.tryAir(game, this.pending.t ?? game.t, 'pass', this.pending.stick, lw)) this.pending = null; } // n11: Direktpass aus der Luft
     }
     const luftWarten = !!lw.wait && P.autotech;
+    // n13 Lupfer-Pass: der Empfänger nimmt den Ball direkt aus der Luft (Volley, Seitfall-, Fallrückzieher, Kopfball …)
+    if (this.direktAuf) {
+      const da = this.direktAuf;
+      if (game.t > da.until || (game.lastTouch !== da.from && game.lastTouch !== this.id) || ball.held >= 0) this.direktAuf = null;
+      else if (!this.air && !held && game.lastTouch === da.from && this.tryAir(game, game.t, 'shot')) { this.pending = null; this.air.direkt = true; }
+    }
     if (this.air) { // Anlauf, Absprung, Treffpunkt – die Hilfe steuert, deutliche Gegen-Eingabe bricht nach 0,3 s ab
       if (stepAir(this, dt, game, want, sx, sz)) { this.plant = 0; this.gait += this.speed * dt / 1.1; return; }
     }
@@ -856,6 +863,29 @@ export class Player {
   // Gibt false zurück, wenn der Kick (noch) nicht gespielt wird – n11: kein freier Pass, der Spieler behält den Ball, der Tipp bleibt
   // vorgemerkt (geht, sobald ein Weg frei ist)
   kick(pd, game, rel) {
+    // n13 Schusskegel (spektakel.js): außerhalb ±schusskegel kein Vollspann/Innen-/Außenrist – Lupfer-Pass, Jonglier-Fallrückzieher,
+    // Megaferse oder blitzschnelle Drehung zum Tor
+    if (pd.kind === 'shot' && (pd.mode === 'auto' || (pd.api && this.P.autotech)) && game.ball.p.y < 0.6) {
+      const w = schussWahl(game, this);
+      if (w && w.art === 'fallrueck') return jongliere(game, this);
+      if (w && w.art === 'megaferse') {
+        const plan = this.applyPlan(planMegaferse(game, this), game, rel);
+        game.ueberrascht = { team: this.team, bis: game.t + 0.6, dt: this.P.jonglUeberrascht }; // Fersenschuss rückwärts: Tormann überrascht
+        game.events.push({ type: 'comic', text: 'MEGAFERSE!', art: 'megaferse', player: this.id, human: game.human === this.id });
+        return plan;
+      }
+      if (w && w.art === 'lupfer') {
+        w.plan.tech = 'lupfer';
+        const plan = this.applyPlan(w.plan, game, rel);
+        lupferGespielt(game, this, w.plan);
+        return plan;
+      }
+      if (w && w.art === 'drehen') { // Drehung zum Tor (Pirouette), danach der normale Schuss im Kegel
+        const gx = this.team === 0 ? game.cage.hx : -game.cage.hx;
+        this.face = Math.atan2(-game.ball.p.z, gx - game.ball.p.x);
+        game.events.push({ type: 'drehschuss', player: this.id, ang: w.ang });
+      }
+    }
     // n11 (autotech): Schuss-Technik automatisch (Vollspann, Innen-/Außenrist mit Effet, Hacke) nach Erfolgschance + Spektakel
     const shotOpts = (stick) => {
       if (pd.mode !== 'auto' && !(pd.api && this.P.autotech)) return { mode: pd.mode };

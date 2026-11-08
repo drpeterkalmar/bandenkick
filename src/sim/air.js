@@ -160,6 +160,8 @@ export function planAirHelp(game, pl, help = 1, purpose = 'shot', aim = null, ou
 export function stepAir(pl, dt, game, want, sx, sz) {
   const P = pl.P, a = pl.air, b = game.ball;
   const tRem = a.tc - game.t;
+  // n13 Jonglier-Fallrückzieher: hat ein anderer den hochgelupften Ball vor dem Absprung berührt, sauber abbrechen (Ball frei)
+  if (a.jongl && !a.go && game.lastTouch !== pl.id) { pl.air = null; game.events.push({ type: 'jonglab', player: pl.id }); return false; }
   // Anlauf: deutliche Eingabe gegen die Hilfe → nach 0,3 s abbrechen (Hilfe nimmt nie die Kontrolle)
   const dx = a.bx - pl.x, dz = a.bz - pl.z, d = Math.hypot(dx, dz);
   if (!a.go) {
@@ -215,8 +217,10 @@ function airKick(pl, game, a, errFrac) {
   const vin = b.v.len();
   const cq = clamp(1 - 0.5 * errFrac * errFrac, 0.4, 1);            // Treffgenauigkeit
   const tq = 0.45 + 0.55 * a.tq;                                    // Timing
-  const sp = Math.min(T.vmax, T.v0 + T.vin * vin) * (T.wucht ? Math.max(0.3, P.wucht ?? 1) : 1);
-  const qMul = tq * cq * TECH_Q[a.tech];
+  let sp = Math.min(T.vmax, T.v0 + T.vin * vin) * (T.wucht ? Math.max(0.3, P.wucht ?? 1) : 1);
+  let qMul = tq * cq * TECH_Q[a.tech];
+  // n13 Jonglier-Fallrückzieher: selbst aufgelegt (Ball genau im Treffpunkt) → kräftiger und sauberer als ein Fallrückzieher aus dem Spiel
+  if (a.jongl) { sp = Math.min(T.vmax * P.jonglWucht, sp * P.jonglWucht); qMul = Math.min(1, qMul + P.jonglQ); }
   if (a.purpose === 'pass') { // n11: Direktpass aus der Luft – hohe Bahn zum Mitspieler wie am Boden (planPass ab dem Treffpunkt)
     const plan = planPass(game, pl, { stick: a.aim, must: true, maxU: T.vmax, noiseMul: (pl.airNoise ?? 1) * (2 - qMul) });
     if (plan && plan.to !== -1 && plan.hoch) {
@@ -243,13 +247,17 @@ function airKick(pl, game, a, errFrac) {
   }
   // Schuss: gleiche Planung wie am Boden (Ziel im Tor, Lage), Körper/Ball-Merkmale gehören hier zur Technik
   const plan = planShot(game, pl, {
-    tech: a.tech, from: [b.p.x, b.p.y, b.p.z], speed: sp, qMul, noiseBase: T.noise, noiseMul: pl.airNoise ?? 1, skill: pl.skill ?? 1,
+    tech: a.tech, from: [b.p.x, b.p.y, b.p.z], speed: sp, qMul, noiseBase: T.noise, noiseMul: (pl.airNoise ?? 1) * (a.jongl ? P.jonglStreu : 1), skill: pl.skill ?? 1,
     back: a.tech === 'fallrueck' ? -12 : a.tech === 'volley' ? -6 : 0,
     featMod: (f) => { f.bodyAng = 0; f.ballAhead = 0.35; f.ballSide = 0; f.strongFoot = true; f.crossed = false; f.bounceH = 0; f.vy = 0; f.speed = Math.min(f.speed, 3); f.sprint = false; },
   });
   plan.timing = a.tq;
   plan.kind = 'shot';
   pl.applyPlan(plan, game, 0);
+  // n13 Comic-Spektakel: Einblendung beim Jonglier-Fallrückzieher bzw. der Direktabnahme nach dem Lupfer-Pass
+  if (a.jongl || a.direkt || pl.direktAuf) game.ueberrascht = { team: pl.team, bis: game.t + 0.6, dt: P.jonglUeberrascht }; // n13: Tormann überrascht (Trick bzw. Querlupfer)
+  if (a.jongl) game.events.push({ type: 'comic', text: a.rivaldo ? 'RIVALDO!' : 'FALLRÜCKZIEHER!', art: 'fallrueck', player: pl.id, human: game.human === pl.id, jongl: true });
+  else if (a.direkt || pl.direktAuf) { game.events.push({ type: 'comic', text: 'WUMMS!', art: 'direkt', player: pl.id, human: game.human === pl.id }); pl.direktAuf = null; }
   if (b.p.y < b.r + 0.02) b.p.y = b.r + 0.02;
   b.contact = false;
   game.events.push({ type: 'air', tech: a.tech, player: pl.id, speed: plan.speed, q: plan.q, timing: a.tq, x: b.p.x, y: b.p.y, z: b.p.z });

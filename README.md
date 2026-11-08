@@ -256,6 +256,7 @@ Ball mit (Sohle/Außenseite). `?zack=0` = altes Gefühl aus Nacht 1 zum Vergleic
 ## URL-Schalter
 | Schalter | Wirkung |
 |---|---|
+| `?schusskegel=0` | n13: Schuss wie 0.9.x in jede Richtung (kein 120°-Kegel, keine Megaferse, kein Lupfer-Pass, kein Jonglier-Fallrückzieher). `?fallrueck=0` = nur der Jonglier-Fallrückzieher aus (Rücken zum Tor → Megaferse). Feinregler: `?schusskegel=60` (halber Kegel in °), `?jonglApex=2.3`, `?megaferseV=27`, `?jonglUeberrascht=0.12` |
 | `?tierform=1` | n13: Kuscheltiere wie 0.9.1 (erste Kindchenschema-Stufe); `?tierform=0` = wie 0.7.0. Standard seit n13: zweite Stufe (Kopf × 1,3, Ärmchen/Beinchen × 0,62, Bäuchlein, große Knopfaugen tiefer im Gesicht, kurze Schnauze, runde Pfoten) |
 | `?replayweit=1` | n13: nahe Replay-Kameras (Kontakt-Zoom, Fan-Edit-Makro) wie 0.9.1 – Standard 2 = doppelt so weit, Schütze und Ball ganz im Bild |
 | `?fancam=1` | n13: Tor-Wiederholung mit Fan-Cam (Fan-Edit mit Netz-, Pfosten-, Jubel-Kameras). Standard seit n13: „Normal“ = ruhige TV-Wiederholung, Einschlag in Zeitlupe aus der TV-Kamera; im Pause-Menü umschaltbar (Normal / mit Fan-Cam / Aus, wird gemerkt) |
@@ -463,6 +464,22 @@ python3 tools/fetch_assets.py && python3 tools/make_assets.py   # Assets neu bau
 Browser-Tests laufen headless über die GPU (ANGLE/Metal), nie zwei Browser gleichzeitig.
 
 ## Änderungen
+- **n13 Schusskegel + Spektakel (08.11., Version VERSION_N13K)** – Peter 07.11.: „Vollspann und Innenrist Außenrist können nur max 120
+  Grad vom Tor abgefeuert werden. Alles andere kann zum Beispiel eine ‚Megaferse' oder ein skripted lofted pass zu einem besser postierten
+  Mitspieler sein … Generell alles bitte comichaft spektakulärer“ und „wenn man verkehrt zum Tor steht … jongliertrick … danach
+  Fallrückzieher (Rivaldo mäßig)“. Auslegung: Winkel zwischen Lauf- (ab 1,5 m/s) bzw. Blickrichtung und der Richtung zur Tormitte. Im
+  Kegel ±60° schießt der Tipp wie bisher. Außerhalb wählt er automatisch: **Lupfer-Pass** zu einem freien Mitspieler höchstens 9 m vor
+  dem Tor (nur über einen sicheren hohen Passweg), der den Ball direkt aus der Luft nimmt („WUMMS!“); mit dem **Rücken zum Tor**
+  (≥ 120°), wenn kein Gegner vor dem Treffpunkt da wäre (seine echte Antrittskurve gemessen; der Tormann im Torraum zählt nicht), den
+  **Jonglier-Fallrückzieher**: Fußspitze lupft den Ball senkrecht auf 2,2 m, nach 1,1 s Fallrückzieher über den Kopf aufs Tor, liegen,
+  aufrappeln („FALLRÜCKZIEHER!“, selten „RIVALDO!“); ist ein Gegner zu nah, die **Megaferse** (Fersenschuss rückwärts mit 27 statt
+  ≤ 19 m/s, „MEGAFERSE!“); sonst (Tor seitlich, niemand besser postiert) dreht er sich blitzschnell zum Tor und schießt normal. Erobert
+  ein Gegner den hochgelupften Ball, bricht der Trick sauber ab. Torquote je Versuch gegen den Tormann (Szenen-Probe): Fallrückzieher
+  ≈ 26–31 % wie ein Schuss im Kegel (23–26 %), Megaferse ≈ 20 %, Lupfer → Direktabnahme ≈ 23–27 % – der Tormann ist vom Trick kurz
+  (0,12 s) überrascht. Comic: große Einblendung mit Speed-Linien, kurze Zeitlupe mit Zoom genau im Trefferpunkt (auch wenn die
+  Action-Momente aus sind), „Blitze reduzieren“ = ohne Linien und ohne Ruck. Bots: Megaferse ≈ 5 je Spiel, Lupfer ≈ 1 je Spiel; den
+  Fallrückzieher wählen sie selten (mit dem Rücken zum Tor stehen sie fast immer unter Druck). Selbstspiel: Tore/Spiel 20,1 → 19,3,
+  Pass-Abfangquote 8,5 → 8,9 % (Streuung). Fotos: `tests/shots/fallrueck/`, `tests/shots/n13/spektakel_quer.jpg`.
 - **n13 Tiere noch niedlicher (08.11., Version 0.9.4)** – Peter 07.11.: „mach die Proportionen der Tiere noch niedlicher“.
   Zweite Stufe Kindchenschema für alle sechs Tiere (und die Zuschauer, die aus denselben Figuren entstehen; Trainingspuppe Kopf × 1,2):
   Kopf × 1,3 statt 1,11 (Volumen ≈ doppelt so groß wie 0.7.0), Ärmchen und Beinchen × 0,62 statt 0,75 und etwas dicker, rundes

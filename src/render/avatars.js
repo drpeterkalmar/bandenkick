@@ -944,6 +944,10 @@ function techPose(pl, t, beinF = 1) {
     const u = Math.sin(Math.min(1, k / 0.45) * Math.PI);
     switch (pl.tech) {
       case 'ferse': return { pitch: 0.1 * u, roll: 0, drop: 0, legs: true, thigh: 0.75 * u, calf: 1.3 * u };
+      // n13: Megaferse – übertrieben: Oberkörper weit vor, Ferse schlägt hoch hinter den Po, Arme reißen nach vorn oben
+      case 'megaferse': return { pitch: 0.45 * u, roll: side * 0.1 * u, drop: -0.06 * u, legs: true, thigh: 1.15 * u, calf: 2.0 * u, arms: 1.1 * u, nod: -0.25 * u };
+      // n13: Jongliertrick – Fußspitze lupft den Ball senkrecht hoch (Knie hoch, Unterschenkel schnellt nach oben)
+      case 'jongl': return { pitch: -0.12 * u, roll: 0, drop: 0, legs: true, thigh: -1.35 * u, calf: 0.35 * (1 - u), arms: 0.45 * u, nod: 0.25 * u };
       case 'chip': case 'lupfer': return { pitch: -0.12 * u, roll: 0, drop: -0.03 * u, legs: true, thigh: -0.75 * u, calf: 0.25 * u, twist: -0.35 * u };
       case 'aussen': case 'aussenrist': return { pitch: -0.05 * u, roll: side * 0.12 * u, drop: 0, legs: true, thigh: -0.9 * u, twist: 0.55 * u, calf: 0.3 * u };
       case 'innen': case 'innenrist': case 'kurve': return { pitch: -0.05 * u, roll: -side * 0.12 * u, drop: 0, legs: true, thigh: -0.9 * u, twist: -0.6 * u, calf: 0.3 * u };

@@ -143,7 +143,10 @@ export function buildHud(root, canvas) {
   // Malstile des Clips (Verlauf-Spotlight, leuchtende Kontur, Text mit Kontur) einmal unsichtbar malen: der Rasterer übersetzt
   // dafür beim ersten Mal eigene Shader (im ersten Clip ≈ 150 ms)
   const warm = h('div', 'fe-warm', '<i class="w1"></i><i class="w2"></i><b>GOLAZO! 10/10</b>');
-  root.append(amEl, top, banner, charge, hold, touch, dbg, start, menu, credits, train, hint, result, help, replay, clipAgain, tds, warm);
+  // n13 Comic-Spektakel: große Einblendung („MEGAFERSE!“, „FALLRÜCKZIEHER!“, „WUMMS!“) mit Speed-Linien, reines CSS
+  const comic = h('div', 'comic', '<i class="comic-lines"></i><b></b>');
+  root.append(amEl, top, banner, charge, hold, touch, dbg, start, menu, credits, train, hint, result, help, replay, clipAgain, tds, warm, comic);
+  let comicT = 0;
 
   // n7: ohne Sprint (sprintfrei) kein Hinweis auf Sprint-Knopf, Stick-Rand, Shift oder LB/RB
   // n8: ohne ⇄-Knopf (Standard) wechselt der Spieler nur automatisch
@@ -206,6 +209,13 @@ export function buildHud(root, canvas) {
   return {
     // Wiederholung: an/aus mit Text (Schütze · Technik · km/h), Fan-Cam-Abzeichen, Blitz-Stärke 0…1
     replayShow(on, text = '') { document.body.classList.toggle('replaying', on); if (on) rpLabel.textContent = text; },
+    // n13: Comic-Einblendung (sanft = „Blitze reduzieren“: ohne Speed-Linien, ohne Wackeln)
+    comic(text, sanft = false) {
+      const b = comic.querySelector('b'); b.textContent = text; this.comicLetzt = text;
+      comic.classList.remove('an'); void comic.offsetWidth; comic.classList.toggle('sanft', !!sanft); comic.classList.add('an');
+      clearTimeout(comicT); comicT = setTimeout(() => comic.classList.remove('an'), 1100);
+    },
+    comicText() { return comic.classList.contains('an') ? comic.querySelector('b').textContent : ''; },
     replayState(fan, flash) { replay.classList.toggle('fan', fan); rpFlash.style.opacity = flash.toFixed(3); },
     // n6 Action-Moment: an/aus, je Bild Stärken (v aus action.js verlauf)
     aktion(on) { amEl.classList.toggle('on', !!on); document.body.classList.toggle('aktion', !!on); if (!on) { AM.st = {}; for (const e of [AM.vig, AM.lines, AM.flash]) e.style.opacity = '0.001'; } },
@@ -323,7 +333,7 @@ export function buildHud(root, canvas) {
     kickInfo(k) {
       const kmh = Math.round(k.speed * 3.6);
       const names = { vollspann: 'Vollspann', innenrist: 'Innenrist', aussenrist: 'Außenrist', innen: 'Innenseite', aussen: 'Außenrist', ferse: 'Hacke', chip: 'Chip',
-        volley: 'Volley', dropkick: 'Dropkick', seitfall: 'Seitfallzieher', fallrueck: 'Fallrückzieher', kopf: 'Kopfball', flugkopf: 'Flugkopfball' };
+        volley: 'Volley', dropkick: 'Dropkick', seitfall: 'Seitfallzieher', fallrueck: 'Fallrückzieher', kopf: 'Kopfball', flugkopf: 'Flugkopfball', megaferse: 'Megaferse', lupfer: 'Lupfer', jongl: 'Jongliertrick' };
       const parts = [`${names[k.tech] || (k.kind === 'pass' ? 'Pass' : 'Schuss')} ${kmh} km/h`];
       if (k.kind === 'shot') {
         if (Math.abs(k.sideRps) >= 1) parts.push(`Effet ${Math.abs(k.sideRps).toFixed(1).replace('.', ',')} U/s`);

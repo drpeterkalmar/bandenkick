@@ -8,12 +8,12 @@ export const TECH_NAMES = {
   innen: 'Innenseite', aussen: 'Außenrist', ferse: 'Hacke', chip: 'Chip', vollspann: 'Vollspann',
   innenrist: 'Innenrist', aussenrist: 'Außenrist', volley: 'Volley', dropkick: 'Dropkick', seitfall: 'Seitfallzieher',
   fallrueck: 'Fallrückzieher', kopf: 'Kopfball', flugkopf: 'Flugkopfball',
-  salto: 'Salto-Hacke', lupfer: 'Lupfer', kurve: 'Kurvenpass', kopfpass: 'Kopfballpass', volleypass: 'Volleypass',
+  salto: 'Salto-Hacke', megaferse: 'Megaferse', jongl: 'Jongliertrick', lupfer: 'Lupfer', kurve: 'Kurvenpass', kopfpass: 'Kopfballpass', volleypass: 'Volleypass',
 };
 // n11 (Peter 04.11.: „das Beste und Spektakulärste“): Rang fürs Spektakel – unter Optionen mit fast gleicher Erfolgschance gewinnt
 // der höhere Rang (Salto-Hacke > Fallrückzieher > Seitfall/Flugkopf > Volley/Hacke > Außenrist-Effet > Innenseite)
 export const SPEKTAKEL = {
-  salto: 7, fallrueck: 6, seitfall: 5, flugkopf: 5, volley: 4, dropkick: 4, ferse: 4, kopf: 3.5, volleypass: 4, kopfpass: 3.5,
+  salto: 7, fallrueck: 6, megaferse: 5, seitfall: 5, flugkopf: 5, volley: 4, dropkick: 4, ferse: 4, kopf: 3.5, volleypass: 4, kopfpass: 3.5,
   aussenrist: 3, aussen: 3, kurve: 3, innenrist: 2.5, chip: 2, lupfer: 2, vollspann: 1.5, innen: 1,
 };
 export const spektakelRang = (tech) => SPEKTAKEL[tech] ?? 0;

@@ -300,6 +300,24 @@ export const DEFAULTS = {
   spektakel: 0.1,         // höchstens 10 % weniger Erfolgschance fürs Spektakel                     [?spektakel=]
   einknopf: 0,            // 1 = Test: EIN Kick-Knopf (Schuss oder Pass nach Lage), Standard aus      [?einknopf=1]
   salto: 1,               // Salto-Hacke (Skorpion-Kick) als seltene Luft-Technik, Hackenschuss am Boden [?salto=0]
+  // n13 (Peter 07.11.: „Vollspann und Innenrist Außenrist können nur max 120 Grad vom Tor abgefeuert werden …“, src/sim/spektakel.js):
+  // Schuss-Tipp mit dem Tor außerhalb ±schusskegel° vor dem Schützen → Lupfer-Pass zum besser postierten Mitspieler (Direktabnahme),
+  // Jonglier-Fallrückzieher (Rücken zum Tor, Gegner nicht rechtzeitig da), Megaferse (Rücken zum Tor, Gegner nah) oder Drehung zum Tor
+  schusskegel: 60,        // ° halber Kegel, 0 = aus (wie 0.9.x)                                     [?schusskegel=0]
+  fallrueck: 1,           // Jonglier-Fallrückzieher bei Rücken zum Tor                              [?fallrueck=0]
+  fallrueckBot: 0.4,      // Chance, dass ein Bot ihn in einer passenden Szene versucht (selten)
+  fallrueckD: 18,         // m höchstens so weit vom Tor
+  jonglApex: 2.3,         // m Scheitel des hochgelupften Balls
+  jonglTreff: 1.5,        // m Treffhöhe des Fallrückziehers
+  jonglWucht: 1.4,        // × Tempo des selbst aufgelegten Fallrückziehers (≈ 25 statt 18 m/s)
+  jonglQ: 0.2,            // + Qualität (Lage) – der Ball liegt genau im Treffpunkt
+  jonglStreu: 0.45,       // × Streuung (Fallrückzieher aus dem Spiel 4,8° → ≈ 2,2°, etwas mehr als ein Vollspann)
+  jonglUeberrascht: 0.12, // s: so viel später reagiert der Tormann auf den Fallrückzieher (vom Jongliertrick überrascht)
+  rivaldo: 0.15,          // Chance auf die Einblendung „RIVALDO!“ statt „FALLRÜCKZIEHER!“
+  megaferseD: 16,         // m Megaferse höchstens so weit vom Tor
+  megaferseV: 27,         // m/s Tempo der Megaferse (Hacke bis 0.9.x: ≤ 19)
+  lupferD: 9,             // m Empfänger des Lupfer-Passes höchstens so weit vor dem Tor …
+  lupferFrei: 2.2,        // m … und so frei (nächster Feldspieler des Gegners)
   // Pässe immer hoch (src/sim/hochpass.js): Lupfer/Flanke, Ankunft beim Mitspieler in Volley-, Brust- oder Kopfhöhe. Empfänger nur
   // über einen freien Passweg: Flugbahn gegen die Erreichbarkeit der Gegner (inkl. Sprung) geprüft, sonst der nächste freie
   // Mitspieler, sonst behalten (Hinweis). hochSicher = Zeitreserve (s), die jeder Gegner zu spät kommen muss.
@@ -489,7 +507,7 @@ const MAGNET07 = { schirmVor: 0.3 };
 // n13: ?magnet= bis 2,4 ausdrücklich = Ballmagnet wie 0.9.1 (Abschirmen ohne die n13-Stärkung), sofern nicht ausdrücklich übersteuert
 const MAGNET091 = { schirmNah: 0.9, schirmRel: 0, schirmT: 1.0, schirmVor: 0.6, schirmHand: 0 };
 // n11 ?akro=0: alles wie 0.8.0, sofern nicht ausdrücklich übersteuert
-export const AKRO0 = { turfEn: 0.621, jumpMax: 0.6, sprungAkro: 1, spinMax: 10, backspinMax: 7, bananeSpinMax: 1.2, aussenSpin: 0.75, autotech: 0, einknopf: 0, salto: 0, hochpass: 0, kurvenpass: 0, clSteig: 0, mitnahme: 0, g: 9.81 }; // (n12: Mitnahme gab es in 0.8.0 nicht; n13: Schwerkraft 9,81 wie bis 0.9.1)
+export const AKRO0 = { turfEn: 0.621, jumpMax: 0.6, sprungAkro: 1, spinMax: 10, backspinMax: 7, bananeSpinMax: 1.2, aussenSpin: 0.75, autotech: 0, einknopf: 0, salto: 0, hochpass: 0, kurvenpass: 0, clSteig: 0, mitnahme: 0, g: 9.81, schusskegel: 0 }; // (n12: Mitnahme gab es in 0.8.0 nicht; n13: Schwerkraft 9,81 wie bis 0.9.1)
 
 // Liest Overrides aus einem Query-String (oder Objekt) und gibt ein vollständiges Parameter-Objekt zurück.
 function parseQuery(s) {

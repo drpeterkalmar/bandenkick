@@ -772,7 +772,8 @@ export class Bots {
       if (tc > 0 && tc < 1.2) {
         const zc = b.p.z + b.v.z * tc, yc = b.p.y + b.v.y * tc - 0.5 * P.g * tc * tc;
         if (Math.abs(zc) < cage.gw + 0.5 && yc < cage.gH + 0.3) {
-          if (br.shotSeen < 0) br.shotSeen = g.t;
+          // n13: vom Jonglier-Fallrückzieher überrascht – der Tormann sieht den Schuss um jonglUeberrascht s später
+          if (br.shotSeen < 0) br.shotSeen = g.t + (g.ueberrascht && g.t < g.ueberrascht.bis && g.ueberrascht.team !== pl.team ? g.ueberrascht.dt : 0);
           const seen = g.t - br.shotSeen;
           inp.autoCatch = true; inp.hand = true;
           if (seen < K.react) { inp.mx = 0; inp.mz = 0; inp.sprint = false; } // noch nicht reagiert: stehen bleiben, nicht weiterlaufen

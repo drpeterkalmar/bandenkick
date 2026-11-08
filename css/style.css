@@ -342,3 +342,19 @@ body.quer:not(.cliphoch) .fe-stamp.wort.titel { top: 30% !important; left: 30% !
 .tb .auto.on { opacity: 1; }
 .tb .auto.warn { color: #ffb4a8; }
 body.einknopf #bPass { display: none; }
+
+/* n13 Comic-Spektakel: Einblendung + Speed-Linien (kurz, 1,1 s) */
+.comic { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 30; display: none; }
+.comic.an { display: block; }
+.comic b { position: absolute; left: 50%; top: 30%; transform: translate(-50%, -50%) rotate(-6deg); font: 900 13vmin/1 system-ui, sans-serif;
+  color: #ffe600; -webkit-text-stroke: .045em #1a1a1a; text-shadow: .06em .07em 0 #e8003d, .1em .12em 0 #1a1a1a; letter-spacing: .02em; white-space: nowrap;
+  animation: comicPop 1.1s cubic-bezier(.2, 1.6, .4, 1) forwards; }
+.comic .comic-lines { position: absolute; inset: -20%; opacity: 0; animation: comicLines 1.1s ease-out forwards;
+  background: repeating-conic-gradient(from 0deg at 50% 45%, rgba(255,255,255,.55) 0 .6deg, transparent .6deg 7deg);
+  -webkit-mask: radial-gradient(circle at 50% 45%, transparent 28%, #000 62%); mask: radial-gradient(circle at 50% 45%, transparent 28%, #000 62%); }
+.comic.sanft .comic-lines { display: none; }
+.comic.sanft b { animation: comicPopSanft 1.1s ease-out forwards; }
+@keyframes comicPop { 0% { transform: translate(-50%, -50%) rotate(-6deg) scale(.2); opacity: 0; } 18% { transform: translate(-50%, -50%) rotate(-6deg) scale(1.18); opacity: 1; }
+  30% { transform: translate(-50%, -50%) rotate(-4deg) scale(1); } 80% { opacity: 1; } 100% { transform: translate(-50%, -50%) rotate(-6deg) scale(1.05); opacity: 0; } }
+@keyframes comicPopSanft { 0% { opacity: 0; } 15% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes comicLines { 0% { opacity: 0; } 10% { opacity: .9; } 100% { opacity: 0; } }

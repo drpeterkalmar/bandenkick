@@ -9,6 +9,8 @@ import { editCamera } from '../../src/sim/fanedit.js';
 import { runProbe as botProbe, summary as botSummary } from './n7_probe.mjs';
 import { runProbe as luftProbe, summary as luftSummary } from './n11_probe.mjs';
 import { parcours } from './dribble_probe.mjs';
+import { szene as spekSzene, probe as spekProbe } from './n13_spektakel_probe.mjs';
+import { kegelWinkel } from '../../src/sim/spektakel.js';
 
 const rows = [];
 const check = (name, value, lo, hi, unit, target, note = '') => { const ok = value >= lo && value <= hi; rows.push({ name, value, lo, hi, unit, target, ok, note }); return ok; };
@@ -115,6 +117,62 @@ function flug(P, from, v, w = [0, 0, 0], T = 6, seed = 1) {
   check('Hochpässe: beim Mitspieler in Volley-/Brust-/Kopfhöhe ÷ 0.9.2', ln.hochKoerper / la.hochKoerper, 0.9, 9, '×', 1, `${la.hochKoerper.toFixed(1)} → ${ln.hochKoerper.toFixed(1)} % der hohen Pässe (0,45–2,4 m beim Gemeinten)`);
   check('Bot-Pässe kommen an: Unterschied zu 0.9.2', ln.passAn - la.passAn, -3, 99, 'Punkte', null, `${la.passAn.toFixed(1)} → ${ln.passAn.toFixed(1)} %, abgefangen ${la.passAb.toFixed(1)} → ${ln.passAb.toFixed(1)} %, Pässe/Spiel ${la.passeSpiel.toFixed(1)} → ${ln.passeSpiel.toFixed(1)}`);
   check('Ball über der Gummi-Decke/außerhalb (Bilder)', ln.aus, 0, 0, '×', 0);
+}
+
+// ---------- 4) Schusskegel + Spektakel (Nachtrag 3/4): Megaferse, Lupfer → Direktabnahme, Jonglier-Fallrückzieher ----------
+{
+  const arten = (r) => ({ jongl: r.ev.some((e) => e.type === 'jongl'), mega: r.ev.some((e) => e.type === 'kick' && e.tech === 'megaferse'), lupfer: r.ev.some((e) => e.type === 'lupfer'), dreh: r.ev.some((e) => e.type === 'drehschuss') });
+  // im Kegel (±55°): nie etwas Neues; hinten (≥ 125°, frei): immer der Jonglier-Fallrückzieher (Mensch)
+  let imKegelNeu = 0, hintenJongl = 0, hintenN = 0, kegelN = 0, seitDreh = 0, seitN = 0;
+  for (let i = 0; i < 24; i++) {
+    const x = -1 + (i % 6) * 1.5, z = -3 + (i % 4) * 2, zum = Math.atan2(-z, 12 - x);
+    const k = spekSzene('', { x, z, face: zum + (i % 2 ? 1 : -1) * (i % 3) * 0.3, seed: 40 + i }); kegelN++;
+    const a = arten(k); if (a.jongl || a.mega || a.lupfer || a.dreh) imKegelNeu++;
+    const h = spekSzene('', { x, z, face: zum + Math.PI + (i % 3 - 1) * 0.5, seed: 70 + i }); hintenN++;
+    if (arten(h).jongl) hintenJongl++;
+    const sd = spekSzene('', { x, z, face: zum + (i % 2 ? 1 : -1) * 1.6, seed: 90 + i }); seitN++;
+    if (arten(sd).dreh || arten(sd).lupfer) seitDreh++;
+  }
+  check('Schusskegel: im Kegel (≤ 55° zum Tor) nie Megaferse/Fallrückzieher/Lupfer/Drehung', imKegelNeu, 0, 0, `von ${kegelN}`, 0);
+  check('Schusskegel: Rücken zum Tor, kein Gegner rechtzeitig da → Jonglier-Fallrückzieher', hintenJongl, hintenN, hintenN, `von ${hintenN}`, hintenN);
+  check('Schusskegel: Tor seitlich (≈ 92°), niemand besser postiert → Drehung zum Tor', seitDreh, seitN, seitN, `von ${seitN}`, seitN);
+  // Gegner 1,1 m hinter dem Schützen (zwischen ihm und dem Tor): Megaferse statt Fallrückzieher
+  const mg = spekSzene('', { x: 5, z: 1, face: Math.PI, opp: [6.1, 1], seed: 3 });
+  check('Rücken zum Tor, Gegner nah: Megaferse (nicht der Fallrückzieher)', arten(mg).mega && !arten(mg).jongl ? 1 : 0, 1, 1, '', 1);
+  // Ablauf des Fallrückziehers: Ball steigt 1,8–2,4 m senkrecht, Treffpunkt nach 1,0–1,4 s, über Kopfhöhe, Einblendung
+  const fr = spekSzene('', { x: 4, z: 1, face: Math.PI, seed: 5 });
+  const tj = fr.ev.find((e) => e.type === 'jongl'), tk = fr.ev.find((e) => e.type === 'kick' && e.tech === 'fallrueck'), cm = fr.ev.find((e) => e.type === 'comic');
+  check('Fallrückzieher: Scheitel des hochgelupften Balls', fr.maxY, 1.8, 2.4, 'm', 2.2);
+  check('Fallrückzieher: Zeit Hochlupfen → Treffpunkt', tk && tj ? tk.t - tj.t : 0, 1.0, 1.4, 's', 1.1);
+  check('Fallrückzieher: Treffpunkt über Kopfhöhe (Ballmitte)', tk ? tk.y : 0, 1.3, 2.0, 'm', 1.5);
+  check('Fallrückzieher: Einblendung FALLRÜCKZIEHER!/RIVALDO!', cm && /FALLRÜCKZIEHER|RIVALDO/.test(cm.text) ? 1 : 0, 1, 1, '', 1);
+  // Abbruch: ein Gegner erobert den hochgelupften Ball vor dem Absprung → Luftball-Plan weg, keine hängende Animation, Ball frei
+  {
+    const P = makeParams('');
+    const g = new Game(P, 7, { match: true, perTeam: [2, 1], human: 0, botLevels: [2, 2] });
+    g.rules.phase = 'play';
+    const [sp, mt, kp] = g.players; sp.place(4, 1, Math.PI); mt.place(-6, 5, 0); kp.place(11, 0, Math.PI); g.rules.updateKeepers(0, true);
+    g.ball.place(3.58, 0.11, 1); g.lastTouch = sp.id; sp.lastTouchT = g.t; sp.kickAt({ kind: 'shot', auto: true });
+    let ab = false, jo = false;
+    for (let i = 0; i < 2.5 / DT; i++) {
+      for (const e of g.step([{}])) { if (e.type === 'jongl') { jo = true; g.lastTouch = mt.id + 99 > 0 ? kp.id : 0; g.ball.v.set(-6, 2, 3); } if (e.type === 'jonglab') ab = true; }
+    }
+    check('Abbruch: Gegner erobert den Ball vorher → sauber abgebrochen', jo && ab ? 1 : 0, 1, 1, '', 1);
+    check('Abbruch: Schütze danach nicht mehr im Luftball/am Boden, Ball frei', !sp.air && !sp.fall && g.ball.held !== sp.id ? 1 : 0, 1, 1, '', 1);
+  }
+  // Torquote je Versuch (Tormann Stufe 2): Fallrückzieher grob wie ein normaler Schuss (nicht übermächtig)
+  const S = spekProbe(+(process.env.N13_SPEK || 150), '');
+  const q = (a) => (S[a] ? (100 * S[a].goal) / S[a].n : NaN);
+  check('Torquote Jonglier-Fallrückzieher ÷ Schuss im Kegel', q('fallrueck') / q('kegel'), 0.5, 1.6, '×', 1, `${q('fallrueck').toFixed(0)} % (${S.fallrueck?.n} Versuche) gegen ${q('kegel').toFixed(0)} % (${S.kegel?.n})`);
+  const Sm = spekProbe(80, '', 'gegner'), Sl = spekProbe(80, '', 'mitspieler');
+  const qm = Sm.megaferse ? (100 * Sm.megaferse.goal) / Sm.megaferse.n : 0, ql = Sl['lupfer+direkt'] ? (100 * Sl['lupfer+direkt'].goal) / Sl['lupfer+direkt'].n : 0;
+  check('Torquote Megaferse (Gegner nah)', qm, 5, 45, '%', null, `${Sm.megaferse?.n} Versuche`);
+  check('Lupfer zum besser postierten Mitspieler → Direktabnahme: Torquote', ql, 8, 50, '%', null, `${Sl['lupfer+direkt']?.n} Direktabnahmen`);
+  // ?schusskegel=0: wie 0.9.x
+  const alt = spekSzene('schusskegel=0', { x: 4, z: 1, face: Math.PI, seed: 5 });
+  check('?schusskegel=0: kein Fallrückzieher/Megaferse, Hacke/Schuss wie 0.9.x', arten(alt).jongl || arten(alt).mega ? 0 : 1, 1, 1, '', 1);
+  const af = spekSzene('fallrueck=0', { x: 4, z: 1, face: Math.PI, seed: 5 });
+  check('?fallrueck=0: Rücken zum Tor ohne Fallrückzieher (Megaferse)', !arten(af).jongl && arten(af).mega ? 1 : 0, 1, 1, '', 1);
 }
 
 process.exit(report('n13 – Gummiwände, Spielgefühl, Zufallsteams', rows) ? 0 : 1);

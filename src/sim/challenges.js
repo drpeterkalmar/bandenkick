@@ -208,7 +208,7 @@ class Volley extends Challenge {
   status() { return `Volley-Station · Ball ${Math.min(this.attempt, 10)}/10 · Tore ${this.score}`; }
 }
 const TECH_DE = { volley: 'Volley', dropkick: 'Dropkick', seitfall: 'Seitfallzieher', fallrueck: 'Fallrückzieher', kopf: 'Kopfball', flugkopf: 'Flugkopfball', vollspann: 'Vollspann', innenrist: 'Innenrist', aussenrist: 'Außenrist', innen: 'Innenseite', aussen: 'Außenrist', ferse: 'Hacke', chip: 'Chip', brust: 'Brust', oberschenkel: 'Oberschenkel', graetsche: 'Grätsche',
-  salto: 'Salto-Hacke', lupfer: 'Lupfer', kurve: 'Kurvenpass', kopfpass: 'Kopfballpass', volleypass: 'Volleypass' }; // n11
+  salto: 'Salto-Hacke', megaferse: 'Megaferse', jongl: 'Jongliertrick', lupfer: 'Lupfer', kurve: 'Kurvenpass', kopfpass: 'Kopfballpass', volleypass: 'Volleypass' }; // n11
 export const techName = (t) => TECH_DE[t] || t || '';
 
 // ---------------- Bandenpass: Puppen versperren den Weg, Ball über die Bande in den Kreis ----------------

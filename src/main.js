@@ -23,7 +23,7 @@ import { buildHud } from './ui/hud.js';
 import { Sound } from './audio/sound.js';
 import { ReplayRecorder, ReplayDirector, ReplayKamera } from './sim/replay.js';
 import { FanEdit, editCamera, editCameraFx, jubelRichtung, waehleWinkel, EDIT_DELAY } from './sim/fanedit.js';
-import { ActionRegie } from './sim/action.js';
+import { ActionRegie, bewerte } from './sim/action.js';
 import { ReplayFx } from './render/replayfx.js';
 import { BUILD } from './build.js';
 import { makeKino, kinoLicht, kinoStufeSetzen, KontaktSchatten } from './render/kino.js';
@@ -199,7 +199,7 @@ function startChallenge(id) {
   if (rp.dir) endReplay();
   rp.wait = -1; hud.editVorbereiten(false);
   document.body.classList.add('challenge');
-  game = newGame(); resetPrev(); challengeDone = false;
+  game = newGame(); resetPrev(); challengeDone = false; if (aktion.moment) { aktion.abbrechen(); amEnde(); }
   if (props) props.dispose();
   props = new TrainingProps(scene, { kuschel: FIGUREN === 'kuscheltiere', tierform: TIERFORM });
   setMode('play');
@@ -268,7 +268,7 @@ function startPlay(fresh = false) {
   if (rp.dir) endReplay();
   document.body.classList.remove('tordesspiels');
   rp.wait = -1; hud.editVorbereiten(false);
-  if (fresh || game.match === solo) { game = newGame(); resetPrev(); }
+  if (fresh || game.match === solo) { game = newGame(); resetPrev(); if (aktion.moment) { aktion.abbrechen(); amEnde(); } } // n13: kein Action-/Comic-Moment aus dem alten Spiel
   setMode('play');
   if (!game.match && (game.state !== 'play' || game.t < 0.01)) game.kickoff();
 }
@@ -435,6 +435,14 @@ function handleEvents(ev) {
   const R = game.match ? game.rules : null;
   for (const e of ev) {
     if (deko) deko.onEvent(e, game);
+    // n13 Comic-Spektakel (Megaferse, Jonglier-Fallrückzieher, Direktabnahme nach dem Lupfer): Einblendung + kurze Zeitlupe mit
+    // Kamera-Ruck genau im Trefferpunkt – auch wenn die Action-Momente aus sind (kurz, im Spiel); „Blitze reduzieren“ wird respektiert
+    if (e.type === 'comic' && !rp.dir && rp.wait < 0 && mode === 'play') {
+      hud.comic(e.text, blitzeSanft);
+      const k = ev.find((x) => x.type === 'kick' && x.player === e.player);
+      const b = k ? bewerte(k, game) : null;
+      if (b && !aktion.moment) { aktion.moment = { ...b, w: 1, art: 'ramp', grund: 'comic', t: 0, tSpiel: game.t, real: 0, rueck: 0.12, langsam: 0.2 }; aktion.zahl++; }
+    }
     if (e.type === 'kick') {
       const k = game.players[e.player].lastKick;
       if (k && (e.player === game.human || e.human)) hud.kickInfo(k); // e.human: nach dem Pass wechselt die Steuerung sofort
@@ -1243,7 +1251,7 @@ Object.assign(G, {
   newGame(opts = {}) {
     if (opts.solo !== undefined) setSolo(opts.solo);
     game = opts.bots ? new Game(P, opts.seed ?? seed, { match: true, human: -1, botLevels: opts.botLevels || [2, 2] }) : newGame();
-    document.body.classList.remove('tordesspiels');
+    document.body.classList.remove('tordesspiels'); if (aktion.moment) { aktion.abbrechen(); amEnde(); }
     resetPrev(); setMode('play'); if (!game.match) game.kickoff();
   },
   // n6: Simulation synchron bis zum Ereignis typ (mit Aufzeichnung für die Wiederholung), höchstens maxSec Spielzeit
@@ -1304,6 +1312,7 @@ Object.assign(G, {
   freeze(f = true) { frozen = f; },
   handschuh(i) { const f = figs[i]; return f && f.gloveMat ? { e: f.gloveMat.emissiveIntensity, c: f.gloveMat.color.getHexString(), gloveE: f.gloveE } : null; }, // n7 E1: Test der Müdigkeits-Anzeige
   frozen() { return frozen; },
+  comicNochmal() { if (hud.comicLetzt) hud.comic(hud.comicLetzt, blitzeSanft); return hud.comicLetzt || ''; }, // n13 Tests: Einblendung fürs Foto erneut
   freezeWhen(src) { G.freezeFn = new Function('g', 'return (' + src + ')'); },
   cam(pos, look) { gcam.override = pos ? { pos, look } : null; },
   // Tor-Wiederholung (Tests/Fotos): Zustand, sofort starten (letztes Tor), anhalten in Abschnitt/Anteil, überspringen
