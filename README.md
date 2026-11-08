@@ -464,7 +464,7 @@ python3 tools/fetch_assets.py && python3 tools/make_assets.py   # Assets neu bau
 Browser-Tests laufen headless über die GPU (ANGLE/Metal), nie zwei Browser gleichzeitig.
 
 ## Änderungen
-- **n13 Schusskegel + Spektakel (08.11., Version VERSION_N13K)** – Peter 07.11.: „Vollspann und Innenrist Außenrist können nur max 120
+- **n13 Schusskegel + Spektakel (08.11., Version 0.9.5)** – Peter 07.11.: „Vollspann und Innenrist Außenrist können nur max 120
   Grad vom Tor abgefeuert werden. Alles andere kann zum Beispiel eine ‚Megaferse' oder ein skripted lofted pass zu einem besser postierten
   Mitspieler sein … Generell alles bitte comichaft spektakulärer“ und „wenn man verkehrt zum Tor steht … jongliertrick … danach
   Fallrückzieher (Rivaldo mäßig)“. Auslegung: Winkel zwischen Lauf- (ab 1,5 m/s) bzw. Blickrichtung und der Richtung zur Tormitte. Im
