@@ -244,8 +244,10 @@ Ball mit (Sohle/Außenseite). `?zack=0` = altes Gefühl aus Nacht 1 zum Vergleic
   (Feder-Dämpfer, Rückprall ≈ 10 %), Netz beult am Ball aus (höchstens 0,9 m, an den Kanten greifen Dach-, Außen- und
   Tornetz ineinander: auch 52 m/s bleiben drin). **Pfosten/Latte:** Stahlrohr Ø 80 mm.
 - **Käfig:** 24 × 15 m (Nacht 2c, vorher 20 × 13 = `?feld=20x13`), Tore 3 × 2 m in der Bande, Bande 1 m, Ballfangnetz, Dachnetz auf 5 m. Mit Dach reicht das
-  Seitennetz bis zum Dach (sonst Spalt zwischen 3 und 5 m). Ohne Dach (`?dach=0`) ist das Netz 2 m hoch
-  (Oberkante 3 m); fliegt der Ball darüber, gibt es „Aus“ und der Ball kommt zurück.
+  Seitennetz bis zum Dach (sonst Spalt zwischen 3 und 5 m). Seit 07.11.2026 ohne Dach (`?dach=1` = Dachnetz auf 8 m): das Netz
+  ist 2 m hoch (Oberkante 3 m), darüber verlängern **unsichtbare Gummiwände** (n13) die Käfigseiten bis 12 m, oben eine unsichtbare
+  Decke auf 12 m – elastisch (Stoßzahl 0,65, Effet bleibt zu gut der Hälfte), der Ball geht nicht mehr ins Aus. Mit `?gummi=0` fliegt er
+  wie in cac623e über das Netz → „Aus“, Abwurf durch den Tormann der Mannschaft, die nicht zuletzt berührt hat.
 - **Spieler:** n8: ein Lauftempo 7,0 m/s, 0 → 4 m/s in 0,53 s, 7 m/s nach 1,8 s (n7: 6,0 m/s, 0 → 4 m/s in 0,60 s; bis n6: Sprint 7,5 m/s, Laufen 5,2 m/s, `?sprintfrei=0`); Kurve r = v²/13 m/s²
   (4,3 m im Sprint), Stemmschritt 16 m/s². Ballführung mit echten Ballkontakten und Ballmagnet, kein Klebeball;
   im Sprint längere Vorlagen. Körper als Zylinder (Ball prallt ab, kann aber nie auf einem Spieler liegen bleiben), Spieler schieben
@@ -254,6 +256,7 @@ Ball mit (Sohle/Außenseite). `?zack=0` = altes Gefühl aus Nacht 1 zum Vergleic
 ## URL-Schalter
 | Schalter | Wirkung |
 |---|---|
+| `?gummi=0` | n13 aus: keine unsichtbaren Gummiwände über dem Netz, Abschlag immer mit voller Kraft (Stand cac623e: hoher Ball seitlich raus = Aus/Torwartball). `?gummiH=12` Höhe der Decke (m), `?gummiEn=0.65` Stoßzahl, `?puntZiel=0` = nur der Abschlag wie bisher |
 | `?mitnahme=0` | n12 aus: Annahme wie 0.9.0 (der laufende Empfänger stoppt den Laufpass bzw. lässt ihn vom Körper abprallen, statt ihn nach vorn mitzunehmen). Feinregler: `?mitnahmeVor=` (0,8 m Vorlage), `?mitnahmeZeit=` (0,7 s), `?mitnahmeV=` (ab 1,5 m/s), `?mitnahmeTor=` (1 = ohne Stick halb zum Tor gedreht) |
 | `?akro=0` | n11 aus: alles wie 0.8.0 (Abprall, Sprünge, Effet, flache Pässe, Tipp/Doppeltipp). Einzeln: `?abprall=0.621`, `?sprungkraft=0.6`, `?effet=10`, `?hochpass=0`, `?salto=0`, `?autotech=0`, `?gelenke=0`; `?einknopf=1` = Ein-Kick-Knopf-Test (auch im Pause-Menü) |
 | `?solo=1` | Training allein (Ball und Käfig wie Nacht 1) |
@@ -454,6 +457,12 @@ python3 tools/fetch_assets.py && python3 tools/make_assets.py   # Assets neu bau
 Browser-Tests laufen headless über die GPU (ANGLE/Metal), nie zwei Browser gleichzeitig.
 
 ## Änderungen
+- **n13 Gummiwände (08.11., Version VERSION_N13G)** – Peter 07.11.: „Torwarte pfeffern ständig ins Aus. Mach einfach unsichtbare
+  Gummiwände seitlich und oberhalb.“ Ohne Dach verlängern unsichtbare, elastische Wände Bande und Netz bis 12 m, darüber eine
+  unsichtbare Decke (Stoßzahl 0,65, kaum Griff: Effet bleibt zu gut der Hälfte – nicht bremsen wie das alte Dachnetz). Dazu landet
+  der Abschlag des Tormanns am Ziel (Tempo nach der Weite statt immer 21 m/s). 12 Bot-Spiele (2 × 4 min) ohne → mit: Aus-Bälle
+  30,8 → 0 je Spiel, Abwürfe/Abschläge ins Aus 15,9 → 0 %, Unterbrechungen 4,9 → 2,0 je Minute, Tore/Schuss 33 → 31 % (Streuung),
+  höchster Ball 8,6 m (die Decke trifft fast nie jemand). Abgefangene Abwürfe 8,3 % (mit Dach früher 8,5 %). `?gummi=0` = alt.
 - **n12 Mitnahme (05.11., Version 0.9.1)** – Peter: „der schöne Laufpass an die Spitze … prallt an ihm nach hinten ab“. Der
   laufende Empfänger eines Passes legt den Ball jetzt mit der ersten Berührung (Kopf, Brust, Oberschenkel oder Fuß, auch wenn der Ball
   von hinten an den Körper kommt) in seine Laufrichtung vor. Szene „Laufpass in die Spitze“: Ball danach hinter dem Empfänger

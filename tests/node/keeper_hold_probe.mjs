@@ -36,6 +36,7 @@ export function holdProbe(qs = '', games = 6, seed0 = 1) {
           lastKick = back ? { player: e.player, team: pl.team, t: g.t } : null;
         }
         if (e.type === 'touch') lastKick = null; // ein Ballkontakt dazwischen (Annahme, Abpraller) – kein Rückpass mehr
+        if (e.type === 'gummi') lastKick = null; // n13: von den unsichtbaren Gummiwänden zurück – kein Zuspiel (das Spiel wertet es auch nicht)
         if (e.type === 'body' && lastKick && g.players[e.player].team !== lastKick.team) lastKick = null; // am Gegner abgeprallt
         if (e.type === 'catch') {
           catches++;

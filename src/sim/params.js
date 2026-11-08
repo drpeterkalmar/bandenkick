@@ -74,6 +74,14 @@ export const DEFAULTS = {
   netH: 2.0,              // m Ballfangnetz über der Bande (ohne Dach); mit Dach reicht das Netz bis zum Dach
   roof: 0,                // Dachnetz an/aus (?dach=1). Peter 07.11.: „Mach das Dach ganz weg“ – Ball raus = Torwartball (Abwurf)
   roofH: 8.0,             // m (Peter 07.11.: 5 m bremste hohe Bälle „an der imaginären Decke“; ?dachhoehe=5 = alt)
+  // n13 (Peter 07.11. abends: „Torwarte pfeffern ständig ins Aus. Mach einfach unsichtbare Gummiwände seitlich und oberhalb.“):
+  // ohne Dach verlängern unsichtbare, elastische Wände Bande + Netz bis gummiH nach oben, darüber eine unsichtbare Decke. Sie prallen
+  // hart-elastisch zurück (Stoßzahl gummiEn, Effet bleibt weitgehend) statt wie das alte Dachnetz zu bremsen. 0 = Aus wie cac623e
+  gummi: 1,               //                                                                         [?gummi=0]
+  gummiH: 12,             // m Höhe der unsichtbaren Decke                                           [?gummiH=]
+  gummiEn: 0.65,          // Stoßzahl normal
+  gummiEx: 0.0,           // tangentiale Stoßzahl (wenig Griff: Effet bleibt teilweise)
+  gummiMu: 0.05,          // Reibung beim Stoß (glatt: Effet bleibt zu gut der Hälfte)
   goalW: 3, goalH: 2, goalD: 1.0, // Tor 3 × 2 m in der Bande, 1 m tief
   torraum: 4,             // m Halbkreis-Radius um die Tormitte: nur dort darf die „letzte Hand“ die Hände nehmen
 
@@ -427,7 +435,10 @@ export const DEFAULTS = {
   diveArmT: 0.2,          // s bis die Arme im Hechtsprung ganz gestreckt sind (Nacht 2c: sofort, 0)
   hechtTMax: 0.7,         // s längste Flugphase (früher Absprung: fliegt, bis der Ball da ist)
   throwSpeed: 11,         // m/s Abwurf (flach geworfen)
-  punt: 21,               // m/s Abschlag aus der Hand
+  punt: 21,               // m/s Abschlag aus der Hand (höchstens)
+  // n13: Abschlag-Tempo nach der Zielweite (Wurfweite × puntZiel als Luft-Zuschlag), damit er im Feld landet. Bis 0.9.1 flog jeder
+  // Abschlag mit 21 m/s (~30 m weit) – ohne Dach jeder sechste über das Netz ins Aus. 0 = immer voll (auch mit ?gummi=0)
+  puntZiel: 1.1,          //                                                                         [?puntZiel=0]
   celebrateT: 2.6,        // s Jubel nach dem Tor, dann Anstoß (bzw. Schnellstart mit ?anstoss=0)
   switchT: 0.6,           // s Mindestabstand zwischen automatischen Spielerwechseln
   // n8 (Peter 26.10.: „Spielerwechsel braucht keiner“): kein ⇄-Knopf am Handy – der Spieler wechselt automatisch (zum
@@ -499,6 +510,7 @@ export function makeParams(overrides = {}) {
   if (P.laden) for (const [k, v] of Object.entries(LADEN1)) if (!set.has(k)) P[k] = v;
   if (!P.halten) for (const [k, v] of Object.entries(HALTEN0)) if (!set.has(k)) P[k] = v;
   if (!P.akro) for (const [k, v] of Object.entries(AKRO0)) if (!set.has(k)) P[k] = v;
+  if (!P.gummi && !set.has('puntZiel')) P.puntZiel = 0; // n13: ?gummi=0 = Verhalten wie cac623e (auch der Abschlag)
   // n11: der Tormann springt so hoch wie alle (Fanghöhe mit Strecken + Sprung über 0.8.0 hinaus)
   if (!set.has('catchHigh')) P.catchHigh += Math.max(0, P.jumpMax - 0.6);
   if (set.has('magnet') && P.magnet <= P.magnetEng0) for (const [k, v] of Object.entries(MAGNET07)) if (!set.has(k)) P[k] = v;

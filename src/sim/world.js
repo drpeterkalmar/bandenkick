@@ -72,7 +72,9 @@ export function buildCage(P) {
     for (const t of [1, -1]) bars.push({ a: [s * hx, 0, t * gw], b: [s * hx, gH, t * gw], r: P.postR, tag: 'post' });
     bars.push({ a: [s * hx, gH, -gw], b: [s * hx, gH, gw], r: P.postR, tag: 'bar' });
   }
-  return { hx, hz, bH, top, gw, gH, gD, rects, bars, roof: !!P.roof, ecke };
+  // n13: unsichtbare Gummiwände über dem Netz und Decke (nur ohne Dach; Ball.hitGummi)
+  const gummi = !P.roof && P.gummi ? { y0: top, h: Math.max(P.gummiH, top + 1) } : null;
+  return { hx, hz, bH, top, gw, gH, gD, rects, bars, roof: !!P.roof, ecke, gummi };
 }
 
 // n7 E5: Punkt (Objekt mit x, z) mit Abstand r vor der Eck-Schräge halten (Spieler, Zielpunkte) → true, wenn verschoben

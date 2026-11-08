@@ -116,9 +116,10 @@ function netCOR(P) {
   check('Zufallsbeschuss: max. Höhe', maxY, 0, P.roofH + P.netMaxDepth, 'm', null);
   check('Zufallsbeschuss: max. Netz-Eindellung seitlich', maxOut, -1, P.netMaxDepth, 'm', null);
 }
-// 7) Ohne Dach (?dach=0): hoher Schuss fliegt raus → „Aus“ wird erkannt
+// 7) Ohne Dach und ohne Gummiwände (?dach=0&gummi=0, Stand cac623e): hoher Schuss fliegt raus → „Aus“ wird erkannt
+//    (n13: mit Gummiwänden bleibt er drin – n13.test.mjs)
 {
-  const P0 = makeParams('?dach=0');
+  const P0 = makeParams('?dach=0&gummi=0');
   const s = shot(P0, { v: [8, 26, 6], T: 8 });
   check('Ohne Dach: hoher Schuss → Aus erkannt', s.out ? 1 : 0, 1, 1, '', 1, `Netzoberkante ${P0.netTop} m`);
   const P3 = makeParams('?feld=30x15');

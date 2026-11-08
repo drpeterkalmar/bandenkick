@@ -328,7 +328,10 @@ export class Rules {
     b.held = -1;
     const hx = pl.x + dx * 0.45, hz = pl.z + dz * 0.45;
     if (kind === 'punt') {
-      const sp = P.punt * clamp(power, 0.4, 1.15), el = 32 * Math.PI / 180;
+      const el = 32 * Math.PI / 180;
+      let sp = P.punt * clamp(power, 0.4, 1.15);
+      // n13: Abschlag so stark, dass er am Ziel landet (Wurfweite + Luft-Zuschlag) statt immer mit voller Kraft über das Netz
+      if (P.puntZiel && D > 4) sp = Math.min(sp, Math.max(10, Math.sqrt(D * P.g / Math.sin(2 * el)) * P.puntZiel));
       b.p.set(hx, 0.55, hz);
       b.v.set(dx * sp * Math.cos(el), sp * Math.sin(el), dz * sp * Math.cos(el));
       b.w.set(-dz * 20, 0, dx * 20); // leichter Rückdrall

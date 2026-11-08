@@ -148,6 +148,7 @@ export class Ball {
     // --- harte Kontakte: Bande, Pfosten/Latte ---
     for (const R of cage.rects) if (R.kind === 'board') this.hitBoard(R);
     if (cage.ecke) this.hitCorner(cage);
+    if (cage.gummi) this.hitGummi(cage);
     for (const B of cage.bars) this.hitBar(B);
 
     // --- Boden ---
@@ -243,6 +244,28 @@ export class Ball {
       this.impact(_n, P.boardEn, P.boardEx, P.boardMu);
       this.emit('board', -vn, 'corner');
     } else if (vn < 0) this.v.addScaled(_n, -vn);
+  }
+
+  // n13: unsichtbare Gummiwände – Halbräume über der Netz-Oberkante (Längs-, Stirnseiten, Eck-Schrägen) und eine Decke. Elastisch
+  // (P.gummiEn), kaum Griff, damit Effet und Tempo entlang der Wand bleiben – nicht bremsen wie das alte Dachnetz.
+  hitGummi(cage) {
+    const P = this.P, p = this.p, r = this.r, G = cage.gummi;
+    if (p.y + r < G.y0) return;
+    const wall = (nx, ny, nz, inside) => { // inside = Abstand Ballmitte ↔ Wand (+ = im Käfig)
+      if (inside >= r) return;
+      _n.set(nx, ny, nz);
+      p.addScaled(_n, r - inside);
+      const vn = this.v.dot(_n);
+      if (vn < -P.vRest) { this.impact(_n, P.gummiEn, P.gummiEx, P.gummiMu); this.emit('gummi', -vn); }
+      else if (vn < 0) this.v.addScaled(_n, -vn);
+    };
+    if (p.y > G.y0) {
+      const sx = p.x < 0 ? -1 : 1, sz = p.z < 0 ? -1 : 1;
+      wall(-sx, 0, 0, cage.hx - Math.abs(p.x));
+      wall(0, 0, -sz, cage.hz - Math.abs(p.z));
+      if (cage.ecke) { const c = Math.SQRT1_2; wall(-sx * c, 0, -sz * c, (cage.hx + cage.hz - cage.ecke - Math.abs(p.x) - Math.abs(p.z)) * c); }
+    }
+    wall(0, -1, 0, G.h - p.y);
   }
 
   hitBar(B) {
