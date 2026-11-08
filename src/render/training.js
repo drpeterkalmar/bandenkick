@@ -33,7 +33,8 @@ function buildMachine() {
 }
 
 // n10: tierform 1 = Kindchenschema wie die Tiere – Kopf samt Ohren und Augen × KOPF_PUPPE um den Halsansatz (Volumen +37 %)
-const KOPF_PUPPE = 1.11, HALS_PUPPE = 1.48;
+// n13: tierform 2 = zweite Stufe wie die Tiere (Kopf × 1,2 statt 1,11)
+const KOPF_PUPPE = 1.11, KOPF_PUPPE2 = 1.2, HALS_PUPPE = 1.48;
 function buildDummy(kuschel = false, tierform = 1) {
   const g = new THREE.Group(); g.name = 'puppe';
   const m = mat(0x1b3a8c, { roughness: kuschel ? 1 : 0.7 });
@@ -47,7 +48,7 @@ function buildDummy(kuschel = false, tierform = 1) {
     fuss.push(new THREE.SphereGeometry(0.022, 10, 8).translate(0.145, 1.67, sg * 0.055));
   }
   if (kuschel && tierform) {
-    const k = KOPF_PUPPE, s = (geo) => geo.translate(0, -HALS_PUPPE, 0).scale(k, k, k).translate(0, HALS_PUPPE, 0);
+    const k = tierform >= 2 ? KOPF_PUPPE2 : KOPF_PUPPE, s = (geo) => geo.translate(0, -HALS_PUPPE, 0).scale(k, k, k).translate(0, HALS_PUPPE, 0);
     kopf.forEach(s); for (let i = 1; i < fuss.length; i++) s(fuss[i]); // (fuss[1…] = Knopfaugen)
   }
   const head = new THREE.Mesh(kuschel ? mergeGeometries(kopf) : kopf[0], m); g.add(head);

@@ -256,6 +256,7 @@ Ball mit (Sohle/Außenseite). `?zack=0` = altes Gefühl aus Nacht 1 zum Vergleic
 ## URL-Schalter
 | Schalter | Wirkung |
 |---|---|
+| `?tierform=1` | n13: Kuscheltiere wie 0.9.1 (erste Kindchenschema-Stufe); `?tierform=0` = wie 0.7.0. Standard seit n13: zweite Stufe (Kopf × 1,3, Ärmchen/Beinchen × 0,62, Bäuchlein, große Knopfaugen tiefer im Gesicht, kurze Schnauze, runde Pfoten) |
 | `?replayweit=1` | n13: nahe Replay-Kameras (Kontakt-Zoom, Fan-Edit-Makro) wie 0.9.1 – Standard 2 = doppelt so weit, Schütze und Ball ganz im Bild |
 | `?fancam=1` | n13: Tor-Wiederholung mit Fan-Cam (Fan-Edit mit Netz-, Pfosten-, Jubel-Kameras). Standard seit n13: „Normal“ = ruhige TV-Wiederholung, Einschlag in Zeitlupe aus der TV-Kamera; im Pause-Menü umschaltbar (Normal / mit Fan-Cam / Aus, wird gemerkt) |
 | `?action=1` (`2` = oft) | n13: Action-Momente im laufenden Spiel an (Zoom-Punch, Zeitlupe, Bullet-Time). Standard seit n13: aus; im Pause-Menü umschaltbar (wird gemerkt) |
@@ -462,6 +463,13 @@ python3 tools/fetch_assets.py && python3 tools/make_assets.py   # Assets neu bau
 Browser-Tests laufen headless über die GPU (ANGLE/Metal), nie zwei Browser gleichzeitig.
 
 ## Änderungen
+- **n13 Tiere noch niedlicher (08.11., Version VERSION_N13T)** – Peter 07.11.: „mach die Proportionen der Tiere noch niedlicher“.
+  Zweite Stufe Kindchenschema für alle sechs Tiere (und die Zuschauer, die aus denselben Figuren entstehen; Trainingspuppe Kopf × 1,2):
+  Kopf × 1,3 statt 1,11 (Volumen ≈ doppelt so groß wie 0.7.0), Ärmchen und Beinchen × 0,62 statt 0,75 und etwas dicker, rundes
+  Bäuchlein, Knopfaugen × 1,45 und tiefer im Gesicht, Schnauze kürzer, Pfoten und Tatzen runder. Nur Optik: Spielphysik und Hitboxen
+  unverändert. Damit die Tatzen beim Laufen nicht gleiten, hat der Laufzyklus einen eigenen Schrittfaktor (0,71); der gehaltene Ball
+  liegt näher an den kürzeren Ärmchen, beim Seitfallzieher kippt die Hüfte tiefer an den Ball. Gleichzeitig gleich viele Dreiecke und
+  Dateigröße. `?tierform=1` = 0.9.1, `?tierform=0` = 0.7.0. Vorher/Nachher: `tests/shots/n13/tiere_vorher_nachher.jpg`.
 - **n13 Spielgefühl (08.11., Version 0.9.3)** – Peter 07.11.: „replayzoom weiter entfernt. Fancam default aus. Actionszenen
   default aus. Ballmagnet noch stärker. Schwerkraft etwas senken“. (1) Kontakt-Zoom und Fan-Edit-Makro doppelt so weit weg, Blick
   zur Körpermitte – Schütze und Ball ganz im Bild (`?replayweit=1` = alt). (2) Tor-Wiederholung standardmäßig „Normal“ ohne Fan-Cam

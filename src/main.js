@@ -40,8 +40,9 @@ setSchwereKrumen(P.g); setSchwereSpur(P.g); // n13: Effekte fallen mit derselben
 const DEKO = !!P.deko;
 // n9: Figuren-Satz – Standard Kuscheltiere, ?figuren=menschen = Rocketbox-Menschen wie bis 0.6.x
 const FIGUREN = figurenSatz(qs.get('figuren'));
-// n10: Kuscheltiere im Kindchenschema (größerer Kopf, kürzere Arme/Beine), ?tierform=0 = Proportionen wie 0.7.0
-const TIERFORM = qs.get('tierform') === '0' ? 0 : 1;
+// n10: Kuscheltiere im Kindchenschema (größerer Kopf, kürzere Arme/Beine), ?tierform=0 = Proportionen wie 0.7.0;
+// n13: Standard 2 = noch niedlicher, ?tierform=1 = wie 0.9.1
+const TIERFORM = qs.get('tierform') === '0' ? 0 : qs.get('tierform') === '1' ? 1 : 2;
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 let deko = null;
 // Deko-Licht: Tag oder Abend mit Flutlicht. 'auto' = nach Uhrzeit (ab kurz vor Sonnenuntergang, Mitteleuropa, bis 6:30),
@@ -745,7 +746,7 @@ function frame() {
   // trägt ihn in Menschen-Brusthöhe (rules.carry)
   if (!rf && b.held >= 0 && figs[b.held] && figs[b.held].senk && by > 0.6) {
     const h = game.players[b.held], f = figs[b.held];
-    by -= f.senk * 0.75; bx -= Math.cos(h.face) * 0.07; bz -= Math.sin(h.face) * 0.07;
+    by -= f.senk * 0.75; bx -= Math.cos(h.face) * f.ballNah; bz -= Math.sin(h.face) * f.ballNah; // n13: ballNah wächst mit kürzeren Ärmchen
   }
   ballMesh.position.set(bx, by, bz);
   poseBlob(blob, bx, by, bz, P.ballR);

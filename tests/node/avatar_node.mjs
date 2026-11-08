@@ -35,7 +35,7 @@ export async function ladeAvatare(names, opts = {}) {
   names = names || [...new Set(ROSTER.flat())];
   const kt = names.every(istKuscheltier); // n9: Kuscheltiere aus assets/kuscheltiere, mit Plüsch-Material wie im Spiel
   const A = { avatars: {}, clips: {}, meta: {}, phase: {}, satz: kt ? 'kuscheltiere' : 'menschen', roster: SAETZE[kt ? 'kuscheltiere' : 'menschen'].roster };
-  const ordnerKt = opts.tierform === 0 ? 'assets/kuscheltiere_n9' : 'assets/kuscheltiere';
+  const ordnerKt = opts.tierform === 0 ? 'assets/kuscheltiere_n9' : opts.tierform === 1 ? 'assets/kuscheltiere_n10' : 'assets/kuscheltiere'; // n13: 1 = 0.9.1
   for (const n of names) A.avatars[n] = await parse(await ohneTexturen(`${istKuscheltier(n) ? ordnerKt : 'assets/avatars'}/${n}.glb`));
   if (kt) for (const g of Object.values(A.avatars)) plueschMaterial(g.scene);
   for (const s of ['m', 'f']) {

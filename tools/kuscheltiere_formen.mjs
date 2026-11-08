@@ -95,12 +95,18 @@ export function strahl(s, von, dir) { dir = norm(dir); let t = 0; for (let i = 0
 // Ergebnis: { familien: [{ name, sdf, h, tris, klasse, farbe(p, n) → Mal }], knochen: { Ohr_L: Punkt, … }, farben }
 // Mal (Farbe eines Punkts): { c: Farbe linear, fell: 0…1 (1 Plüsch, 0 glatter Knopf), flecken: [{ d(p) Abstand, c, naht }],
 // linien: [{ d(p), in(p) }] } – Flecken sind aufgenähte Stoffteile (scharfe Kante + Naht), Linien reine Nähte.
-const S = { s: 1, bein: 1 };
+const S = { s: 1, bein: 1, bauch: 1, auge: 1, augeTief: 0, pfote: 1 };
 // n10 (Peter 02.11.: „tiere haben größere köpfe und kürzere ärmchen und beinchen“): Kindchenschema. Ober-/Unterarm und
 // Ober-/Unterschenkel × arm bzw. bein (Knochen der Vorlage gekürzt, Skelett so weit abgesenkt, dass die Sohle bleibt –
 // build_kuscheltiere.mjs), Kopf samt Ohren, Augen, Nase, Mund × kopf um das Kopfgelenk (Volumen × kopf³).
 // Die n9-Figuren (0.7.0) liegen unverändert in assets/kuscheltiere_n9 (?tierform=0).
-export const TIERFORM = { arm: 0.75, bein: 0.75, kopf: 1.11 };
+export const TIERFORM10 = { arm: 0.75, bein: 0.75, kopf: 1.11 }; // n10 (0.8.0–0.9.x) → assets/kuscheltiere_n10 (?tierform=1)
+// n13 (Peter 07.11.: „mach die Proportionen der Tiere noch niedlicher“): zweite Stufe Kindchenschema – Kopf nochmals größer (1,2 statt
+// 1,11 → Volumen × 1,27 gegenüber n10), noch kürzere stämmige Ärmchen/Beinchen (0,68 statt 0,75, dafür dicker: dick), rundes Bäuchlein
+// (bauch), große Knopfaugen (auge) tiefer im Gesicht (augeTief), kurze Schnauze (schnauze: alles vor der Gesichtsebene gestaucht),
+// runde Pfoten und Tatzen (pfote). Nur Optik – Skelett-Längen der Glieder wie gehabt über arm/bein, Spielphysik unverändert.
+// schritt = Schrittweg-Faktor der Laufzyklen (avatars.js): mehr als bein, weil Fuß und Tatze gleich lang bleiben (gemessen: 0,62 → 0,71)
+export const TIERFORM = { schritt: 0.713, arm: 0.62, bein: 0.62, kopf: 1.3, dick: 1.12, bauch: 1.2, auge: 1.45, augeTief: 0.08, schnauze: 0.75, pfote: 1.15 };
 const m = (v) => v * S.s; // Maße mit der Größe der Vorlage skalieren
 
 function grundkoerper(G, T) {
@@ -109,7 +115,7 @@ function grundkoerper(G, T) {
   const P = L('Pelvis'), Sp = L('Spine'), S2 = L('Spine2'), N = L('Neck'), H = L('Head');
   const fam = [];
   // Rumpf: Po, runder Bauch, Brust, Nackenansatz – birnenförmig
-  const bauch = T.bauch || 1;
+  const bauch = (T.bauch || 1) * S.bauch;
   const rumpf = vereint(m(0.07),
     ell(add(P, [0, m(0.02), m(-0.012)]), [m(0.165), m(0.15), m(0.15)]),
     ell(add(Sp, [0, m(0.06), m(0.03)]), [m(0.172 * bauch), m(0.2), m(0.168 * bauch)]),
@@ -122,16 +128,17 @@ function grundkoerper(G, T) {
     const ua = L(sd + '_UpperArm'), fa = L(sd + '_Forearm'), ha = L(sd + '_Hand'), fi = L(sd + '_Finger2');
     const schulter = add(ua, [-sg * m(0.035), m(0.005), 0]);
     const hd = norm(sub(fi, ha));
-    const pfote = ell(add(ha, mul(hd, m(0.055))), [m(0.068), m(0.064), m(0.09)], rahmen(hd, sub(fa, ua)));
-    const ar = T.arm || 1;
+    const pf = S.pfote; // n13: runde Pfote (breiter, kürzer)
+    const pfote = ell(add(ha, mul(hd, m(0.055 / pf))), [m(0.068 * pf), m(0.064 * pf), m(0.09 / Math.sqrt(pf))], rahmen(hd, sub(fa, ua)));
+    const ar = (T.arm || 1) * S.dick;
     const arm = vereint(m(0.03), kette([schulter, fa, add(ha, mul(hd, m(-0.01)))], [m(0.08 * ar), m(0.069 * ar), m(0.062 * ar)]), pfote);
     fam.push({ name: 'arm' + sd, sdf: arm, h: 0.008, tris: 650, klasse: 'arm' + sd, farbe: T.armFarbe ? (p, n) => T.armFarbe(p, n, sd) : T.farbe });
     // Beine: dicke Säulen und große Tatzen mit flacher Sohle (Sohle 1,5 cm unter dem Boden wie bei den Menschen)
     const th = L(sd + '_Thigh'), ca = L(sd + '_Calf'), fo = L(sd + '_Foot'), to = L(sd + '_Toe0');
     const fd = norm([to[0] - fo[0], 0, to[2] - fo[2]]);
     const mitteF = [(fo[0] + to[0]) / 2 + fd[0] * m(0.005), -0.015 + m(0.075), (fo[2] + to[2]) / 2 + fd[2] * m(0.012)];
-    const tatze = ell(mitteF, [m(0.082), m(0.075), m(0.142)], rahmen(fd));
-    const br = T.bein || 1;
+    const tatze = ell(mitteF, [m(0.082 * S.pfote), m(0.075), m(0.142 / Math.sqrt(S.pfote))], rahmen(fd)); // n13: rundere Tatze
+    const br = (T.bein || 1) * S.dick;
     const bein = vereint(m(0.035), kette([add(th, [0, m(0.04), 0]), ca, fo], [m(0.104 * br), m(0.092 * br), m(0.08 * br)]), tatze);
     const sohle = halbraum([0, -0.015, 0], [0, -1, 0]);
     fam.push({ name: 'bein' + sd, sdf: schnitt(bein, sohle, m(0.012)), h: 0.008, tris: 750, klasse: 'bein' + sd, tatze: { mitte: mitteF, dir: fd }, farbe: T.beinFarbe ? (p, n) => T.beinFarbe(p, n, sd) : T.farbe });
@@ -158,9 +165,9 @@ function kopfTeile(G, T, kopf, opt) {
   // Knopfaugen: auf die Kopf-Oberfläche gesetzt, zur Hälfte eingenäht
   const augen = [];
   for (const sg of [1, -1]) {
-    const dir = [sg * opt.augeX, opt.augeY, 1];
+    const dir = [sg * opt.augeX, opt.augeY - S.augeTief, 1]; // n13: Augen tiefer im Gesicht …
     const p = strahl(kopf, kc, dir), n = grad(kopf.f, p);
-    const r = m(opt.augeR || 0.021);
+    const r = m((opt.augeR || 0.021) * S.auge); // … und größer
     augen.push(ell(sub(p, mul(n, r * 0.25)), [r, r, r * 0.62], rahmen(n)));
     opt.augenPunkte = (opt.augenPunkte || []).concat([{ p, n }]);
   }
@@ -210,9 +217,22 @@ export const TIERE = {
 export function bauplan(name, G, form = null) {
   S.s = (G.kopfY0 ?? G.Head[1]) / 1.587;
   S.bein = form ? form.bein : 1;
+  S.bauch = form?.bauch ?? 1; S.auge = form?.auge ?? 1; S.augeTief = form?.augeTief ?? 0; S.pfote = form?.pfote ?? 1; S.dick = form?.dick ?? 1;
   const plan = TIERE[name].bau(G);
+  if (form && form.schnauze && form.schnauze !== 1) schnauzeKuerzer(plan, G.Head[2] + m(0.115), form.schnauze);
   if (form && form.kopf !== 1) kopfGroesser(plan, G.Head, form.kopf);
   return plan;
+}
+// n13: kurze Schnauze – alle Kopf-Teile (Kopf, Augen, Nase, Mund) vor der Gesichtsebene z0 in Blickrichtung (+z) × k gestaucht:
+// Feld f'(p) = f(q) mit q.z = z0 + (p.z − z0)/k (k < 1: kürzer); Farbe am zurückgerechneten Punkt
+function schnauzeKuerzer(plan, z0, k) {
+  const zur = (p) => (p[2] > z0 ? [p[0], p[1], z0 + (p[2] - z0) / k] : p);
+  for (const fam of plan.familien) {
+    if (fam.klasse !== 'kopf') continue;
+    const f0 = fam.sdf.f, bb = fam.sdf.bb, inv0 = fam.inv;
+    fam.sdf = { f: (x, y, z) => (z > z0 ? k * f0(x, y, z0 + (z - z0) / k) : f0(x, y, z)), bb: bb.map((q) => [q[0], q[1], q[2] > z0 ? z0 + (q[2] - z0) * k : q[2]]) };
+    fam.inv = inv0 ? (p) => inv0(zur(p)) : zur;
+  }
 }
 // Kopf-Teile (Kopf, Ohren, Augen, Nase, Mund) um den Punkt c mit k skalieren: Feld f'(p) = k·f(c + (p − c)/k); Farbe und
 // Flecken werden am zurückgerechneten Punkt gelesen (fam.inv), die Ohr-Knochen wandern mit
@@ -222,7 +242,7 @@ function kopfGroesser(plan, c, k) {
     if (!/^(kopf|ohr[LR])$/.test(fam.klasse)) continue;
     const f0 = fam.sdf.f, bb = fam.sdf.bb;
     fam.sdf = { f: (x, y, z) => k * f0(...zur([x, y, z])), bb: [hin(bb[0]), hin(bb[1])] };
-    fam.inv = zur;
+    fam.inv = fam.inv ? ((inv0) => (p) => inv0(zur(p)))(fam.inv) : zur; // (n13: nach der kurzen Schnauze)
     fam.h *= k;
   }
   for (const n of Object.keys(plan.knochen)) if (/^Ohr_/.test(n)) plan.knochen[n] = hin(plan.knochen[n]);

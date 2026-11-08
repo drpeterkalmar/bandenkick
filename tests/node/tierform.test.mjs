@@ -37,9 +37,10 @@ function ruhe(A, n) {
 }
 const R = NAMEN.map((n) => [n, ruhe(ALT, n), ruhe(NEU, n)]);
 const q = (k) => R.map(([, a, b]) => b[k] / a[k]);
-check('Kopf-Volumen neu ÷ 0.7.0 (alle 6 Tiere, kleinster Wert; Auftrag +25–35 %, gewählt +37 %)', Math.min(...q('kopf')), 1.25, 1.45, '×', R.map(([n], i) => `${n} ${f(q('kopf')[i])}`).join(', '));
-check('Arme (Ober- + Unterarm) neu ÷ 0.7.0 (größter Wert)', Math.max(...q('arm')), 0.7, 0.8, '×', `alle ${f(Math.min(...q('arm')))}–${f(Math.max(...q('arm')))}`);
-check('Beine (Ober- + Unterschenkel) neu ÷ 0.7.0 (größter Wert)', Math.max(...q('bein')), 0.7, 0.8, '×', `alle ${f(Math.min(...q('bein')))}–${f(Math.max(...q('bein')))}`);
+// n13 (Peter 07.11.: „noch niedlicher“): zweite Stufe – Kopf × 1,3 (n10: 1,11), Ärmchen/Beinchen × 0,62 (n10: 0,75); ?tierform=1 = n10
+check('Kopf-Volumen neu ÷ 0.7.0 (alle 6 Tiere, kleinster Wert; n13 Kopf × 1,3 → ≈ × 2)', Math.min(...q('kopf')), 1.8, 2.3, '×', R.map(([n], i) => `${n} ${f(q('kopf')[i])}`).join(', '));
+check('Arme (Ober- + Unterarm) neu ÷ 0.7.0 (größter Wert)', Math.max(...q('arm')), 0.58, 0.66, '×', `alle ${f(Math.min(...q('arm')))}–${f(Math.max(...q('arm')))}`);
+check('Beine (Ober- + Unterschenkel) neu ÷ 0.7.0 (größter Wert)', Math.max(...q('bein')), 0.58, 0.66, '×', `alle ${f(Math.min(...q('bein')))}–${f(Math.max(...q('bein')))}`);
 check('Sohle in der Ruhepose (tiefster Punkt, wie 0.7.0 ≈ −1,2 cm)', Math.min(...R.map(([, , b]) => b.sohle)) * 100, -2.5, -0.5, 'cm');
 
 // Bewegungen: liegend nicht tiefer im Rasen, Kopfball, Ball halten
@@ -67,7 +68,7 @@ const halten = (A, n) => {
   const av = new Avatar(A, n, 0, { shadows: false });
   for (let i = 0; i < 60; i++) av.update(1 / 60, spieler(), { x: 0, z: 0, keeper: true, holding: true, t: i / 60 });
   av.root.updateMatrixWorld(true);
-  const b = new THREE.Vector3(0.4 - (av.senk ? 0.07 : 0), 1.13 - (av.senk ? 0.75 * av.senk : 0), 0);
+  const b = new THREE.Vector3(0.4 - (av.ballNah || 0), 1.13 - (av.senk ? 0.75 * av.senk : 0), 0);
   return Math.max(...['L', 'R'].map((s) => av.bones[`Bip01_${s}_Hand`].getWorldPosition(_w).distanceTo(b)));
 };
 const dH = NAMEN.map((n) => [halten(ALT, n), halten(NEU, n)]);

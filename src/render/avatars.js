@@ -30,6 +30,8 @@ export const SAETZE = {
 // n10 (Peter 02.11.: „tiere haben größere köpfe und kürzere ärmchen und beinchen“): Kindchenschema-Figuren in
 // assets/kuscheltiere, die n9-Proportionen (0.7.0) für ?tierform=0 in assets/kuscheltiere_n9
 export const ORDNER_TIERFORM0 = 'assets/kuscheltiere_n9';
+// n13 (Peter 07.11.: „noch niedlicher“): zweite Stufe in assets/kuscheltiere, die n10-Figuren (0.8.0–0.9.x) für ?tierform=1
+export const ORDNER_TIERFORM1 = 'assets/kuscheltiere_n10';
 export function figurenSatz(wert) { return wert === 'menschen' ? 'menschen' : 'kuscheltiere'; }
 export const istKuscheltier = (name) => name in KUSCHELTIERE;
 const LOCO = ['walk', 'jog', 'run', 'sprint'];
@@ -77,7 +79,7 @@ export async function loadAvatarAssets(onProgress = () => {}, opts = {}) {
   const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
   const satz = SAETZE[opts.satz] ? opts.satz : 'menschen';
   const names = [...new Set(SAETZE[satz].roster.flat())];
-  const ordner = satz === 'kuscheltiere' && opts.tierform === 0 ? ORDNER_TIERFORM0 : SAETZE[satz].ordner;
+  const ordner = satz === 'kuscheltiere' && opts.tierform === 0 ? ORDNER_TIERFORM0 : satz === 'kuscheltiere' && opts.tierform === 1 ? ORDNER_TIERFORM1 : SAETZE[satz].ordner;
   const pfad = (n) => `${ordner}/${n}.glb`;
   let ktx = null;
   if (KTX2_AVATARE && opts.ktx !== false && opts.renderer) { try { ktx = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).setKTX2Loader(await ktx2Lader(opts.renderer)); } catch (e) { ktx = null; } }
@@ -363,7 +365,9 @@ export class Avatar {
     // n10: Kindchenschema – das Skelett ist um senken m abgesenkt (kürzere Beine, build_kuscheltiere.mjs), bein = Beinlänge-Faktor.
     // Der Dreh- und Absenkpunkt (Hüfte, bei den Menschen 0,95 m) wandert mit; liegend bleibt der Körper so hoch wie vorher.
     const ex = (this.bones.Bip01 || this.model.getObjectByName('Bip01') || {}).userData || {};
-    this.senk = ex.senken || 0; this.beinF = ex.bein || 1;
+    this.senk = ex.senken || 0; this.beinF = ex.bein || 1; this.schrittF = ex.schritt || this.beinF; this.armF = ex.arm || 1;
+    // n13: so viel näher zeichnet main.js den gehaltenen Ball (kürzere Ärmchen der zweiten Stufe: 0,07 m bei Arm 0,75, mehr darunter)
+    this.ballNah = this.senk ? 0.07 + Math.max(0, 0.75 - this.armF) * 0.6 : 0; // n13: Schrittweg eigens (Fuß bleibt lang)
     this.hh = 0.95 - this.senk;
     this.tilt.position.y = this.hh; this.model.position.y = -this.hh + 0.015; // Sohle liegt in der Ruhepose 1,5 cm tief
     this.meshes = [];
@@ -507,7 +511,7 @@ export class Avatar {
     // ---- Lauf-Blend nach Tempo ----
     const v = pl.speed, M = this.meta;
     // n10: kürzere Beine (beinF) → kürzere Schritte: Gangart und Schrittweg je Zyklus × beinF (höhere Schrittfrequenz, kein Gleiten)
-    const bf = this.beinF, sp = this._sp || (this._sp = { walk: M.walk.speed * bf, jog: M.jog.speed * bf, run: M.run.speed * bf, sprint: M.sprint.speed * bf });
+    const bf = this.schrittF, sp = this._sp || (this._sp = { walk: M.walk.speed * bf, jog: M.jog.speed * bf, run: M.run.speed * bf, sprint: M.sprint.speed * bf });
     const w = laufGewichte(0, sp, this._w || (this._w = {}));
     const vRoh = Math.max(v, Math.min(1.2, Math.abs(this.turnRate) * 0.35)); // auf der Stelle drehen = Trippeln
     let vEff = vRoh;
@@ -912,7 +916,7 @@ function techPose(pl, t, beinF = 1) {
         const A = AIR_POSE.fallrueck, drop = (cy ?? 1.4) - A.hipBelow * beinF - 0.95 - (pl.jumpY || 0); // n10: kürzeres Bein → Hüfte näher am Ball
         return { pitch: A.pitch * u, roll: 0, drop: drop * u, legs: true, thigh: -2.12 * u, thigh2: -0.6 * u, calf: 0.1, arms: 0.9 * u };
       }
-      case 'seitfall': { const A = AIR_POSE.seitfall; return { pitch: A.pitch * u, roll: -side * A.roll * u, drop: A.drop * u, legs: true, thigh: -0.5 - 1.3 * u, thigh2: -0.3 * u, arms: 0.7 * u }; }
+      case 'seitfall': { const A = AIR_POSE.seitfall, dz = -Math.max(0, 0.75 - beinF) * 0.9; /* n13: noch kürzeres Bein → Hüfte tiefer, Spann am Ball */ return { pitch: A.pitch * u, roll: -side * A.roll * u, drop: (A.drop + dz) * u, legs: true, thigh: -0.5 - 1.3 * u, thigh2: -0.3 * u, arms: 0.7 * u }; }
       case 'flugkopf': { const A = AIR_POSE.flugkopf; return { pitch: A.pitch * u, roll: 0, drop: A.drop * u, legs: true, thigh: 0.35 * u, thigh2: 0.35 * u, arms: -0.4 * u, nod: -0.3 * u }; }
       case 'kopf': return { pitch: -0.25 * (1 - u) + 0.35 * u, roll: 0, drop: 0, hop: u, legs: true, thigh: -0.3 * u, arms: 0.8 * (1 - u) + 0.3, nod: 0.45 * u };
       // n11 Salto-Hacke (Skorpion-Kick): Vorwärtssalto – kopfüber nach vorn, beide Knie stark gebeugt, die Fersen schlagen hinter dem

@@ -18,13 +18,14 @@ import { NodeIO } from '@gltf-transform/core';
 import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
 import { prune, meshopt } from '@gltf-transform/functions';
 import { MeshoptEncoder, MeshoptDecoder, MeshoptSimplifier } from 'meshoptimizer';
-import { TIERE, TIERFORM, bauplan, male, grad, add, mul } from './kuscheltiere_formen.mjs';
+import { TIERE, TIERFORM, TIERFORM10, bauplan, male, grad, add, mul } from './kuscheltiere_formen.mjs';
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 // n10: --n9 baut die Proportionen von 0.7.0 nach assets/kuscheltiere_n9 (Standard: Kindchenschema TIERFORM → assets/kuscheltiere)
-const N9 = process.argv.includes('--n9');
-const FORM = N9 ? null : TIERFORM;
-const OUT = path.join(ROOT, 'assets', N9 ? 'kuscheltiere_n9' : 'kuscheltiere');
+// n13: --n10 baut die Proportionen von 0.8.0–0.9.x nach assets/kuscheltiere_n10 (?tierform=1); Standard: zweite Stufe (TIERFORM)
+const N9 = process.argv.includes('--n9'), N10 = process.argv.includes('--n10');
+const FORM = N9 ? null : N10 ? TIERFORM10 : TIERFORM;
+const OUT = path.join(ROOT, 'assets', N9 ? 'kuscheltiere_n9' : N10 ? 'kuscheltiere_n10' : 'kuscheltiere');
 await import('../tests/node/three_hook.mjs');
 const THREE = await import('three');
 await MeshoptEncoder.ready; await MeshoptDecoder.ready; await MeshoptSimplifier.ready;
@@ -141,7 +142,7 @@ async function vorlage(ref, form) {
     // ganzes Skelett absenken (Bip01 trägt keine Animation), damit Knöchel und Zehen wieder so hoch über dem Rasen sind wie vorher
     senken = sohle() - y0;
     const b = knoten.Bip01, t = b.getTranslation();
-    b.setTranslation([t[0], t[1] - senken, t[2]]).setExtras({ ...(b.getExtras() || {}), senken, bein: form.bein, arm: form.arm, kopf: form.kopf });
+    b.setTranslation([t[0], t[1] - senken, t[2]]).setExtras({ ...(b.getExtras() || {}), senken, bein: form.bein, arm: form.arm, kopf: form.kopf, ...(form.schritt ? { schritt: form.schritt } : {}) });
   }
   const W = joints.map((n) => new THREE.Matrix4().fromArray(n.getWorldMatrix()));
   const G = { kopfY0 };

@@ -36,7 +36,7 @@ const sun = new THREE.DirectionalLight(0xfff2dd, 2.2); sun.position.set(4, 8, 6)
 sun.shadow.mapSize.set(2048, 2048); Object.assign(sun.shadow.camera, { left: -8, right: 8, top: 4, bottom: -2 }); scene.add(sun);
 const boden = new THREE.Mesh(new THREE.PlaneGeometry(40, 20).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0x2f7d34, roughness: 0.95 }));
 boden.receiveShadow = true; scene.add(boden);
-const A = await loadAvatarAssets(() => {}, { satz, renderer, billig: qs.get('q') === '0', tierform: qs.get('tierform') === '0' ? 0 : 1 });
+const A = await loadAvatarAssets(() => {}, { satz, renderer, billig: qs.get('q') === '0', tierform: qs.get('tierform') === '0' ? 0 : qs.get('tierform') === '1' ? 1 : 2 });
 const R = A.roster.flat();
 const sp = (o = {}) => ({ face: Math.PI / 2, speed: 0, vx: 0, vz: 0, plant: 0, kickT: 9, kickFoot: 1, techT: 9, tech: '', hand: { mode: 'none', dx: 0, dz: 0, t: 0, T: 0.38 }, jumpY: 0, air: null, fall: null, slide: null, P: { slideGroundT: 0.6 }, ...o });
 const POSEN = {
@@ -56,7 +56,7 @@ const POSEN = {
 };
 // n10: Ball je Figur (Weltpunkt relativ zur Figur, Blick +z) – Schuss/Pass am Fuß, Halten wie main.js (Sim-Brusthöhe 1,13 m, 0,4 m vor
 // dem Körper, beim Kindchenschema um 0,75 · senken tiefer und 0,07 m näher), Kopfball in Sim-Höhe (Kopfstoß ≈ 1,7 m) vor dem Kopf
-const BALL = { schuss: () => [0, 0.11, 0.42], pass: () => [0, 0.11, 0.42], halten: (av) => [0, 1.13 - 0.75 * av.senk, 0.33 + (av.senk ? 0 : 0.07)],
+const BALL = { schuss: () => [0, 0.11, 0.42], pass: () => [0, 0.11, 0.42], halten: (av) => [0, 1.13 - 0.75 * av.senk, 0.4 - (av.ballNah || 0)],
   kopf: () => [0, 2.0, 0.12], kopfball: () => [0, 1.72, 0.14] };
 const [pl, st] = POSEN[pose];
 const figs = R.map((n, i) => {
