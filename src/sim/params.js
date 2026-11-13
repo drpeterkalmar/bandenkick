@@ -85,7 +85,7 @@ export const DEFAULTS = {
   gummiEx: 0.0,           // tangentiale Stoßzahl (wenig Griff: Effet bleibt teilweise)
   gummiMu: 0.05,          // Reibung beim Stoß (glatt: Effet bleibt zu gut der Hälfte)
   goalW: 3, goalH: 2, goalD: 1.0, // Tor 3 × 2 m in der Bande, 1 m tief
-  torraum: 4,             // m Halbkreis-Radius um die Tormitte: nur dort darf die „letzte Hand“ die Hände nehmen
+  torraum: 3,             // m Halbkreis-Radius um die Tormitte: nur dort darf die „letzte Hand“ die Hände nehmen (Peter 13.11.: kleiner, alt 4 = ?torraum=4)
 
   // ---------------- Spieler ----------------
   vSprint: 7.5,           // m/s Höchsttempo Sprint (mit ?sprintfrei=1 nur noch Grenze der Antrittskurve, siehe tauAcc0)

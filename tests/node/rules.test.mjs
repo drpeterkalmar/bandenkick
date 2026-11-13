@@ -1,4 +1,4 @@
-// Regeln 3 gegen 3: „letzte Hand“ (hinterster Spieler, Hysterese 0,5 m / 0,3 s), Torraum (Halbkreis 4 m,
+// Regeln 3 gegen 3: „letzte Hand“ (hinterster Spieler, Hysterese 0,5 m / 0,3 s), Torraum (Halbkreis 3 m,
 // ?torraum=), Hände nur dort, Ball in der Hand max. P.holdMax (Nacht 2e: 3 s, vorher 6 s), niemand darf angreifen, Hechtsprung, Schnellstart
 // nach Tor bzw. ?anstoss=1, Spielzeit 2 × dauer, Golden Goal. Aufruf: node tests/node/rules.test.mjs
 import { makeParams } from '../../src/sim/params.js';
@@ -57,13 +57,13 @@ const park = (g) => { // alle Spieler weit weg von Ball und Toren
   for (let i = 0; i < 0.5 / DT; i++) g3.rules.updateKeepers(DT);
   check('Überholen nur 0,25 s → kein Wechsel', g3.rules.keeper[0] === k3 ? 1 : 0, 1, 1, '', 1);
 }
-// 3) Torraum: Halbkreis 4 m um die Tormitte, feldseitig; ?torraum=5
+// 3) Torraum: Halbkreis 3 m um die Tormitte, feldseitig; ?torraum=5
 {
   const g = mk(); const R = g.rules, hx = g.cage.hx;
-  const inside = [R.inBox(0, -hx + 3.9, 0), R.inBox(0, -hx + 2.4, 3.0), R.inBox(1, hx - 1, -3.8)].every(Boolean);
-  const outside = [R.inBox(0, -hx + 4.1, 0), R.inBox(0, -hx + 2, 3.5), R.inBox(0, -hx - 0.3, 0), R.inBox(1, -hx + 1, 0)].some(Boolean);
-  check('Torraum: Punkte innen (3,9 m; 3,84 m schräg)', inside ? 1 : 0, 1, 1, '', 1);
-  check('Torraum: Punkte außen (4,1 m; 4,03 m schräg; hinter der Linie; anderes Tor)', outside ? 0 : 1, 1, 1, '', 1);
+  const inside = [R.inBox(0, -hx + 2.9, 0), R.inBox(0, -hx + 1.8, 2.3), R.inBox(1, hx - 1, -2.8)].every(Boolean);
+  const outside = [R.inBox(0, -hx + 3.1, 0), R.inBox(0, -hx + 1.5, 2.7), R.inBox(0, -hx - 0.3, 0), R.inBox(1, -hx + 1, 0)].some(Boolean);
+  check('Torraum: Punkte innen (2,9 m; 2,92 m schräg)', inside ? 1 : 0, 1, 1, '', 1);
+  check('Torraum: Punkte außen (3,1 m; 3,09 m schräg; hinter der Linie; anderes Tor)', outside ? 0 : 1, 1, 1, '', 1);
   const g5 = mk('?torraum=5');
   check('?torraum=5: 4,5 m ist drin', g5.rules.inBox(0, -hx + 4.5, 0) ? 1 : 0, 1, 1, '', 1);
 }
@@ -116,9 +116,9 @@ const park = (g) => { // alle Spieler weit weg von Ball und Toren
 // 6) Hechtsprung: nur im Torraum; Flug, dann am Boden; fängt Ball im Flug
 {
   const g = mk(); park(g);
-  const k = g.players[0]; k.place(-9, 0, 0); g.rules.updateKeepers(0, true);
+  const k = g.players[0]; k.place(-10, 0, 0); g.rules.updateKeepers(0, true); // 2 m vor der Linie (13.11.: Torraum 3 m, vorher -9)
   // (Nacht 2d: die Arme fahren im Sprung erst in 0,2 s aus – der Ball rollt deshalb langsamer davon als vorher 6 m/s)
-  g.ball.place(-9, 0.6, 1.7); g.ball.contact = false; g.ball.v.set(-2.5, 0, 0.05);
+  g.ball.place(-10, 0.6, 1.7); g.ball.contact = false; g.ball.v.set(-2.5, 0, 0.05);
   let caught = false, tGround = -1, mode = [];
   for (let i = 0; i < 1.4 / DT; i++) {
     const a = []; a[0] = i === 0 ? inp({ dive: true, mz: 1, hand: true }) : inp({ hand: true });
