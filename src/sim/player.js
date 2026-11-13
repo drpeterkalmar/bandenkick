@@ -6,7 +6,7 @@
 import { setKick, passDist, passScharf } from './kickplan.js';
 import { perfektPass } from './perfekt.js';
 import { clampCorner } from './world.js';
-import { planPass } from './pass.js';
+import { planPass, passCandidates } from './pass.js';
 import { planShot } from './shot.js';
 import { autoShot, einKnopfArt } from './akro.js';
 import { planAir, planAirHelp, stepAir, stepFall } from './air.js';
@@ -750,8 +750,9 @@ export class Player {
       const auto = this.P.autotech;
       if (e.type === 'start' && e.mode === 'std') {
         this.armed = null; this.charging = false; this.clearT = 0; this.airPress = false;
-        // n11 Ein-Knopf-Test (?einknopf=1): der Schuss-Knopf ist der Kick – Schuss oder Pass nach Lage
-        const k2 = this.P.einknopf && kind === 'shot' ? einKnopfArt(game, this, stick()) : kind;
+        // n11 Ein-Knopf-Kick (Standard seit Peter 13.11., ?einknopf=0 = aus): der Schuss-Knopf ist der Kick – Schuss oder Pass nach
+        // Lage; nur mit autotech (sonst zeigt das HUD ohnehin zwei Knöpfe)
+        const k2 = this.P.einknopf && auto && kind === 'shot' ? einKnopfArt(game, this, stick()) : kind;
         if (k2 === 'shot' && this.tryAir(game, game.t)) { this.airPress = true; this.pending = null; continue; }
         if (auto && k2 === 'pass' && this.tryAir(game, game.t, 'pass', stick())) { this.airPress = true; this.pending = null; continue; }
         if (this.tackleOk(game)) { this.startTackle(game, k2, stick()); this.pending = null; continue; } // Grätsche
@@ -852,8 +853,13 @@ export class Player {
       this.face = Math.atan2(sl.dz, sl.dx);
       const rel = Math.hypot(b.v.x - this.vx, b.v.z - this.vz);
       const gx = goalX(game, this), Dg = Math.hypot(gx - b.p.x, b.p.z);
+      let mate = null;
       if (sl.kind === 'pass') this.applyPlan(planPass(game, this, { mode: 'std', power: null, stick: sl.stick || [sl.dx, sl.dz] }), game, Math.min(rel, P.ctrlRel));
       else if (Dg < P.tackleShotD) this.applyPlan(planShot(game, this, { mode: 'std', power: null, stick: sl.stick }), game, Math.min(rel, P.ctrlRel));
+      // Peter 13.11. („Der Grätschenschuss muss aufhören“, tackleShotD 0): Schuss-Knopf (auch Ein-Knopf) → Pass zum freien Mitspieler
+      // (mit Stick ±90° um die Stick-Richtung, ohne Stick jeder; direkter Weg frei) wie mit dem Pass-Knopf, sonst klären wie bisher
+      else if (P.tackleShotD <= 0 && (mate = passCandidates(game, this, sl.stick || [sl.dx, sl.dz], [b.p.x, b.p.z], sl.stick ? 90 : 180).find((c) => !c.bank && !c.virtual && c.lane >= 0.6)))
+        this.applyPlan(planPass(game, this, { mode: 'std', power: null, to: mate.id, stick: sl.stick || [sl.dx, sl.dz] }), game, Math.min(rel, P.ctrlRel));
       else this.kick({ kind: 'clear', api: true, target: [gx * 0.45, b.p.z * 0.4 + (Math.abs(b.p.z) < 1 ? 3 * Math.sign(sl.dz || 1) : 0)], technique: 'vollspann', speed: 16, elev: 18, noise: 1.2, dir: [sl.dx, sl.dz], age: 0 }, game, 0);
       this.tech = 'graetsche'; this.techT = 0;
       game.events.push({ type: 'tackle', phase: 'hit', result: 'ball', kind: sl.kind, player: this.id, human: game.human === this.id, x: b.p.x, y: b.p.y, z: b.p.z });

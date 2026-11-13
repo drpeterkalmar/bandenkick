@@ -195,11 +195,12 @@ let clipHoch = qs.has('clip') ? qs.get('clip') === 'hoch' : localStorage.getItem
 const clipBtn = hud.menu.querySelector('[data-act="cliphoch"]');
 const clipLabel = () => { clipBtn.textContent = 'Clip im Hochformat: ' + (clipHoch ? 'an' : 'aus'); };
 clipLabel();
-// n11 Ein-Knopf-Test (Peter 02.11.: „beim 1knopf bin ich skeptisch“): Schalter im Pause-Menü, Standard aus (localStorage bk_einknopf,
-// ?einknopf=1). An: der Schuss-Knopf ist der Kick (Schuss oder Pass nach Lage), der Pass-Knopf verschwindet
-if (!qs.has('einknopf') && localStorage.getItem('bk_einknopf') === '1') P.einknopf = 1;
+// n11 Ein-Knopf-Kick: Schalter im Pause-Menü, seit Peter 13.11. Standard an (?einknopf=0 = zwei Knöpfe). An: der Schuss-Knopf ist
+// der Kick (Schuss oder Pass nach Lage), der Pass-Knopf verschwindet. Neuer Speicher-Schlüssel bk_einknopf2, damit ein früher
+// gespeichertes „aus“ (bk_einknopf) den neuen Standard nicht überschreibt – es gilt nur, was ab jetzt im Menü umgeschaltet wird.
+if (!qs.has('einknopf')) { const s = localStorage.getItem('bk_einknopf2'); if (s === '0') P.einknopf = 0; else if (s === '1') P.einknopf = 1; }
 const einBtn = hud.menu.querySelector('[data-act="einknopf"]');
-const einLabel = () => { einBtn.textContent = 'Ein Kick-Knopf (Test): ' + (P.einknopf ? 'an' : 'aus'); einBtn.style.display = P.autotech ? '' : 'none'; hud.setEinknopf(!!P.einknopf && !!P.autotech); };
+const einLabel = () => { einBtn.textContent = 'Ein Kick-Knopf: ' + (P.einknopf ? 'an' : 'aus'); einBtn.style.display = P.autotech ? '' : 'none'; hud.setEinknopf(!!P.einknopf && !!P.autotech); };
 einLabel();
 const lichtBtn = hud.menu.querySelector('[data-act="licht"]');
 function lichtLabel() { if (lichtBtn) lichtBtn.textContent = 'Licht: ' + (lichtPref === 'auto' ? `automatisch (${lichtMode() === 'abend' ? 'Abend' : 'Tag'})` : lichtPref === 'abend' ? 'Abend' : 'Tag'); }
@@ -256,7 +257,7 @@ hud.root.addEventListener('click', (e) => {
     localStorage.setItem('bk_replay_art13', replayArt); localStorage.setItem('bk_replay', replayOn ? '1' : '0'); replayLabel();
   }
   if (a === 'blitze') { blitzeSanft = !blitzeSanft; localStorage.setItem('bk_blitze', blitzeSanft ? '1' : '0'); blitzLabel(); }
-  if (a === 'einknopf') { P.einknopf = P.einknopf ? 0 : 1; localStorage.setItem('bk_einknopf', P.einknopf ? '1' : '0'); einLabel(); }
+  if (a === 'einknopf') { P.einknopf = P.einknopf ? 0 : 1; localStorage.setItem('bk_einknopf2', P.einknopf ? '1' : '0'); einLabel(); }
   if (a === 'cliphoch') { clipHoch = !clipHoch; localStorage.setItem('bk_cliphoch', clipHoch ? '1' : '0'); clipLabel(); }
   if (a === 'clipnochmal') clipNochmal();
   if (a === 'tordesspiels') torDesSpiels();

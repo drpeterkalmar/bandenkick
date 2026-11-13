@@ -355,7 +355,8 @@ export class Bots {
         const sch = g.P.abschirmen ? g.P.schirmGraetsche * Math.max(0.3, 1 - g.P.schirmBot * Math.max(0, g.P.schirm - 1)) : 1;
         if (L.slide && pl.tackleOk(g) && Math.hypot(b.p.x - pl.x, b.p.z - pl.z) > 0.9 && (L.slide < 0.4 || Math.hypot(b.p.x - fx, b.p.z - fz) > 0.45) && g.rng.next() < L.slide * sch / 120) {
           const mate = g.players.some((m) => m.team === team && m.id !== pl.id && m.id !== g.rules.keeper[team]);
-          pl.startTackle(g, this.fwd(team, b.p.x) > 3 || !mate ? 'shot' : 'pass', null);
+          // (Peter 13.11.: kein Torschuss aus der Grätsche – Bots grätschen weiter, spielen den eroberten Ball aber ab; ?tackleShotD=11 = alt)
+          pl.startTackle(g, g.P.tackleShotD > 0 && (this.fwd(team, b.p.x) > 3 || !mate) ? 'shot' : 'pass', null);
           this.stats.tackles = (this.stats.tackles || 0) + 1;
           return;
         }

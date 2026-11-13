@@ -67,7 +67,7 @@ export function autoShot(game, pl, stick = null) {
   return { ...best, options: opts };
 }
 
-// Ein-Knopf-Test (?einknopf=1): Schuss, wenn die Torchance gut genug ist (nah, Tor in Stick-/Blickrichtung), sonst Pass zum
+// Ein-Knopf-Kick (Standard seit Peter 13.11., ?einknopf=0 = zwei Knöpfe): Schuss, wenn die Torchance gut genug ist (nah, Tor in Stick-/Blickrichtung), sonst Pass zum
 // Mitspieler in dieser Richtung (falls einer da ist), sonst doch Schuss
 export function einKnopfArt(game, pl, stick = null) {
   const b = game.ball, gx = attackGoalX(game, pl), D = Math.hypot(gx - b.p.x, b.p.z);

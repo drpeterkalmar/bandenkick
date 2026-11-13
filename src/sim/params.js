@@ -308,7 +308,7 @@ export const DEFAULTS = {
   // Erfolgschance zuerst, unter fast gleich guten Optionen (höchstens spektakel × schlechter) die spektakulärste (src/sim/akro.js)
   autotech: 1,            // 0 = Tipp/Doppeltipp wie 0.8.0                                            [?autotech=0]
   spektakel: 0.1,         // höchstens 10 % weniger Erfolgschance fürs Spektakel                     [?spektakel=]
-  einknopf: 0,            // 1 = Test: EIN Kick-Knopf (Schuss oder Pass nach Lage), Standard aus      [?einknopf=1]
+  einknopf: 1,            // Peter 13.11.: Ein-Knopf-Kick ist Standard (Schuss oder Pass nach Lage); ?einknopf=0 = zwei Knöpfe [?einknopf=0]
   salto: 1,               // Salto-Hacke (Skorpion-Kick) als seltene Luft-Technik, Hackenschuss am Boden [?salto=0]
   // n13 (Peter 07.11.: „Vollspann und Innenrist Außenrist können nur max 120 Grad vom Tor abgefeuert werden …“, src/sim/spektakel.js):
   // Schuss-Tipp mit dem Tor außerhalb ±schusskegel° vor dem Schützen → Lupfer-Pass zum besser postierten Mitspieler (Direktabnahme),
@@ -388,7 +388,7 @@ export const DEFAULTS = {
   slideSpeed: 6.0,        // m/s Anfangstempo des Rutschens (mindestens, sonst das Lauftempo)
   tackleBall: 0.4,        // m: so viel weiter weg als der Gegner (entlang der Beine) zählt der Ball noch als „zuerst“ (Nacht 2c:
                           // 0,1 – mit dem stärkeren Magnet liegt der Ball enger am Fuß des Gegners, Grätschen sollen weiter erobern)
-  tackleShotD: 11,        // m: Schuss-Knopf schießt aus der Grätsche aufs Tor, wenn das Tor näher ist, sonst klärt er
+  tackleShotD: 0,         // Peter 13.11.: kein Torschuss aus der Grätsche (Schuss-Knopf → Pass zum freien Mitspieler, sonst klären); ?tackleShotD=11 = alt (m: Schuss, wenn das Tor näher ist)
   zeitlupe: 1,            // Zeitlupe + Kurz-Zoom bei spektakulären Luftbällen (0 = aus)            [?zeitlupe=0]
   // Nacht 2d (Peter: „nach tor Actionreplay mit extrem zoom und effekt fan cam slo mo im moment des Ballkontaktes und im
   // Torbereich“): Wiederholung nach jedem Tor im Spiel (nicht im Training), nach replayDelay s Live-Jubel; Tippen überspringt

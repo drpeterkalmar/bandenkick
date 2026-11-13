@@ -58,14 +58,25 @@ const first = (ev, f) => ev.find(f) || null;
   const hit = first(ev, (e) => e.type === 'tackle' && e.phase === 'hit'), k = first(ev, (e) => e.type === 'kick' && e.player === 0);
   check('Grätsche mit Pass-Knopf: Ball erwischt → Pass zum Mitspieler', hit && hit.result === 'ball' && k && k.kind === 'pass' && k.to === 1 ? 1 : 0, 1, 1, '', 1, hit ? `${hit.result} nach ${hit.t.toFixed(2)} s, ${k ? k.kind + ' → ' + k.to : 'kein Kick'}` : 'kein Kontakt');
   const hx = g.cage.hx;
-  const gs = scene('', { me: [hx - 8.4, 0.5], opp: [hx - 5.6, 0.4], ball: [hx - 6.3, 0.4] });
+  const gs = scene('tackleShotD=11&einknopf=0', { me: [hx - 8.4, 0.5], opp: [hx - 5.6, 0.4], ball: [hx - 6.3, 0.4] });
   const es = tap(gs, 'shot');
   const ks = first(es, (e) => e.type === 'kick' && e.player === 0), goal = first(es, (e) => e.type === 'goal');
-  check('Grätsche mit Schuss-Knopf in Tornähe: Schuss aufs Tor', ks && ks.kind === 'shot' ? 1 : 0, 1, 1, '', 1, ks ? `${ks.tech}, ${ks.speed.toFixed(1)} m/s${goal ? ', Tor' : ''}` : '');
-  const gc = scene('', { me: [-hx + 5, 1], opp: [-hx + 7.6, 1.1], ball: [-hx + 7.1, 1.05], mate: [0, -5] });
+  check('?tackleShotD=11 (alt): Grätsche mit Schuss-Knopf in Tornähe: Schuss aufs Tor', ks && ks.kind === 'shot' ? 1 : 0, 1, 1, '', 1, ks ? `${ks.tech}, ${ks.speed.toFixed(1)} m/s${goal ? ', Tor' : ''}` : '');
+  // Peter 13.11. („Der Grätschenschuss muss aufhören“): Standard nie Schuss aus der Grätsche – Pass zum freien Mitspieler, sonst klären
+  for (const [qs, nm] of [['', 'Standard'], ['einknopf=0', '?einknopf=0']]) {
+    const gn = scene(qs, { me: [hx - 8.4, 0.5], opp: [hx - 5.6, 0.4], ball: [hx - 6.3, 0.4] });
+    const en = tap(gn, 'shot');
+    const kn = first(en, (e) => e.type === 'kick' && e.player === 0);
+    check(`${nm}: Grätsche mit Schuss-Knopf in Tornähe → kein Schuss, Pass zum Mitspieler`, kn && kn.kind === 'pass' && kn.to === 1 ? 1 : 0, 1, 1, '', 1, kn ? `${kn.kind} → ${kn.to}` : 'kein Kick');
+    const gk = scene(qs, { me: [hx - 8.4, 0.5], opp: [hx - 5.6, 0.4], ball: [hx - 6.3, 0.4], mate: [hx - 3.4, 0.4] }); // (Weg zum Mitspieler durch den Gegner zu)
+    const ek = tap(gk, 'shot');
+    const kk = first(ek, (e) => e.type === 'kick' && e.player === 0);
+    check(`${nm}: … Weg zum Mitspieler zu → klären, kein Schuss`, kk && kk.kind !== 'shot' ? 1 : 0, 1, 1, '', 1, kk ? kk.kind : 'kein Kick');
+  }
+  const gc = scene('tackleShotD=11&einknopf=0', { me: [-hx + 5, 1], opp: [-hx + 7.6, 1.1], ball: [-hx + 7.1, 1.05], mate: [0, -5] });
   const ec = tap(gc, 'shot');
   const kc = first(ec, (e) => e.type === 'kick' && e.player === 0);
-  check('Grätsche mit Schuss-Knopf weit weg: klären nach vorn', kc && kc.kind === 'clear' && kc.dx > 0.3 ? 1 : 0, 1, 1, '', 1, kc ? `${kc.kind}, Richtung x ${kc.dx.toFixed(2)}` : '');
+  check('?tackleShotD=11 (alt): Grätsche mit Schuss-Knopf weit weg: klären nach vorn', kc && kc.kind === 'clear' && kc.dx > 0.3 ? 1 : 0, 1, 1, '', 1, kc ? `${kc.kind}, Richtung x ${kc.dx.toFixed(2)}` : '');
 }
 // 3) Gegner zuerst: Ball springt frei, Gegner stolpert (kein Foul); Dauer der Grätsche
 {
