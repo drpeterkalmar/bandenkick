@@ -6,7 +6,7 @@ files = ['index.html', 'manifest.webmanifest', 'css/style.css']
 for d in ['src', 'lib', 'icons', 'assets']:
     for dp, dn, fn in os.walk(os.path.join(ROOT, d)):
         # n13: Vergleichs-Figuren (?tierform=0/1) nicht vorab laden – nur bei Bedarf übers Netz
-        if os.path.basename(dp) in ('kuscheltiere_n9', 'kuscheltiere_n10'): continue
+        if os.path.basename(dp) in ('kuscheltiere_n9', 'kuscheltiere_n10', 'kuscheltiere_n13'): continue
         for f in sorted(fn):
             if f.endswith(('.js', '.png', '.css', '.webp', '.jpg', '.json', '.hdr', '.glb')) and not f.startswith('.'):
                 files.append(os.path.relpath(os.path.join(dp, f), ROOT).replace(os.sep, '/'))  # Windows: / statt \\
