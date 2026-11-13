@@ -12,7 +12,7 @@
 //    Speed-Lines, Leuchten/Kometenschweif am Ball. opts.reduce („Blitze reduzieren“): sanftes Aufhellen statt Flash,
 //    kein RGB-Versatz, weniger Wackler und Punches.
 //  - Kamera-Rechnung (Lage, Blickpunkt, Öffnungswinkel) inkl. Effekten – die Grafik setzt sie nur um.
-import { findContact, REC_HZ } from './replay.js';
+import { findContact, REC_HZ, weiterWeg } from './replay.js';
 
 export const EDIT_BPM = 128;
 export const BEAT = 60 / EDIT_BPM; // s je Schlag (0,469 s)
@@ -385,7 +385,8 @@ export function jubelRichtung(rec, k, keys, D, a0 = 0, cage = null) {
 // kind: tief | makro | keeper | netz | weit | drohne | hinten | ecke | jubel. f = Zustand (frameAt), ctx = {cage, hoch,
 // contact, goal: {side}, u (s seit Schnitt), dur (s Dauer der Einstellung), side (Feldseite des Kontakts), ball (geglättet),
 // schuetze: {x, z, face} geglättet, impact: [x, y, z] Einschlagpunkt}
-export function editCamera(kind, f, ctx) {
+export function editCamera(kind, f, ctx) { return weiterWeg(editCamera0(kind, f, ctx), kind, ctx); }
+function editCamera0(kind, f, ctx) {
   const { cage, hoch, goal } = ctx, c = ctx.contact || { x: f.ball.p.x, y: 0.11, z: f.ball.p.z, dx: goal.side, dz: 0 };
   const b = ctx.ball || f.ball.p, sx = goal.side, gx = sx * cage.hx;
   const dl = Math.hypot(c.dx, c.dz) || 1, ux = c.dx / dl, uz = c.dz / dl;

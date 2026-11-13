@@ -139,7 +139,7 @@ export class Rules {
       if (!this.inBox(team, b.p.x, b.p.z, 0.4)) continue;
       if (this.handShield(pl)) { // n13: Ball klebt am Fuß eines dribbelnden Gegners – höchstens schirmHandMax s am Stück (Gedränge löst sich)
         pl.handSchirmT = (pl.handSchirmT || 0) + dt;
-        if (pl.handSchirmT < P.schirmHandMax) continue;
+        if (pl.handSchirmT < P.schirmHandMax * Math.max(1, P.schirm ?? 1)) continue; // (n14: × schirm)
       } else pl.handSchirmT = 0;
       const rel = Math.hypot(b.v.x - pl.vx, b.v.y, b.v.z - pl.vz);
       const skill = inp.catchSkill ?? 1;

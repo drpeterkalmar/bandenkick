@@ -114,7 +114,7 @@ export function measureGame(qs, mix, s) {
       } else if (e.type === 'kick' || e.type === 'throw' || e.type === 'punt') {
         if (dr >= 0 && p.team !== g.players[dr].team) lose();
         endDrib(g);
-      } else if (e.type === 'catch' || e.type === 'parry' || e.type === 'control' || (e.type === 'tackle' && e.phase === 'hit')) {
+      } else if (e.type === 'catch' || e.type === 'parry' || e.type === 'control' || (e.type === 'tackle' && e.phase === 'hit' && e.result !== 'schirm')) { // (n14: abgeschirmt = Ball bleibt)
         if (dr >= 0 && p.team !== g.players[dr].team) lose();
         endDrib(g);
       }
@@ -162,7 +162,7 @@ export function humanHold(qs = '', seeds = 20, secs = 90) {
       const space = Math.min(...[kp, df].map((p) => Math.hypot(p.x - me.x, p.z - me.z)));
       const ev = g.step([{ ...EMPTY_INPUT, mx: Math.cos(a), mz: Math.sin(a), sprint: space > 3, passDown: false, shotDown: false }]);
       if (g.rules.phase !== 'play') { end('timeout'); continue; }
-      if (ev.some((e) => e.player > 0 && ['touch', 'kick', 'catch', 'parry', 'control'].includes(e.type)) || ev.some((e) => e.type === 'tackle' && e.phase === 'hit' && e.player > 0)) { end('lost'); continue; }
+      if (ev.some((e) => e.player > 0 && ['touch', 'kick', 'catch', 'parry', 'control'].includes(e.type)) || ev.some((e) => e.type === 'tackle' && e.phase === 'hit' && e.result !== 'schirm' && e.player > 0)) { end('lost'); continue; }
       const [fx, fz] = me.footPoint();
       if (Math.hypot(b.p.x - fx, b.p.z - fz) > 2.5) { end('free'); continue; }
       if (me.x > hx - 5.5) { end('ok'); continue; }

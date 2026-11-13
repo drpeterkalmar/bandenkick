@@ -21,6 +21,8 @@ const oppNear = (game, pl, d) => game.players.some((o) => o.team !== pl.team && 
 // Tor, auf das der Spieler spielt (wie shot.js attackGoalX, ohne Import-Zyklus)
 const goalX = (game, pl) => (game.match ? (pl.team === 0 ? game.cage.hx : -game.cage.hx) : (Math.cos(pl.face) >= 0 ? game.cage.hx : -game.cage.hx));
 
+// n14: Vorlage unter Druck kürzer – schirmVorlage × 1 + 0,3·(schirm − 1), höchstens 0,7
+const schirmVorlage = (P) => Math.min(0.7, P.schirmVorlage * (1 + 0.3 * Math.max(0, P.schirm - 1)));
 export const EMPTY_INPUT = Object.freeze({ mx: 0, mz: 0, sprint: false, pass: false, shootHeld: false, shootRelease: false, cx: 0, cy: 0, aimX: 0, aimZ: 0, aim: false });
 
 export class Player {
@@ -539,7 +541,9 @@ export class Player {
     }
     let dOpp = 9;                                                              // Gegner am Ball
     for (const o of game.players) if (o.team !== this.team) dOpp = Math.min(dOpp, Math.hypot(o.x - b.p.x, o.z - b.p.z));
-    if (dOpp < 1) m *= P.magnetOpp + (1 - P.magnetOpp) * clamp((dOpp - 0.4) / 0.6, 0, 1);
+    // (n14 schirm: unter Druck lässt der Magnet weniger nach – Anteil 1 − (1 − magnetOpp)/schirm, bei 2: 0,75 statt 0,5)
+    const mOpp = 1 - (1 - P.magnetOpp) / Math.max(1, P.schirm);
+    if (dOpp < 1) m *= mOpp + (1 - mOpp) * clamp((dOpp - 0.4) / 0.6, 0, 1);
     // Nacht 2d: Grätscht ein Gegner (rutscht, ≤ 3 m am Ball), hält der Magnet den Ball nicht fest – die Grätsche soll ihn
     // weiter erobern können (mit Magnet 1,5 sonst −20 % Grätschen mit Ballgewinn)
     if (P.magnetSlide < 1) for (const o of game.players) if (o.team !== this.team && o.slide && o.slide.phase === 'slide' && Math.hypot(o.x - b.p.x, o.z - b.p.z) < 3) { m *= P.magnetSlide; break; }
@@ -571,14 +575,16 @@ export class Player {
     if (ck && Math.abs(b.p.x) + Math.abs(b.p.z) > game.cage.hx + game.cage.hz - ck - 0.7 && (dx * Math.sign(b.p.x) + dz * Math.sign(b.p.z)) * Math.SQRT1_2 > 0.3) return;
     // Abschirmen: Gegner ≤ 1,2 m (n7: schirmR) am Ball → Soll-Vorlage bis magnetShield (n7: schirmSeite) m zur abgewandten Seite
     // (Körper dazwischen), n7 zusätzlich kürzer vor dem Fuß
-    const R = P.abschirmen ? P.schirmR : 1.2, shM = P.abschirmen ? P.schirmSeite : P.magnetShield;
+    // (n14 schirm: früher und weiter zur abgewandten Seite – Radius × 1 + 0,25·(schirm − 1), Seite × 1 + 0,3·(schirm − 1))
+    const S1 = Math.max(0, P.schirm - 1);
+    const R = P.abschirmen ? P.schirmR * (1 + 0.25 * S1) : 1.2, shM = P.abschirmen ? P.schirmSeite * (1 + 0.3 * S1) : P.magnetShield;
     let sh = 0, near = 0;
     if (shM > 0) {
       let best = null, bd = R;
       for (const o of game.players) { if (o.team === this.team) continue; const d = Math.hypot(o.x - b.p.x, o.z - b.p.z); if (d < bd) { bd = d; best = o; } }
       if (best) { near = clamp((R - bd) / (R - 0.4), 0, 1); const side = (best.x - this.x) * -dz + (best.z - this.z) * dx; sh = -Math.sign(side || 1) * shM * near; }
     }
-    const L = (0.15 + 0.05 * this.speed) * (P.abschirmen ? 1 - P.schirmVorlage * near : 1) * this.magnetEng(m); // Vorlage: Stand 0,15 m, 5 m/s 0,4 m
+    const L = (0.15 + 0.05 * this.speed) * (P.abschirmen ? 1 - schirmVorlage(P) * near : 1) * this.magnetEng(m); // Vorlage: Stand 0,15 m, 5 m/s 0,4 m
     // Zielpunkt nie in der Bande (Abschirmen an der Bande entlang würde den Ball sonst dagegen drücken)
     let tx = clamp(fx + dx * L - dz * sh, -game.cage.hx + 0.4, game.cage.hx - 0.4), tz = clamp(fz + dz * L + dx * sh, -game.cage.hz + 0.4, game.cage.hz - 0.4);
     if (game.cage.ecke) { const T = { x: tx, z: tz }; if (clampCorner(game.cage, T, 0.4)) { tx = T.x; tz = T.z; } } // n7 E5: nicht in die Eck-Schräge
@@ -601,7 +607,8 @@ export class Player {
     const P = this.P, b = game.ball;
     let d = 9;
     for (const o of game.players) if (o.team !== this.team) d = Math.min(d, Math.hypot(o.x - b.p.x, o.z - b.p.z));
-    return clamp((P.schirmR - d) / (P.schirmR - 0.5), 0, 1);
+    const R = P.schirmR * (1 + 0.25 * Math.max(0, P.schirm - 1));
+    return clamp((R - d) / (R - 0.5), 0, 1);
   }
 
   // n7 Abschirmen: Führt ein Gegner den Ball eng am Fuß (zuletzt berührt ≤ schirmT s, Ball ≤ schirmNah m vor seinem Fuß, flach,
@@ -612,15 +619,20 @@ export class Player {
     if (!P.abschirmen || !game.match || game.lastTouch < 0) return false;
     const c = game.players[game.lastTouch];
     // (ein Kick zu sich selbst – Mitnehmen – zählt als Führen; ein Führ-Kontakt schiebt den Ball bis ctrlRel m/s an)
-    if (!c || c.team === this.team || c.slide || c.fall || c.stumbleT > 0 || c.hand.mode !== 'none' || game.t - c.lastTouchT > P.schirmT || (c.kickT < 0.5 && !c.selfKick)) return false;
-    if (b.p.y > 0.5 || Math.hypot(b.v.x - c.vx, b.v.z - c.vz) > (P.schirmRel || P.ctrlRel)) return false;
+    // (n14 schirm: auch länger nach dem Kontakt – schirmT × 1 + 0,33·(schirm − 1) – und bei schnelleren Vorlagen – schirmRel × 1 + 0,5·(schirm − 1))
+    const S0 = Math.max(0, P.schirm - 1);
+    if (!c || c.team === this.team || c.slide || c.fall || c.stumbleT > 0 || c.hand.mode !== 'none' || game.t - c.lastTouchT > P.schirmT * (1 + 0.33 * S0) || (c.kickT < 0.5 && !c.selfKick)) return false;
+    if (b.p.y > 0.5 || Math.hypot(b.v.x - c.vx, b.v.z - c.vz) > (P.schirmRel ? P.schirmRel * (1 + 0.5 * S0) : P.ctrlRel)) return false;
+    // n14 (Peter 13.11.: „Ballmagnet zum ballabschirmen verstärken“, ?schirm=): Ball darf weiter vor dem Fuß sein (× 1 + 0,2·(schirm − 1)),
+    // der Gegnerfuß muss noch klarer näher sein (× 1 + 0,4·(schirm − 1)), und der Körper schirmt breiter ab (0,3 m × 1 + 0,5·(schirm − 1))
+    const S1 = Math.max(0, P.schirm - 1);
     const [cx, cz] = c.footPoint(), dc = Math.hypot(b.p.x - cx, b.p.z - cz);
-    if (dc > P.schirmNah) return false;
+    if (dc > P.schirmNah * (1 + 0.2 * S1)) return false;
     const [fx, fz] = this.footPoint(), dm = Math.hypot(b.p.x - fx, b.p.z - fz);
     // Körper (Radius 0,3 m) des Führenden zwischen meiner Körpermitte und dem Ball?
     const ex = b.p.x - this.x, ez = b.p.z - this.z, L2 = ex * ex + ez * ez || 1, t = clamp(((c.x - this.x) * ex + (c.z - this.z) * ez) / L2, 0, 1);
-    const body = Math.hypot(c.x - this.x - ex * t, c.z - this.z - ez * t) < 0.3 && t > 0.05 && t < 0.95;
-    return body || dm > dc - P.schirmVor;
+    const body = Math.hypot(c.x - this.x - ex * t, c.z - this.z - ez * t) < 0.3 * (1 + 0.5 * S1) && t > 0.05 && t < 0.95;
+    return body || dm > dc - P.schirmVor * (1 + 0.4 * S1);
   }
 
   // Ballkontakt beim Führen: Richtung = Stick, Stärke passend zum Tempo (Hilfe), kleine Fehler aus dem Seed.
@@ -643,7 +655,7 @@ export class Player {
     const ml = Math.min(1, mm);
     // Beim Aufladen: kurze Vorbereitungs-Kontakte, der Ball bleibt am Fuß (sonst ist er beim Loslassen weg)
     // n7 Abschirmen: Gegner nah am Ball → kürzere Vorlage (Zeit und Weg)
-    const sk = P.abschirmen ? 1 - P.schirmVorlage * this.oppNearBall(game) : 1;
+    const sk = P.abschirmen ? 1 - schirmVorlage(P) * this.oppNearBall(game) : 1;
     const T = this.charging ? 0.32 : (P.touchLead + (P.touchLeadSprint - P.touchLead) * sf) * (1 - P.magnetLead * ml) * sk;
     const L = this.charging ? 0.05 : (P.touchExtra + (P.touchExtraSprint - P.touchExtra) * sf) * (1 - P.magnetLead * ml) * sk;
     // Weg des Spielers bis zum nächsten Kontakt: ab dem Tempo in Stick-Richtung (nach einem Stemmschritt klein)
@@ -832,7 +844,9 @@ export class Player {
       if (s.d < 0.45 && (!opp || s.t < opp.s.t)) opp = { o, s };
     }
     const ballHit = bs && bs.d < 0.35;
-    if (ballHit && (!opp || bs.t <= opp.s.t + P.tackleBall)) {
+    // (n14 schirm: der Körper des abschirmenden Führenden ist eher zuerst dran – Ball zählt nur bis tackleBall − 0,2·(schirm − 1) m hinter ihm)
+    const tB = P.abschirmen ? Math.max(0.1, P.tackleBall - 0.2 * Math.max(0, P.schirm - 1)) : P.tackleBall;
+    if (ballHit && (!opp || bs.t <= opp.s.t + tB)) {
       // Ball erwischt: Pass-Knopf → Pass zum Mitspieler im Stick-Kegel; Schuss-Knopf → in Tornähe aufs Tor, sonst klären
       sl.done = true;
       this.face = Math.atan2(sl.dz, sl.dx);
@@ -847,6 +861,18 @@ export class Player {
       // Gegner zuerst getroffen (kein Foul, Kinderspiel): Ball springt frei, der Gegner stolpert kurz
       sl.done = true;
       const o = opp.o;
+      // n14 (Peter 13.11.: „Ballmagnet zum ballabschirmen verstärken“): trifft die Grätsche zuerst den Körper eines Führenden, der den Ball
+      // eng am Fuß abschirmt, behält er ihn mit der Chance schirmKoerper·(schirm − 1) (höchstens 0,9) – er wankt nur kurz. Gemessen war fast
+      // jeder Ballverlust beim Führen gegen Bots eine Grätsche, die Hälfte davon traf zuerst den Körper (Ball sprang frei). Grätschen,
+      // die den Ball zuerst treffen, erobern weiter.
+      const [ofx, ofz] = o.footPoint();
+      const schirmt = P.abschirmen && P.schirm > 1 && game.lastTouch === o.id && game.t - o.lastTouchT <= P.schirmT * 1.5 && b.held < 0 && b.p.y < 0.5 &&
+        Math.hypot(b.p.x - ofx, b.p.z - ofz) <= P.schirmNah && o.hand.mode === 'none' && !o.air && !o.fall;
+      if (schirmt && game.rng.next() < Math.min(0.9, P.schirmKoerper * (P.schirm - 1))) {
+        o.stumbleT = 0.15; o.tech = 'stolpern'; o.techT = 0;
+        game.events.push({ type: 'tackle', phase: 'hit', result: 'schirm', player: this.id, human: game.human === this.id, victim: o.id, x: o.x, z: o.z });
+        return;
+      }
       o.stumbleT = 0.6; o.pending = null; o.charging = false; o.air = null;
       o.tech = 'stolpern'; o.techT = 0;
       if (b.held < 0 && Math.hypot(b.p.x - o.x, b.p.z - o.z) < 1.3 && b.p.y < 0.8) {

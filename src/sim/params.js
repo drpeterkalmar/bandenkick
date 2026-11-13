@@ -188,6 +188,12 @@ export const DEFAULTS = {
   schirmHandT: 0.6,       // n13: s seit dem letzten Kontakt des Dribblers
   schirmHandMax: 0.8,     // n13: s höchstens am Stück – danach greift er doch zu (sonst Gedränge an der Bande ohne Ende)
   schirmRel: 12,          // n13: m/s höchstes Relativtempo Ball ↔ Führender, bis zu dem er abschirmt (0 = ctrlRel 8 wie bis 0.9.1)
+  // n14 (Peter 13.11.: „Ballmagnet zum ballabschirmen verstärken“): laut N10 half mehr Feder allein nicht – gestärkt wird das Abschirmen
+  // selbst: früher (Radius), Ball weiter zur abgewandten Seite, kürzere Vorlage unter Druck, Körper schirmt breiter ab, Gegnerfuß muss
+  // klarer näher sein, Magnet lässt unter Druck weniger nach (player.js, je Größe ein Anteil von schirm − 1). Grätsche bleibt ausgenommen.
+  schirm: 2.5,            // 1 = 0.10.0                                                               [?schirm=1]
+  schirmKoerper: 0.6,     // Grätsche trifft zuerst den Körper des abschirmenden Führenden → er behält den Ball mit Chance schirmKoerper·(schirm − 1)
+  schirmBot: 0,           // Bots grätschen gegen einen Führenden × 1 − schirmBot·(schirm − 1) seltener (sonst holen sie jeden Ball per Grätsche)
   // Bots wissen davon: Ball behalten ist mit Abschirmen sicherer (Gegner zählt erst ab schirmKeep m weniger als bisher), und gegen
   // einen abschirmenden Führenden grätschen sie öfter (Rate × schirmGraetsche, auch wenn der Ball eng am Fuß ist)
   schirmKeep: 0,          // m
@@ -314,6 +320,11 @@ export const DEFAULTS = {
   jonglApex: 2.3,         // m Scheitel des hochgelupften Balls
   jonglTreff: 1.5,        // m Treffhöhe des Fallrückziehers
   jonglWucht: 1.4,        // × Tempo des selbst aufgelegten Fallrückziehers (≈ 25 statt 18 m/s)
+  jonglMax: 34,           // n14: m/s höchstens (mit ?luftwucht=1 wie 0.10.0: × jonglWucht ohne eigene Grenze)
+  // n14 (Peter 13.11.: „Fallrückzieher und Kopfbälle härter machen“, air.js luftWucht): Kopf- und Flugkopfball × luftwucht (Grenze
+  // 17 → 25,5 m/s), Fallrück-/Seitfallzieher und Salto-Hacke × 1 + 0,75·(luftwucht − 1) (Fallrückzieher 23 → 31,6 m/s). Kopfball-Pässe
+  // folgen den Pässen (passtempo). 1 = 0.10.0                                                    [?luftwucht=1]
+  luftwucht: 1.5,
   jonglQ: 0.2,            // + Qualität (Lage) – der Ball liegt genau im Treffpunkt
   jonglStreu: 0.45,       // × Streuung (Fallrückzieher aus dem Spiel 4,8° → ≈ 2,2°, etwas mehr als ein Vollspann)
   jonglUeberrascht: 0.12, // s: so viel später reagiert der Tormann auf den Fallrückzieher (vom Jongliertrick überrascht)
@@ -385,7 +396,9 @@ export const DEFAULTS = {
   replayDelay: 1.0,       // s Live-Jubel vor der Wiederholung
   // n13 (Peter 07.11.: „replayzoom weiter entfernt“): Abstand der nahen Replay-Kameras (Fan-Edit-Makro, Kontakt-Zoom) × replayweit,
   // Blick zur Körpermitte, damit Schütze und Ball ganz im Bild sind. 1 = 0.9.1                              [?replayweit=1]
-  replayweit: 2,
+  // n14 (Peter 13.11.: „Wiederholungen sind noch weiter herausgezoomt“): 3,5 – Zoom/Makro × 3,5 statt × 2, alle übrigen Replay-Kameras
+  // (TV, Fan-Cam, Fan-Edit) × 1,5 weiter weg und etwas weiterer Winkel (replay.js weiterWeg). ?replayweit=2 = 0.10.0
+  replayweit: 3.5,
   // n13 (Peter 07.11.: „Fancam default aus“): die klassische Wiederholung zeigt den Einschlag in Zeitlupe aus der TV-Kamera statt aus
   // der wackelnden Fan-Cam hinter dem Tor. Die Art (Normal / mit Fan-Cam = Fan-Edit / Aus) wählt das Pause-Menü, ?fancam=1 = Fan-Edit
   fancam: 0,
@@ -512,6 +525,9 @@ export const DEFAULTS = {
   empfTreue: 1.0,
 };
 
+// n14: alle n14-Regler auf 0.10.0 (für Tests, die das Verhalten bis 0.10.0 prüfen, und den Vergleich im Bericht; ?tierform=2 zusätzlich
+// für die Figuren – das liest main.js)
+export const N14_AUS = 'effet=18&passhoch=1&passtempo=1&passraum=0&schirm=1&luftwucht=1&replayweit=2';
 // Kurzformen für Peter (deutsch) → interne Namen
 export const ALIASES = {
   dach: 'roof', sprint: 'vSprint', lauf: 'vRun', antritt: 'tauAcc0', wende: 'aLat', hilfe: 'assist',

@@ -210,6 +210,17 @@ export function stepAir(pl, dt, game, want, sx, sz) {
   return true;
 }
 
+// n14 (Peter 13.11.: „Fallrückzieher und Kopfbälle härter machen“): Tempo-Faktor je Luft-Technik. luftwucht ist der Faktor der
+// Kopfbälle (Kopf, Flugkopf); Fallrück-/Seitfallzieher und Salto-Hacke bekommen drei Viertel davon (1,5 → × 1,375). Volley/Dropkick
+// haben schon die Vollspann-Wucht. 1 = 0.10.0
+export function luftWucht(P, tech) {
+  const x = (P.luftwucht ?? 1) - 1;
+  if (!x) return 1;
+  if (tech === 'kopf' || tech === 'flugkopf') return 1 + x;
+  if (tech === 'fallrueck' || tech === 'seitfall' || tech === 'salto') return 1 + 0.75 * x;
+  return 1;
+}
+
 // Kontakt: Schuss aufs Tor (bzw. Befreiung) mit Technik-Tempo, Qualität aus Lage × Timing × Treffgenauigkeit
 function airKick(pl, game, a, errFrac) {
   const P = game.P, b = game.ball;
@@ -217,10 +228,13 @@ function airKick(pl, game, a, errFrac) {
   const vin = b.v.len();
   const cq = clamp(1 - 0.5 * errFrac * errFrac, 0.4, 1);            // Treffgenauigkeit
   const tq = 0.45 + 0.55 * a.tq;                                    // Timing
-  let sp = Math.min(T.vmax, T.v0 + T.vin * vin) * (T.wucht ? Math.max(0.3, P.wucht ?? 1) : 1);
+  // n14 (?luftwucht=): Kopf-/Flugkopfball und Fallrück-/Seitfallzieher/Salto-Hacke härter (Grundtempo und Grenze × luftWucht)
+  const lw = luftWucht(P, a.tech);
+  let sp = Math.min(T.vmax * lw, (T.v0 + T.vin * vin) * lw) * (T.wucht ? Math.max(0.3, P.wucht ?? 1) : 1);
   let qMul = tq * cq * TECH_Q[a.tech];
   // n13 Jonglier-Fallrückzieher: selbst aufgelegt (Ball genau im Treffpunkt) → kräftiger und sauberer als ein Fallrückzieher aus dem Spiel
-  if (a.jongl) { sp = Math.min(T.vmax * P.jonglWucht, sp * P.jonglWucht); qMul = Math.min(1, qMul + P.jonglQ); }
+  // (n14: höchstens jonglMax m/s – mit luftwucht wäre er sonst bis ~45 m/s)
+  if (a.jongl) { sp = Math.min(T.vmax * lw * P.jonglWucht, sp * P.jonglWucht, lw > 1 ? P.jonglMax : 99); qMul = Math.min(1, qMul + P.jonglQ); }
   if (a.purpose === 'pass') { // n11: Direktpass aus der Luft – hohe Bahn zum Mitspieler wie am Boden (planPass ab dem Treffpunkt)
     // (n14: Direktpass aus der Luft folgt den Pässen – Tempo-Grenze × passtempo, nicht der Luftball-Wucht)
     const plan = planPass(game, pl, { stick: a.aim, must: true, maxU: T.vmax * Math.max(1, P.passtempo), noiseMul: (pl.airNoise ?? 1) * (2 - qMul) });

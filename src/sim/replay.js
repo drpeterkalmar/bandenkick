@@ -304,7 +304,22 @@ export class ReplayDirector {
 // ---------------- Kameras (reine Rechnung) ----------------
 // mode 'hoch' | 'quer'; cage aus world.js; f = Zustand (frameAt), c = Kontakt, goal = {side: ±1}
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
-export function replayCamera(kind, f, ctx) {
+// n14 (Peter 13.11.: „Wiederholungen sind noch weiter herausgezoomt“): über replayweit 2 (0.10.0) rücken alle übrigen Replay-Kameras
+// (TV, Fan-Cam, Fan-Edit-Einstellungen) vom Blickpunkt weg – Abstand × 1 + (weit − 2)/3 (3,5 → × 1,5), Öffnungswinkel × 1 + 0,1·(weit − 2)/1,5,
+// nie tiefer als vorher und nicht ins Unendliche (bis 12 bzw. 16 m hinter Bande/Netz). Zoom/Makro wachsen schon selbst mit weit (Abstand × weit).
+// Torwart-Sicht (im Tor) und Netz-Kamera (direkt hinter dem Netz) bleiben – sonst wäre das Netz bzw. der Tormann nicht mehr im Vordergrund.
+const WEIT_FIX = new Set(['zoom', 'makro', 'keeper', 'netz']);
+export function weiterWeg(cam, kind, ctx) {
+  const W = ctx.weit || 1;
+  if (!(W > 2) || WEIT_FIX.has(kind) || !ctx.cage) return cam;
+  const kD = 1 + (W - 2) / 3, kF = 1 + 0.1 * (W - 2) / 1.5, cage = ctx.cage;
+  const p = cam.pos, l = cam.look;
+  const pos = [l[0] + (p[0] - l[0]) * kD, Math.max(p[1], l[1] + (p[1] - l[1]) * kD), l[2] + (p[2] - l[2]) * kD];
+  pos[0] = clamp(pos[0], -cage.hx - 12, cage.hx + 12); pos[2] = clamp(pos[2], -cage.hz - 16, cage.hz + 16);
+  return { ...cam, pos, fov: Math.min(80, cam.fov * kF) };
+}
+export function replayCamera(kind, f, ctx) { return weiterWeg(replayCamera0(kind, f, ctx), kind, ctx); }
+function replayCamera0(kind, f, ctx) {
   const { cage, mode, contact: c, goal, time } = ctx;
   const b = f.ball.p, hoch = mode === 'hoch';
   if (kind === 'zoom' && c) {

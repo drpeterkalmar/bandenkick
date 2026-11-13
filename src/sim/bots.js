@@ -351,7 +351,8 @@ export class Bots {
         // Grätsche (Nacht 2c): gelegentlich, je nach Stufe (L.slide je Sekunde, solange sie möglich ist); starke Bots
         // nur, wenn der Ball etwas vom Fuß des Gegners weg ist
         // n7: gegen einen abschirmenden Führenden (bloßer Kontakt reicht nicht mehr) öfter
-        const sch = g.P.abschirmen ? g.P.schirmGraetsche : 1;
+        // (n14 schirm: gegen den stärker abschirmenden Führenden seltener blind hinein – × 1 − schirmBot·(schirm − 1))
+        const sch = g.P.abschirmen ? g.P.schirmGraetsche * Math.max(0.3, 1 - g.P.schirmBot * Math.max(0, g.P.schirm - 1)) : 1;
         if (L.slide && pl.tackleOk(g) && Math.hypot(b.p.x - pl.x, b.p.z - pl.z) > 0.9 && (L.slide < 0.4 || Math.hypot(b.p.x - fx, b.p.z - fz) > 0.45) && g.rng.next() < L.slide * sch / 120) {
           const mate = g.players.some((m) => m.team === team && m.id !== pl.id && m.id !== g.rules.keeper[team]);
           pl.startTackle(g, this.fwd(team, b.p.x) > 3 || !mate ? 'shot' : 'pass', null);
