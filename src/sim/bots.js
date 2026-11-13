@@ -688,7 +688,10 @@ export class Bots {
       this.moveTo(inp, pl, tt.x, tt.z, true, 0.5);
       return;
     }
-    if (g.t >= br.next) {
+    if (g.t >= br.next && g.P.deckung) {
+      br.next = g.t + L.think * 2;
+      br.spot = this.supportSpot(pl);
+    } else if (g.t >= br.next) {
       br.next = g.t + L.think * 2;
       let best = null, bs = -1e9;
       const dir = team === 0 ? 1 : -1;
@@ -707,9 +710,92 @@ export class Bots {
     if (br.spot) this.moveTo(inp, pl, br.spot[0], br.spot[1], false, 1.5);
   }
 
+  // Peter 13.11. (?deckung): Anspielstation seitlich versetzt und gestaffelt statt neben dem Ballführer. Erster Unterstützer
+  // (der weiter vorn stehende): andere Feldseite in z (|z − Ballführer.z| ≥ 3,5 m), 2–6 m vor dem Ball Richtung Tor; zweiter
+  // Unterstützer (falls vorhanden): tiefer (1–4 m hinter dem Ball), anders versetzt. Strafe für |Δx| < 1,5 m UND |Δz| < 3 m zu
+  // Mitspielern (Ballführer bzw. deren Laufziel). Bisherige Terme (frei, Passweg, Raumgewinn, Abstand zum Ball, Laufweg) bleiben.
+  supportSpot(pl) {
+    const g = this.g, b = g.ball, cage = g.cage, team = pl.team, R = g.rules, kp = R.keeper[team];
+    const dir = team === 0 ? 1 : -1;
+    const own = this.ownerTeam === team && this.owner !== kp ? g.players[this.owner] : null;
+    const rx = own ? own.x : b.p.x, rz = own ? own.z : b.p.z;
+    // Mitspieler: Ballführer (Position), andere Unterstützer (ihr Laufziel, sonst Position)
+    const mates = [];
+    let rank = 0;
+    for (const m of g.players) {
+      if (m.team !== team || m.id === pl.id || m.id === kp) continue;
+      const mb = this.brain[m.id];
+      mates.push(mb.role === 'support' && mb.spot && m.id !== this.owner ? mb.spot : [m.x, m.z]);
+      // Rang: weiter vorn stehende Unterstützer zuerst (bei Gleichstand die kleinere Id)
+      if (mb.role === 'support' && m.id !== this.owner) { const d = this.fwd(team, m.x) - this.fwd(team, pl.x); if (d > 0.01 || (Math.abs(d) <= 0.01 && m.id < pl.id)) rank++; }
+    }
+    // Seite: gegenüber dem Ballführer; steht er mittig (|z| < 1), beide Seiten
+    const sides = Math.abs(rz) < 1 ? [1, -1] : [-Math.sign(rz)];
+    const zs = [];
+    for (const s of sides) for (const k of [0, 1, 2, 3]) {
+      const z = s * (1.5 + k * 1.6); // 1,5 … 6,3 m von der Mitte
+      if (Math.abs(z - rz) >= (rank ? 2.5 : 3.5) && Math.abs(z) <= cage.hz - 1) zs.push(z);
+    }
+    if (!zs.length) zs.push(clamp(rz - Math.sign(rz || 1) * 3.5, -cage.hz + 1, cage.hz - 1));
+    const xs = rank ? [-1, -2.5, -4] : [2, 3.3, 4.6, 6];
+    let best = null, bs = -1e9;
+    for (const fx of xs) for (const az of zs) {
+      const x = clamp(b.p.x + dir * fx, -cage.hx + 1.5, cage.hx - 1.5), z = clamp(az, -cage.hz + 1, cage.hz - 1);
+      let open = 9; for (const o of g.players) if (o.team !== team) open = Math.min(open, Math.hypot(o.x - x, o.z - z));
+      const lane = this.laneFree(team, b.p.x, b.p.z, x, z);
+      const dBall = Math.hypot(x - b.p.x, z - b.p.z);
+      let s = Math.min(open, 4) + Math.min(lane, 2) * 0.8 + this.fwd(team, x) * 0.12 - Math.abs(dBall - 6) * 0.25 - Math.hypot(x - pl.x, z - pl.z) * 0.08;
+      if (R.inBox(1 - team, x, z) || R.inBox(team, x, z, 0.5)) s -= 1.5;
+      for (const [mx, mz] of mates) if (Math.abs(mx - x) < 1.5 && Math.abs(mz - z) < 3) s -= 2.5; // „nebeneinander“
+      if (s > bs) { bs = s; best = [x, z]; }
+    }
+    return best;
+  }
+
+  // Peter 13.11. (?deckung): Manndeckung torseitig. Fester Gegenspieler = nächster freier gegnerischer Feldspieler (nicht der
+  // Ballführer bzw. bei losem Ball nicht der Gegner, der zuerst am Ball ist), mindestens 1,5 s gehalten, nie zwei Decker auf
+  // denselben. Stellung: auf der Linie Gegner → Mitte des eigenen Tors, 1,2–1,8 m vor ihm (ballnah enger), leicht zur Ballseite.
+  // → true = Eingabe gesetzt (sonst bisheriges Decken)
+  mannDecken(pl, br, inp) {
+    const g = this.g, b = g.ball, R = g.rules, team = pl.team, cage = g.cage;
+    const gx = R.goalX(team);
+    let first = -1, ft = 1e9; // loser Ball: der Gegner, der zuerst dran ist, gilt als Ballführer
+    if (this.ownerTeam < 0) for (const o of g.players) if (o.team !== team && o.id !== R.keeper[o.team] && this.ttb[o.id].t < ft) { ft = this.ttb[o.id].t; first = o.id; }
+    const taken = new Set();
+    for (const m of g.players) if (m.team === team && m.id !== pl.id && this.brain[m.id].role === 'cover' && this.brain[m.id].mark != null) taken.add(this.brain[m.id].mark);
+    const ok = (o) => o && o.team !== team && o.id !== R.keeper[o.team] && o.id !== this.owner && o.id !== first && !taken.has(o.id);
+    let mk = br.mark != null ? g.players[br.mark] : null;
+    if (!ok(mk) || g.t - br.markT >= 1.5) {
+      let best = null, bd = 1e9;
+      for (const o of g.players) { if (!ok(o)) continue; const d = Math.hypot(o.x - pl.x, o.z - pl.z) - (mk && o.id === mk.id ? 1.0 : 0); if (d < bd) { bd = d; best = o; } }
+      if (!best) { br.mark = null; return false; }
+      if (!mk || best.id !== mk.id) { br.mark = best.id; br.markT = g.t; } else br.markT = g.t - 1.0; // gleicher Gegner: in 0,5 s neu prüfen
+      mk = best;
+    }
+    // Gegner etwas vorausgedacht (0,25 s)
+    const ox = mk.x + mk.vx * 0.25, oz = mk.z + mk.vz * 0.25;
+    const ux0 = gx - ox, uz0 = -oz, ul = Math.hypot(ux0, uz0) || 1, ux = ux0 / ul, uz = uz0 / ul;
+    const dB = Math.hypot(b.p.x - ox, b.p.z - oz);
+    const dd = Math.min(clamp(1.2 + (dB - 3) * 0.08, 1.2, 1.8), ul * 0.5);
+    // leicht zur Ballseite (quer zur Deckungslinie, höchstens 0,5 m)
+    const qx = -uz, qz = ux, side = (b.p.x - ox) * qx + (b.p.z - oz) * qz;
+    const sh = clamp(side * 0.1, -0.5, 0.5);
+    let x = ox + ux * dd + qx * sh, z = oz + uz * dd + qz * sh;
+    if (R.inBox(team, x, z, 0.3)) { const dx = x - gx, d = Math.hypot(dx, z) || 1, rad = g.P.torraum + 0.4; x = gx + dx / d * rad; z = z / d * rad; }
+    const bx = x - b.p.x, bz = z - b.p.z, bd = Math.hypot(bx, bz);
+    if (bd < 2) { const vx = bd > 0.01 ? bx / bd : (team === 0 ? -1 : 1), vz = bd > 0.01 ? bz / bd : 0; x = b.p.x + vx * 2; z = b.p.z + vz * 2; }
+    x = clamp(x, -cage.hx + 1, cage.hx - 1); z = clamp(z, -cage.hz + 1, cage.hz - 1);
+    const far = Math.hypot(x - pl.x, z - pl.z);
+    // auf der falschen Seite (Gegner näher am eigenen Tor als ich) oder weit weg: sprinten
+    const behind = Math.hypot(gx - pl.x, pl.z) > Math.hypot(gx - mk.x, mk.z) - 0.5;
+    this.moveTo(inp, pl, x, z, far > 3 || (behind && far > 1.5), 0.8);
+    return true;
+  }
+
   // Decker: Passweg zum gefährlichsten freien Gegner zustellen
   cover(pl, br, inp, L) {
     const g = this.g, b = g.ball, R = g.rules, team = pl.team;
+    if (g.P.deckung && this.mannDecken(pl, br, inp)) return;
     const gx = R.goalX(team);
     let target = null, bestD = 1e9;
     for (const o of g.players) {

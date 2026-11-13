@@ -488,6 +488,10 @@ export const DEFAULTS = {
   // ggTakt s, ob vor ihm Raum ist (Wertung ≥ ggSchwelle), und läuft dann laufT s Richtung Tor; der Empfänger-Bot spielt ihn
   // bevorzugt an (Rückpass-Wert × 1 + ggBonus). 0 = aus
   gebengehen: 1,          //                                                                         [?gebengehen=0]
+  // Peter 13.11. („Teamspieler sollen nicht nebeneinander herlaufen“): Mitspieler-Bots (beide Mannschaften, auch die des Menschen)
+  // decken Mann gegen Mann torseitig (fester Gegenspieler ≥ 1,5 s, 1,2–1,8 m vor ihm auf der Linie zum eigenen Tor) und bieten sich
+  // im Angriff seitlich versetzt auf der anderen Feldseite an (Strafe für „nebeneinander“). 0 = Decken/Anbieten wie bis 0.10.0
+  deckung: 1,             //                                                                         [?deckung=0]
   // n7 Vorlagen E4 (Vorlage A/B): Kinder-Steuerung (step.js kinderStick). #8 Stick-Ruhe: Richtung folgt mit stickruhe s, unter
   // ruheMin° und ab ruheKehr° sofort; #9 Wechsel-Glättung: nach dem Wechsel halb Schwung, in wechselGlatt s ganz Stick.
   // Stick-Ruhe gemessen ohne Nutzen (Kinderhand-Führen 120 × 60 s: Ballverluste allein 3,48 → 3,64, gegen Bot 6,18 → 6,34 je
