@@ -6,7 +6,7 @@
 // Technik nach Lage: vor dem Körper Innenseite/Vorfuß, seitlich Außenrist, hinter dem Körper (Ball am Standbein) Hacke.
 import { passDist, passSpeedAt, passSpeedFor, passTimeTo, passScharf, chipTime, chipApex, chipSpeedFor, chipBack, bankRatio, clamp } from './kickplan.js';
 import { passTechnique, PASS_PROPS } from './technique.js';
-import { bestLob, flatSlack } from './hochpass.js';
+import { bestLob, flatSlack, hochBack } from './hochpass.js';
 
 const DEG = Math.PI / 180;
 
@@ -240,7 +240,7 @@ function planHoch(game, pl, opts, ad, from) {
     const c = list[i], m = c.virtual ? { ...c, vx: 0, vz: 0 } : c;
     // der gemeinte Empfänger (erster) bekommt den Pass schon mit etwas weniger Reserve (hochGemeint), ein anderer nur sicher
     const need = i === 0 ? P.hochSicher - P.hochGemeint : P.hochSicher;
-    const lob = bestLob(game, pl, from, m, runPath, { y0, maxU: opts.maxU ?? 26 });
+    const lob = bestLob(game, pl, from, m, runPath, { y0, maxU: opts.maxU ?? 26 * Math.max(1, P.passtempo) });
     if (lob && (!any || lob.slack > any.lob.slack)) any = { c, lob };
     if (lob && lob.slack >= need) { pick = { c, lob }; break; }
     // kurzer flacher Pass, wenn der hohe nicht sicher ist, der flache aber schon (nicht aus der Luft)
@@ -262,7 +262,7 @@ function planHoch(game, pl, opts, ad, from) {
     return { to: c.id, bank: 0, target: f.meet, meet: f.meet, T: f.T, u: f.u, el: 1.5, back: -0.3 * f.u / b.r, vArr: f.vArr, virtual: !!c.virtual, slack: pick.slack, flach: true };
   }
   const L = pick.lob;
-  return { to: c.id, bank: 0, target: L.meet, meet: L.meet, T: L.T, u: L.u, el: L.el, back: chipBack(P), chip: true, hoch: true, hArr: L.hArr, apex: L.apex,
+  return { to: c.id, bank: 0, target: L.meet, meet: L.meet, T: L.T, u: L.u, el: L.el, back: hochBack(P), chip: true, hoch: true, hArr: L.hArr, apex: L.apex,
     side: L.side, curve: L.curve, dirH: L.dir, slack: L.slack, unsicher: unsicher && !must, virtual: !!c.virtual };
 }
 
@@ -362,7 +362,9 @@ export function planPass(game, pl, opts = {}) {
     tech = t0 === 'ferse' && plan.u <= 8.5 ? 'ferse' : t0 === 'aussen' && plan.u <= 18 ? 'aussen' : plan.curve ? 'kurve' : 'lupfer';
   }
   const props = PASS_PROPS[tech] || PASS_PROPS.chip;
-  if (plan.u > props.maxSpeed) plan.u = props.maxSpeed; // Hacke: höchstens ~8 m
+  // (n14: hohe Lupfer/Kurvenpässe dürfen mit passtempo schneller sein – ihre Bahn ist mit diesem Tempo gelöst)
+  const maxSp = plan.hoch && (tech === 'lupfer' || tech === 'kurve') ? props.maxSpeed * Math.max(1, P.passtempo) : props.maxSpeed;
+  if (plan.u > maxSp) plan.u = maxSp; // Hacke: höchstens ~8 m
   // Nacht 2e (passfix): Streuung der Tipp-Pässe kleiner (Grundwert passNoise statt 1,1°, Sprint × 1,3 statt × 1,6) – gemessen
   // lag die Abweichung Vorschau ↔ Abflug bei p90 2–6°, bei 10 m bis 1 m neben dem Laufweg
   let noise = (P.passfix ? P.passNoise : 1.1) * props.noise * (pl.sprinting ? (P.passfix ? 1.3 : 1.6) : 1) * (opts.noiseMul ?? 1);

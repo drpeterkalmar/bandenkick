@@ -114,7 +114,7 @@ export function airPassSlack(game, pl, plan) {
   const b = game.ball, sx = b.p.x, sy = b.p.y, sz = b.p.z;
   b.p.x = plan.cx; b.p.y = plan.cy; b.p.z = plan.cz;
   let r = null;
-  try { const pp = planPass(game, pl, { stick: plan.aim, must: true, maxU: AIR_PROPS[plan.tech].vmax }); if (pp && pp.hoch && pp.to >= 0) r = { slack: pp.slack, to: pp.to }; }
+  try { const pp = planPass(game, pl, { stick: plan.aim, must: true, maxU: AIR_PROPS[plan.tech].vmax * Math.max(1, game.P.passtempo) }); if (pp && pp.hoch && pp.to >= 0) r = { slack: pp.slack, to: pp.to }; }
   finally { b.p.x = sx; b.p.y = sy; b.p.z = sz; }
   return r;
 }
@@ -222,7 +222,8 @@ function airKick(pl, game, a, errFrac) {
   // n13 Jonglier-Fallrückzieher: selbst aufgelegt (Ball genau im Treffpunkt) → kräftiger und sauberer als ein Fallrückzieher aus dem Spiel
   if (a.jongl) { sp = Math.min(T.vmax * P.jonglWucht, sp * P.jonglWucht); qMul = Math.min(1, qMul + P.jonglQ); }
   if (a.purpose === 'pass') { // n11: Direktpass aus der Luft – hohe Bahn zum Mitspieler wie am Boden (planPass ab dem Treffpunkt)
-    const plan = planPass(game, pl, { stick: a.aim, must: true, maxU: T.vmax, noiseMul: (pl.airNoise ?? 1) * (2 - qMul) });
+    // (n14: Direktpass aus der Luft folgt den Pässen – Tempo-Grenze × passtempo, nicht der Luftball-Wucht)
+    const plan = planPass(game, pl, { stick: a.aim, must: true, maxU: T.vmax * Math.max(1, P.passtempo), noiseMul: (pl.airNoise ?? 1) * (2 - qMul) });
     if (plan && plan.to !== -1 && plan.hoch) {
       plan.tech = a.tech === 'kopf' || a.tech === 'flugkopf' ? 'kopfpass' : a.tech === 'volley' || a.tech === 'dropkick' ? 'volleypass' : a.tech;
       plan.timing = a.tq;

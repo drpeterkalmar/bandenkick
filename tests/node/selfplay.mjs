@@ -20,6 +20,7 @@ export function playGame(seed, { qs = '', levels = null, maxT = null, onStep = n
   while (g.rules.phase !== 'end' && g.t < limit) {
     const ev = g.step([]);
     if (onStep) onStep(g, ev);
+    if (globalThis.BK_EXTRA_STEP) globalThis.BK_EXTRA_STEP(g, ev); // n14: zweiter Messhaken (n14_probe.mjs: n7 + n11 in einem Spiel)
     for (const e of ev) {
       st.events[e.type] = (st.events[e.type] || 0) + 1;
       if (e.type === 'goal') st.goals[e.team]++;

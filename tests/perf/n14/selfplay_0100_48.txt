@@ -1,0 +1,6 @@
+| Variante | Luftkontakte/min | Akrobatik-Anteil | Effet-Anteil | Tore/Spiel | Schüsse/Spiel | Paraden/Spiel | Pässe/Spiel | Pass kommt an | abgefangen | hoch | nach Abfangen Schuss / Tor (8 s) | Ankunftshöhe p50 | aus / NaN |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Standard | 21.9 | 20.9 % | 21.1 % | 19.1 | 62.1 | 70.6 | 46.0 | 89.1 % | 9.0 % | 49.6 % | 49.2 / 22.6 % | 0.11 m | 0 / 0 |
+Physik: {"bounce":0.9812274689327957,"kurve20":5.220371608549036,"spinMax":18}
+{"luftMin":21.870181799711805,"akroAnteil":20.91923966609675,"effetAnteil":21.140500854872776,"toreSpiel":19.125,"schuesseSpiel":62.125,"paradenSpiel":70.58333333333333,"passeSpiel":46.041666666666664,"passAn":89.09502262443439,"passAb":9.004524886877828,"passHoch":49.59276018099548,"nachAbfangSchuss":49.246231155778894,"nachAbfangTor":22.613065326633166,"gegentoreNachFehlpassSpiel":0.9375,"hochKoerper":78.74087591240875,"ankunftHoeheMed":0.11,"aus":0,"nan":0,"tech":{"ferse":1029,"vollspann":4833,"volley":539,"aussen":511,"aussenrist":387,"innenrist":1075,"seitfall":139,"fallrueck":51,"dropkick":140,"lupfer":647,"megaferse":257,"kurve":113,"flugkopf":79,"salto":26,"innen":40,"kopf":59,"volleypass":14,"kopfpass":4},"games":48}
+(705 s)

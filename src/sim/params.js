@@ -213,7 +213,11 @@ export const DEFAULTS = {
   backspinMax: 11,        // U/s Heber/Chip
   // n11: Magnus über dem Plateau (src/sim/aero.js clOf): cL steigt ab Sp 0,27 mit clSteig weiter bis clMaxAkro. Gemessen: seitliche
   // Ablenkung eines Innenseit-Schusses (25 m/s, voller Effet) über 20 m: 0.8.0 2,9 m; nur 18 U/s 3,0 m; mit clSteig 0,7 5,1 m (× 1,77)
-  clSteig: 0.7, clMaxAkro: 0.6,
+  // n14 (Peter 13.11.: „viel mehr effet bei allen innen und außenspann schüssen – auch pässen“): cL steigt steiler (1,7 statt 0,7) bis 1,5
+  // (statt 0,6) – seitliche Ablenkung des Innenseit-Schusses über 20 m 5,2 → ~9,8 m (× 1,9). Spektakel vor Realismus. Die Ziel-Löser
+  // (aimAt, Hochpass-Tabellen) simulieren mit demselben Ball, die Kurve ist eingerechnet. ?effet=18 = 0.10.0 (setzt clSteig 0,7,
+  // clMaxAkro 0,6, aussenSpin 0,85, passEffet 0 zurück, EFFET0100)
+  clSteig: 1.7, clMaxAkro: 1.5,  //                                                                   [0.10.0: 0,7 / 0,6]
   kickBuffer: 0.9,        // s: Pass/Schuss wird so lange vorgemerkt, bis der Ball erreichbar ist
 
   // ---------------- Nacht 2b: Gesten, Pass, Schuss, Luftbälle ----------------
@@ -279,7 +283,7 @@ export const DEFAULTS = {
   bananeSpeed: 1.0,       // angeschnitten: Grundtempo wie Vollspann (die Lage-Qualität q kostet etwas mehr)
   bananeSpin: 25,         // m/s: bis zu diesem Tempo wächst der Drall mit (Nacht 2b: bis 25 m/s, dann fest) …
   bananeSpinMax: 1.35,    // … höchstens × 1,35 (n11 mitgezogen, 0.8.0: 1,2)
-  aussenSpin: 0.85,       // Außenrist: Drall × 0,85 (n11, 0.8.0: 0,75) …
+  aussenSpin: 1.0,        // Außenrist: Drall × 1 (n14: so stark wie die Innenseite; 0.10.0: 0,85, 0.8.0: 0,75) … [?aussen=]
   aussenNoise: 1.35,      // … und Streuung × 1,35
   // Luftbälle: Kopfball, Volley, Dropkick, Seitfallzieher, Fallrückzieher, Flugkopfball
   luft: 1,                // Faktor auf alle Höhenfenster                                            [?luft=]
@@ -322,12 +326,24 @@ export const DEFAULTS = {
   // über einen freien Passweg: Flugbahn gegen die Erreichbarkeit der Gegner (inkl. Sprung) geprüft, sonst der nächste freie
   // Mitspieler, sonst behalten (Hinweis). hochSicher = Zeitreserve (s), die jeder Gegner zu spät kommen muss.
   hochpass: 1,            // 0 = flache Pässe wie 0.8.0                                               [?hochpass=0]
+  // n14 (Peter 13.11.: „mach die pässe alle höher und schneller“): alle hohen Pässe (Mensch, Bots, Direktpässe aus der Luft) mit
+  // höherem Bogen UND mehr Tempo. Höherer Scheitel allein heißt längere Flugzeit – deshalb mit Vorwärtsdrall (Topspin, (passtempo − 1)
+  // × 100 U/s, bei 1,25 also 25 U/s statt 2,5 U/s Rückdrall) und dem stärkeren Magnus aus n14: der Ball steigt steil und fällt scharf.
+  // Der Löser wählt unter den sicheren Bahnen die mit Scheitel ≈ passhoch × Scheitel der flachsten Bahn (0.10.0 wählte die flachste).
+  // Abfang-Schutz (Zeitreserve) zählt weiter zuerst. passhoch=1&passtempo=1 = 0.10.0                        [?passhoch=1&passtempo=1]
+  passhoch: 1.5,          // × Scheitel                                                               [?passhoch=]
+  passtempo: 1.25,        // Tempo-Stufe: Vorwärtsdrall, Tempo-Grenzen der hohen Pässe × passtempo, Annahme bis 13 × passtempo m/s [?passtempo=]
+  hochScheitelW: 1.0,     // Gewicht des Scheitel-Ziels in der Bahnwahl (je m daneben)
+  hochAnkunft: 12,        // m/s × passtempo: höchstes Ankunftstempo einer n14-Bahn (0.10.0 ohne Grenze, Wahl bevorzugte ≤ 10)
   hochSicher: 0.06,       // s                                                                        [?hochSicher=]
   hochGemeint: 0.1,       // s weniger Reserve für den gemeinten Empfänger (Stick) als für einen anderen  [?hochGemeint=]
   hochLesen: 0.3,         // s bis ein Gegner auf den hohen Pass reagiert (Reaktion + Lesen)
   direktLuft: 0.8,        // × Chance (Stufe: airTry), dass ein Bot einen hohen Pass direkt aus der Luft weiterspielt
   botSicher: 0.015,       // s: Bots passen nur ab dieser Zeitreserve (Stufe 1: × 2,5, Stufe 3: × 0,4); n13: 0,015 statt −0,03 – mit g 8,8 fliegen hohe Pässe länger, sonst 22 % abgefangen [?botSicher=-0.03]
   kurvenpass: 1,          // Kurvenpass mit Effet um einen Gegner herum (zusätzliche Option für freie Passwege)
+  // n14: jeder hohe Innenseit-/Außenrist-Pass bekommt Effet (Kurvenpass-Bahn, der Löser wählt die sicherere Seite); gerade nur, wenn
+  // kein angeschnittener Weg sicher ist. 0 = wie 0.10.0 (gerade, Effet nur als Ausweg um einen Gegner)          [?passEffet=0]
+  passEffet: 1,
   // n12 (Peter 05.11.: „der schöne Laufpass an die Spitze … prallt an ihm nach hinten ab“): Der laufende Empfänger eines Passes vom
   // Mitspieler legt den Ball mit der ersten Berührung (Kopf/Brust/Oberschenkel bzw. Fuß, auch wenn der Ball von hinten an den Körper
   // kommt) in seine Laufrichtung vor – Balltempo so, dass er nach mitnahmeZeit s mitnahmeVor m vor dem Fuß liegt. Bis 0.9.0 bekam der Ball
@@ -490,7 +506,7 @@ export const ALIASES = {
   schuss: 'shotMax', pass: 'passSpeed', bande: 'boardEn', netz: 'netH', dachhoehe: 'roofH',
   abprall: 'turfEn', rollen: 'turfRoll0', effet: 'spinMax', torbreite: 'goalW', torhoehe: 'goalH',
   stemm: 'aPlant', bremse: 'aBrake', kurve: 'curveDeg', bots: 'botLevel',
-  ein: 'vEin', sprungkraft: 'jumpMax', tipp: 'tapMax', autotorwart: 'autoTorwart', autowurf: 'autoWurf', kegel: 'passCone', innen: 'passInnenDeg', hacke: 'passHackeDeg', chipmin: 'chipElevMin', chipmax: 'chipElevMax',
+  aussen: 'aussenSpin', ein: 'vEin', sprungkraft: 'jumpMax', tipp: 'tapMax', autotorwart: 'autoTorwart', autowurf: 'autoWurf', kegel: 'passCone', innen: 'passInnenDeg', hacke: 'passHackeDeg', chipmin: 'chipElevMin', chipmax: 'chipElevMax',
 };
 // ?zack=0: Werte des alten Bewegungsmodells (Nacht 1), sofern nicht ausdrücklich übersteuert
 const ZACK0 = { aLat: 6.0, aBrake: 6.5 };
@@ -506,8 +522,10 @@ const SPRINTFREI1 = { slideSpeed: 8 };
 const MAGNET07 = { schirmVor: 0.3 };
 // n13: ?magnet= bis 2,4 ausdrücklich = Ballmagnet wie 0.9.1 (Abschirmen ohne die n13-Stärkung), sofern nicht ausdrücklich übersteuert
 const MAGNET091 = { schirmNah: 0.9, schirmRel: 0, schirmT: 1.0, schirmVor: 0.6, schirmHand: 0 };
+// n14: ?effet= bis 18 (0.10.0-Wert) ausdrücklich = Effet wie 0.10.0 (Magnus-Kurve, Außenrist, gerade hohe Pässe), sofern nicht ausdrücklich übersteuert
+const EFFET0100 = { clSteig: 0.7, clMaxAkro: 0.6, aussenSpin: 0.85, passEffet: 0 };
 // n11 ?akro=0: alles wie 0.8.0, sofern nicht ausdrücklich übersteuert
-export const AKRO0 = { turfEn: 0.621, jumpMax: 0.6, sprungAkro: 1, spinMax: 10, backspinMax: 7, bananeSpinMax: 1.2, aussenSpin: 0.75, autotech: 0, einknopf: 0, salto: 0, hochpass: 0, kurvenpass: 0, clSteig: 0, mitnahme: 0, g: 9.81, schusskegel: 0 }; // (n12: Mitnahme gab es in 0.8.0 nicht; n13: Schwerkraft 9,81 wie bis 0.9.1)
+export const AKRO0 = { turfEn: 0.621, jumpMax: 0.6, sprungAkro: 1, spinMax: 10, backspinMax: 7, bananeSpinMax: 1.2, aussenSpin: 0.75, autotech: 0, einknopf: 0, salto: 0, hochpass: 0, kurvenpass: 0, passEffet: 0, clSteig: 0, clMaxAkro: 0.6, mitnahme: 0, g: 9.81, schusskegel: 0 }; // (n12: Mitnahme gab es in 0.8.0 nicht; n13: Schwerkraft 9,81 wie bis 0.9.1)
 
 // Liest Overrides aus einem Query-String (oder Objekt) und gibt ein vollständiges Parameter-Objekt zurück.
 function parseQuery(s) {
@@ -546,6 +564,7 @@ export function makeParams(overrides = {}) {
   if (zack0) for (const [k, v] of Object.entries(ZACK0)) if (!set.has(k)) P[k] = v;
   if (P.laden) for (const [k, v] of Object.entries(LADEN1)) if (!set.has(k)) P[k] = v;
   if (!P.halten) for (const [k, v] of Object.entries(HALTEN0)) if (!set.has(k)) P[k] = v;
+  if (set.has('spinMax') && P.spinMax <= 18) for (const [k, v] of Object.entries(EFFET0100)) if (!set.has(k)) P[k] = v;
   if (!P.akro) for (const [k, v] of Object.entries(AKRO0)) if (!set.has(k)) P[k] = v;
   if (!P.gummi && !set.has('puntZiel')) P.puntZiel = 0; // n13: ?gummi=0 = Verhalten wie cac623e (auch der Abschlag)
   // n11: der Tormann springt so hoch wie alle (Fanghöhe mit Strecken + Sprung über 0.8.0 hinaus)

@@ -17,11 +17,15 @@ export const HOCH_H = [1.0, 1.3, 1.7];             // m Ankunftshöhe (Ballmitte
 const cache = new WeakMap();
 // Effet des Kurvenpasses (rad/s um die Hochachse): 0,5 × spinMax
 export const kurvenSpin = (P) => 0.5 * P.spinMax * 2 * Math.PI;
+// n14: Drall des hohen Passes (rad/s, + = Rückdrall): bis 0.10.0 der Rückdrall der Flanke, mit passtempo > 1 Vorwärtsdrall
+// ((passtempo − 1) × 100 U/s) – steiler Bogen, der scharf herunterfällt
+export const hochBack = (P) => (P.passtempo > 1 ? -(P.passtempo - 1) * 100 * 2 * Math.PI : chipBack(P));
+export const hochN14 = (P) => P.passhoch !== 1 || P.passtempo !== 1;
 
 function build(P, side) {
   const X = new Float32Array(LNE * LNU * LNT), Y = new Float32Array(LNE * LNU * LNT), V = new Float32Array(LNE * LNU * LNT), Z = side ? new Float32Array(LNE * LNU * LNT) : null;
   const b = new Ball({ ...P, knuckleF30: 0 });
-  const sub = Math.round(LDT * 240), back = chipBack(P);
+  const sub = Math.round(LDT * 240), back = hochBack(P);
   for (let e = 0; e < LNE; e++) for (let i = 0; i < LNU; i++) {
     const o = (e * LNU + i) * LNT;
     b.place(0, b.r, 0);
@@ -73,7 +77,20 @@ function atDist(path, D) {
 export function solveLob(P, e, D, h, y0 = 0, curve = false) {
   const T = lobTable(P, curve);
   let lo = LU0, hi = LU0 + (LNU - 1) * LDU;
-  const f = (u) => { const r = atDist(pathRow(T, e, u, _p), D); return r ? r.y + y0 : -1; };
+  // (n14: Höhe bei Weite D direkt aus den zwei Tabellenzeilen – ohne die ganze Bahn zu füllen; gleiche Werte wie pathRow + atDist)
+  const f = (u) => {
+    const fu = clamp((u - LU0) / LDU, 0, LNU - 1.001), iu = Math.floor(fu), a = fu - iu;
+    const o0 = (e * LNU + iu) * LNT, o1 = o0 + LNT;
+    let px = 0, py = 0;
+    for (let k = 0; k < LNT; k++) {
+      const y0k = T.Y[o0 + k], y1k = T.Y[o1 + k];
+      if (y0k < 0 || y1k < 0) return -1;
+      const x = T.X[o0 + k] * (1 - a) + T.X[o1 + k] * a, y = y0k * (1 - a) + y1k * a;
+      if (k >= 1 && x >= D) { const b = (D - px) / Math.max(1e-6, x - px); return py + (y - py) * b + y0; }
+      px = x; py = y;
+    }
+    return -1;
+  };
   if (f(hi) < h) return null;
   for (let i = 0; i < 12; i++) { const m = (lo + hi) / 2; if (f(m) < h) lo = m; else hi = m; }
   const u = (lo + hi) / 2;
@@ -136,10 +153,11 @@ function slackOf(game, team, from, dir, path, kEnd, y0, bowK, skip = -1, tRead =
 
 // Bester hoher Pass von from (Ball, [x, z], Höhe y0 über dem Boden) zum Mitspieler m (Position, Tempo), Laufweg per runPath.
 // Gibt {u, el, T, meet, hArr, vArr, apex, side, slack, dir} oder null zurück. opts: curve (Kurvenpass erlaubt), maxU, y0, hs (Höhen)
-export function bestLob(game, pl, from, m, runPath, { curve = true, maxU = 26, y0 = 0, hs = HOCH_H, skip = -1 } = {}) {
+export function bestLob(game, pl, from, m, runPath, { curve = true, maxU = 26, y0 = 0, hs = HOCH_H, skip = -1, tMin = 0 } = {}) {
   const P = game.P, cage = game.cage, top = P.roof ? P.roofH - 0.4 : 99;
   const r0 = [m.x, m.z], rv = [m.vx || 0, m.vz || 0];
-  let best = null;
+  let best = null;                                       // (Wahl wie 0.10.0: höchster Punktwert)
+  const cands = hochN14(P) ? [] : null;
   // erst ohne Effet; ist so keiner sicher, auch als Kurvenpass (Effet um den Gegner herum)
   const pass = (sides) => { for (const hArr of hs) for (let e = 1; e < LNE - 1; e++) for (const sg of sides) {
     // Treffpunkt im Laufweg zur Ankunftszeit (Iteration)
@@ -153,7 +171,8 @@ export function bestLob(game, pl, from, m, runPath, { curve = true, maxU = 26, y
       if (Math.abs(sol.T - T) < 0.02) break;
       T = sol.T;
     }
-    if (!sol || sol.u > maxU || sol.apex > top) continue;
+    if (!sol || sol.u > maxU || sol.apex > top || sol.T < tMin) continue; // (n14 tMin: Steilpass – Empfänger muss noch hinlaufen)
+    if (cands && sol.vArr > P.hochAnkunft * P.passtempo) continue; // n14: nicht zu hart beim Empfänger (Annahme bis 13 × passtempo)
     const dx = (meet[0] - from[0]) / D, dz = (meet[1] - from[1]) / D;
     // Kurve: Abflug so gedreht, dass der Ball beim Treffpunkt ankommt (zD quer bei Weite D)
     const zD = sg * sol.zD, bowK = zD / D, rot = -Math.atan2(zD, D);
@@ -162,12 +181,32 @@ export function bestLob(game, pl, from, m, runPath, { curve = true, maxU = 26, y
     if (sg < 0) for (let k = 0; k < path.n; k++) path.z[k] = -path.z[k];
     const slack = slackOf(game, pl.team, from, [dx, dz], path, sol.k, y0 - P.ballR, bowK, skip);
     // Wahl: sicher zuerst (Reserve bis 0,4 s zählt), dann kurz unterwegs, Ankunft gut annehmbar (Brust bevorzugt, nicht zu hart)
-    const score = 2.2 * Math.min(slack, 0.4) - 0.7 * sol.T - 0.25 * Math.abs(hArr - 1.3) - 0.08 * Math.max(0, sol.vArr - 10) - (sg ? 0.05 : 0);
-    if (!best || score > best.score) best = { score, u: sol.u, el: sol.el, T: sol.T, meet, hArr, vArr: sol.vArr, apex: sol.apex, side: sg * kurvenSpin(P), curve: sg, slack, dir, D };
+    const score = 2.2 * Math.min(slack, 0.4) - 0.7 * sol.T - 0.25 * Math.abs(hArr - 1.3) - 0.08 * Math.max(0, sol.vArr - 10) - (sg && !P.passEffet ? 0.05 : 0);
+    const c = { score, u: sol.u, el: sol.el, T: sol.T, meet, hArr, vArr: sol.vArr, apex: sol.apex, side: sg * kurvenSpin(P), curve: sg, slack, dir, D };
+    if (cands) cands.push(c);
+    if (!best || score > best.score) best = c;
   } };
-  pass([0]);
-  if (curve && P.kurvenpass && (!best || best.slack < P.hochSicher)) pass([1, -1]);
-  return best;
+  // n14 (passhoch): unter allen Bahnen die mit Scheitel nahe passhoch × Scheitel der bisherigen Wahl (Sicherheit zählt weiter zuerst)
+  const hoeher = () => {
+    if (!cands || !best || cands.length < 2) return best;
+    const aZ = P.passhoch * best.apex;
+    // (nur Bahnen, die fast so sicher sind wie die bisherige Wahl – Abfang-Schutz zuerst)
+    const sMin = Math.min(best.slack, 0.4) - 0.03;
+    let b2 = best, s2 = -1e9;
+    for (const c of cands) {
+      if (Math.min(c.slack, 0.4) < sMin) continue;
+      const sc = c.score - P.hochScheitelW * Math.abs(c.apex - aZ);
+      if (sc > s2) { s2 = sc; b2 = c; }
+    }
+    return b2;
+  };
+  // n14 (passEffet): jeder hohe Pass mit Effet – erst die angeschnittenen Bahnen, gerade nur, wenn keine davon sicher ist
+  if (curve && P.kurvenpass && P.passEffet) { pass([1, -1]); if (!best || best.slack < P.hochSicher) pass([0]); }
+  else {
+    pass([0]);
+    if (curve && P.kurvenpass && (!best || best.slack < P.hochSicher)) pass([1, -1]);
+  }
+  return hoeher();
 }
 
 // Flacher Pass (Fallback, wenn kein hoher sicher ist): Zeitreserve der Gegner entlang der Rollbahn (Roll-Tabelle aus kickplan.js)

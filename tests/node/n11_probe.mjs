@@ -30,9 +30,15 @@ function merge(a, b) {
 }
 
 export function measure(qs, seed) {
+  const h = n11Hook();
+  const st = playGame(seed, { qs, levels: [2, 2], onStep: h.onStep });
+  return h.finish(st);
+}
+// n14: Messhaken einzeln (n14_probe.mjs misst n7- und n11-Größen im selben Spiel)
+export function n11Hook() {
   const r = empty();
   let pend = null; const ints = [];
-  const st = playGame(seed, { qs, levels: [2, 2], onStep: (g, ev) => {
+  const onStep = (g, ev) => {
     const b = g.ball, c = g.cage;
     if (!Number.isFinite(b.p.x + b.p.y + b.p.z)) r.nan++;
     else if (b.held < 0 && (Math.abs(b.p.x) > c.hx + 1.6 || Math.abs(b.p.z) > c.hz + 0.6 || b.p.y < -0.05 || b.p.y > (c.gummi ? c.gummi.h : c.roof ? c.top : 99) + 0.6)) r.out++; // n13: ohne Dach zählt erst über der Gummi-Decke
@@ -59,10 +65,13 @@ export function measure(qs, seed) {
       }
       if (e.type === 'goal' || e.type === 'restart' || e.type === 'out') pend = null;
     }
-  } });
-  r.games = 1; r.minutes = st.t / 60;
-  r.intShot = ints.filter((x) => x.shot).length; r.intGoal = ints.filter((x) => x.goal).length;
-  return r;
+  };
+  const finish = (st) => {
+    r.games = 1; r.minutes = st.t / 60;
+    r.intShot = ints.filter((x) => x.shot).length; r.intGoal = ints.filter((x) => x.goal).length;
+    return r;
+  };
+  return { r, onStep, finish };
 }
 
 export function runProbe(qs = '', N = 80, W = 6) {

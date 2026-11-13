@@ -351,7 +351,7 @@ export class Player {
     // (holt ein Ball von hinten den Läufer noch ein, wartet die Mitnahme, bis er auf Körperhöhe ist – sonst müsste er hinter dem
     // Rücken angenommen und um den Läufer herum beschleunigt werden)
     const mitJetzt = mit && (bx * mdx + bz * mdz > -0.3 || (ball.v.x - this.vx) * mdx + (ball.v.z - this.vz) * mdz < 0.5);
-    if (!handsFirst && !inReach && this.touchCd <= 0 && !this.air && ball.p.y > P.reachH && ball.p.y < ctrlTop && ball.v.y < 0.5 &&  (!mit || mitJetzt) && bd < (hochEmpf || mit ? 0.9 : 0.75) && rel < (hochEmpf || mit ? 13 : 11) && !(this.mitT > 0 && game.lastTouch === this.id) &&
+    if (!handsFirst && !inReach && this.touchCd <= 0 && !this.air && ball.p.y > P.reachH && ball.p.y < ctrlTop && ball.v.y < 0.5 &&  (!mit || mitJetzt) && bd < (hochEmpf || mit ? 0.9 : 0.75) && rel < (hochEmpf || mit ? 13 * Math.max(1, P.passtempo) : 11) && !(this.mitT > 0 && game.lastTouch === this.id) &&
         (hochEmpf || mit || (bx * Math.cos(this.face) + bz * Math.sin(this.face)) > -0.15) && !this.pending) { // (Empfänger dreht sich zum Ball)
       const k = 0.7, part = ball.p.y > 1.55 ? 'kopf' : ball.p.y > 1.05 ? 'brust' : 'oberschenkel';
       if (mit) this.mitnahmeBall(game, mdx, mdz, -1.2, mWant);
@@ -399,7 +399,7 @@ export class Player {
       }
     }
     // n12: Laufpass kommt (oft von hinten) an den Körper, bevor Fuß oder Annahme dran sind → nicht abprallen, sondern mitnehmen
-    if (!touched && mit && this.touchCd <= 0 && !this.air && ball.p.y < ctrlTop && bd < ball.r + 0.28 && rel < 13) {
+    if (!touched && mit && this.touchCd <= 0 && !this.air && ball.p.y < ctrlTop && bd < ball.r + 0.28 && rel < 13 * Math.max(1, P.passtempo)) { // (n14: schnellere Pässe)
       const part = ball.p.y > 1.55 ? 'kopf' : ball.p.y > 1.05 ? 'brust' : ball.p.y > P.reachH ? 'oberschenkel' : 'innen';
       this.mitnahmeBall(game, mdx, mdz, part === 'innen' ? Math.min(ball.v.y, 0) : -1.2, mWant);
       this.tech = part; this.techT = 0;
@@ -1029,7 +1029,7 @@ export class Player {
     if (to < -1) to = -1; // Challenge-Ziel (virtuell)
     if (game.match) { game.rules.touch(this); game.passTo = to; if (plan.tech !== 'kopf' && plan.tech !== 'flugkopf' && plan.to !== this.id) game.rules.markKick(this, dx, dz, to); }
     game.passPlan = plan.kind === 'pass' && plan.meet ? { to: plan.to ?? -1, from: this.id, x: plan.meet[0], z: plan.meet[1], t: game.t + (plan.T || 1), chip: !!plan.chip, bank: plan.bank || 0, hoch: !!plan.hoch, h: plan.hArr ?? 0 } : null;
-    this.lastKick.hoch = !!plan.hoch; this.lastKick.hArr = plan.hArr ?? null; this.lastKick.slack = plan.slack ?? null;
+    this.lastKick.hoch = !!plan.hoch; this.lastKick.hArr = plan.hArr ?? null; this.lastKick.slack = plan.slack ?? null; this.lastKick.apex = plan.apex ?? null; this.lastKick.raum = !!plan.raum;
     game.events.push({ type: 'kick', kind: plan.kind === 'air' ? 'shot' : plan.kind, tech: plan.tech, player: this.id, human: game.human === this.id, speed, x: ball.p.x, y: ball.p.y, z: ball.p.z, dx, dz, to, q: plan.q ?? null, perfekt: !!plan.perfekt, kurve: Math.abs(plan.side || 0) > 18, hoch: !!plan.hoch });
     if (game.match && plan.kind === 'pass') {
       perfektPass(game, this, plan, ball.p.x, ball.p.z); // n7 E3: Traumpass?

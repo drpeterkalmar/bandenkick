@@ -121,7 +121,8 @@ export function onePass(P, seed, { move = 'steh', gest = 'tipp', thumb = 'los', 
         const lk = me.lastKick;
         let laneK = 9, openK = 9; const im = g.players[intended];
         for (const o of opps) { laneK = Math.min(laneK, segDist(o.x, o.z, e.x, e.z, im.x, im.z)); openK = Math.min(openK, Math.hypot(o.x - im.x, o.z - im.z)); }
-        kick = { freeKick: laneK >= 1.5 && openK >= 1.5, t: g.t, dx: e.dx, dz: e.dz, to: lk.to, bank: lk.bank, chip: lk.chip, planDir: lk.planDir, prev: preview, tech: lk.tech, bx: e.x, bz: e.z, mx: lk.meet ? lk.meet[0] : e.x, mz: lk.meet ? lk.meet[1] : e.z, T: lk.T, speed: lk.speed };
+        kick = { freeKick: laneK >= 1.5 && openK >= 1.5, t: g.t, dx: e.dx, dz: e.dz, to: lk.to, bank: lk.bank, chip: lk.chip, planDir: lk.planDir, prev: preview, tech: lk.tech, bx: e.x, bz: e.z, mx: lk.meet ? lk.meet[0] : e.x, mz: lk.meet ? lk.meet[1] : e.z, T: lk.T, speed: lk.speed,
+          rand: Math.abs(e.z) >= g.cage.hz - 3 || Math.abs(im.z) >= g.cage.hz - 3, raum: !!lk.raum }; // n14: Randlage (≤ 3 m an der Längsbande)
         continue;
       }
       if (res === 'ok' && e.player != null && g.players[e.player].team !== me.team && ['touch', 'kick', 'control', 'catch', 'parry', 'body', 'block', 'air', 'tackle'].includes(e.type)) annLost = true;
@@ -147,6 +148,7 @@ export function onePass(P, seed, { move = 'steh', gest = 'tipp', thumb = 'los', 
     selOk: kick.to === intended, prevOk: kick.prev ? kick.prev.to === kick.to : true,
     interFrac: kick.interFrac, interT: kick.interT, interRecvD: kick.interRecvD, passT: kick.T, speed: kick.speed,
     tArr: res === 'ok' ? okT - kick.t : null, annOk, annTyp,
+    gain: kick.mx - kick.bx, rand: kick.rand, raum: kick.raum, // n14: Raumgewinn Richtung gegnerisches Tor (Orange greift +x an), Randlage
     errPrev: angDiff(la, prevA) / DEG, errPlan: angDiff(planA, prevA) / DEG, errNoise: angDiff(la, planA) / DEG, minD, tech: kick.tech,
   };
 }
@@ -165,6 +167,7 @@ export function summarize(rs0) {
     sel: share(kicked, (r) => r.selOk), prevSame: share(kicked, (r) => r.prevOk),
     abgefangen: share(kicked, (r) => r.res === 'abgefangen'), falsch: share(kicked, (r) => r.res === 'falsch'), niemand: share(kicked, (r) => r.res === 'niemand'), selbst: share(kicked, (r) => r.res === 'selbst'),
     bank: share(kicked, (r) => r.bank), free: share(kicked, (r) => r.free),
+    vor: share(kicked, (r) => r.gain >= 2), raum: share(kicked, (r) => r.raum), zurueck: share(kicked, (r) => r.gain < 0), randBank: share(kicked.filter((r) => r.rand), (r) => r.bank), nRand: kicked.filter((r) => r.rand).length,
     tArr50: pctl(kicked.filter((r) => r.res === 'ok').map((r) => r.tArr), 0.5), annOk: share(kicked.filter((r) => r.res === 'ok'), (r) => r.annOk),
     speed50: pctl(kicked.map((r) => r.speed), 0.5),
     errPrev50: pctl(kicked.map((r) => r.errPrev), 0.5), errPrev90: pctl(kicked.map((r) => r.errPrev), 0.9),
@@ -216,6 +219,7 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) { // Windows-taugli
   console.log(table(out));
   const all = summarize(out.flatMap((o) => o.rs));
   console.log(`\nGesamt: kommt an ${f(all.ok)} % (Weg frei beim Abspiel: ${f(all.okFreeK)} %, ${all.nFreeK} Pässe; beim Tipp: ${f(all.okFree)} %), kein Pass ${f(all.noKick)} %, abgefangen ${f(all.abgefangen)} %, falscher Mitspieler ${f(all.falsch)} %, niemand ${f(all.niemand)} %, selbst ${f(all.selbst)} %, Empfänger = gemeint ${f(all.sel)} %, Bande ${f(all.bank)} %, Freiraum ${f(all.free)} %`);
+  console.log(`n14: Steilpass in den Raum ${f(all.raum)} %, Raumgewinn ≥ 2 m Richtung Tor ${f(all.vor)} %, nach hinten ${f(all.zurueck)} %, Randlage ${all.nRand} Pässe → über die Bande ${f(all.randBank)} %, Annahme gelingt ${f(all.annOk)} %, Abspieltempo p50 ${f(all.speed50, 1)} m/s`);
   console.log(`n10: Abspieltempo p50 ${f(all.speed50, 1)} m/s · Ballzeit bis zum Mitspieler p50 ${f(all.tArr50, 2)} s · Annahme gelingt ${f(all.annOk)} % (0,8 s nach der Ankunft kein Gegner dran und Ball ≤ 1,5 m beim Empfänger oder von seinem Team weitergespielt)`);
   if (process.env.JSON) console.log(JSON.stringify({ all, rows: out.map((o) => ({ move: o.move, gest: o.gest, thumb: o.thumb, s: o.s })) }));
   if (process.env.DETAIL) for (const o of out) console.log(o.move, o.gest, o.thumb, JSON.stringify(o.rs.filter((r) => r.res !== 'ok').slice(0, 6).map((r) => ({ res: r.res, sel: r.selOk, to: r.to, int: r.intended, bank: r.bank, d: +r.minD.toFixed(2), e: +r.errPrev.toFixed(1), free: r.freeLane }))));

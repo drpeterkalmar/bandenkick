@@ -1,0 +1,10 @@
+### Standard (48 Spiele)
+Pässe/Spiel 46.7 · kommen an 90.5 % · abgefangen 8.3 % · hoch 46.2 % · hoch beim Gemeinten in Körperhöhe 81.2 %
+Scheitel hoher Pässe Mittel 1.09 m (p50 1.08, Plan 1.16) · Abspieltempo p50 5.7 m/s (Mittel 8.4) · bis zur 1. Berührung p50 0.49 s
+Raumgewinn ≥ 2 m Richtung Tor 30.5 % der Pässe (davon an 83.6 %, abgefangen 14.0 %) · Randlage 9.3 % → davon über die Bande 0.0 % · Bandenpässe gesamt 0.0 %
+Ballverluste beim Führen 1.21/min (Zweikampf 0.91) · Ball am Fuß 4.7 s/min · Grätschen mit Ballgewinn 9.1/Spiel
+Tore/Spiel 20.6 (2.21/min) · Schüsse/Spiel 64.7 · Tore je Schuss 31.8 % · Luftkontakte/min 20.3 · Gegentore nach Fehlpass/Spiel 0.92 · aus/NaN 0/0
+Luftball-Tore/Versuche: Kopfball 9/44 (20 %) · Flugkopf 8/77 (10 %) · Fallrückzieher 4/44 (9 %) · Seitfall 23/160 (14 %) · Salto 4/27 (15 %) · Volley 162/517 (31 %)
+Physik: {"bounce":0.9812274689327957,"kurve20":9.904731106656824,"spinMax":18}
+{"games":48,"passeSpiel":46.708333333333336,"passAn":90.49955396966993,"passAb":8.340767172167707,"hochKoerper":81.15942028985508,"passHoch":46.16413916146298,"scheitelMittel":1.0903627048814626,"scheitelMed":1.0770566052629185,"scheitelPlan":1.1569894701545045,"tempoMed":5.711376774415282,"tempoMittel":8.411896919593055,"zeitMed":0.4916666666662195,"vorAnteil":30.508474576271187,"vorAn":83.62573099415205,"vorAb":14.035087719298245,"randAnteil":9.322033898305085,"randBank":0,"bankAnteil":0,"verlusteMin":1.2109164771451808,"zweikampfMin":0.9062342667667159,"ballAmFuss":4.6943412440781,"graetschenBall":9.0625,"toreSchuss":31.81964573268921,"toreSpiel":20.583333333333332,"toreMin":2.2111399978379636,"schuesseSpiel":64.6875,"luftMin":20.27176730811364,"aus":0,"nan":0,"gegentoreNachFehlpassSpiel":0.9166666666666666,"luft":{"kopf":{"n":44,"tore":9,"quote":20.454545454545453},"flugkopf":{"n":77,"tore":8,"quote":10.38961038961039},"fallrueck":{"n":44,"tore":4,"quote":9.090909090909092},"seitfall":{"n":160,"tore":23,"quote":14.375},"salto":{"n":27,"tore":4,"quote":14.814814814814815},"volley":{"n":517,"tore":162,"quote":31.334622823984525},"dropkick":{"n":142,"tore":37,"quote":26.056338028169016}}}
+(1360 s)
