@@ -34,11 +34,13 @@ function buildMachine() {
 
 // n10: tierform 1 = Kindchenschema wie die Tiere – Kopf samt Ohren und Augen × KOPF_PUPPE um den Halsansatz (Volumen +37 %)
 // n13: tierform 2 = zweite Stufe wie die Tiere (Kopf × 1,2 statt 1,11)
-const KOPF_PUPPE = 1.11, KOPF_PUPPE2 = 1.2, HALS_PUPPE = 1.48;
+const KOPF_PUPPE = 1.11, KOPF_PUPPE2 = 1.2, HALS_PUPPE = 1.48, RUMPF_PUPPE = 0.12;
 function buildDummy(kuschel = false, tierform = 1) {
   const g = new THREE.Group(); g.name = 'puppe';
   const m = mat(0x1b3a8c, { roughness: kuschel ? 1 : 0.7 });
-  const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.2, 1.05, 6, 14), m); body.position.y = 0.2 + 0.52 + 0.2; body.scale.set(1, 1, 0.55); g.add(body);
+  // n14: tierform 3 = kürzerer Rumpf wie die Tiere – Körper unten gleich, oben RUMPF_PUPPE m kürzer, Kopf entsprechend tiefer
+  const kurz = kuschel && tierform >= 3 ? RUMPF_PUPPE : 0;
+  const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.2, 1.05 - kurz, 6, 14), m); body.position.y = 0.2 + 0.52 + 0.2 - kurz / 2; body.scale.set(1, 1, 0.55); g.add(body);
   // n9: Stoff-Puppe mit runden Bärenohren und Knopfaugen statt Menschen-Silhouette – Ohren im Kopf-, Augen im Fuß-Mesh
   // (gleiche Zahl Draw-Calls wie die alte Puppe)
   const kopf = [new THREE.SphereGeometry(kuschel ? 0.16 : 0.13, 14, 10).translate(0, kuschel ? 1.64 : 1.62, 0)];
@@ -51,6 +53,7 @@ function buildDummy(kuschel = false, tierform = 1) {
     const k = tierform >= 2 ? KOPF_PUPPE2 : KOPF_PUPPE, s = (geo) => geo.translate(0, -HALS_PUPPE, 0).scale(k, k, k).translate(0, HALS_PUPPE, 0);
     kopf.forEach(s); for (let i = 1; i < fuss.length; i++) s(fuss[i]); // (fuss[1…] = Knopfaugen)
   }
+  if (kurz) { kopf.forEach((geo) => geo.translate(0, -kurz, 0)); for (let i = 1; i < fuss.length; i++) fuss[i].translate(0, -kurz, 0); }
   const head = new THREE.Mesh(kuschel ? mergeGeometries(kopf) : kopf[0], m); g.add(head);
   const foot = new THREE.Mesh(kuschel ? mergeGeometries(fuss) : fuss[0], mat(kuschel ? 0x141210 : 0x444444, kuschel ? { roughness: 0.3 } : {})); g.add(foot);
   g.traverse((o) => { if (o.isMesh) o.castShadow = true; });

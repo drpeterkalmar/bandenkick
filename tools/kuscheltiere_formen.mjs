@@ -106,7 +106,11 @@ export const TIERFORM10 = { arm: 0.75, bein: 0.75, kopf: 1.11 }; // n10 (0.8.0�
 // (bauch), große Knopfaugen (auge) tiefer im Gesicht (augeTief), kurze Schnauze (schnauze: alles vor der Gesichtsebene gestaucht),
 // runde Pfoten und Tatzen (pfote). Nur Optik – Skelett-Längen der Glieder wie gehabt über arm/bein, Spielphysik unverändert.
 // schritt = Schrittweg-Faktor der Laufzyklen (avatars.js): mehr als bein, weil Fuß und Tatze gleich lang bleiben (gemessen: 0,62 → 0,71)
-export const TIERFORM = { schritt: 0.713, arm: 0.62, bein: 0.62, kopf: 1.3, dick: 1.12, bauch: 1.2, auge: 1.45, augeTief: 0.08, schnauze: 0.75, pfote: 1.15 };
+export const TIERFORM13 = { schritt: 0.713, arm: 0.62, bein: 0.62, kopf: 1.3, dick: 1.12, bauch: 1.2, auge: 1.45, augeTief: 0.08, schnauze: 0.75, pfote: 1.15 }; // n13 (0.9.4–0.10.0) → assets/kuscheltiere_n13 (?tierform=2)
+// n14 (Peter 13.11.: „Spielfiguren bekommen kürzeren Torso“): Rumpf × rumpf – die Wirbel-Knochen (Spine1, Spine2, Neck) der Vorlage gekürzt
+// (build_kuscheltiere.mjs), Kopf und Schultern sitzen entsprechend tiefer; die Höhen-Halbachsen der Rumpf-Ellipsoide wachsen nur halb mit.
+// Nur Optik – Glied-Längen, Spielphysik (Kopfhöhe 1,78 m, Kollision) unverändert; der Kopfball-Hüpfer gleicht den tieferen Kopf aus.
+export const TIERFORM = { ...TIERFORM13, rumpf: 0.77 };
 const m = (v) => v * S.s; // Maße mit der Größe der Vorlage skalieren
 
 function grundkoerper(G, T) {
@@ -116,10 +120,11 @@ function grundkoerper(G, T) {
   const fam = [];
   // Rumpf: Po, runder Bauch, Brust, Nackenansatz – birnenförmig
   const bauch = (T.bauch || 1) * S.bauch;
+  const ry = 0.5 + 0.5 * (T.rumpf || 1); // n14: kürzerer Rumpf – Höhen-Halbachsen halb mitgekürzt
   const rumpf = vereint(m(0.07),
-    ell(add(P, [0, m(0.02), m(-0.012)]), [m(0.165), m(0.15), m(0.15)]),
-    ell(add(Sp, [0, m(0.06), m(0.03)]), [m(0.172 * bauch), m(0.2), m(0.168 * bauch)]),
-    ell(add(S2, [0, m(0.03), m(-0.005)]), [m(0.168), m(0.16), m(0.13)]),
+    ell(add(P, [0, m(0.02), m(-0.012)]), [m(0.165), m(0.15 * ry), m(0.15)]),
+    ell(add(Sp, [0, m(0.06 * ry), m(0.03)]), [m(0.172 * bauch), m(0.2 * ry), m(0.168 * bauch)]),
+    ell(add(S2, [0, m(0.03 * ry), m(-0.005)]), [m(0.168), m(0.16 * ry), m(0.13)]),
     kugel(add(N, [0, m(-0.005), 0]), m(0.1)));
   fam.push({ name: 'rumpf', sdf: rumpf, h: 0.009, tris: 1500, klasse: 'rumpf', farbe: T.rumpfFarbe });
   // Arme: Stummelarme mit runder Pfote (Fingerknochen zählen zur Hand)

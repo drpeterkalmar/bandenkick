@@ -1,0 +1,158 @@
+{
+ "Teddy": {
+  "name": "Teddy",
+  "sex": "m",
+  "ref": "Sports_Male_02",
+  "tris": 7252,
+  "kb": 97.2,
+  "hoehe": 1.694,
+  "knochen": [
+   "Ohr_L",
+   "Ohr_R",
+   "Schwanz"
+  ],
+  "form": {
+   "schritt": 0.713,
+   "arm": 0.62,
+   "bein": 0.62,
+   "kopf": 1.3,
+   "dick": 1.12,
+   "bauch": 1.2,
+   "auge": 1.45,
+   "augeTief": 0.08,
+   "schnauze": 0.75,
+   "pfote": 1.15
+  },
+  "senken": 0.3016
+ },
+ "Fuchs": {
+  "name": "Fuchs",
+  "sex": "f",
+  "ref": "Sports_Female_02",
+  "tris": 7475,
+  "kb": 98,
+  "hoehe": 1.672,
+  "knochen": [
+   "Ohr_L",
+   "Ohr_R",
+   "Schwanz"
+  ],
+  "form": {
+   "schritt": 0.713,
+   "arm": 0.62,
+   "bein": 0.62,
+   "kopf": 1.3,
+   "dick": 1.12,
+   "bauch": 1.2,
+   "auge": 1.45,
+   "augeTief": 0.08,
+   "schnauze": 0.75,
+   "pfote": 1.15
+  },
+  "senken": 0.313
+ },
+ "Katze": {
+  "name": "Katze",
+  "sex": "m",
+  "ref": "Male_Adult_10",
+  "tris": 7320,
+  "kb": 101.2,
+  "hoehe": 1.723,
+  "knochen": [
+   "Ohr_L",
+   "Ohr_R",
+   "Schwanz"
+  ],
+  "form": {
+   "schritt": 0.713,
+   "arm": 0.62,
+   "bein": 0.62,
+   "kopf": 1.3,
+   "dick": 1.12,
+   "bauch": 1.2,
+   "auge": 1.45,
+   "augeTief": 0.08,
+   "schnauze": 0.75,
+   "pfote": 1.15
+  },
+  "senken": 0.3016
+ },
+ "Hase": {
+  "name": "Hase",
+  "sex": "m",
+  "ref": "Sports_Male_03",
+  "tris": 7350,
+  "kb": 99.6,
+  "hoehe": 2.045,
+  "knochen": [
+   "Ohr_L",
+   "Ohr_R",
+   "Schwanz"
+  ],
+  "form": {
+   "schritt": 0.713,
+   "arm": 0.62,
+   "bein": 0.62,
+   "kopf": 1.3,
+   "dick": 1.12,
+   "bauch": 1.2,
+   "auge": 1.45,
+   "augeTief": 0.08,
+   "schnauze": 0.75,
+   "pfote": 1.15
+  },
+  "senken": 0.3016
+ },
+ "Panda": {
+  "name": "Panda",
+  "sex": "f",
+  "ref": "Female_Adult_12",
+  "tris": 7202,
+  "kb": 95,
+  "hoehe": 1.585,
+  "knochen": [
+   "Ohr_L",
+   "Ohr_R",
+   "Schwanz"
+  ],
+  "form": {
+   "schritt": 0.713,
+   "arm": 0.62,
+   "bein": 0.62,
+   "kopf": 1.3,
+   "dick": 1.12,
+   "bauch": 1.2,
+   "auge": 1.45,
+   "augeTief": 0.08,
+   "schnauze": 0.75,
+   "pfote": 1.15
+  },
+  "senken": 0.313
+ },
+ "Elefant": {
+  "name": "Elefant",
+  "sex": "m",
+  "ref": "Sports_Male_04",
+  "tris": 7160,
+  "kb": 97.6,
+  "hoehe": 1.656,
+  "knochen": [
+   "Ohr_L",
+   "Ohr_R",
+   "Schwanz"
+  ],
+  "form": {
+   "schritt": 0.713,
+   "arm": 0.62,
+   "bein": 0.62,
+   "kopf": 1.3,
+   "dick": 1.12,
+   "bauch": 1.2,
+   "auge": 1.45,
+   "augeTief": 0.08,
+   "schnauze": 0.75,
+   "pfote": 1.15
+  },
+  "senken": 0.3016
+ }
+}

@@ -18,14 +18,15 @@ import { NodeIO } from '@gltf-transform/core';
 import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
 import { prune, meshopt } from '@gltf-transform/functions';
 import { MeshoptEncoder, MeshoptDecoder, MeshoptSimplifier } from 'meshoptimizer';
-import { TIERE, TIERFORM, TIERFORM10, bauplan, male, grad, add, mul } from './kuscheltiere_formen.mjs';
+import { TIERE, TIERFORM, TIERFORM10, TIERFORM13, bauplan, male, grad, add, mul } from './kuscheltiere_formen.mjs';
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 // n10: --n9 baut die Proportionen von 0.7.0 nach assets/kuscheltiere_n9 (Standard: Kindchenschema TIERFORM → assets/kuscheltiere)
 // n13: --n10 baut die Proportionen von 0.8.0–0.9.x nach assets/kuscheltiere_n10 (?tierform=1); Standard: zweite Stufe (TIERFORM)
-const N9 = process.argv.includes('--n9'), N10 = process.argv.includes('--n10');
-const FORM = N9 ? null : N10 ? TIERFORM10 : TIERFORM;
-const OUT = path.join(ROOT, 'assets', N9 ? 'kuscheltiere_n9' : N10 ? 'kuscheltiere_n10' : 'kuscheltiere');
+// n14: --n13 baut die Figuren von 0.9.4–0.10.0 nach assets/kuscheltiere_n13 (?tierform=2); Standard: kürzerer Rumpf (TIERFORM)
+const N9 = process.argv.includes('--n9'), N10 = process.argv.includes('--n10'), N13 = process.argv.includes('--n13');
+const FORM = N9 ? null : N10 ? TIERFORM10 : N13 ? TIERFORM13 : TIERFORM;
+const OUT = path.join(ROOT, 'assets', N9 ? 'kuscheltiere_n9' : N10 ? 'kuscheltiere_n10' : N13 ? 'kuscheltiere_n13' : 'kuscheltiere');
 await import('../tests/node/three_hook.mjs');
 const THREE = await import('three');
 await MeshoptEncoder.ready; await MeshoptDecoder.ready; await MeshoptSimplifier.ready;
@@ -139,10 +140,17 @@ async function vorlage(ref, form) {
     for (const sd of ['L', 'R']) {
       for (const [k, f] of [['Forearm', form.arm], ['Hand', form.arm], ['Calf', form.bein], ['Foot', form.bein]]) knoten[sd + '_' + k].setTranslation(knoten[sd + '_' + k].getTranslation().map((v) => v * f));
     }
+    // n14: kürzerer Rumpf – Wirbel-Knochen (Länge = Verschiebung des Kindes: Spine1, Spine2, Neck) × rumpf; Kopf und Schultern sinken
+    let rumpfSenk = 0;
+    if (form.rumpf && form.rumpf !== 1) {
+      const kopf0 = knoten.Head.getWorldMatrix()[13];
+      for (const k of ['Spine1', 'Spine2', 'Neck']) knoten[k].setTranslation(knoten[k].getTranslation().map((v) => v * form.rumpf));
+      rumpfSenk = kopf0 - knoten.Head.getWorldMatrix()[13];
+    }
     // ganzes Skelett absenken (Bip01 trägt keine Animation), damit Knöchel und Zehen wieder so hoch über dem Rasen sind wie vorher
     senken = sohle() - y0;
     const b = knoten.Bip01, t = b.getTranslation();
-    b.setTranslation([t[0], t[1] - senken, t[2]]).setExtras({ ...(b.getExtras() || {}), senken, bein: form.bein, arm: form.arm, kopf: form.kopf, ...(form.schritt ? { schritt: form.schritt } : {}) });
+    b.setTranslation([t[0], t[1] - senken, t[2]]).setExtras({ ...(b.getExtras() || {}), senken, bein: form.bein, arm: form.arm, kopf: form.kopf, ...(form.schritt ? { schritt: form.schritt } : {}), ...(rumpfSenk ? { rumpf: form.rumpf, rumpfSenk } : {}) });
   }
   const W = joints.map((n) => new THREE.Matrix4().fromArray(n.getWorldMatrix()));
   const G = { kopfY0 };

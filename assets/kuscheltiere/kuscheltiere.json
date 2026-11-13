@@ -4,8 +4,8 @@
   "sex": "m",
   "ref": "Sports_Male_02",
   "tris": 7252,
-  "kb": 97.2,
-  "hoehe": 1.694,
+  "kb": 96.9,
+  "hoehe": 1.578,
   "knochen": [
    "Ohr_L",
    "Ohr_R",
@@ -21,7 +21,8 @@
    "auge": 1.45,
    "augeTief": 0.08,
    "schnauze": 0.75,
-   "pfote": 1.15
+   "pfote": 1.15,
+   "rumpf": 0.77
   },
   "senken": 0.3016
  },
@@ -29,9 +30,9 @@
   "name": "Fuchs",
   "sex": "f",
   "ref": "Sports_Female_02",
-  "tris": 7475,
-  "kb": 98,
-  "hoehe": 1.672,
+  "tris": 7465,
+  "kb": 98.3,
+  "hoehe": 1.578,
   "knochen": [
    "Ohr_L",
    "Ohr_R",
@@ -47,7 +48,8 @@
    "auge": 1.45,
    "augeTief": 0.08,
    "schnauze": 0.75,
-   "pfote": 1.15
+   "pfote": 1.15,
+   "rumpf": 0.77
   },
   "senken": 0.313
  },
@@ -56,8 +58,8 @@
   "sex": "m",
   "ref": "Male_Adult_10",
   "tris": 7320,
-  "kb": 101.2,
-  "hoehe": 1.723,
+  "kb": 101.4,
+  "hoehe": 1.606,
   "knochen": [
    "Ohr_L",
    "Ohr_R",
@@ -73,7 +75,8 @@
    "auge": 1.45,
    "augeTief": 0.08,
    "schnauze": 0.75,
-   "pfote": 1.15
+   "pfote": 1.15,
+   "rumpf": 0.77
   },
   "senken": 0.3016
  },
@@ -81,9 +84,9 @@
   "name": "Hase",
   "sex": "m",
   "ref": "Sports_Male_03",
-  "tris": 7350,
-  "kb": 99.6,
-  "hoehe": 2.045,
+  "tris": 7346,
+  "kb": 100.2,
+  "hoehe": 1.928,
   "knochen": [
    "Ohr_L",
    "Ohr_R",
@@ -99,7 +102,8 @@
    "auge": 1.45,
    "augeTief": 0.08,
    "schnauze": 0.75,
-   "pfote": 1.15
+   "pfote": 1.15,
+   "rumpf": 0.77
   },
   "senken": 0.3016
  },
@@ -109,7 +113,7 @@
   "ref": "Female_Adult_12",
   "tris": 7202,
   "kb": 95,
-  "hoehe": 1.585,
+  "hoehe": 1.491,
   "knochen": [
    "Ohr_L",
    "Ohr_R",
@@ -125,7 +129,8 @@
    "auge": 1.45,
    "augeTief": 0.08,
    "schnauze": 0.75,
-   "pfote": 1.15
+   "pfote": 1.15,
+   "rumpf": 0.77
   },
   "senken": 0.313
  },
@@ -134,8 +139,8 @@
   "sex": "m",
   "ref": "Sports_Male_04",
   "tris": 7160,
-  "kb": 97.6,
-  "hoehe": 1.656,
+  "kb": 97.8,
+  "hoehe": 1.54,
   "knochen": [
    "Ohr_L",
    "Ohr_R",
@@ -151,7 +156,8 @@
    "auge": 1.45,
    "augeTief": 0.08,
    "schnauze": 0.75,
-   "pfote": 1.15
+   "pfote": 1.15,
+   "rumpf": 0.77
   },
   "senken": 0.3016
  }

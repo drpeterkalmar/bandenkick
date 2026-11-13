@@ -32,6 +32,9 @@ export const SAETZE = {
 export const ORDNER_TIERFORM0 = 'assets/kuscheltiere_n9';
 // n13 (Peter 07.11.: „noch niedlicher“): zweite Stufe in assets/kuscheltiere, die n10-Figuren (0.8.0–0.9.x) für ?tierform=1
 export const ORDNER_TIERFORM1 = 'assets/kuscheltiere_n10';
+// n14 (Peter 13.11.: „Spielfiguren bekommen kürzeren Torso“): Standard 3 = kürzerer Rumpf in assets/kuscheltiere, die n13-Figuren
+// (0.9.4–0.10.0) für ?tierform=2
+export const ORDNER_TIERFORM2 = 'assets/kuscheltiere_n13';
 export function figurenSatz(wert) { return wert === 'menschen' ? 'menschen' : 'kuscheltiere'; }
 export const istKuscheltier = (name) => name in KUSCHELTIERE;
 const LOCO = ['walk', 'jog', 'run', 'sprint'];
@@ -79,7 +82,7 @@ export async function loadAvatarAssets(onProgress = () => {}, opts = {}) {
   const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
   const satz = SAETZE[opts.satz] ? opts.satz : 'menschen';
   const names = [...new Set(SAETZE[satz].roster.flat())];
-  const ordner = satz === 'kuscheltiere' && opts.tierform === 0 ? ORDNER_TIERFORM0 : satz === 'kuscheltiere' && opts.tierform === 1 ? ORDNER_TIERFORM1 : SAETZE[satz].ordner;
+  const ordner = satz === 'kuscheltiere' && opts.tierform === 0 ? ORDNER_TIERFORM0 : satz === 'kuscheltiere' && opts.tierform === 1 ? ORDNER_TIERFORM1 : satz === 'kuscheltiere' && opts.tierform === 2 ? ORDNER_TIERFORM2 : SAETZE[satz].ordner;
   const pfad = (n) => `${ordner}/${n}.glb`;
   let ktx = null;
   if (KTX2_AVATARE && opts.ktx !== false && opts.renderer) { try { ktx = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).setKTX2Loader(await ktx2Lader(opts.renderer)); } catch (e) { ktx = null; } }
@@ -371,6 +374,7 @@ export class Avatar {
     // n10: Kindchenschema – das Skelett ist um senken m abgesenkt (kürzere Beine, build_kuscheltiere.mjs), bein = Beinlänge-Faktor.
     // Der Dreh- und Absenkpunkt (Hüfte, bei den Menschen 0,95 m) wandert mit; liegend bleibt der Körper so hoch wie vorher.
     const ex = (this.bones.Bip01 || this.model.getObjectByName('Bip01') || {}).userData || {};
+    this.kopfSenk = ex.rumpfSenk || 0; // n14: Kopf so viel tiefer (kürzerer Rumpf) – der Kopfball-Hüpfer gleicht es mit aus
     this.senk = ex.senken || 0; this.beinF = ex.bein || 1; this.schrittF = ex.schritt || this.beinF; this.armF = ex.arm || 1;
     // n13: so viel näher zeichnet main.js den gehaltenen Ball (kürzere Ärmchen der zweiten Stufe: 0,07 m bei Arm 0,75, mehr darunter)
     this.ballNah = this.senk ? 0.07 + Math.max(0, 0.75 - this.armF) * 0.6 : 0; // n13: Schrittweg eigens (Fuß bleibt lang)
@@ -659,7 +663,7 @@ export class Avatar {
     const T = this.tp, tw = this.tpW;
     if (T && tw > 0.01) {
       pitch = pitch * (1 - tw) + T.pitch * tw; roll = roll * (1 - tw) + T.roll * tw;
-      this.tilt.position.y = this.tilt.position.y * (1 - tw) + (this.hh + T.drop + this.senk * (T.hop || 0)) * tw; // n10: Kopfball mit Hüpfer
+      this.tilt.position.y = this.tilt.position.y * (1 - tw) + (this.hh + T.drop + (this.senk + this.kopfSenk) * (T.hop || 0)) * tw; // n10: Kopfball mit Hüpfer (n14: + tieferer Kopf)
     }
     // n9: liegend (Hechtsprung, Grätsche, Fallrückzieher) den dickeren Plüsch-Körper anheben, damit er nicht im Rasen steckt
     const liegt = Math.min(1, Math.max(0, (Math.max(Math.abs(pitch), Math.abs(roll)) - 0.45) / 0.8));

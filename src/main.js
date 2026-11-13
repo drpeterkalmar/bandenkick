@@ -43,7 +43,8 @@ const DEKO = !!P.deko;
 const FIGUREN = figurenSatz(qs.get('figuren'));
 // n10: Kuscheltiere im Kindchenschema (größerer Kopf, kürzere Arme/Beine), ?tierform=0 = Proportionen wie 0.7.0;
 // n13: Standard 2 = noch niedlicher, ?tierform=1 = wie 0.9.1
-const TIERFORM = qs.get('tierform') === '0' ? 0 : qs.get('tierform') === '1' ? 1 : 2;
+// n14: Standard 3 = kürzerer Rumpf, ?tierform=2 = wie 0.10.0
+const TIERFORM = qs.get('tierform') === '0' ? 0 : qs.get('tierform') === '1' ? 1 : qs.get('tierform') === '2' ? 2 : 3;
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 let deko = null;
 // Deko-Licht: Tag oder Abend mit Flutlicht. 'auto' = nach Uhrzeit (ab kurz vor Sonnenuntergang, Mitteleuropa, bis 6:30),
@@ -774,7 +775,7 @@ function frame() {
   // trägt ihn in Menschen-Brusthöhe (rules.carry)
   if (!rf && b.held >= 0 && figs[b.held] && figs[b.held].senk && by > 0.6) {
     const h = game.players[b.held], f = figs[b.held];
-    by -= f.senk * 0.75; bx -= Math.cos(h.face) * f.ballNah; bz -= Math.sin(h.face) * f.ballNah; // n13: ballNah wächst mit kürzeren Ärmchen
+    by -= f.senk * 0.75 + (f.kopfSenk || 0) * 0.6; bx -= Math.cos(h.face) * f.ballNah; bz -= Math.sin(h.face) * f.ballNah; // n13: ballNah wächst mit kürzeren Ärmchen; n14: Brust tiefer (kürzerer Rumpf)
   }
   ballMesh.position.set(bx, by, bz);
   poseBlob(blob, bx, by, bz, P.ballR);
