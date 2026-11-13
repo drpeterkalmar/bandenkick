@@ -266,6 +266,99 @@ function planHoch(game, pl, opts, ad, from) {
     side: L.side, curve: L.curve, dirH: L.dir, slack: L.slack, unsicher: unsicher && !must, virtual: !!c.virtual };
 }
 
+// n14 (Peter 13.11.: „Der Passknopf soll immer in den freien Raum richtung tor gehen, am rand gerne über bande“): Steilpass in den
+// freien Raum VOR einem Mitspieler Richtung gegnerisches Tor statt in die Füße bzw. quer/zurück. Der Stick wählt nur, welcher
+// Mitspieler (bzw. welche Seite); ohne Stick der mit dem meisten freien Raum Richtung Tor. Treffpunkte: vor dem Mitspieler
+// (raumL m, ±40° um die Angriffsrichtung), mindestens raumGewinn m näher am gegnerischen Tor als der Ball, nicht im Torraum des
+// Gegners; er muss rechtzeitig dort sein und klar vor jedem Gegner (raumFrei s). Die Bahn wird wie jeder hohe Pass gelöst und gegen
+// die Erreichbarkeit der Gegner geprüft (bestLob, Zeitreserve). Steht Passgeber oder Empfänger ≤ raumRand m an der Längsbande,
+// geht er bevorzugt flach über die Bande (leadBank), wenn der direkte Weg nicht klar sicherer ist. Kein sicherer Raum → null
+// (planHoch wie 0.10.0: sicherste Option, nie aufs eigene Tor). Nur für den Pass-Knopf (ohne festen Empfänger), nicht für Bots.
+const RAUM_L = [2.5, 4, 5.5, 7], RAUM_W = [0, -20, 20, -40, 40];
+function bankSlack(game, team, from, bk) {
+  const P = game.P, aimD = Math.hypot(bk.aim[0] - from[0], bk.aim[1] - from[1]) || 1;
+  const d1 = [(bk.aim[0] - from[0]) / aimD, (bk.aim[1] - from[1]) / aimD];
+  const t1 = passTimeTo(P, bk.u, bk.L1);
+  if (!Number.isFinite(t1)) return -9;
+  const s1 = flatSlack(game, team, from, d1, bk.u, t1, passDist);
+  const wall = [from[0] + d1[0] * bk.L1, from[1] + d1[1] * bk.L1];
+  const u2 = passSpeedAt(P, bk.u, t1) * bankRatio(P, game.cage, 0).keep;
+  const L2 = Math.hypot(bk.meet[0] - wall[0], bk.meet[1] - wall[1]) || 1, t2 = Math.max(0.1, bk.T - t1);
+  const s2 = flatSlack(game, team, wall, [(bk.meet[0] - wall[0]) / L2, (bk.meet[1] - wall[1]) / L2], Math.max(1, u2), t2, passDist) - t1;
+  return Math.min(s1, s2);
+}
+function planRaum(game, pl, opts, ad, from) {
+  const P = game.P, cage = game.cage, R = game.match ? game.rules : null, b = game.ball;
+  if (!R || game.challenge) return null;
+  const att = R.goalX(pl.team) > 0 ? -1 : 1, opp = 1 - pl.team, vT = 0.9 * P.vTop;
+  const y0 = opts.y0 ?? Math.max(b.r, b.p.y);
+  const stickAim = !!(opts.aim || opts.stick);
+  let mates = game.players.filter((m) => m.team === pl.team && m.id !== pl.id && !R.isBackPassTarget(m) && m.hand.mode !== 'hold');
+  if (!mates.length) return null;
+  // Laufzeit zu (x, z) mit Antritt: aus dem Stand ~0,4 s länger als mit vollem Tempo in diese Richtung; r = Reichweite
+  const tReach = (o, x, z, r) => {
+    const d = Math.hypot(x - o.x, z - o.z), v0 = d > 0.1 ? clamp(((x - o.x) * (o.vx || 0) + (z - o.z) * (o.vz || 0)) / d / P.vTop, 0, 1) : 1;
+    return 0.15 + Math.max(0, d - r) / vT + 0.4 * (1 - v0);
+  };
+  const angTo = (x, z) => { const dx = x - from[0], dz = z - from[1], D = Math.hypot(dx, dz) || 1; return Math.acos(clamp((dx * ad[0] + dz * ad[1]) / D, -1, 1)) / DEG; };
+  // Stick: der Mitspieler, auf den er am genauesten zeigt (±raumKegel°); zeigt er auf keinen, zählt die Seite (Winkel als Abzug)
+  let meant = -1;
+  if (stickAim) {
+    const byAng = mates.map((m) => ({ m, a: angTo(m.x, m.z) })).sort((x, y) => x.a - y.a);
+    if (byAng[0].a <= P.raumKegel) { meant = byAng[0].m.id; mates = [byAng[0].m]; }
+  }
+  const hz = cage.hz, lx = cage.hx - 1.0, lz = hz - 0.8;
+  const cands = [];
+  for (const m of mates) {
+    for (const L of RAUM_L) for (const w of RAUM_W) {
+      const a = w * DEG, qx = m.x + att * Math.cos(a) * L, qz = m.z + Math.sin(a) * L;
+      if (Math.abs(qx) > lx || Math.abs(qz) > lz || R.inBox(opp, qx, qz, 0.3)) continue;
+      const gain = (qx - from[0]) * att;
+      if (gain < P.raumGewinn) continue;
+      // (Laufzeit mit Antritt: aus dem Stand ~0,4 s länger als mit vollem Tempo in diese Richtung)
+      const tm = tReach(m, qx, qz, 0);
+      let to = 9;
+      for (const o of game.players) if (o.team !== pl.team) to = Math.min(to, tReach(o, qx, qz, 0.6) + 0.15); // (Gegner lesen den Pass später)
+      const marg = to - tm;
+      if (marg < P.raumFrei) continue;
+      let h = 1.5 * Math.min(marg, 1.2) + 0.12 * gain + 0.4 * (qx * att) / cage.hx - 0.05 * Math.abs(L - 4.5);
+      if (stickAim && meant < 0) h -= 0.012 * angTo(qx, qz);
+      cands.push({ m, q: [qx, qz], tm, h, gain });
+    }
+  }
+  if (!cands.length) return null;
+  cands.sort((x, y) => y.h - x.h);
+  const still = (cage0, r0) => [r0[0], r0[1]];
+  let tries = 0;
+  const seen = new Set();
+  for (const c of cands) {
+    if (tries >= P.raumVersuche) break;
+    const key = c.m.id + ':' + Math.round(c.q[0]) + ':' + Math.round(c.q[1]);
+    if (seen.has(key)) continue;
+    seen.add(key); tries++;
+    const need = c.m.id === meant ? P.hochSicher - P.hochGemeint : P.hochSicher;
+    const tgt = { x: c.q[0], z: c.q[1], vx: 0, vz: 0 };
+    const lob = bestLob(game, pl, from, tgt, still, { y0, maxU: opts.maxU ?? 26 * Math.max(1, P.passtempo), tMin: c.tm - P.raumSpaet });
+    const lobOk = lob && lob.slack >= need && c.tm <= lob.T + P.raumSpaet && !ownGoalRisk(game, pl, from, lob.dir, lob.D);
+    // Randlage: über die Bande (flach), wenn sicher und der direkte Weg nicht klar sicherer ist
+    let bank = null;
+    if (P.raumRand > 0 && y0 < 0.4 && (Math.abs(from[1]) >= hz - P.raumRand || Math.abs(c.m.z) >= hz - P.raumRand)) {
+      const side = Math.abs(from[1]) >= hz - P.raumRand ? Math.sign(from[1]) || 1 : Math.sign(c.m.z) || 1;
+      const bk = leadBank(P, cage, from, c.q, [0, 0], side);
+      if (bk && c.tm <= bk.T + P.raumSpaet) { const sl = bankSlack(game, pl.team, from, bk); if (sl >= need) bank = { bk, side, slack: sl }; }
+    }
+    if (bank && (!lobOk || lob.slack - bank.slack < P.raumBandeVorteil)) {
+      const bk = bank.bk;
+      return { to: c.m.id, bank: bank.side, target: bk.aim, meet: bk.meet, T: bk.T, u: bk.u, el: 1.5, back: -0.3 * bk.u / b.r, slack: bank.slack, flach: true, raum: true };
+    }
+    if (lobOk) {
+      return { to: c.m.id, bank: 0, target: lob.meet, meet: lob.meet, T: lob.T, u: lob.u, el: lob.el, back: hochBack(P), chip: true, hoch: true, hArr: lob.hArr, apex: lob.apex,
+        side: lob.side, curve: lob.curve, dirH: lob.dir, slack: lob.slack, raum: true };
+    }
+  }
+  return null;
+}
+
 // Kompletter Pass-Plan. opts: mode 'std' (flach) | 'var' (hoch), power (null = Auto-Stärke), stick [x,z]|null,
 // to (fester Empfänger, Bots), aim (Richtung überschreiben), noiseMul
 export function planPass(game, pl, opts = {}) {
@@ -281,7 +374,9 @@ export function planPass(game, pl, opts = {}) {
   const power = opts.power;
   let cand = null, freeD = null;
   let plan;
-  if (hoch) plan = planHoch(game, pl, opts, ad, from);
+  // n14 (passraum): Pass-Knopf (kein fester Empfänger) → Steilpass in den freien Raum Richtung Tor, sonst wie 0.10.0
+  if (hoch && P.passraum && opts.to == null) plan = planRaum(game, pl, opts, ad, from);
+  if (hoch && !plan) plan = planHoch(game, pl, opts, ad, from);
   if (plan) { /* n11: hoher (bzw. sicherer flacher) Pass steht */ }
   else if (opts.to != null && opts.to >= 0) {
     const m = game.players[opts.to];

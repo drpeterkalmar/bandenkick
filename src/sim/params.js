@@ -344,6 +344,18 @@ export const DEFAULTS = {
   // n14: jeder hohe Innenseit-/Außenrist-Pass bekommt Effet (Kurvenpass-Bahn, der Löser wählt die sicherere Seite); gerade nur, wenn
   // kein angeschnittener Weg sicher ist. 0 = wie 0.10.0 (gerade, Effet nur als Ausweg um einen Gegner)          [?passEffet=0]
   passEffet: 1,
+  // n14 (Peter 13.11.: „Der Passknopf soll immer in den freien Raum richtung tor gehen, am rand gerne über bande“, src/sim/pass.js
+  // planRaum): Pass-Tipp = Steilpass in den freien Raum vor einen Mitspieler Richtung gegnerisches Tor (er läuft automatisch ein);
+  // Stick wählt nur den Mitspieler/die Seite, ohne Stick der mit dem meisten Raum. Randlage (≤ raumRand m an der Längsbande) →
+  // bevorzugt über die Bande. Kein sicherer Raum → sicherste Option wie 0.10.0. 0 = Passwahl wie 0.10.0         [?passraum=0]
+  passraum: 1,
+  raumKegel: 60,          // ° Stick zeigt auf diesen Mitspieler
+  raumGewinn: 1.0,        // m Treffpunkt mindestens so viel näher am gegnerischen Tor als der Ball
+  raumFrei: 0.1,          // s Empfänger mindestens so viel früher am Treffpunkt als jeder Gegner (grob, vor der Bahnprüfung)
+  raumRand: 3,            // m an der Längsbande → Bandenpass bevorzugt (0 = nie)
+  raumBandeVorteil: 0.25, // s: so viel sicherer muss der direkte hohe Pass sein, damit er statt der Bande gewählt wird
+  raumSpaet: 0.15,        // s: so viel später als der Ball darf der Empfänger am Treffpunkt sein (Laufzeit mit Antritt geschätzt)
+  raumVersuche: 4,        // höchstens so viele Treffpunkte mit der vollen Bahnprüfung (Rechenzeit am Handy)
   // n12 (Peter 05.11.: „der schöne Laufpass an die Spitze … prallt an ihm nach hinten ab“): Der laufende Empfänger eines Passes vom
   // Mitspieler legt den Ball mit der ersten Berührung (Kopf/Brust/Oberschenkel bzw. Fuß, auch wenn der Ball von hinten an den Körper
   // kommt) in seine Laufrichtung vor – Balltempo so, dass er nach mitnahmeZeit s mitnahmeVor m vor dem Fuß liegt. Bis 0.9.0 bekam der Ball
@@ -525,7 +537,7 @@ const MAGNET091 = { schirmNah: 0.9, schirmRel: 0, schirmT: 1.0, schirmVor: 0.6, 
 // n14: ?effet= bis 18 (0.10.0-Wert) ausdrücklich = Effet wie 0.10.0 (Magnus-Kurve, Außenrist, gerade hohe Pässe), sofern nicht ausdrücklich übersteuert
 const EFFET0100 = { clSteig: 0.7, clMaxAkro: 0.6, aussenSpin: 0.85, passEffet: 0 };
 // n11 ?akro=0: alles wie 0.8.0, sofern nicht ausdrücklich übersteuert
-export const AKRO0 = { turfEn: 0.621, jumpMax: 0.6, sprungAkro: 1, spinMax: 10, backspinMax: 7, bananeSpinMax: 1.2, aussenSpin: 0.75, autotech: 0, einknopf: 0, salto: 0, hochpass: 0, kurvenpass: 0, passEffet: 0, clSteig: 0, clMaxAkro: 0.6, mitnahme: 0, g: 9.81, schusskegel: 0 }; // (n12: Mitnahme gab es in 0.8.0 nicht; n13: Schwerkraft 9,81 wie bis 0.9.1)
+export const AKRO0 = { turfEn: 0.621, jumpMax: 0.6, sprungAkro: 1, spinMax: 10, backspinMax: 7, bananeSpinMax: 1.2, aussenSpin: 0.75, autotech: 0, einknopf: 0, salto: 0, hochpass: 0, kurvenpass: 0, passEffet: 0, passraum: 0, clSteig: 0, clMaxAkro: 0.6, mitnahme: 0, g: 9.81, schusskegel: 0 }; // (n12: Mitnahme gab es in 0.8.0 nicht; n13: Schwerkraft 9,81 wie bis 0.9.1)
 
 // Liest Overrides aus einem Query-String (oder Objekt) und gibt ein vollständiges Parameter-Objekt zurück.
 function parseQuery(s) {
