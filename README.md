@@ -256,6 +256,13 @@ Ball mit (Sohle/Außenseite). `?zack=0` = altes Gefühl aus Nacht 1 zum Vergleic
 ## URL-Schalter
 | Schalter | Wirkung |
 |---|---|
+| `?passhoch=1&passtempo=1` | n14: hohe Pässe wie 0.10.0. Standard: Scheitel × 1,5 (`?passhoch=`), Tempo-Stufe 1,25 (`?passtempo=`: Topspin-Lupfer mit (passtempo − 1) × 100 U/s Vorwärtsdrall, Tempo-Grenzen × passtempo, Annahme bis 13 × passtempo m/s) |
+| `?passraum=0` | n14: Pass-Knopf wählt wie 0.10.0. Standard: Steilpass in den freien Raum vor einen Mitspieler Richtung Tor (Stick wählt nur den Mitspieler), in Randlage (≤ 3 m an der Längsbande) bevorzugt über die Bande; Feinregler `?raumRand=`, `?raumFrei=`, `?raumSpaet=` |
+| `?schirm=1` | n14: Abschirmen wie 0.10.0. Standard 2,5: Grätsche, die zuerst den Körper des Abschirmenden trifft, lässt ihm meist den Ball (`?schirmKoerper=`), Ball früher/weiter zur abgewandten Seite, Tormann greift länger nicht hinein |
+| `?luftwucht=1` | n14: Kopfbälle/Fallrückzieher wie 0.10.0. Standard 1,5: Kopf-/Flugkopfball × 1,5, Fallrück-/Seitfallzieher/Salto-Hacke × 1,375 |
+| `?effet=18` | n14: Effet wie 0.10.0 (setzt auch Magnus-Kurve, Außenrist und gerade hohe Pässe zurück). Standard: Magnus bis cL 1,5 (Kurve über 20 m 5,2 → 9,9 m), Außenrist = Innenseite (`?aussen=`), hohe Pässe angeschnitten (`?passEffet=0`) |
+| `?tierform=2` | n14: Kuscheltiere wie 0.10.0. Standard 3: Rumpf × 0,77 (Kopf und Schultern tiefer), Spielphysik unverändert |
+| `?replayweit=2` | n14: Wiederholungen wie 0.10.0. Standard 3,5: Kontakt-Zoom/Makro × 3,5, alle anderen Replay-Kameras × 1,25 weiter weg |
 | `?zufallsteams=0` | n13: feste Besetzung wie 0.9.x (Orange Teddy/Fuchs/Katze, Blau Hase/Panda/Elefant). Standard: bei jedem neuen Match werden die sechs Tiere zufällig auf Orange und Blau verteilt (auch welches du steuerst); `?seed=` macht die Mischung reproduzierbar |
 | `?schusskegel=0` | n13: Schuss wie 0.9.x in jede Richtung (kein 120°-Kegel, keine Megaferse, kein Lupfer-Pass, kein Jonglier-Fallrückzieher). `?fallrueck=0` = nur der Jonglier-Fallrückzieher aus (Rücken zum Tor → Megaferse). Feinregler: `?schusskegel=60` (halber Kegel in °), `?jonglApex=2.3`, `?megaferseV=27`, `?jonglUeberrascht=0.12` |
 | `?tierform=1` | n13: Kuscheltiere wie 0.9.1 (erste Kindchenschema-Stufe); `?tierform=0` = wie 0.7.0. Standard seit n13: zweite Stufe (Kopf × 1,3, Ärmchen/Beinchen × 0,62, Bäuchlein, große Knopfaugen tiefer im Gesicht, kurze Schnauze, runde Pfoten) |
@@ -465,6 +472,12 @@ python3 tools/fetch_assets.py && python3 tools/make_assets.py   # Assets neu bau
 Browser-Tests laufen headless über die GPU (ANGLE/Metal), nie zwei Browser gleichzeitig.
 
 ## Änderungen
+- **n14 Spielgefühl (13.11., Version 0.11.0)** – Peter 13.11.: „mach die pässe alle höher und schneller. Der Passknopf soll immer in den
+  freien Raum richtung tor gehen, am rand gerne über bande. Ballmagnet zum ballabschirmen verstärken. Fallrückzieher und Kopfbälle härter
+  machen. Spielfiguren bekommen kürzeren Torso. Wiederholungen sind noch weiter herausgezoomt“ + „viel mehr effet … auch pässen“.
+  Hohe Pässe als Topspin-Lupfer (Scheitel +46 %, Tempo +28 %, Flug −12 %), Steilpass in den freien Raum, Abschirmen gegen Grätschen,
+  Kopfball/Fallrückzieher härter, Effet × 1,9, kürzerer Rumpf, weitere Replays. Jeder Teil hat einen Regler (siehe URL-Schalter), alles
+  zusammen wie 0.10.0: `?effet=18&passhoch=1&passtempo=1&passraum=0&schirm=1&luftwucht=1&replayweit=2&tierform=2`. Bericht: [`N14_BERICHT.md`](N14_BERICHT.md).
 - **n13 Zufallsteams + Tiernamen (08.11., Version 0.10.0)** – Peter 07.11.: „Spielfiguren spielen bei jedem neuen Match
   zufällig in oranger oder blauer Mannschaft“, „Spieler heißen wie das Tier“. Bei jedem neuen Match (Spielen, Neues Spiel) mischt das
   Spiel die sechs Tiere: drei nach Orange, drei nach Blau; welches Tier du (Orange Mitte, stößt an) steuerst, ist auch zufällig.

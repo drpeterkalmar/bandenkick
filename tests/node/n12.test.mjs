@@ -1,6 +1,9 @@
 // n12 (Peter 05.11.2026: „der schöne Laufpass an die Spitze wird vom Passempfänger nicht nach vorn mitgenommen, sondern prallt an
 // ihm nach hinten ab“): Der laufende Empfänger legt den Ball mit der ersten Berührung in seine Laufrichtung vor. Gleiche Szenen und
 // Seeds mit ?mitnahme=0 (Annahme wie 0.9.0). Aufruf: node tests/node/n12.test.mjs
+// n14: prüft das Verhalten dieser Etappe auf dem Stand 0.10.0 – alle n14-Regler aus (ausdrückliche Werte gewinnen)
+import { N14_AUS } from '../../src/sim/params.js';
+process.env.BK_BASIS = N14_AUS; // (Umgebung: gilt auch in den Mess-Prozessen)
 import { makeParams, AKRO0 } from '../../src/sim/params.js';
 import { Game, DT } from '../../src/sim/step.js';
 import { szenen, auswerten, laufpass, botProbe } from './n12_probe.mjs';

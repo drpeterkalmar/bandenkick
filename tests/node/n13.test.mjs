@@ -1,5 +1,8 @@
 // n13 (Peter 07.11.2026): Gummiwände ohne Dach, Spielgefühl (Replay-Zoom, Fan-Cam/Action aus, Magnet, Schwerkraft),
 // Zufallsteams + Tiernamen. Aufruf: node tests/node/n13.test.mjs
+// n14: prüft das Verhalten dieser Etappe auf dem Stand 0.10.0 – alle n14-Regler aus (ausdrückliche Werte gewinnen)
+import { N14_AUS } from '../../src/sim/params.js';
+process.env.BK_BASIS = N14_AUS; // (Umgebung: gilt auch in den Mess-Prozessen)
 import { makeParams } from '../../src/sim/params.js';
 import { Game, DT } from '../../src/sim/step.js';
 import { Rng } from '../../src/sim/rng.js';

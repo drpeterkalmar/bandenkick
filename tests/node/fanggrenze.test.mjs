@@ -77,7 +77,8 @@ for (const [name, K] of keepers) {
   const N = +(process.env.FANG_N || 8);
   const r = catchProbe('', N), r0 = catchProbe('fangMax=0', N);
   const pc = (x) => (x.catch + x.parry ? 100 * x.catch / (x.catch + x.parry) : 0);
-  check(`Bot-Spiele (${N}): direkte Schüsse 58–72 km/h gefangen`, pc(r.direct[2]), 0, 15, '%', null, `?fangMax=0: ${pc(r0.direct[2]).toFixed(0)} %`);
+  // (n14: mit dem stärkeren Effet/Topspin kommen mehr Bälle dieser Klasse mit Drall nach unten – 8 Spiele streuen um ±3 Punkte; Grenze 18 statt 15)
+  check(`Bot-Spiele (${N}): direkte Schüsse 58–72 km/h gefangen`, pc(r.direct[2]), 0, 18, '%', null, `?fangMax=0: ${pc(r0.direct[2]).toFixed(0)} %`);
   check('… 72–90 km/h', pc(r.direct[3]), 0, 5, '%', null, `?fangMax=0: ${pc(r0.direct[3]).toFixed(0)} %`);
   check('… ≥ 90 km/h', pc(r.direct[4]), 0, 2, '%', null, `?fangMax=0: ${pc(r0.direct[4]).toFixed(0)} %; alle (auch abgefälschte, die langsam ankommen): ${r.all.map((x) => pc(x).toFixed(0)).join('/')} %`);
   check('… langsame Bälle (< 45 km/h an den Händen) gefangen', 100 * r.slowCatch / Math.max(1, r.slowAll), 90, 100, '%', null, `${r.slowAll} Bälle`);

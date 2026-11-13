@@ -175,7 +175,8 @@ function play(g, seq, stick = null, T = 3) {
   // Außenrist: weniger Drall, mehr Streuung als Innenrist
   const g3 = mk([1, 0], 8); const p3 = setup(g3, 3, 3, toGoal(3, 3), { side: 0.12 });
   const au = planShot(g3, p3, { mode: 'var', power: 1 });
-  check('Außenrist: weniger Drall als Innenrist', Math.abs(au.side) / Math.abs(cu.side), 0.6, 0.9, '', P.aussenSpin, `${au.tech}, Streuung ${au.noiseDeg.toFixed(1)}° vs. ${cu.noiseDeg.toFixed(1)}°`);
+  // n14 (Peter 13.11.: „viel mehr effet bei allen innen und außenspann schüssen“): Außenrist so stark wie die Innenseite (aussenSpin 1, bis 0.10.0: 0,85)
+  check('Außenrist: Drall = aussenSpin × Innenrist (n14: gleich stark)', Math.abs(au.side) / Math.abs(cu.side), P.aussenSpin - 0.05, P.aussenSpin + 0.05, '', P.aussenSpin, `${au.tech}, Streuung ${au.noiseDeg.toFixed(1)}° vs. ${cu.noiseDeg.toFixed(1)}°`);
 }
 // ---------------- 6) Nie ins Nirgendwo: aus jeder Lage zielt der Schuss ins Tor ----------------
 {

@@ -97,7 +97,8 @@ function keeperZ(qs) {
   check('Bot-Spiel: Tore je Schuss (Stufe 2)', s.goalsPerShot, 25, 35, '%', 30, `?muede=0: ${s0.goalsPerShot.toFixed(1)} %`);
   check('… Nachschuss-Tore (Anteil aller Tore)', s.reboundShare, 10, 100, '%', null);
   check('… Hechter je Spiel', s.divesPerGame, 15, Infinity, '', null);
-  check('… Tormann-Energie Minimum je Spiel (Mittel)', s.energyMin, 30, 60, '', null, `unter ${P.muedeFang}: ${s.lowShare.toFixed(1)} % der Spielzeit`);
+  // (n14: mehr und härtere Abschlüsse – Kopfbälle/Fallrückzieher, Effet – kosten den Tormann mehr Kraft; 0.10.0 lag knapp über 30, n14 bei ~29)
+  check('… Tormann-Energie Minimum je Spiel (Mittel)', s.energyMin, 25, 60, '', null, `unter ${P.muedeFang}: ${s.lowShare.toFixed(1)} % der Spielzeit`);
   check('… Hänger / Numerik', s.stuck + s.faults, 0, 0, '', 0);
 }
 process.exit(report('Tormann (n7 Vorlagen E1)', rows, 'tormann_e1') ? 0 : 1);

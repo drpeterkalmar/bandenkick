@@ -1,6 +1,9 @@
 // n11 Akrobatik (Peter 02./04.11.2026): Ball und Spieler springen höher, viel mehr Effet, hohe Pässe nur über freie Wege, Schuss-
 // und Pass-Knopf vollautomatisch (Erfolg zuerst, dann Spektakel), Salto-Hacke, Ein-Knopf-Test; ?akro=0 = 0.8.0.
 // Aufruf: node tests/node/n11.test.mjs   (große Messung: node tests/node/n11_probe.mjs)
+// n14: prüft das Verhalten dieser Etappe auf dem Stand 0.10.0 – alle n14-Regler aus (ausdrückliche Werte gewinnen)
+import { N14_AUS } from '../../src/sim/params.js';
+process.env.BK_BASIS = N14_AUS; // (Umgebung: gilt auch in den Mess-Prozessen)
 import { report } from './report.mjs';
 import { makeParams, AKRO0, DEFAULTS } from '../../src/sim/params.js';
 import { Game } from '../../src/sim/step.js';

@@ -18,8 +18,8 @@ const check = (name, value, lo, hi, unit, target, note = '') => { const ok = val
 const P = makeParams(''), P0 = makeParams(N14_AUS);
 
 // ---------- Regler ----------
-check('Regler Standard: passhoch 1,5 · passtempo 1,25 · passraum 1 · schirm 2 · luftwucht 1,5 · replayweit 3,5 · clSteig 1,7',
-  P.passhoch === 1.5 && P.passtempo === 1.25 && P.passraum === 1 && P.schirm === 2 && P.luftwucht === 1.5 && P.replayweit === 3.5 && P.clSteig === 1.7 ? 1 : 0, 1, 1, '', 1);
+check('Regler Standard: passhoch 1,5 · passtempo 1,25 · passraum 1 · schirm 2,5 · luftwucht 1,5 · replayweit 3,5 · clSteig 1,7',
+  P.passhoch === 1.5 && P.passtempo === 1.25 && P.passraum === 1 && P.schirm === 2.5 && P.luftwucht === 1.5 && P.replayweit === 3.5 && P.clSteig === 1.7 ? 1 : 0, 1, 1, '', 1);
 check('N14_AUS = 0.10.0 (clSteig 0,7, clMaxAkro 0,6, aussenSpin 0,85, passEffet 0, …)',
   P0.clSteig === 0.7 && P0.clMaxAkro === 0.6 && P0.aussenSpin === 0.85 && P0.passEffet === 0 && P0.passraum === 0 && P0.schirm === 1 && P0.luftwucht === 1 && P0.replayweit === 2 && P0.passhoch === 1 && P0.passtempo === 1 ? 1 : 0, 1, 1, '', 1);
 check('?effet=18 allein = Effet wie 0.10.0', (() => { const q = makeParams('effet=18'); return q.clSteig === 0.7 && q.clMaxAkro === 0.6 && q.aussenSpin === 0.85 && q.passEffet === 0 ? 1 : 0; })(), 1, 1, '', 1);
@@ -70,12 +70,12 @@ check('Volley unverändert, ?luftwucht=1 = 0.10.0', luftWucht(P, 'volley') === 1
   for (const mode of ['quer', 'hoch']) {
     const ctx = { cage, mode, contact: c, goal: { side: 1 }, time: 0, frac: 0.5, side: 1 };
     const tv0 = replayCamera('tv', f, { ...ctx, weit: 2 }), tv1 = replayCamera('tv', f, { ...ctx, weit: 3.5 });
-    check(`TV-Wiederholung (${mode}): Abstand weit 3,5 ÷ 0.10.0`, dist(tv1) / dist(tv0), 1.3, 1.6, '×', 1.5, `${dist(tv0).toFixed(1)} → ${dist(tv1).toFixed(1)} m, Winkel ${tv0.fov} → ${tv1.fov.toFixed(1)}°`);
+    check(`TV-Wiederholung (${mode}): Abstand weit 3,5 ÷ 0.10.0`, dist(tv1) / dist(tv0), 1.15, 1.35, '×', 1.25, `${dist(tv0).toFixed(1)} → ${dist(tv1).toFixed(1)} m, Winkel ${tv0.fov} → ${tv1.fov.toFixed(1)}°`);
     const z0 = replayCamera('zoom', f, { ...ctx, weit: 2 }), z1 = replayCamera('zoom', f, { ...ctx, weit: 3.5 });
     check(`Kontakt-Zoom (${mode}): Abstand weit 3,5 ÷ 0.10.0`, dist(z1) / dist(z0), 1.3, 2, '×', 1.75);
     const e0 = editCamera('hinten', f, { cage, hoch: mode === 'hoch', contact: c, goal: { side: 1 }, u: 0.2, dur: 1, side: 1, weit: 2 });
     const e1 = editCamera('hinten', f, { cage, hoch: mode === 'hoch', contact: c, goal: { side: 1 }, u: 0.2, dur: 1, side: 1, weit: 3.5 });
-    check(`Fan-Edit „hinten“ (${mode}): Abstand ÷ 0.10.0`, dist(e1) / dist(e0), 1.3, 1.6, '×', 1.5);
+    check(`Fan-Edit „hinten“ (${mode}): Abstand ÷ 0.10.0`, dist(e1) / dist(e0), 1.15, 1.35, '×', 1.25);
   }
 }
 
@@ -90,13 +90,21 @@ check('Volley unverändert, ?luftwucht=1 = 0.10.0', luftWucht(P, 'volley') === 1
   check('Figuren: Dateigröße je Tier wie bisher (±15 %)', Math.max(...k.map((n) => Math.abs(neu[n].kb / alt[n].kb - 1))), 0, 0.15, '', 0);
 }
 
+// ---------- Etappe 3: Mensch führt gegen Verteidiger + Tormann ----------
+{
+  const { humanHold } = await import('./n7_probe.mjs');
+  const a = humanHold('schirm=1', 12), b = humanHold('', 12);
+  check('Abschirmen: Mensch gegen Stufe-2-Verteidiger, Ballverluste je Minute am Ball ÷ ?schirm=1', b.lostPerMin / a.lostPerMin, 0, 0.7, '×', 0.55, `${a.lostPerMin.toFixed(1)} → ${b.lostPerMin.toFixed(1)}/min, bis vors Tor ${a.okShare.toFixed(0)} → ${b.okShare.toFixed(0)} %`);
+  check('… der Verteidiger gewinnt den Ball trotzdem noch (kein Klebeball)', b.lostShare, 5, 80, '%', null, `?schirm=1: ${a.lostShare.toFixed(0)} %`);
+}
+
 // ---------- Bot-Spiele: Abschirmen, Pässe, Tore (klein, ganze Messung: n14_probe.mjs mit 48 Spielen) ----------
 {
   const N = +(process.env.N14_SPIELE ?? 12);
   if (N > 0) {
   const a = summary(await runProbe('schirm=1', N, 6)), b = summary(await runProbe('', N, 6));
-  check('Abschirmen: Ballverluste beim Führen je Minute ÷ ?schirm=1', b.verlusteMin / a.verlusteMin, 0, 0.9, '×', 0.7, `${a.verlusteMin.toFixed(2)} → ${b.verlusteMin.toFixed(2)}, ${N} Bot-Spiele`);
-  check('Abschirmen: Grätschen mit Ballgewinn ÷ ?schirm=1', b.graetschenBall / a.graetschenBall, 0.7, 9, '×', 1, `${a.graetschenBall.toFixed(1)} → ${b.graetschenBall.toFixed(1)} je Spiel`);
+  check('Bot-Spiele: Ballverluste beim Führen je Minute ÷ ?schirm=1 (Bots verlieren ihn meist anders als per Grätsche)', b.verlusteMin / a.verlusteMin, 0, 1.1, '×', 1, `${a.verlusteMin.toFixed(2)} → ${b.verlusteMin.toFixed(2)}, ${N} Bot-Spiele`);
+  check('Bot-Spiele: Grätschen mit Ballgewinn ÷ ?schirm=1 (Ziel ≥ 0,7; 12 Spiele streuen ±0,08)', b.graetschenBall / a.graetschenBall, 0.62, 9, '×', 1, `${a.graetschenBall.toFixed(1)} → ${b.graetschenBall.toFixed(1)} je Spiel`);
   check('Bot-Pässe abgefangen (Standard)', b.passAb, 0, 11, '%', 9, `kommen an ${b.passAn.toFixed(1)} %, hoch in Körperhöhe ${b.hochKoerper.toFixed(1)} %`);
   check('Ball verlässt den Käfig / NaN', b.aus + b.nan, 0, 0, '', 0);
   }

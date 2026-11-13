@@ -77,7 +77,7 @@ class Session:
         self.pg.on("console", lambda m: (self.console.append(m.type + ": " + m.text), self.errors.append("CONSOLE " + m.text) if m.type == "error" else None))
     def open(self, q='?nosw', timeout=120000):
         t0 = time.time()
-        self.pg.goto(self.base + 'index.html' + q)
+        self.pg.goto(self.base + 'index.html' + q, timeout=timeout)
         self.pg.wait_for_function("window.__game && window.__game.ready && window.__game.frames > 3", timeout=timeout)
         self.boot_s = time.time() - t0
         self.gl = self.ev(GL_RENDERER)

@@ -350,7 +350,7 @@ export const DEFAULTS = {
   hochGemeint: 0.1,       // s weniger Reserve für den gemeinten Empfänger (Stick) als für einen anderen  [?hochGemeint=]
   hochLesen: 0.3,         // s bis ein Gegner auf den hohen Pass reagiert (Reaktion + Lesen)
   direktLuft: 0.8,        // × Chance (Stufe: airTry), dass ein Bot einen hohen Pass direkt aus der Luft weiterspielt
-  botSicher: 0.015,       // s: Bots passen nur ab dieser Zeitreserve (Stufe 1: × 2,5, Stufe 3: × 0,4); n13: 0,015 statt −0,03 – mit g 8,8 fliegen hohe Pässe länger, sonst 22 % abgefangen [?botSicher=-0.03]
+  botSicher: 0.035,       // s: Bots passen nur ab dieser Zeitreserve (Stufe 1: × 2,5, Stufe 3: × 0,4); n13: 0,015 statt −0,03 – mit g 8,8 fliegen hohe Pässe länger, sonst 22 % abgefangen; n14: 0,035 (mit dem stärkeren Abschirmen spielten Bots öfter unter Druck ab: 10,7 statt 8,9 % abgefangen, mit 0,035: 8,1 %) [?botSicher=0.015 = 0.10.0]
   kurvenpass: 1,          // Kurvenpass mit Effet um einen Gegner herum (zusätzliche Option für freie Passwege)
   // n14: jeder hohe Innenseit-/Außenrist-Pass bekommt Effet (Kurvenpass-Bahn, der Löser wählt die sicherere Seite); gerade nur, wenn
   // kein angeschnittener Weg sicher ist. 0 = wie 0.10.0 (gerade, Effet nur als Ausweg um einen Gegner)          [?passEffet=0]
@@ -397,7 +397,7 @@ export const DEFAULTS = {
   // n13 (Peter 07.11.: „replayzoom weiter entfernt“): Abstand der nahen Replay-Kameras (Fan-Edit-Makro, Kontakt-Zoom) × replayweit,
   // Blick zur Körpermitte, damit Schütze und Ball ganz im Bild sind. 1 = 0.9.1                              [?replayweit=1]
   // n14 (Peter 13.11.: „Wiederholungen sind noch weiter herausgezoomt“): 3,5 – Zoom/Makro × 3,5 statt × 2, alle übrigen Replay-Kameras
-  // (TV, Fan-Cam, Fan-Edit) × 1,5 weiter weg und etwas weiterer Winkel (replay.js weiterWeg). ?replayweit=2 = 0.10.0
+  // (TV, Fan-Cam, Fan-Edit) × 1,25 weiter weg und etwas weiterer Winkel (replay.js weiterWeg). ?replayweit=2 = 0.10.0
   replayweit: 3.5,
   // n13 (Peter 07.11.: „Fancam default aus“): die klassische Wiederholung zeigt den Einschlag in Zeitlupe aus der TV-Kamera statt aus
   // der wackelnden Fan-Cam hinter dem Tor. Die Art (Normal / mit Fan-Cam = Fan-Edit / Aus) wählt das Pause-Menü, ?fancam=1 = Fan-Edit
@@ -527,7 +527,7 @@ export const DEFAULTS = {
 
 // n14: alle n14-Regler auf 0.10.0 (für Tests, die das Verhalten bis 0.10.0 prüfen, und den Vergleich im Bericht; ?tierform=2 zusätzlich
 // für die Figuren – das liest main.js)
-export const N14_AUS = 'effet=18&passhoch=1&passtempo=1&passraum=0&schirm=1&luftwucht=1&replayweit=2';
+export const N14_AUS = 'effet=18&passhoch=1&passtempo=1&passraum=0&schirm=1&luftwucht=1&replayweit=2&botSicher=0.015';
 // Kurzformen für Peter (deutsch) → interne Namen
 export const ALIASES = {
   dach: 'roof', sprint: 'vSprint', lauf: 'vRun', antritt: 'tauAcc0', wende: 'aLat', hilfe: 'assist',

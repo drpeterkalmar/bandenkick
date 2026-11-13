@@ -3,6 +3,8 @@
 // Grätsche erobert ihn weiter. Dazu: kürzere Vorlage und Ball zur abgewandten Seite, wenn ein Gegner nah ist; ?abschirmen=0 = n6.
 // Aufruf: node tests/node/abschirmen.test.mjs
 import { makeParams } from '../../src/sim/params.js';
+// n14: prüft die Abschirm-Regeln von n7–n13 → Grundeinstellung ?schirm=1 (die n14-Stärkung prüft n14.test.mjs)
+globalThis.BK_BASIS = 'schirm=1';
 import { Game, DT } from '../../src/sim/step.js';
 import { EMPTY_INPUT } from '../../src/sim/player.js';
 import { humanHold } from './n7_probe.mjs';
