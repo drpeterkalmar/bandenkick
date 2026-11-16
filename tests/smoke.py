@@ -50,6 +50,9 @@ with Server() as srv, sync_playwright() as pw:
         else: ok(lk and lk['kind'] == 'shot' and lk['tech'] == 'vollspann' and abs(lk['sideRps']) < 0.3, f"Schuss tippen = Vollspann: {lk and lk['tech']}, {lk and round(lk['speed'], 1)} m/s, {lk and round(lk['sideRps'], 2)} U/s")
         s.ev("__game.placePlayer(-5, 1, 0); __game.placeBall(-4.6, 0.11, 1)")
         s.ev("__game.game.players[0].lastKick = null")
+        s.wait_sim(0.2)
+        if s.ev("__game.game.state") != 'play': s.wait_sim(2.8)  # n15: der Schuss davor ging ins Tor – Torpause abwarten
+        s.ev("__game.placePlayer(-5, 1, 0); __game.placeBall(-4.6, 0.11, 1)"); s.ev("__game.game.players[0].lastKick = null")
         s.ev("__game.press([[0, 0.06, 'shot'], [0.14, 0.2, 'shot']])")
         try: s.pg.wait_for_function("__game.state().lastKick && __game.state().lastKick.kind === 'shot'", timeout=15000)
         except Exception: pass
