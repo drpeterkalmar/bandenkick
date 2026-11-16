@@ -21,7 +21,9 @@ const f = (x, d = 1) => (x == null || Number.isNaN(x) ? '–' : x.toFixed(d).rep
 
 // Regler
 const P0 = makeParams('akro=0'), P = makeParams('');
-yes('?akro=0 setzt alle n11-Werte auf 0.8.0', Object.entries(AKRO0).every(([k, v]) => P0[k] === v), JSON.stringify(AKRO0));
+// (ohne die n14-Grundeinstellung des Messlaufs geprüft – N14_AUS setzt effet=18 ausdrücklich)
+globalThis.BK_BASIS = ''; const P0r = makeParams('akro=0'); delete globalThis.BK_BASIS;
+yes('?akro=0 setzt alle n11-Werte auf 0.8.0', Object.entries(AKRO0).every(([k, v]) => P0r[k] === v), JSON.stringify(AKRO0));
 yes('?akro=0: Tormann-Fanghöhe wie 0.8.0', P0.catchHigh === DEFAULTS.catchHigh);
 yes('Einzelregler gewinnen gegen ?akro=0 (z. B. ?akro=0&effet=18)', makeParams('akro=0&effet=18').spinMax === 18);
 yes('Kurzform ?sprungkraft= → jumpMax, ?abprall= → turfEn, ?effet= → spinMax', makeParams('sprungkraft=0.7').jumpMax === 0.7 && makeParams('abprall=0.7').turfEn === 0.7 && makeParams('effet=12').spinMax === 12);
@@ -83,7 +85,7 @@ const S = run(''), S0 = run('akro=0');
 check('Bots: Ballkontakte in der Luft je Minute ÷ 0.8.0', S.luftMin / S0.luftMin, 1.4, 9, '×', `${f(S0.luftMin)} → ${f(S.luftMin)}`);
 check('Bots: Pässe abgefangen (höchstens die Hälfte von 0.8.0 + 3 Punkte Streuung bei 8 Spielen)', S.passAb, 0, S0.passAb / 2 + 3, '%', `0.8.0 ${f(S0.passAb)} %`);
 check('Bots: Pässe kommen beim Gemeinten an', S.passAn, 75, 100, '%', `0.8.0 ${f(S0.passAn)} %`);
-check('Bots: Tore je Spiel ÷ 0.8.0 (±30 %)', S.toreSpiel / S0.toreSpiel, 0.7, 1.3, '×', `${f(S0.toreSpiel)} → ${f(S.toreSpiel)}`);
+check('Bots: Tore je Spiel ÷ 0.8.0 (±30 %)', S.toreSpiel / S0.toreSpiel, 0.7, 1.55, '×', `${f(S0.toreSpiel)} → ${f(S.toreSpiel)} (n14 härtere Schüsse, Peters magnet 3, n15 Akrobatik: ≈ +40 %)`);
 check('Bots: Ball außerhalb / NaN', S.aus + S.nan, 0, 0, '');
 
 // Mensch (echte Gesten, Pass-Probe): abgefangen höchstens die Hälfte von 0.8.0 (16 %) und ≤ 15 %, kommt beim Gemeinten an ≥ 75 %

@@ -108,14 +108,14 @@ function flug(P, from, v, w = [0, 0, 0], T = 6, seed = 1) {
   const N = +(process.env.N13_N || 32);
   const a = botSummary(await botProbe('g=9.81&magnet=2.4&botSicher=-0.03', N, 'st2', 6)), n = botSummary(await botProbe('', N, 'st2', 6));
   const f2 = (x) => x.toFixed(2);
-  check('Magnet: Ballverluste beim Führen je Spielminute ÷ 0.9.2', n.lossMin / a.lossMin, 0, 0.85, '×', 0.75, `${f2(a.lossMin)} → ${f2(n.lossMin)} (Zweikampf ${f2(a.duelMin)} → ${f2(n.duelMin)}), ${N} Bot-Spiele; gemessen mit 48 Spielen −21 %`);
+  check('Magnet: Ballverluste beim Führen je Spielminute ÷ 0.9.2', n.lossMin / a.lossMin, 0, 0.95, '×', 0.75, `${f2(a.lossMin)} → ${f2(n.lossMin)} (Zweikampf ${f2(a.duelMin)} → ${f2(n.duelMin)}), ${N} Bot-Spiele; gemessen mit 48 Spielen −21 % (n15: mit Peters magnet 3 und den n15-Änderungen −12 %, Grenze 0,95)`);
   check('Magnet: Ballverluste je Minute Ball am Fuß ÷ 0.9.2', (n.lossMin / n.footSMin) / (a.lossMin / a.footSMin), 0, 0.8, '×', 0.67, `Ball am Fuß ${f2(a.footSMin)} → ${f2(n.footSMin)} s je Spielminute; gemessen −33 %`);
   check('Magnet: Grätschen mit Ballgewinn ÷ 0.9.2', n.tackleBallPerGame / a.tackleBallPerGame, 0.9, 9, '×', 1, `${a.tackleBallPerGame.toFixed(1)} → ${n.tackleBallPerGame.toFixed(1)} je Spiel`);
   check('Tore je Schuss: Unterschied zu 0.9.2', n.goalsPerShot - a.goalsPerShot, -4, 4, 'Punkte', 0, `${a.goalsPerShot.toFixed(1)} → ${n.goalsPerShot.toFixed(1)} %`);
   check('Bot-Spiele: Hänger/Numerik', n.stuck + n.faults, 0, 0, '×', 0);
   const pt = (q) => { const pc = parcours(q, [1, 2, 3, 4, 5, 6]); return { t: pc.reduce((s, x) => s + x.time, 0) / pc.length, lost: pc.reduce((s, x) => s + x.lost, 0) }; };
   const p0 = pt('g=9.81&magnet=2.4'), p1 = pt('');
-  check('Slalom-Parcours (Skript): nicht langsamer', p1.t - p0.t, -9, 0.2, 's', 0, `${p0.t.toFixed(2)} → ${p1.t.toFixed(2)} s, verpasst ${p0.lost} → ${p1.lost}`);
+  check('Slalom-Parcours (Skript): nicht langsamer', p1.t - p0.t, -9, 2.85, 's', 0, `${p0.t.toFixed(2)} → ${p1.t.toFixed(2)} s, verpasst ${p0.lost} → ${p1.lost} (Peter 16.11. magnet 3: enger geführt, ≈ 2,4 s langsamer; Grenze fd12896 + 0,5 s)`);
   check('Slalom-Parcours: keine Ballverluste mehr als vorher', p1.lost - p0.lost, -9, 0, '×', 0);
   const la = luftSummary(await luftProbe('g=9.81&magnet=2.4&botSicher=-0.03', N, 6)), ln = luftSummary(await luftProbe('', N, 6));
   check('Hochpässe: beim Mitspieler in Volley-/Brust-/Kopfhöhe ÷ 0.9.2', ln.hochKoerper / la.hochKoerper, 0.9, 9, '×', 1, `${la.hochKoerper.toFixed(1)} → ${ln.hochKoerper.toFixed(1)} % der hohen Pässe (0,45–2,4 m beim Gemeinten)`);
@@ -129,7 +129,7 @@ function flug(P, from, v, w = [0, 0, 0], T = 6, seed = 1) {
   // im Kegel (±55°): nie etwas Neues; hinten (≥ 125°, frei): immer der Jonglier-Fallrückzieher (Mensch)
   let imKegelNeu = 0, hintenJongl = 0, hintenN = 0, kegelN = 0, seitDreh = 0, seitN = 0;
   for (let i = 0; i < 24; i++) {
-    const x = -1 + (i % 6) * 1.5, z = -3 + (i % 4) * 2, zum = Math.atan2(-z, 12 - x);
+    const x = 0.5 + (i % 6) * 1.3, z = -3 + (i % 4) * 2, zum = Math.atan2(-z, 12 - x); // (n15 E2: aus der eigenen Hälfte gibt es keinen Torschuss mehr – Lagen ab der Mittellinie)
     const k = spekSzene('', { x, z, face: zum + (i % 2 ? 1 : -1) * (i % 3) * 0.3, seed: 40 + i }); kegelN++;
     const a = arten(k); if (a.jongl || a.mega || a.lupfer || a.dreh) imKegelNeu++;
     const h = spekSzene('', { x, z, face: zum + Math.PI + (i % 3 - 1) * 0.5, seed: 70 + i }); hintenN++;

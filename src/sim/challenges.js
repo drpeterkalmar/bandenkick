@@ -6,6 +6,7 @@
 import { aimAt, spinOf, setKick, clamp } from './kickplan.js';
 import { EMPTY_INPUT } from './player.js';
 import { Ball } from './ball.js';
+import { TECH_NAMES } from './technique.js';
 
 const DEG = Math.PI / 180, TAU = 2 * Math.PI;
 
@@ -209,7 +210,7 @@ class Volley extends Challenge {
 }
 const TECH_DE = { volley: 'Volley', dropkick: 'Dropkick', seitfall: 'Seitfallzieher', fallrueck: 'Fallrückzieher', kopf: 'Kopfball', flugkopf: 'Flugkopfball', vollspann: 'Vollspann', innenrist: 'Innenrist', aussenrist: 'Außenrist', innen: 'Innenseite', aussen: 'Außenrist', ferse: 'Hacke', chip: 'Chip', brust: 'Brust', oberschenkel: 'Oberschenkel', graetsche: 'Grätsche',
   salto: 'Salto-Hacke', megaferse: 'Megaferse', jongl: 'Jongliertrick', lupfer: 'Lupfer', kurve: 'Kurvenpass', kopfpass: 'Kopfballpass', volleypass: 'Volleypass' }; // n11
-export const techName = (t) => TECH_DE[t] || t || '';
+export const techName = (t) => TECH_DE[t] || TECH_NAMES[t] || t || ''; // (n15: auch die neuen Akrobatik-Kontakte)
 
 // ---------------- Bandenpass: Puppen versperren den Weg, Ball über die Bande in den Kreis ----------------
 export const BANDE_STATIONS = [

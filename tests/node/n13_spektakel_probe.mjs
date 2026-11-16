@@ -38,7 +38,7 @@ export function szene(qs, { x = 6, z = 0, face = Math.PI, opp = null, mate = [-6
 export function probe(N = 200, qs = '', fall = 'frei') {
   const rng = new Rng(13), R = {};
   for (let i = 0; i < N; i++) {
-    const x = rng.range(-2, 8), z = rng.range(-4, 4), gx = 12;
+    const x = rng.range(0.5, 8), z = rng.range(-4, 4), gx = 12; // (n15 E2: ab der Mittellinie – aus der eigenen Hälfte gibt es keinen Torschuss mehr)
     const zumTor = Math.atan2(-z, gx - x), ab = fall === 'gegner' ? rng.range(2.3, Math.PI) : rng.range(0, Math.PI); // Winkel Blick ↔ Tor
     const face = zumTor + (rng.next() < 0.5 ? ab : -ab);
     const opp = fall === 'gegner' ? [x + Math.cos(zumTor) * 1.1, z + Math.sin(zumTor) * 1.1] : null;
