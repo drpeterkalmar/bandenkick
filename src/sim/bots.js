@@ -347,7 +347,7 @@ export class Bots {
       const Tm = (L * Math.min(1, f)) / vT;
       if (Tm > Tb + 0.3) continue;
       let ok = true;
-      for (const o of g.players) { if (o.team === kp.team) continue; const To = Math.max(0, Math.hypot(o.x - tx, o.z - tz) - 0.8) / vT + 0.15; if (To < Tb + 0.05) { ok = false; break; }
+      for (const o of g.players) { if (o.team === kp.team) continue; const To = Math.max(0, Math.hypot(o.x - tx, o.z - tz) - 0.8) / vT + 0.15; if (To < Tb + P.anspielReserve) { ok = false; break; }
       }
       if (ok && (!best || f > best.f)) best = { f, tx, tz, kind };
     }

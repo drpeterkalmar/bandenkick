@@ -348,6 +348,7 @@ export const DEFAULTS = {
   // sonst sicher kurz. 0 = vorher                                                                    [?anspiel=0]
   anspiel: 1,
   anspielSicher: 1,       // der zweite Mitspieler bietet sich am freiesten Punkt kurz an (0 = bleibt bei seiner normalen Absicherung)
+  anspielReserve: 0.25,   // s: so viel später als der Ball muss jeder Gegner am Treffpunkt sein
   anspielWarten: 0.6,     // s: so lange wartet der Tormann höchstens, bis der Vorstürmer über der Mittellinie ist
   annahmeD: 1.1, annahmeDPass: 1.35, annahmeRel: 16, annahmeVy: 2, annahmeBlick: -0.5,
   // n15 E2 (Peter 14.11.: „kein schuss aufs tor aus der eigenen hälfte … lieber hoher befreiungsschlag ins mittlere drittel oder schuss zu
