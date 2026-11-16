@@ -478,6 +478,7 @@ function handleEvents(ev) {
       const b = k ? bewerte(k, game) : null;
       if (b && !aktion.moment) { aktion.moment = { ...b, w: 1, art: 'ramp', grund: 'comic', t: 0, tSpiel: game.t, real: 0, rueck: 0.12, langsam: 0.2 }; aktion.zahl++; }
     }
+    if (e.type === 'skill' && (e.player === game.human || e.human)) hud.skillInfo(`${e.name}${e.ok ? ' ✓' : ''}`); // n15 E4
     if (e.type === 'kickvor' && e.human) { kickPuls = 1; hud.kickPuls(); } // n15 E1: Quittung für jeden Kick-Druck
     if (e.type === 'kick') {
       const k = game.players[e.player].lastKick;

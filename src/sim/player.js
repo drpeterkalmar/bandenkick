@@ -12,6 +12,7 @@ import { autoShot, einKnopfArt, eigeneHaelfte } from './akro.js';
 import { planAir, planAirHelp, stepAir, stepFall } from './air.js';
 import { schussWahl, planMegaferse, jongliere, lupferGespielt } from './spektakel.js';
 import { AIR_TECH } from './technique.js';
+import { skillCheck, skillStep } from './skills.js';
 const DEG = Math.PI / 180;
 const wrap = (a) => { while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI; return a; };
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
@@ -127,7 +128,7 @@ export class Player {
     this.face = face; this.hx = Math.cos(face); this.hz = Math.sin(face);
     this.pending = null; this.charging = false; this.charge = 0; this.assistW = 0;
     this.air = null; this.airPress = false; this.fall = null; this.jumpY = 0; this.jumpV = 0; this.armed = null;
-    this.slide = null; this.stumbleT = 0;
+    this.slide = null; this.stumbleT = 0; this.skill2 = null;
   }
 
   footPoint() {
@@ -144,6 +145,7 @@ export class Player {
     if (this.hand.mode === 'dive' || this.hand.mode === 'ground') { this.stepDive(dt, game); return; }
     if (this.fall) { stepFall(this, dt, game); this.plant = 0; return; } // am Boden nach Seit-/Fallrückzieher
     if (this.slide) { this.stepSlide(dt, game); return; }                   // Grätsche (Nacht 2c)
+    if (this.skill2 && skillStep(this, dt, game)) return;                   // n15 E4: Skill-Move läuft
     if (this.stumbleT > 0) this.stumbleT -= dt;
     const held = ball.held >= 0;
     if (this.pending) { this.pending.age += dt; if (this.pending.age > (this.pending.tap ? P.tippPuffer : P.kickBuffer) && !(this.pending.immer && this.immerHalten(game))) this.pending = null; }
@@ -210,6 +212,8 @@ export class Player {
       }
     }
 
+    // n15 E4: Ballführender wird angegriffen → Skill-Move zum Ausweichen (ohne Knopf, zufällig)
+    if (P.skills && !held && skillCheck(game, this)) return;
     // n15 E6: Einfach-Modus (gesteuerter Spieler) – Abspiel/Abschluss ohne Knopf
     if (P.easy && game.match && !game.challenge && game.human === this.id && !held) this.easyStep(game);
 
@@ -980,7 +984,7 @@ export class Player {
     const bs = b.held < 0 && b.p.y < 0.45 ? seg(b.p.x, b.p.z) : null;
     let opp = null;
     for (const o of game.players) {
-      if (o.team === this.team || o.slide) continue;
+      if (o.team === this.team || o.slide || (o.skill2 && o.skill2.ok)) continue; // (n15 E4: ausgewichen)
       const s = seg(o.x, o.z);
       if (s.d < 0.45 && (!opp || s.t < opp.s.t)) opp = { o, s };
     }

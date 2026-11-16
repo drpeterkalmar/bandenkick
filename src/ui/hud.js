@@ -351,6 +351,8 @@ export function buildHud(root, canvas) {
       }
       banner.classList.add('on'); bannerT = dur;
     },
+    // n15 E4: Name des Skill-Moves klein einblenden (ohne Zeitlupe)
+    skillInfo(text) { kick.textContent = text; kick.classList.add('on'); kickT = 1.4; },
     kickInfo(k) {
       const kmh = Math.round(k.speed * 3.6);
       const names = { vollspann: 'Vollspann', innenrist: 'Innenrist', aussenrist: 'Außenrist', innen: 'Innenseite', aussen: 'Außenrist', ferse: 'Hacke', chip: 'Chip',
