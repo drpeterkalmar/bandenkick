@@ -1,5 +1,5 @@
 // Service-Worker: offline spielbar, Cache-Busting über Inhalts-Hash (tools/update_sw.py)
-const VERSION = 'ad83f7c190';
+const VERSION = 'c6d0296040';
 const CACHE = 'bandenkick-' + VERSION;
 const ASSETS = [
   './',
@@ -93,6 +93,7 @@ const ASSETS = [
   'src/sim/rng.js',
   'src/sim/rules.js',
   'src/sim/shot.js',
+  'src/sim/skills.js',
   'src/sim/spektakel.js',
   'src/sim/step.js',
   'src/sim/technique.js',
