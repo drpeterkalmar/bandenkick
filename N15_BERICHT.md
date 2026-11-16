@@ -175,7 +175,7 @@ Live geprüft: `assets/kuscheltiere/kuscheltiere.json` auf drpeterkalmar.github.
   n14-Effet-Schritt mit `effet2=0`), smoke (Torpause abwarten).
 - Schon vorher rot und nicht hier gelöst (Nachtrag 3): magnet „Gegner 0,3 m am Ball: schwächer“, nachdrall, traumpass, eckschraege
   (je „Tore je Schuss“-Gates).
-- Rauchtest im Browser grün (Pixel 7 hoch/quer, Desktop).
+- Rauchtest im Browser grün (Pixel 7 hoch/quer, Desktop); `tests/test_live.py` gegen die Live-Seite grün (Version 0.11.0, Build edc0d29c7b; Schuss-Lage dort auf die gegnerische Hälfte verlegt – E2).
 
 Gesamtlauf `node tests/node/run_par.mjs 4` (alle 48 Testdateien): grün bis auf die vier vorbestehenden (magnet „Gegner 0,3 m“,
 traumpass; nachdrall und eckschraege liefen im Gesamtlauf grün). Nachgezogen und grün: n10, n12, n14, tormann_e1.

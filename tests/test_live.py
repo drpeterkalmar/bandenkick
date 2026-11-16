@@ -28,7 +28,7 @@ with sync_playwright() as pw:
         ok(st['match'] and st['avatars'] and len(st['players']) == 6, f"3 gegen 3 mit Figuren (Kuscheltiere) live ({len(st['players'])} Spieler, Avatare {st['avatars']})")
         ok(pg.evaluate("__game.sound.ctx === null && !!__game.sound.silent"), 'Ton aus (stummer Stub, kein AudioContext)')
         pg.evaluate("__game.start()")
-        pg.evaluate("__game.placePlayer(-4, 0, 0); __game.placeBall(-3.6, 0.11, 0)")
+        pg.evaluate("__game.placePlayer(3, 0, 0); __game.placeBall(3.4, 0.11, 0)")  # n15 E2: aus der eigenen Hälfte gibt es keinen Torschuss mehr
         pg.evaluate("__game.input({wx: 1, wz: 0.1, shootHeld: true, cx: 0.5}, 0.6)")
         t0 = pg.evaluate("__game.game.t"); pg.wait_for_function(f"__game.game.t > {t0 + 1.2}", timeout=60000)
         # Schuss beim Schützen ablesen (danach wechselt die Steuerung ggf. automatisch zum ballnächsten Mitspieler)
