@@ -127,9 +127,9 @@ export const DEFAULTS = {
   bodyR: 0.30,            // m Abstand zur Bande
   // Ballführung ohne Klebeball: echte Ballkontakte, Hilfe wählt Stärke/Richtung.
   footAhead: 0.36,        // m Fußpunkt vor dem Körper
-  reach: 0.48,            // m Reichweite um den Fußpunkt
-  cutReach: 0.85,         // m Reichweite ab Körpermitte im Stemmschritt (Ball mitnehmen mit Sohle/Außenseite)
-  reachH: 0.40,           // m max. Ballhöhe (Mitte) für Fußkontakt
+  reach: 0.72,            // m Reichweite um den Fußpunkt (n15 E10: 0,48 → 0,72)
+  cutReach: 1.25,         // (n15 E10: 0,85) m Reichweite ab Körpermitte im Stemmschritt (Ball mitnehmen mit Sohle/Außenseite)
+  reachH: 0.60,           // m max. Ballhöhe (Mitte) für Fußkontakt (n15 E10: 0,40 → 0,60, springende Bälle bis Kniehöhe)
   ctrlRel: 8.0,           // m/s max. Relativtempo für eine saubere Ballannahme
   ctrlRelMax: 15.0,       // m/s darüber prallt der Ball nur ab
   touchLead: 0.45,        // s bis der Ball wieder am Fuß ist (Laufen) …
@@ -160,10 +160,10 @@ export const DEFAULTS = {
                           // 1,8 schwang der Ball sonst quer nach (Skript-Parcours 9,5 → 12 s mit verpassten Slalom-Toren, mit 30: 8 s)
   magnetAcc: 42,          // m/s² höchste Zugbeschleunigung bei Stärke 1 (0,5 → 21 m/s²)
   magnetSprint: 0.7,      // Anteil im Sprint (Nacht 2c: 0,45)
-  magnetTurn0: 60,        // ° Richtungswechsel Stick ↔ Laufrichtung: ab hier wird der Magnet schwächer …
+  magnetTurn0: 90,        // (n15 E10: 60)        // ° Richtungswechsel Stick ↔ Laufrichtung: ab hier wird der Magnet schwächer …
   magnetTurn1: 120,       // ° … bis hier auf magnetTurnMin
-  magnetTurnMin: 0.5,     // n7: Anteil bei magnetTurn1 (bis n6: 0,25) …
-  magnetKehr: 0.15,       // … n7: echte Kehrtwende (120° → 165°) zusätzlich × bis hierhin – dort lässt der Magnet los, sonst
+  magnetTurnMin: 0.75,    // (n15 E10: 0,5)     // n7: Anteil bei magnetTurn1 (bis n6: 0,25) …
+  magnetKehr: 0.4,        // (n15 E10: 0,15)       // … n7: echte Kehrtwende (120° → 165°) zusätzlich × bis hierhin – dort lässt der Magnet los, sonst
                           // springt der Ball mit Stärke 1,8 beim zappeligen Kinder-Stick öfter weg (1 = aus)
   magnetSlack: 0.25,      // m so weit darf der Ball über die Soll-Vorlage hinaus rollen, bevor er gebremst wird
   magnetLead: 0.7,        // Vorlagen beim Führen kürzer: Zeit und Weg × (1 − magnetLead · Stärke)
@@ -319,6 +319,12 @@ export const DEFAULTS = {
   // erreicht (übernimmt den Druck); kein freier Pass → nach immerSperre s Schuss bzw. Befreiung statt „Ball bleibt am Fuß“. Kein
   // Pass-Knopf mehr (HUD, Menü), Tormann-Hechten/-Abwurf auf dem Kick-Knopf. 0 = Stand 6416fb8                       [?kickimmer=0]
   kickimmer: 1,
+  // n15 E10 (Peter 16.11.: „Ballmagnet/Ballführung verstärken. Ich verliere den Ball bei Richtungswechsel und kann ihn aus der Luft nicht
+  // mitnehmen“): Haltekraft +50 % (magnetK/Acc/C), Magnet lässt bei Wende/Kehrtwende weniger los, Reichweite +50 % (reach, cutReach, reachH),
+  // Annahme aus der Luft großzügiger (Abstand annahmeD/annahmeDPass m, Relativtempo annahmeRel m/s, auch leicht steigende Bälle bis
+  // annahmeVy m/s, Blickwinkel annahmeBlick) und auch mit vorgemerktem Kick, wenn kein Luft-Kick ansteht. 0 = Stand vor Nachtrag 2 [?ballfuehrung=0]
+  ballfuehrung: 1,
+  annahmeD: 1.1, annahmeDPass: 1.35, annahmeRel: 16, annahmeVy: 2, annahmeBlick: -0.5,
   // n15 E2 (Peter 14.11.: „kein schuss aufs tor aus der eigenen hälfte … lieber hoher befreiungsschlag ins mittlere drittel oder schuss zu
   // einer der gegnerischen ecken“): aus der eigenen Hälfte nie aufs Tor (Mensch, Bots, Luftbälle, Megaferse/Fallrückzieher) – freier
   // Mitspieler → Pass, sonst hoher Befreiungsschlag ins mittlere Drittel (Landepunkt frei von Gegnern) oder in eine gegnerische Ecke
@@ -575,6 +581,8 @@ const MAGNET07 = { schirmVor: 0.3 };
 const MAGNET091 = { schirmNah: 0.9, schirmRel: 0, schirmT: 1.0, schirmVor: 0.6, schirmHand: 0 };
 // n14: ?effet= bis 18 (0.10.0-Wert) ausdrücklich = Effet wie 0.10.0 (Magnus-Kurve, Außenrist, gerade hohe Pässe), sofern nicht ausdrücklich übersteuert
 const EFFET0100 = { clSteig: 0.7, clMaxAkro: 0.6, aussenSpin: 0.85, passEffet: 0 };
+// n15 E10 ?ballfuehrung=0: Ballführung/Annahme wie vor Nachtrag 2, sofern nicht ausdrücklich übersteuert
+export const BF0 = { reach: 0.48, cutReach: 0.85, reachH: 0.40, magnetK: 112, magnetC: 30, magnetAcc: 42, magnetTurn0: 60, magnetTurnMin: 0.5, magnetKehr: 0.15, annahmeD: 0.75, annahmeDPass: 0.9, annahmeRel: 11, annahmeVy: 0.5, annahmeBlick: -0.15 };
 // n11 ?akro=0: alles wie 0.8.0, sofern nicht ausdrücklich übersteuert
 export const AKRO0 = { turfEn: 0.621, jumpMax: 0.6, sprungAkro: 1, spinMax: 10, backspinMax: 7, bananeSpinMax: 1.2, aussenSpin: 0.75, autotech: 0, einknopf: 0, salto: 0, hochpass: 0, kurvenpass: 0, passEffet: 0, passraum: 0, clSteig: 0, clMaxAkro: 0.6, mitnahme: 0, g: 9.81, schusskegel: 0 }; // (n12: Mitnahme gab es in 0.8.0 nicht; n13: Schwerkraft 9,81 wie bis 0.9.1)
 
@@ -617,6 +625,7 @@ export function makeParams(overrides = {}) {
   if (!P.halten) for (const [k, v] of Object.entries(HALTEN0)) if (!set.has(k)) P[k] = v;
   if (set.has('spinMax') && P.spinMax <= 18) for (const [k, v] of Object.entries(EFFET0100)) if (!set.has(k)) P[k] = v;
   if (!P.akro) for (const [k, v] of Object.entries(AKRO0)) if (!set.has(k)) P[k] = v;
+  if (!P.ballfuehrung) for (const [k, v] of Object.entries(BF0)) if (!set.has(k)) P[k] = v;
   if (!P.gummi && !set.has('puntZiel')) P.puntZiel = 0; // n13: ?gummi=0 = Verhalten wie cac623e (auch der Abschlag)
   // n11: der Tormann springt so hoch wie alle (Fanghöhe mit Strecken + Sprung über 0.8.0 hinaus)
   if (!set.has('catchHigh')) P.catchHigh += Math.max(0, P.jumpMax - 0.6);

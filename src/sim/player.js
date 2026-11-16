@@ -384,11 +384,16 @@ export class Player {
     // (holt ein Ball von hinten den Läufer noch ein, wartet die Mitnahme, bis er auf Körperhöhe ist – sonst müsste er hinter dem
     // Rücken angenommen und um den Läufer herum beschleunigt werden)
     const mitJetzt = mit && (bx * mdx + bz * mdz > -0.3 || (ball.v.x - this.vx) * mdx + (ball.v.z - this.vz) * mdz < 0.5);
-    if (!handsFirst && !inReach && this.touchCd <= 0 && !this.air && ball.p.y > P.reachH && ball.p.y < ctrlTop && ball.v.y < 0.5 &&  (!mit || mitJetzt) && bd < (hochEmpf || mit ? 0.9 : 0.75) && rel < (hochEmpf || mit ? 13 * Math.max(1, P.passtempo) : 11) && !(this.mitT > 0 && game.lastTouch === this.id) &&
-        (hochEmpf || mit || (bx * Math.cos(this.face) + bz * Math.sin(this.face)) > -0.15) && !this.pending) { // (Empfänger dreht sich zum Ball)
+    // (n15 E10: Grenzen als Regler annahme*, großzügiger; mit vorgemerktem Kick-Druck wird angenommen, wenn kein Luft-Kick ansteht)
+    const annKick = !this.pending || (P.ballfuehrung && this.pending.immer && !luftWarten && !this.pending.api);
+    if (!handsFirst && !inReach && this.touchCd <= 0 && !this.air && ball.p.y > P.reachH && ball.p.y < ctrlTop && ball.v.y < P.annahmeVy &&  (!mit || mitJetzt) && bd < (hochEmpf || mit ? P.annahmeDPass : P.annahmeD) && rel < (hochEmpf || mit ? 13 * Math.max(1, P.passtempo) * P.annahmeRel / 11 : P.annahmeRel) && !(this.mitT > 0 && game.lastTouch === this.id) &&
+        (hochEmpf || mit || (bx * Math.cos(this.face) + bz * Math.sin(this.face)) / (P.ballfuehrung ? Math.max(bd, 0.01) : 1) > P.annahmeBlick) && annKick) { // (Empfänger dreht sich zum Ball)
       const k = 0.7, part = ball.p.y > 1.55 ? 'kopf' : ball.p.y > 1.05 ? 'brust' : 'oberschenkel';
       if (mit) this.mitnahmeBall(game, mdx, mdz, -1.2, mWant);
-      else { ball.v.set(this.vx * k + Math.cos(this.face) * 0.6, -1.2, this.vz * k + Math.sin(this.face) * 0.6); ball.w.set(0, 0, 0); }
+      else if (P.ballfuehrung) { // n15 E10: aus größerem Abstand angenommen → der Ball fällt vor den Fuß (in ~0,45 s dort), nicht neben den Körper
+        const [fx0, fz0] = this.footPoint(), T = 0.45;
+        ball.v.set(this.vx + (fx0 + this.vx * T - ball.p.x) / T, -1.2, this.vz + (fz0 + this.vz * T - ball.p.z) / T); ball.w.set(0, 0, 0);
+      } else { ball.v.set(this.vx * k + Math.cos(this.face) * 0.6, -1.2, this.vz * k + Math.sin(this.face) * 0.6); ball.w.set(0, 0, 0); }
       this.tech = part; this.techT = 0;
       this.afterTouch(game, 0.25, rel);
       game.events.push({ type: 'control', part, player: this.id, x: ball.p.x, y: ball.p.y, z: ball.p.z });
