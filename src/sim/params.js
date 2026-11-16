@@ -224,7 +224,12 @@ export const DEFAULTS = {
   // (statt 0,6) – seitliche Ablenkung des Innenseit-Schusses über 20 m 5,2 → ~9,8 m (× 1,9). Spektakel vor Realismus. Die Ziel-Löser
   // (aimAt, Hochpass-Tabellen) simulieren mit demselben Ball, die Kurve ist eingerechnet. ?effet=18 = 0.10.0 (setzt clSteig 0,7,
   // clMaxAkro 0,6, aussenSpin 0,85, passEffet 0 zurück, EFFET0100)
-  clSteig: 1.7, clMaxAkro: 1.5,  //                                                                   [0.10.0: 0,7 / 0,6]
+  // n15 E7 (Peter 14.11.: „etwas mehr effet“): cL steigt noch steiler (2,05 statt 1,7) bis 1,85 (statt 1,5) – Innenseit-Schuss über 20 m
+  // 9,9 → 12,7 m (+28 %); die Ziel-Löser rechnen weiter mit demselben Ball. ?effet2=0 = n14 (1,7 / 1,5)
+  clSteig: 2.05, clMaxAkro: 1.85, //                                                                   [0.10.0: 0,7 / 0,6; n14: 1,7 / 1,5]
+  effet2: 1,              //                                                                         [?effet2=0]
+  flankehoch: 1.5,        // n15 E7: Scheitel-Ziel einer Flanke × 1,5 (1 = wie n14)                   [?flankehoch=1]
+  flankeSicher: 0.12,     // n15 E7: s Reserve, die eine höhere Flanken-Bahn mindestens haben muss
   kickBuffer: 0.9,        // s: Pass/Schuss wird so lange vorgemerkt, bis der Ball erreichbar ist
 
   // ---------------- Nacht 2b: Gesten, Pass, Schuss, Luftbälle ----------------
@@ -640,6 +645,7 @@ export function makeParams(overrides = {}) {
   if (!P.halten) for (const [k, v] of Object.entries(HALTEN0)) if (!set.has(k)) P[k] = v;
   if (set.has('spinMax') && P.spinMax <= 18) for (const [k, v] of Object.entries(EFFET0100)) if (!set.has(k)) P[k] = v;
   if (!P.akro) for (const [k, v] of Object.entries(AKRO0)) if (!set.has(k)) P[k] = v;
+  if (!P.effet2) { if (!set.has('clSteig')) P.clSteig = Math.min(P.clSteig, 1.7); if (!set.has('clMaxAkro')) P.clMaxAkro = Math.min(P.clMaxAkro, 1.5); } // n15 E7
   if (!P.ballfuehrung) for (const [k, v] of Object.entries(BF0)) if (!set.has(k)) P[k] = v;
   if (!P.gummi && !set.has('puntZiel')) P.puntZiel = 0; // n13: ?gummi=0 = Verhalten wie cac623e (auch der Abschlag)
   // n11: der Tormann springt so hoch wie alle (Fanghöhe mit Strecken + Sprung über 0.8.0 hinaus)

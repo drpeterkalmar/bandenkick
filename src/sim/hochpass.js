@@ -189,13 +189,18 @@ export function bestLob(game, pl, from, m, runPath, { curve = true, maxU = 26, y
   // n14 (passhoch): unter allen Bahnen die mit Scheitel nahe passhoch × Scheitel der bisherigen Wahl (Sicherheit zählt weiter zuerst)
   const hoeher = () => {
     if (!cands || !best || cands.length < 2) return best;
-    const aZ = P.passhoch * best.apex;
+    // n15 E7 (Peter 14.11.: „höhere flanken“): Flanke = hoher Pass von außen (≤ 4 m an der Längsbande) zu einem Treffpunkt ≤ 9 m vor dem
+    // gegnerischen Tor → Scheitel-Ziel × flankehoch (Ankunft weiter in Kopf-/Volleyhöhe, Abfang-Schutz zählt weiter zuerst)
+    const gx = pl.team === 0 ? cage.hx : -cage.hx;
+    const flanke = P.flankehoch > 1 && Math.abs(from[1]) > cage.hz - 4 && Math.hypot(gx - best.meet[0], best.meet[1]) < 9;
+    const aZ = P.passhoch * (flanke ? P.flankehoch : 1) * best.apex;
     // (nur Bahnen, die fast so sicher sind wie die bisherige Wahl – Abfang-Schutz zuerst)
-    const sMin = Math.min(best.slack, 0.4) - 0.03;
+    // (Flanke: jede Bahn mit klarer Reserve ≥ flankeSicher s – höher heißt etwas länger unterwegs, die Gegner kommen trotzdem zu spät)
+    const sMin = flanke ? Math.min(Math.min(best.slack, 0.4) - 0.03, P.flankeSicher) : Math.min(best.slack, 0.4) - 0.03;
     let b2 = best, s2 = -1e9;
     for (const c of cands) {
       if (Math.min(c.slack, 0.4) < sMin) continue;
-      const sc = c.score - P.hochScheitelW * Math.abs(c.apex - aZ);
+      const sc = c.score - P.hochScheitelW * (flanke ? 3 : 1) * Math.abs(c.apex - aZ); // (Flanke: Scheitel-Ziel zählt 3 ×)
       if (sc > s2) { s2 = sc; b2 = c; }
     }
     return b2;
