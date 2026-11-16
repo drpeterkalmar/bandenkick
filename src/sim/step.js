@@ -378,7 +378,7 @@ export class Game {
     if (this.switchT < P.switchT) return;
     // Nacht 2e: Pass/Schuss vorgemerkt (Tipp), Ball noch erreichbar → nicht wegwechseln (sonst verfällt der Pass: beim
     // Drehen im Lauf rollt der Ball kurz weg und ein Mitspieler war „näher“ – 10–25 % der Pässe im Lauf kamen nie)
-    if (P.passfix && me.pending && me.pending.tap && b.held < 0 && Math.hypot(b.p.x - me.x, b.p.z - me.z) < 5 && (this.lastTouch === me.id || this.lastTouch < 0)) return;
+    if (P.passfix && me.pending && me.pending.tap && !(me.pending.immer && me.pending.age > 1.0) && b.held < 0 && Math.hypot(b.p.x - me.x, b.p.z - me.z) < 5 && (this.lastTouch === me.id || this.lastTouch < 0)) return;
     const mine = this.lastTouch === me.id && Math.hypot(b.p.x - me.x, b.p.z - me.z) < 2.2;
     if (mine) return;
     let best = me, bt = ttb(me) - 0.18;

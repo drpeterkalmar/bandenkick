@@ -2,6 +2,9 @@
 // die Richtung, zittert): Ball springt weg je Minute, allein und gegen einen Bot; Dribbel-Parcours (Skript und
 // Kinderhand); Selbstspiel: Ballverluste beim Führen je Minute (Tackles bleiben möglich). Dazu die Regeln: schwächer im
 // Sprint, bei scharfen Richtungswechseln und mit Gegner < 1 m; gilt für alle Spieler. Aufruf: node tests/node/magnet.test.mjs
+// n15 E10 (Nachtrag 2): die Magnet-Mechanik wird ohne die E10-Zusätze geprüft (größere Reichweite, Magnet lässt bei Wende weniger los –
+// das misst tests/node/n15_annahme_probe.mjs); Peters Standard magnet 3 / luft 1.1 (16.11., Nachtrag 3/4) gilt
+globalThis.BK_BASIS ??= 'ballfuehrung=0';
 import { makeParams } from '../../src/sim/params.js';
 import { Game } from '../../src/sim/step.js';
 import { kidDribble, parcours, dribbleLosses } from './dribble_probe.mjs';
@@ -28,7 +31,9 @@ check('Kinderhand gegen Bot (Stufe 2): Ball springt weg je Minute', b1.lost, 0, 
 {
   const r6 = parcours(N6, [1, 2, 3, 4, 5, 6]), r1 = parcours('', [1, 2, 3, 4, 5, 6]);
   const t6 = avg(r6.map((x) => x.time)), t1 = avg(r1.map((x) => x.time));
-  check('Dribbel-Parcours Skript: nicht langsamer als n6 (inkl. Strafsekunden)', t1, 0, t6 + 0.2, 's', null, `n6 ${t6.toFixed(2)} s, jetzt ${t1.toFixed(2)} s`);
+  // (Peter 16.11. magnet 3: der stärkere Magnet führt enger und etwas langsamer – 10,69 s auf fd12896 statt 9,18 s mit n6; Grenze: höchstens
+  // 0,5 s langsamer als der Stand fd12896)
+  check('Dribbel-Parcours Skript: höchstens 0,5 s langsamer als Peters Standard magnet 3 (fd12896, inkl. Strafsekunden)', t1, 0, 10.69 + 0.5, 's', null, `n6 ${t6.toFixed(2)} s, fd12896 10,69 s, jetzt ${t1.toFixed(2)} s`);
   check('… Ballverluste im Parcours', r1.reduce((s, x) => s + x.lost, 0), 0, 0, '', 0);
 }
 // (das vorsichtige Challenge-Skript lenkt nie mehr als 30° neben den Ball und verpasst im Slalom 2–3 Tore → nur Info)
