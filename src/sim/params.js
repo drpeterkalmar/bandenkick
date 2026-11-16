@@ -334,6 +334,7 @@ export const DEFAULTS = {
   // Schuss beim Ankommen). Steht der Ballführer selbst gut (≤ easySchuss m, Tor vorn), schießt er. Kick-Knopf hat Vorrang.   [?easy=1]
   // n15 E4 (src/sim/skills.js): zehn Skill-Moves zum Ausweichen, ohne Knopf, wenn der Ballführende angegriffen wird. Chance zu versuchen: Mensch
   // skillChance, Bots skillBot; gelingt mit skillQuote (Mensch) bzw. 40/50/60 % je Bot-Stufe; höchstens einer je skillPause s. 0 = aus [?skills=0]
+  akro2: 1,               // n15 E5: 22 Akrobatik-/Tricking-/Kampfsport-Kontakte (technique.js AKRO2); 0 = aus [?akro2=0]
   skills: 1, skillQuote: 0.5, skillChance: 0.7, skillBot: 0.15, skillPause: 1.2,
   easy: 0, easyTakt: 0.3, easyVorteil: 1.5, easySchuss: 7.5, easyFrei: 1.8, easySicher: 0.05,
   kickimmer: 1,

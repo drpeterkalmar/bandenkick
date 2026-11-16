@@ -915,6 +915,34 @@ export class Avatar {
 // Pose je Technik (Winkel in rad: pitch + = vorn über, roll + = zur rechten Seite; drop = Absenken des Schwerpunkts;
 // thigh − = Oberschenkel nach vorn/oben, + = nach hinten; calf + = Unterschenkel beugen). null = keine Sonderpose.
 const ease = (x) => (x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x));
+// n15 E5: Posen der neuen Akrobatik-/Tricking-/Kampfsport-Kontakte (u = 0 Absprung … 1 Treffpunkt; Drehungen um die Hochachse macht die Sim
+// über die Blickrichtung). Schwungbein: thigh < 0 = nach vorn/oben, > 0 = nach hinten (Ferse), twist = Bein seitlich gedreht (Halbkreis-Tritt),
+// roll = Körper seitlich gekippt (Seittritt, Rad), pitch = vor (+) / zurück (−), drop = Hüfte tiefer, hop = Sprung, spreiz = Beine gespreizt
+const AKRO2_POSE = {
+  butterfly: (u, s) => ({ pitch: 1.0 * u, roll: -s * 0.5 * u, drop: 0, hop: u, legs: true, thigh: -1.2 * u, thigh2: 0.8 * u, twist: 0.8 * u, arms: 1.2 * u, spreiz: 0.6 * u }),
+  tornado: (u, s) => ({ pitch: -0.3 * u, roll: -s * 0.6 * u, drop: 0, hop: u, legs: true, thigh: -1.8 * u, twist: 1.0 * u, calf: 0.2, arms: 0.9 * u }),
+  k540: (u, s) => ({ pitch: -0.4 * u, roll: -s * 0.9 * u, drop: 0, hop: u, legs: true, thigh: -2.0 * u, thigh2: -0.4 * u, twist: 1.1 * u, arms: 1.0 * u }),
+  rad: (u, s) => ({ pitch: 0.2 * u, roll: -s * 2.4 * u, drop: -0.2 * u, legs: true, thigh: -1.4 * u, thigh2: 0.9 * u, spreiz: 0.9 * u, arms: 1.6 * u }),
+  aerial: (u, s) => ({ pitch: 1.6 * u, roll: -s * 0.4 * u, drop: 0, hop: u, legs: true, thigh: 0.9 * u, thigh2: -0.9 * u, spreiz: 0.6 * u, arms: 0.4 * u }),
+  flash: (u) => ({ pitch: -2.6 * u, roll: 0, drop: -0.1 * u, hop: u, legs: true, thigh: -2.0 * u, thigh2: -0.6 * u, calf: 0.2, arms: 1.2 * u }),
+  korken: (u, s) => ({ pitch: -0.9 * u, roll: -s * 1.1 * u, drop: 0, hop: u, legs: true, thigh: -1.9 * u, twist: 0.7 * u, arms: 1.0 * u }),
+  webster: (u) => ({ pitch: 2.2 * u, roll: 0, drop: 0, hop: u, legs: true, thigh: -1.6 * u, thigh2: 0.6 * u, calf: 0.2, arms: -0.4 * u, nod: -0.3 * u }),
+  whirlwind: (u, s) => ({ pitch: 0.4 * u, roll: -s * 0.5 * u, drop: 0, hop: u, legs: true, thigh: -1.7 * u, twist: -1.0 * u, arms: 1.3 * u }),
+  dollyo: (u, s) => ({ pitch: -0.45 * u, roll: s * 0.8 * u, drop: -0.05 * u, legs: true, thigh: -2.1 * u, twist: 1.4 * u, calf: 0.4 * (1 - u), arms: 0.8 * u }),
+  neryo: (u) => ({ pitch: -0.2 * u, roll: 0, drop: 0, hop: 0.4 * u, legs: true, thigh: -2.4 * Math.sin(Math.PI * Math.min(1, u * 0.85)) - 0.6 * u, calf: 0.1, arms: 0.5 * u }), // Axt: hoch, dann von oben auf den Ball
+  twio: (u, s) => ({ pitch: 0.7 * u, roll: s * 0.2 * u, drop: 0, hop: u, legs: true, thigh: 1.6 * u, calf: 0.3, arms: -0.6 * u, nod: 0.3 * u }),
+  hook: (u, s) => ({ pitch: 0.5 * u, roll: s * 0.9 * u, drop: -0.05 * u, legs: true, thigh: 1.4 * u, twist: -1.4 * u, calf: 1.3 * u, arms: 0.8 * u }),
+  yop: (u, s) => ({ pitch: 0.1 * u, roll: s * 1.1 * u, drop: 0, hop: u, legs: true, thigh: -1.5 * u, thigh2: 1.0 * u, calf: 0.1, twist: 0.6 * u, arms: 0.9 * u }), // „Bruce Lee“: seitlich in der Luft, Bein gestreckt
+  mawashi: (u, s) => ({ pitch: -0.4 * u, roll: s * 0.75 * u, drop: 0, legs: true, thigh: -2.0 * u, twist: 1.4 * u, calf: 0.6 * (1 - u), arms: 0.7 * u }),
+  teep: (u) => ({ pitch: -0.25 * u, roll: 0, drop: 0, legs: true, thigh: -1.3 * u, calf: 1.4 * (1 - u), arms: 0.3 * u }),             // Vorstoß: Knie hoch, Sohle schiebt
+  knie: (u) => ({ pitch: 0.1 * u, roll: 0, drop: 0, hop: u, legs: true, thigh: -1.7 * u, calf: 2.2 * u, arms: 0.9 * u, nod: 0.2 * u }), // Ball mit dem Knie
+  meialua: (u, s) => ({ pitch: 0.9 * u, roll: s * 0.3 * u, drop: -0.15 * u, legs: true, thigh: 1.5 * u, twist: -0.8 * u, arms: -0.7 * u }),
+  armada: (u, s) => ({ pitch: 0.55 * u, roll: s * 0.7 * u, drop: 0, hop: 0.4 * u, legs: true, thigh: 1.9 * u, twist: -1.3 * u, arms: 0.9 * u }),
+  queixada: (u, s) => ({ pitch: -0.35 * u, roll: -s * 0.7 * u, drop: 0, legs: true, thigh: -2.1 * u, twist: -1.3 * u, arms: 0.8 * u }),
+  martelo: (u, s) => ({ pitch: -0.45 * u, roll: s * 0.8 * u, drop: 0, legs: true, thigh: -1.9 * u, twist: 1.4 * u, calf: 0.5 * (1 - u), arms: 0.7 * u }),
+  schere: (u) => ({ pitch: 2.9 * u, roll: 0, drop: -0.35 * u, legs: true, thigh: -1.0 * u, thigh2: 0.9 * u, spreiz: 1.0 * u, arms: 2.6 * u }), // Handstand: Hände am Boden, Beine scheren
+};
+const AKRO2_FALL = { flash: 'rueck', schere: 'rueck', k540: 'seit', korken: 'seit', rad: 'seit', yop: 'seit' };
 function techPose(pl, t, beinF = 1) {
   const side = pl.kickFoot > 0 ? 1 : -1; // Schussbein rechts → Körper kippt nach links
   const sl = pl.slide;
@@ -940,7 +968,11 @@ function techPose(pl, t, beinF = 1) {
       // n11 Salto-Hacke (Skorpion-Kick): Vorwärtssalto – kopfüber nach vorn, beide Knie stark gebeugt, die Fersen schlagen hinter dem
       // Rücken nach oben an den Ball; Arme nach vorn unten (fangen die Landung ab). Rocketbox hat keinen Clip: prozedural
       case 'salto': { const A = AIR_POSE.salto, w = u * u * (3 - 2 * u); return { pitch: 1.35 * u + (A.pitch - 1.35) * w * w, roll: 0, drop: -0.1 * u, legs: true, thigh: 0.55 * u, thigh2: 0.45 * u, calf: 2.0 * u, calf2: 1.8 * u, arms: -1.5 * u, nod: -0.5 * u }; }
-      default: return { pitch: -0.3 * u, roll: -side * 0.15 * u, drop: -0.05 * u, legs: true, thigh: 0.4 - 1.7 * u, calf: 0.9 * (1 - u), arms: 0.5 * u }; // Volley/Dropkick: ausholen, durchziehen
+      default: {
+        const k2 = AKRO2_POSE[tech];
+        if (k2) return k2(u, side);
+        return { pitch: -0.3 * u, roll: -side * 0.15 * u, drop: -0.05 * u, legs: true, thigh: 0.4 - 1.7 * u, calf: 0.9 * (1 - u), arms: 0.5 * u }; // Volley/Dropkick: ausholen, durchziehen
+      }
     }
   }
   const f = pl.fall;
@@ -949,6 +981,9 @@ function techPose(pl, t, beinF = 1) {
     if (f.tech === 'fallrueck') return { pitch: -1.5 * lie, roll: 0, drop: -0.72 * lie, legs: true, thigh: -0.9 * lie, thigh2: -0.5 * lie, arms: 0.5 * lie };
     if (f.tech === 'seitfall') return { pitch: 0, roll: -side * 1.45 * lie, drop: -0.72 * lie, legs: true, thigh: -0.6 * lie, arms: 0.4 * lie };
     if (f.tech === 'salto') { const r = 1 - ease(f.t / 0.3); return { pitch: 1.5 * lie + 0.6 * r * lie, roll: 0, drop: -0.74 * lie, legs: true, thigh: 0.4 * lie, calf: 1.2 * r * lie, calf2: 1.0 * r * lie, arms: -1.2 * lie }; } // n11: rollt über die Arme ab
+    const fl = AKRO2_FALL[f.tech]; // n15 E5: nach Flash-Kick/Handstand-Schere rücklings, nach 540/Corkscrew/Rad/Yop seitlich
+    if (fl === 'rueck') return { pitch: -1.5 * lie, roll: 0, drop: -0.72 * lie, legs: true, thigh: -0.9 * lie, thigh2: -0.5 * lie, arms: 0.5 * lie };
+    if (fl === 'seit') return { pitch: 0, roll: -side * 1.45 * lie, drop: -0.72 * lie, legs: true, thigh: -0.6 * lie, arms: 0.4 * lie };
     return { pitch: 1.5 * lie, roll: 0, drop: -0.74 * lie, legs: true, thigh: 0.2 * lie, arms: -0.6 * lie }; // Flugkopfball: bäuchlings
   }
   const k = pl.techT ?? 9;
@@ -986,6 +1021,10 @@ function techPose(pl, t, beinF = 1) {
       case 'oberschenkel': return { pitch: -0.08 * u, roll: 0, drop: 0, legs: true, thigh: -1.0 * u, calf: 0.9 * u };
       case 'kopf': return { pitch: 0.3 * u, roll: 0, drop: 0, hop: u, legs: true, thigh: 0, nod: 0.4 * u, arms: 0.3 * u }; // n10: hop = Hüpfer um senken (kürzere Beine)
       case 'volley': case 'dropkick': return { pitch: -0.3 * u, roll: -side * 0.15 * u, drop: -0.05 * u, legs: true, thigh: -1.3 * u, arms: 0.5 * u };
+      // n15 E5: nach dem Kontakt hält die Treff-Pose der neuen Kontakte kurz und klingt ab (Kontaktbild zeigt das Körperteil am Ball)
+      case 'butterfly': case 'tornado': case 'k540': case 'rad': case 'aerial': case 'flash': case 'korken': case 'webster': case 'whirlwind': case 'dollyo': case 'neryo':
+      case 'twio': case 'hook': case 'yop': case 'mawashi': case 'teep': case 'knie': case 'meialua': case 'armada': case 'queixada': case 'martelo': case 'schere':
+        return AKRO2_POSE[pl.tech](k < 0.08 ? 1 : Math.max(0, 1 - (k - 0.08) / 0.37), side);
       case 'blocken': return { pitch: 0.2, roll: 0, drop: -0.2, legs: true, thigh: -0.15, thigh2: -0.15, calf: 0.35, spreiz: 0.55, arms: 0.9 }; // n7 E1: Beine seitlich gespreizt, tief
       case 'stolpern': return { pitch: 0.5 * u, roll: side * 0.15 * u, drop: -0.12 * u, legs: true, thigh: 0.35 * u, calf: 0.6 * u, arms: 0.9 * u }; // nach Grätsche des Gegners
       default: return null;

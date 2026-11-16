@@ -357,7 +357,7 @@ export function buildHud(root, canvas) {
       const kmh = Math.round(k.speed * 3.6);
       const names = { vollspann: 'Vollspann', innenrist: 'Innenrist', aussenrist: 'Außenrist', innen: 'Innenseite', aussen: 'Außenrist', ferse: 'Hacke', chip: 'Chip',
         volley: 'Volley', dropkick: 'Dropkick', seitfall: 'Seitfallzieher', fallrueck: 'Fallrückzieher', kopf: 'Kopfball', flugkopf: 'Flugkopfball', megaferse: 'Megaferse', lupfer: 'Lupfer', jongl: 'Jongliertrick' };
-      const parts = [`${names[k.tech] || (k.kind === 'pass' ? 'Pass' : 'Schuss')} ${kmh} km/h`];
+      const parts = [`${names[k.tech] || k.name || (k.kind === 'pass' ? 'Pass' : 'Schuss')} ${kmh} km/h`]; // (n15: neue Techniken über k.name)
       if (k.kind === 'shot') {
         if (Math.abs(k.sideRps) >= 1) parts.push(`Effet ${Math.abs(k.sideRps).toFixed(1).replace('.', ',')} U/s`);
         else if (k.tech === 'vollspann' && k.spinRps < 1) parts.push('flattert');

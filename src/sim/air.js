@@ -5,11 +5,12 @@
 // idealen Vorlauf kostet Tempo und Genauigkeit. Die Ballbahn kommt aus der echten Physik (predictBall), der Schuss
 // aus shot.js (Ziel im Tor, Qualität) – danach fliegt der Ball normal weiter.
 import { predictBall, clamp, setKick } from './kickplan.js';
-import { airScores, AIR_TECH, AIR_KEYS, AIR_PROPS, timingFit, spektakelRang } from './technique.js';
+import { airScores, AIR_TECH, AIR_KEYS, AIR_PROPS, AKRO2, timingFit, spektakelRang } from './technique.js';
 import { planShot, attackGoalX } from './shot.js';
 import { planPass, passCandidates } from './pass.js';
 
 const DEG = Math.PI / 180;
+const frac = (x) => x - Math.floor(x);
 const _pred = [];
 const _predKey = { g: null, tick: -1 };
 // Anlauf-Zeitpunkt vor dem Treffpunkt (Absprung, Fallen, Hechten, Ausholen)
@@ -20,6 +21,8 @@ const TOL = { volley: 0.42, dropkick: 0.4, seitfall: 0.45, fallrueck: 0.42, kopf
 // n11 (Peter 02.11.: „spieler springen höher“): Absprungtempo je Technik (m/s) vor sprungAkro; Kopfball nach Höhe, Volley springt
 // über 0,85 m (Ballmitte) hoch
 const JUMP_V = { seitfall: 2.6, fallrueck: 2.6, flugkopf: 1.8, salto: 2.4 };
+// n15 E5: Anlauf, Güte, Toleranz und Sprung der neuen Kontakte aus der Tabelle
+for (const [k, T] of Object.entries(AKRO2)) { TAKEOFF[k] = T.jump > 1.5 ? 0.3 : 0.2; TECH_Q[k] = T.q; TOL[k] = T.tol; JUMP_V[k] = T.jump; }
 export function jumpFor(P, tech, h) {
   if (tech === 'kopf') { const jh = Math.max(0, h - P.headH); return jh > 0.02 ? Math.sqrt(2 * P.g * jh) : 0; }
   if (tech === 'volley') return P.akro && h > 0.85 ? Math.sqrt(2 * P.g * (h - 0.85)) : 0;
@@ -70,7 +73,8 @@ export function planAir(game, pl, { tPress = game.t, purpose = 'shot', minScore 
     const gdx = tx - s.x, gdz = tz - s.z, gl = Math.hypot(gdx, gdz) || 1;
     const theta = Math.acos(clamp((sx * gdx + sz * gdz) / gl, -1, 1)) / DEG;
     const bounced = s.t - lastBounce < 0.2 && lastBounce > 0;
-    const sc = airScores(h, theta, bounced, scale, ext, salto && purpose !== 'clear');
+    const sc = airScores(h, theta, bounced, scale, ext, salto && purpose !== 'clear', !!P.akro2);
+    if (globalThis.BK_AIR_NUR) for (const k in sc) if (k !== globalThis.BK_AIR_NUR) sc[k] = 0; // (Tests/Fotos: nur diese Technik)
     const lead = game.t + s.t - tPress;
     for (const tech of AIR_KEYS) {
       if (sc[tech] < 0.12) continue;
@@ -92,7 +96,7 @@ export function planAir(game, pl, { tPress = game.t, purpose = 'shot', minScore 
       if (s.t < TAKEOFF[tech] * 0.6) continue; // zu spät für die Bewegung
       const tq = timingFit(tech, lead);
       const margin = clamp(1 - d / (reach + 0.01), 0, 1);
-      if (sc[tech] > maxScore) maxScore = sc[tech];
+      if (sc[tech] > maxScore && !AKRO2[tech]) maxScore = sc[tech]; // (n15: die neuen Kontakte heben die Messlatte „auf die beste warten“ nicht an)
       const total = sc[tech] * (0.35 + 0.65 * tq) * (0.75 + 0.25 * margin) * (1 - eil * s.t);
       const c = { tech, total, score: sc[tech], tq, t: s.t, tc: game.t + s.t, bx, bz, cx: s.x, cy: h, cz: s.z, sx, sz, fx: fr.fx, fz: fr.fz, foot: fr.foot, theta, h, bounced, lead, vin: Math.hypot(s.vx, s.vy, s.vz), purpose, goalX: attackGoalX(game, pl), takeoff, aim };
       if (!best || total > best.total) best = c;
@@ -100,10 +104,16 @@ export function planAir(game, pl, { tPress = game.t, purpose = 'shot', minScore 
     }
   }
   if (!best) return null;
+  // n15 E5: liegt ein Kopfball nicht weit dahinter (≥ 70 %), bleibt es beim Kopfball (Peter 16.11.: „Kopfbälle sollen bleiben“)
+  if (AKRO2[best.tech] && byTech.kopf && byTech.kopf.total >= 0.7 * best.total) best = byTech.kopf;
   // n11 Spektakel: unter fast gleich erfolgreichen Techniken die spektakulärste (nie eine klar schlechtere)
   if (P.akro && P.spektakel > 0) {
     const lim = (1 - P.spektakel) * succOf(best);
-    for (const k in byTech) { const c = byTech[k]; if (c.total >= minScore && succOf(c) >= lim && spektakelRang(c.tech) > spektakelRang(best.tech)) best = c; }
+    // (n15 E5: unter den neuen Kontakten je Szene – Spieler + letzte Berührung – eine feste Zufallsreihenfolge, sonst gewänne immer derselbe)
+    const rg = (t) => spektakelRang(t) + (P.akro2 && AKRO2[t] ? 2.5 * frac(Math.sin((pl.id + 1) * 12.9898 + game.lastTouchT * 78.233 + t.length * 37.719 + t.charCodeAt(0) * 4.1414) * 43758.5453) : 0);
+    // (Kopfbälle bleiben – Peter 16.11.: ein Kopfball wird nicht durch einen neuen Akrobatik-Kontakt ersetzt)
+    const kopfBleibt = best.tech === 'kopf' || best.tech === 'flugkopf';
+    for (const k in byTech) { const c = byTech[k]; if (kopfBleibt && AKRO2[c.tech]) continue; if (c.total >= minScore && succOf(c) >= lim && rg(c.tech) > rg(best.tech)) best = c; }
   }
   best.maxScore = maxScore;
   return best.total >= minScore ? best : null;
@@ -132,7 +142,9 @@ export function airPassSlack(game, pl, plan) {
 export function airFrame(tech, sx, sz, gx, gz, d) {
   const norm = (x, z, fx, fz) => { const l = Math.hypot(x, z); return l > 0.2 ? [x / l, z / l] : [fx, fz]; };
   let f, ox, oz, foot = 0;
-  if (tech === 'fallrueck') { f = [sx, sz]; ox = sx * d; oz = sz * d; }
+  const fr2 = AKRO2[tech] ? AKRO2[tech].frame : null; // n15 E5: Ausrichtung der neuen Kontakte
+  if (tech === 'fallrueck' || fr2 === 'rueck') { f = [sx, sz]; ox = sx * d; oz = sz * d; }
+  else if (fr2 === 'seit') { f = [sx, sz]; ox = -gx * d; oz = -gz * d; foot = -gx * Math.sin(Math.atan2(sz, sx)) + gz * Math.cos(Math.atan2(sz, sx)) > 0 ? -1 : 1; }
   else if (tech === 'salto') { f = [gx, gz]; ox = gx * d; oz = gz * d; } // n11: Blick zum Ziel, Ball schon hinter dem Rücken
   else if (tech === 'seitfall') {
     f = [sx, sz]; ox = -gx * d; oz = -gz * d;
@@ -197,9 +209,11 @@ export function stepAir(pl, dt, game, want, sx, sz) {
   pl.x = clamp(pl.x, -lx, lx); pl.z = clamp(pl.z, -lz, lz);
   pl.speed = Math.hypot(pl.vx, pl.vz);
   // Blick je Technik (airFrame): Fallrückzieher zum Ball mit dem Rücken zum Tor, Seitfall seitlich, sonst zwischen Ball und Tor
+  // n15 E5: Dreh-Kicks (Tornado, 540, Corkscrew, Whirlwind, Spinning Hook, Twio, Butterfly) drehen sich im Sprung einmal um die Hochachse
+  const DREH = { tornado: 1, k540: 1.5, korken: 1, whirlwind: 1, hook: 1, twio: 0.5, butterfly: 1, armada: 1, meialua: 0.5 };
   const fAng = Math.atan2(a.fz, a.fx);
-  let df = fAng - pl.face; while (df > Math.PI) df -= 2 * Math.PI; while (df < -Math.PI) df += 2 * Math.PI;
-  pl.face += clamp(df, -P.turnCap * dt, P.turnCap * dt);
+  if (a.go && DREH[a.tech] && P.akro2) { const u = clamp((game.t - a.t0) / Math.max(0.05, a.tc - a.t0), 0, 1); pl.face = fAng + (pl.kickFoot || 1) * DREH[a.tech] * 2 * Math.PI * (1 - u); }
+  else { let df = fAng - pl.face; while (df > Math.PI) df -= 2 * Math.PI; while (df < -Math.PI) df += 2 * Math.PI; pl.face += clamp(df, -P.turnCap * dt, P.turnCap * dt); }
   // Treffpunkt
   if (tRem <= dt * 0.5) {
     const err = Math.hypot(b.p.x - a.cx, b.p.y - a.cy, b.p.z - a.cz) + 0.6 * Math.hypot(pl.x - a.bx, pl.z - a.bz);

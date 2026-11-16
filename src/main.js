@@ -482,7 +482,7 @@ function handleEvents(ev) {
     if (e.type === 'kickvor' && e.human) { kickPuls = 1; hud.kickPuls(); } // n15 E1: Quittung für jeden Kick-Druck
     if (e.type === 'kick') {
       const k = game.players[e.player].lastKick;
-      if (k && (e.player === game.human || e.human)) hud.kickInfo(k); // e.human: nach dem Pass wechselt die Steuerung sofort
+      if (k && (e.player === game.human || e.human)) hud.kickInfo({ ...k, name: techName(k.tech) }); // e.human: nach dem Pass wechselt die Steuerung sofort
       gran.emit(e.x, e.z, e.dx, e.dz, Math.min(1, e.speed / 26), rnd);
     } else if (e.type === 'ground' && e.speed > 4) {
       gran.emit(e.x, e.z, game.ball.v.x, game.ball.v.z, Math.min(0.5, e.speed / 20), rnd);

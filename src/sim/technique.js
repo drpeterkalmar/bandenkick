@@ -79,6 +79,40 @@ export const AIR_TECH = {
   // Fersen treffen ihn hinter dem Rücken und schlagen ihn nach vorn zurück. Selten (prior 0,8, nur wo Volley/Kopf nicht passen)
   salto: { h: [0.75, 0.95, 1.4, 1.6], ang: [[0, 1], [45, 1], [75, 0.3], [100, 0]], prior: 0.8, dist: 0.5, extra: 0.3, lead: [0.24, 0.6] },
 };
+// n15 E5 (Peter 14.11.: „zumindest 20 spektakuläre arten der ballkontakte aus akrobatik, tricking und kampfsport, um zu passen oder aufs tor zu
+// schießen“, ?akro2=0 = aus): 22 neue Luft-/Halbvolley-Kontakte, je mit eigenem Höhen-/Winkel-Fenster, Körperteil (nie Hand/Arm), Ausrichtung
+// (frame: vor = zum Ziel, seit = Ziel seitlich, rueck = Rücken zum Ziel), Sprung (m/s), Güte q, Kontakt-Toleranz, Tempo und Zeit am Boden.
+// Gewählt wie alle Luftbälle (planAir): Erfolgschance zuerst, unter fast gleich guten die spektakulärste (rang).
+export const AKRO2 = {
+  // Tricking
+  butterfly: { prior: 1.2, name: 'Butterfly Kick', teil: 'Spann', h: [0.7, 0.9, 1.3, 1.5], ang: [[0, 0.3], [40, 1], [140, 1], [170, 0.3]], frame: 'seit', jump: 2.4, q: 0.86, tol: 0.42, v0: 19, vmax: 24, noise: 3.6, ground: 0, rang: 6 },
+  tornado: { prior: 1.08, name: 'Tornado Kick', teil: 'Spann', h: [0.9, 1.1, 1.6, 1.8], ang: [[0, 0.2], [60, 1], [160, 1], [180, 0.5]], frame: 'seit', jump: 2.6, q: 0.82, tol: 0.42, v0: 20, vmax: 25, noise: 4.0, ground: 0, rang: 6.5 },
+  k540: { prior: 1.15, name: '540 Kick', teil: 'Spann', h: [1.2, 1.4, 1.9, 2.1], ang: [[0, 0.2], [90, 1], [180, 1]], frame: 'seit', jump: 3.0, q: 0.76, tol: 0.42, v0: 21, vmax: 26, noise: 4.6, ground: 0.3, rang: 7.5 },
+  rad: { prior: 1.15, name: 'Rad-Kick', teil: 'Ferse', h: [0.9, 1.1, 1.5, 1.7], ang: [[0, 0.3], [40, 1], [130, 1], [160, 0.3]], frame: 'seit', jump: 1.6, q: 0.8, tol: 0.45, v0: 17, vmax: 22, noise: 4.2, ground: 0.4, rang: 6.5 },
+  aerial: { prior: 1.08, name: 'Aerial-Kick', teil: 'Spann', h: [0.8, 1.0, 1.4, 1.6], ang: [[0, 1], [90, 1], [130, 0.3]], frame: 'vor', jump: 2.5, q: 0.82, tol: 0.42, v0: 19, vmax: 24, noise: 4.0, ground: 0, rang: 7 },
+  flash: { prior: 1.08, name: 'Flash-Kick', teil: 'Spann', h: [1.3, 1.5, 2.0, 2.2], ang: [[0, 0.1], [110, 0.2], [140, 1], [180, 1]], frame: 'rueck', jump: 2.8, q: 0.74, tol: 0.42, v0: 19, vmax: 25, noise: 4.8, ground: 0.5, rang: 7.5 },
+  korken: { prior: 1.08, name: 'Corkscrew', teil: 'Spann', h: [1.0, 1.2, 1.7, 1.9], ang: [[0, 0.2], [50, 1], [150, 1], [180, 0.4]], frame: 'seit', jump: 2.8, q: 0.78, tol: 0.42, v0: 20, vmax: 25, noise: 4.4, ground: 0.3, rang: 7 },
+  webster: { prior: 1.15, name: 'Webster-Kick', teil: 'Spann', h: [0.9, 1.1, 1.5, 1.7], ang: [[0, 1], [100, 1], [140, 0.3]], frame: 'vor', jump: 2.4, q: 0.8, tol: 0.42, v0: 19, vmax: 24, noise: 4.2, ground: 0, rang: 6.5 },
+  whirlwind: { prior: 1.2, name: 'Shaolin-Whirlwind', teil: 'Innenseite', h: [1.0, 1.2, 1.7, 1.9], ang: [[0, 0.3], [60, 1], [150, 1], [180, 0.4]], frame: 'seit', jump: 3.0, q: 0.76, tol: 0.42, v0: 18, vmax: 23, noise: 4.6, ground: 0, rang: 7 },
+  // Kampfsport
+  dollyo: { prior: 1.08, name: 'Dollyo Chagi', teil: 'Spann', h: [0.5, 0.7, 1.1, 1.3], ang: [[0, 0.5], [30, 1], [120, 1], [150, 0.3]], frame: 'seit', jump: 0, q: 0.92, tol: 0.42, v0: 21, vmax: 26, noise: 3.2, ground: 0, rang: 5 },
+  neryo: { prior: 0.8, name: 'Neryo Chagi', teil: 'Ferse', h: [0.3, 0.4, 0.8, 1.0], ang: [[0, 1], [90, 1], [130, 0.3]], frame: 'vor', jump: 0.8, q: 0.85, tol: 0.4, v0: 16, vmax: 21, noise: 3.8, ground: 0, rang: 5.5 },
+  twio: { prior: 1.15, name: 'Twio Dwit Chagi', teil: 'Ferse', h: [0.7, 0.9, 1.3, 1.5], ang: [[0, 0.1], [110, 0.3], [140, 1], [180, 1]], frame: 'rueck', jump: 2.2, q: 0.8, tol: 0.42, v0: 20, vmax: 25, noise: 4.2, ground: 0, rang: 6.5 },
+  hook: { prior: 1.15, name: 'Spinning Hook Kick', teil: 'Ferse', h: [0.9, 1.1, 1.6, 1.8], ang: [[0, 0.2], [90, 1], [170, 1], [180, 0.6]], frame: 'seit', jump: 1.2, q: 0.8, tol: 0.42, v0: 19, vmax: 24, noise: 4.2, ground: 0, rang: 6.5 },
+  yop: { prior: 1.15, name: 'Yop Chagi', teil: 'Ferse/Sohle', h: [0.8, 1.0, 1.4, 1.6], ang: [[0, 0.5], [30, 1], [110, 1], [140, 0.3]], frame: 'seit', jump: 2.6, q: 0.82, tol: 0.45, v0: 21, vmax: 26, noise: 3.8, ground: 0.3, rang: 6.5 },
+  mawashi: { prior: 1.08, name: 'Mawashi Geri', teil: 'Spann', h: [0.6, 0.8, 1.2, 1.4], ang: [[0, 0.6], [20, 1], [110, 1], [140, 0.3]], frame: 'seit', jump: 0, q: 0.92, tol: 0.42, v0: 21, vmax: 26, noise: 3.2, ground: 0, rang: 5 },
+  teep: { prior: 0.85, name: 'Muay-Thai-Teep', teil: 'Sohle', h: [0.25, 0.35, 0.7, 0.9], ang: [[0, 1], [60, 1], [100, 0.3]], frame: 'vor', jump: 0, q: 0.95, tol: 0.4, v0: 18, vmax: 23, noise: 3.0, ground: 0, rang: 4.5 },
+  knie: { prior: 1.08, name: 'Flying Knee', teil: 'Knie', h: [0.7, 0.85, 1.2, 1.35], ang: [[0, 1], [70, 1], [110, 0.3]], frame: 'vor', dist: 0.3, jump: 2.0, q: 0.86, tol: 0.4, v0: 15, vmax: 20, noise: 3.6, ground: 0, rang: 5.5 },
+  meialua: { prior: 0.78, name: 'Meia Lua de Compasso', teil: 'Ferse', h: [0.3, 0.45, 0.8, 1.0], ang: [[0, 0.1], [100, 0.4], [130, 1], [180, 1]], frame: 'rueck', jump: 0, q: 0.84, tol: 0.42, v0: 17, vmax: 22, noise: 4.0, ground: 0, rang: 6 },
+  armada: { prior: 1.08, name: 'Armada', teil: 'Ferse', h: [0.6, 0.8, 1.2, 1.4], ang: [[0, 0.2], [100, 0.5], [130, 1], [170, 1]], frame: 'rueck', jump: 0.8, q: 0.82, tol: 0.42, v0: 18, vmax: 23, noise: 4.0, ground: 0, rang: 6 },
+  queixada: { prior: 1.08, name: 'Queixada', teil: 'Außenrist', h: [0.5, 0.7, 1.1, 1.3], ang: [[0, 0.4], [40, 1], [120, 1], [150, 0.3]], frame: 'seit', jump: 0, q: 0.88, tol: 0.42, v0: 18, vmax: 23, noise: 3.6, ground: 0, rang: 5.5 },
+  martelo: { prior: 1.08, name: 'Martelo', teil: 'Spann', h: [0.4, 0.6, 1.0, 1.2], ang: [[0, 0.8], [10, 1], [100, 1], [130, 0.3]], frame: 'seit', jump: 0, q: 0.92, tol: 0.42, v0: 20, vmax: 25, noise: 3.2, ground: 0, rang: 5 },
+  schere: { prior: 1.08, name: 'Scherenschlag aus dem Handstand', teil: 'Spann', h: [0.9, 1.1, 1.5, 1.7], ang: [[0, 0.1], [100, 0.4], [130, 1], [180, 1]], frame: 'rueck', jump: 0, q: 0.74, tol: 0.45, v0: 17, vmax: 22, noise: 4.6, ground: 0.6, rang: 7.5 },
+};
+for (const [k, T] of Object.entries(AKRO2)) {
+  AIR_TECH[k] = { h: T.h, ang: T.ang, prior: T.prior ?? 0.95, dist: T.dist ?? (T.frame === 'rueck' ? 0.5 : 0.55), extra: 0.25 + 0.05 * T.jump, lead: [0.2, 0.6], akro2: true };
+  TECH_NAMES[k] = T.name; SPEKTAKEL[k] = T.rang;
+}
 export const AIR_KEYS = Object.keys(AIR_TECH);
 // Körperhaltung am Treffpunkt (Grafik: render/avatars.js techPose; Tests prüfen damit die Fallrichtung). pitch in rad:
 // + = vorn über, − = rückwärts (Fallrückzieher: Kopf nach hinten, also zum Tor), roll: seitlich (× Seite des Schussbeins)
@@ -118,19 +152,19 @@ export function timingFit(tech, lead) {
 }
 // Punktwerte aller Techniken für Höhe h, Winkel theta, Aufsetzer (bounced). Optional: scale = Höhen-Faktor
 // (Regler ?luft=, verschiebt alle Fenster), P für Überschreibungen.
-export function airScores(h, theta, bounced = false, scale = 1, ext = 0, salto = false) {
+export function airScores(h, theta, bounced = false, scale = 1, ext = 0, salto = false, akro2 = false) {
   const out = {};
   for (const k of AIR_KEYS) {
     const T = AIR_TECH[k];
-    if ((T.bounce && !bounced) || (k === 'salto' && !salto)) { out[k] = 0; continue; }
+    if ((T.bounce && !bounced) || (k === 'salto' && !salto) || (T.akro2 && !akro2)) { out[k] = 0; continue; }
     const e = ext * (AIR_EXT[k] || 0);
     const w = e ? [T.h[0] * scale, T.h[1] * scale, T.h[2] * scale + e, T.h[3] * scale + e] : T.h.map((x) => x * scale);
     out[k] = heightFit(w, h) * angleFit(k, theta) * T.prior;
   }
   return out;
 }
-export function airTechnique(h, theta, bounced = false, scale = 1, ext = 0, salto = false) {
-  const s = airScores(h, theta, bounced, scale, ext, salto);
+export function airTechnique(h, theta, bounced = false, scale = 1, ext = 0, salto = false, akro2 = false) {
+  const s = airScores(h, theta, bounced, scale, ext, salto, akro2);
   let best = null, bs = 0;
   for (const k of AIR_KEYS) if (s[k] > bs) { bs = s[k]; best = k; }
   return best ? { tech: best, score: bs, scores: s } : null;
@@ -148,3 +182,5 @@ export const AIR_PROPS = {
   flugkopf: { v0: 11, vin: 0.35, vmax: 16, noise: 3.2, ground: 0.6, name: 'Flugkopfball' },
   salto: { v0: 15, vin: 0.2, vmax: 21, noise: 5.0, ground: 0.9, name: 'Salto-Hacke' },
 };
+// n15 E5: Eigenschaften der neuen Kontakte (Tempo, Streuung, Zeit am Boden)
+for (const [k, T] of Object.entries(AKRO2)) AIR_PROPS[k] = { v0: T.v0, vin: 0.1, vmax: T.vmax, noise: T.noise, ground: T.ground, name: T.name };
