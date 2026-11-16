@@ -38,6 +38,7 @@ with Server() as srv, sync_playwright() as pw:
         s.ev("__game.input({pass: true}, 0.05)"); s.wait_sim(1.0)
         lk = s.state()['lastKick']
         ok(lk and lk['kind'] == 'pass', f"Pass: {lk and round(lk['speed'], 1)} m/s")
+        if s.ev("__game.game.state") != 'play': s.wait_sim(2.8)  # n15: geht der Pass ins Tor, erst die Torpause abwarten (Gesten im Jubel zählen nicht)
         # Nacht 2c: Schuss tippen = Vollspann (kaum Drall), doppeltippen = angeschnitten (Innen-/Außenrist mit Drall)
         s.ev("__game.placePlayer(-5, 1, 0); __game.placeBall(-4.6, 0.11, 1)")
         s.ev("__game.game.players[0].lastKick = null")
