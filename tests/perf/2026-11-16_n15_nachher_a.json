@@ -1,0 +1,79 @@
+{
+ "datum": "2026-11-16T19:26:58",
+ "stand": "n15_nachher_a",
+ "wurzel": "/Users/wohnzimmer/dev/.wt/bandenkick-bandenkick-n15-einknopf-skills-akrobatik",
+ "git": "0837864",
+ "profil": {
+  "drossel": 4,
+  "dpr": 2.6,
+  "sek": 8.0,
+  "geraete": "hoch",
+  "gpu": "ANGLE/Metal headless",
+  "start": "open",
+  "vsync": false,
+  "zusatz": ""
+ },
+ "szenen": {
+  "spiel_s1": {
+   "hoch": {
+    "n": 1804,
+    "p50": 4.3,
+    "p95": 5.7,
+    "p99": 9.6,
+    "fps": 225.3,
+    "calls": 42,
+    "callsMax": 45,
+    "tris": 62351,
+    "tex": 44,
+    "zusatz": {
+     "dpr": 1.5,
+     "size": [
+      618,
+      1372
+     ],
+     "level": 1,
+     "kino": {
+      "level": 1,
+      "name": "Standard",
+      "pipeline": true,
+      "scale": 0.85,
+      "msaa": 0,
+      "stages": [
+       "scale",
+       "aa",
+       "sharpen",
+       "grade",
+       "vignette",
+       "dither",
+       "contact",
+       "dof"
+      ],
+      "grade": "tv",
+      "size": [
+       525,
+       1166
+      ],
+      "licht": "tag",
+      "bloom": [
+       0.97,
+       0.224
+      ],
+      "dof": null,
+      "kontakt": true
+     },
+     "auto": {
+      "on": false,
+      "steps": []
+     },
+     "shadow": {
+      "ext": 15.5,
+      "texel": 0.0303,
+      "karte": 1024
+     }
+    },
+    "boot_s": 0.7,
+    "fehler": []
+   }
+  }
+ }
+}

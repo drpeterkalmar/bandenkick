@@ -18,8 +18,8 @@ const check = (name, value, lo, hi, unit, target, note = '') => { const ok = val
 const P = makeParams(''), P0 = makeParams(N14_AUS);
 
 // ---------- Regler ----------
-check('Regler Standard: passhoch 1,5 · passtempo 1,25 · passraum 1 · schirm 2,5 · luftwucht 1,5 · replayweit 3,5 · clSteig 1,7',
-  P.passhoch === 1.5 && P.passtempo === 1.25 && P.passraum === 1 && P.schirm === 2.5 && P.luftwucht === 1.5 && P.replayweit === 3.5 && P.clSteig === 1.7 ? 1 : 0, 1, 1, '', 1);
+check('Regler Standard: passhoch 1,5 · passtempo 1,25 · passraum 1 · schirm 2,5 · luftwucht 1,5 · replayweit 3,5 · clSteig 2,05 (n15 E7; n14: 1,7)',
+  P.passhoch === 1.5 && P.passtempo === 1.25 && P.passraum === 1 && P.schirm === 2.5 && P.luftwucht === 1.5 && P.replayweit === 3.5 && P.clSteig === 2.05 ? 1 : 0, 1, 1, '', 1);
 check('N14_AUS = 0.10.0 (clSteig 0,7, clMaxAkro 0,6, aussenSpin 0,85, passEffet 0, …)',
   P0.clSteig === 0.7 && P0.clMaxAkro === 0.6 && P0.aussenSpin === 0.85 && P0.passEffet === 0 && P0.passraum === 0 && P0.schirm === 1 && P0.luftwucht === 1 && P0.replayweit === 2 && P0.passhoch === 1 && P0.passtempo === 1 ? 1 : 0, 1, 1, '', 1);
 check('?effet=18 allein = Effet wie 0.10.0', (() => { const q = makeParams('effet=18'); return q.clSteig === 0.7 && q.clMaxAkro === 0.6 && q.aussenSpin === 0.85 && q.passEffet === 0 ? 1 : 0; })(), 1, 1, '', 1);

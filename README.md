@@ -345,6 +345,10 @@ Ball mit (Sohle/Außenseite). `?zack=0` = altes Gefühl aus Nacht 1 zum Vergleic
 | `?eigenhaelfte=0` | n15 E2: Torschuss auch aus der eigenen Hälfte; Standard: Pass, sonst hoher Befreiungsschlag ins mittlere Drittel oder in eine gegnerische Ecke |
 | `?ballfuehrung=0` | n15 E10: Ballführung/Annahme wie vor Nachtrag 2 (Reichweite, Magnet bei Wende, Luftannahme) |
 | `?anspiel=0` | n15 E9: keine Anspielstation beim Tormann-Ball |
+| `?skills=0`, `?skillQuote=0.5` | n15 E4: keine Skill-Moves; Erfolgsquote des Menschen (Bots je Stufe 40/50/60 %) |
+| `?akro2=0` | n15 E5: ohne die 22 Akrobatik-/Tricking-/Kampfsport-Kontakte |
+| `?easy=1` | n15 E6: Einfach-Modus (auch im Pause-Menü „Einfach“): spielt am Ball selbst ab bzw. schießt, Empfänger schließt direkt ab |
+| `?effet2=0`, `?flankehoch=1` | n15 E7: Effet wie n14 (Kurve 9,9 statt 12,7 m auf 20 m); Flanken nicht höher |
 | `?megafersecut=1`, `?schusscam=0` | n15 E3: Megaferse wieder mit Comic-Einblendung; Tormann-Zeitlupe ohne Rückblick auf den Schuss |
 
 ## Technik
@@ -479,9 +483,10 @@ python3 tools/fetch_assets.py && python3 tools/make_assets.py   # Assets neu bau
 Browser-Tests laufen headless über die GPU (ANGLE/Metal), nie zwei Browser gleichzeitig.
 
 ## Änderungen
-- **n15 (14.–16.11.)** – ein Kick-Knopf, der immer auslöst (Druck → Ballaktion 44 → ~85–90 %), kein Torschuss aus der eigenen Hälfte,
+- **n15 (14.–16.11., Version VERSION_N15)** – ein Kick-Knopf, der immer auslöst (Druck → Ballaktion binnen 1,5 s 44 → 81 %), kein Torschuss aus der eigenen Hälfte,
   Ballführung/Annahme (Nachtrag 2), Anspielstation beim Tormann-Ball (Nachtrag 1), Grätsche nur, wenn sinnvoll (Nachtrag 5: Grätschen des
-  gesteuerten Spielers 9,8 → 1,75 je Minute), Megaferse ohne Einblendung, Torschuss-Zeitlupe mit Rückblick auf den Schuss. Peters
+  gesteuerten Spielers 9,8 → 1,75 je Minute), Megaferse ohne Einblendung, Torschuss-Zeitlupe mit Rückblick auf den Schuss, zehn Skill-Moves (`?skills=0`), 22 Akrobatik-/Kampfsport-Kicks
+  (`?akro2=0`), Einfach-Modus (`?easy=1`), Effet +28 % (`?effet2=0`), höhere Flanken (`?flankehoch=1`); alles zurück: `N15_AUS`. Peters
   Standardwerte magnet 3 / luft 1,1 (16.11.) bleiben. Details und Messungen: N15_BERICHT.md.
 - **n14 Spielgefühl (13.11., Version 0.11.0)** – Peter 13.11.: „mach die pässe alle höher und schneller. Der Passknopf soll immer in den
   freien Raum richtung tor gehen, am rand gerne über bande. Ballmagnet zum ballabschirmen verstärken. Fallrückzieher und Kopfbälle härter

@@ -1,0 +1,195 @@
+{
+ "datum": "2026-11-16T19:25:46",
+ "stand": "n15_vorher",
+ "wurzel": "/tmp/bk_base",
+ "git": "",
+ "profil": {
+  "drossel": 4,
+  "dpr": 2.6,
+  "sek": 8.0,
+  "geraete": "hoch",
+  "gpu": "ANGLE/Metal headless",
+  "start": "open",
+  "vsync": false,
+  "zusatz": ""
+ },
+ "szenen": {
+  "spiel_s1": {
+   "hoch": {
+    "n": 1831,
+    "p50": 4.3,
+    "p95": 5.6,
+    "p99": 8.1,
+    "fps": 228.6,
+    "calls": 42,
+    "callsMax": 44,
+    "tris": 62173,
+    "tex": 44,
+    "zusatz": {
+     "dpr": 1.5,
+     "size": [
+      618,
+      1372
+     ],
+     "level": 1,
+     "kino": {
+      "level": 1,
+      "name": "Standard",
+      "pipeline": true,
+      "scale": 0.85,
+      "msaa": 0,
+      "stages": [
+       "scale",
+       "aa",
+       "sharpen",
+       "grade",
+       "vignette",
+       "dither",
+       "contact",
+       "dof"
+      ],
+      "grade": "tv",
+      "size": [
+       525,
+       1166
+      ],
+      "licht": "tag",
+      "bloom": [
+       0.97,
+       0.224
+      ],
+      "dof": null,
+      "kontakt": true
+     },
+     "auto": {
+      "on": false,
+      "steps": []
+     },
+     "shadow": {
+      "ext": 14.5,
+      "texel": 0.0283,
+      "karte": 1024
+     }
+    },
+    "boot_s": 0.5,
+    "fehler": []
+   }
+  },
+  "spiel_auto": {
+   "hoch": {
+    "n": 1313,
+    "p50": 5.6,
+    "p95": 7.3,
+    "p99": 9.9,
+    "fps": 164,
+    "calls": 53,
+    "callsMax": 56,
+    "tris": 110834,
+    "tex": 45,
+    "zusatz": {
+     "dpr": 2,
+     "size": [
+      824,
+      1830
+     ],
+     "level": 2,
+     "kino": {
+      "level": 2,
+      "name": "Kino",
+      "pipeline": true,
+      "scale": 0.82,
+      "msaa": 4,
+      "stages": [
+       "scale",
+       "sharpen",
+       "ssao",
+       "grade",
+       "vignette",
+       "dither",
+       "contact",
+       "dof"
+      ],
+      "grade": "tv",
+      "size": [
+       676,
+       1501
+      ],
+      "licht": "tag",
+      "bloom": [
+       0.97,
+       0.252
+      ],
+      "dof": null,
+      "kontakt": true
+     },
+     "auto": {
+      "on": true,
+      "autopilot": {
+       "skala": 0.82,
+       "bereich": [
+        0.7,
+        1
+       ],
+       "stufen": {
+        "deko": 1,
+        "menschenschatten": 1,
+        "stufe": 2
+       },
+       "fps": 167.8,
+       "arbeit": 5.32,
+       "cpu": 5.32,
+       "gpu": 3.27,
+       "engpass": "cpu",
+       "gedeckelt": false,
+       "gesperrtBis": 0,
+       "aenderungen": 3,
+       "t": 13,
+       "level": 2,
+       "deko": true,
+       "menschenschatten": true
+      },
+      "steps": [
+       "stufe + (Skala 0.7, 662.9 fps)",
+       "skala + (Skala 0.76, 184.4 fps)",
+       "skala + (Skala 0.82, 178.5 fps)"
+      ],
+      "log": [
+       {
+        "t": 4,
+        "was": "stufe",
+        "richtung": 1,
+        "skala": 0.7,
+        "fps": 662.9,
+        "arbeit": 1.76
+       },
+       {
+        "t": 7.02,
+        "was": "skala",
+        "richtung": 1,
+        "skala": 0.76,
+        "fps": 184.4,
+        "arbeit": 4.91
+       },
+       {
+        "t": 10.04,
+        "was": "skala",
+        "richtung": 1,
+        "skala": 0.82,
+        "fps": 178.5,
+        "arbeit": 5.06
+       }
+      ],
+      "startProbe": null
+     },
+     "shadow": {
+      "ext": 15,
+      "texel": 0.0146,
+      "karte": 2048
+     }
+    },
+    "boot_s": 0.7,
+    "fehler": []
+   }
+  }
+ }
+}

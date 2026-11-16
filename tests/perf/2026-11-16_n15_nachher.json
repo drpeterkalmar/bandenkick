@@ -1,0 +1,204 @@
+{
+ "datum": "2026-11-16T19:26:18",
+ "stand": "n15_nachher",
+ "wurzel": "/Users/wohnzimmer/dev/.wt/bandenkick-bandenkick-n15-einknopf-skills-akrobatik",
+ "git": "0837864",
+ "profil": {
+  "drossel": 4,
+  "dpr": 2.6,
+  "sek": 8.0,
+  "geraete": "hoch",
+  "gpu": "ANGLE/Metal headless",
+  "start": "open",
+  "vsync": false,
+  "zusatz": ""
+ },
+ "szenen": {
+  "spiel_s1": {
+   "hoch": {
+    "n": 1530,
+    "p50": 5,
+    "p95": 6.9,
+    "p99": 11.3,
+    "fps": 191.1,
+    "calls": 42,
+    "callsMax": 45,
+    "tris": 62342,
+    "tex": 44,
+    "zusatz": {
+     "dpr": 1.5,
+     "size": [
+      618,
+      1372
+     ],
+     "level": 1,
+     "kino": {
+      "level": 1,
+      "name": "Standard",
+      "pipeline": true,
+      "scale": 0.85,
+      "msaa": 0,
+      "stages": [
+       "scale",
+       "aa",
+       "sharpen",
+       "grade",
+       "vignette",
+       "dither",
+       "contact",
+       "dof"
+      ],
+      "grade": "tv",
+      "size": [
+       525,
+       1166
+      ],
+      "licht": "tag",
+      "bloom": [
+       0.97,
+       0.224
+      ],
+      "dof": null,
+      "kontakt": true
+     },
+     "auto": {
+      "on": false,
+      "steps": []
+     },
+     "shadow": {
+      "ext": 15.5,
+      "texel": 0.0303,
+      "karte": 1024
+     }
+    },
+    "boot_s": 0.8,
+    "fehler": []
+   }
+  },
+  "spiel_auto": {
+   "hoch": {
+    "n": 1404,
+    "p50": 5.4,
+    "p95": 7.2,
+    "p99": 10.7,
+    "fps": 169.6,
+    "calls": 54,
+    "callsMax": 57,
+    "tris": 111142,
+    "tex": 45,
+    "zusatz": {
+     "dpr": 2,
+     "size": [
+      824,
+      1830
+     ],
+     "level": 2,
+     "kino": {
+      "level": 2,
+      "name": "Kino",
+      "pipeline": true,
+      "scale": 0.88,
+      "msaa": 4,
+      "stages": [
+       "scale",
+       "sharpen",
+       "ssao",
+       "grade",
+       "vignette",
+       "dither",
+       "contact",
+       "dof"
+      ],
+      "grade": "tv",
+      "size": [
+       725,
+       1610
+      ],
+      "licht": "tag",
+      "bloom": [
+       0.97,
+       0.252
+      ],
+      "dof": null,
+      "kontakt": true
+     },
+     "auto": {
+      "on": true,
+      "autopilot": {
+       "skala": 0.88,
+       "bereich": [
+        0.7,
+        1
+       ],
+       "stufen": {
+        "deko": 1,
+        "menschenschatten": 1,
+        "stufe": 2
+       },
+       "fps": 181.1,
+       "arbeit": 5.04,
+       "cpu": 5.04,
+       "gpu": 3.11,
+       "engpass": "cpu",
+       "gedeckelt": false,
+       "gesperrtBis": 0,
+       "aenderungen": 4,
+       "t": 13.3,
+       "level": 2,
+       "deko": true,
+       "menschenschatten": true
+      },
+      "steps": [
+       "stufe + (Skala 0.7, 648.8 fps)",
+       "skala + (Skala 0.76, 203.1 fps)",
+       "skala + (Skala 0.82, 196.1 fps)",
+       "skala + (Skala 0.88, 181.1 fps)"
+      ],
+      "log": [
+       {
+        "t": 4,
+        "was": "stufe",
+        "richtung": 1,
+        "skala": 0.7,
+        "fps": 648.8,
+        "arbeit": 1.68
+       },
+       {
+        "t": 7.02,
+        "was": "skala",
+        "richtung": 1,
+        "skala": 0.76,
+        "fps": 203.1,
+        "arbeit": 4.38
+       },
+       {
+        "t": 10.04,
+        "was": "skala",
+        "richtung": 1,
+        "skala": 0.82,
+        "fps": 196.1,
+        "arbeit": 4.52
+       },
+       {
+        "t": 13.06,
+        "was": "skala",
+        "richtung": 1,
+        "skala": 0.88,
+        "fps": 181.1,
+        "arbeit": 5.04
+       }
+      ],
+      "startProbe": null
+     },
+     "shadow": {
+      "ext": 15.5,
+      "texel": 0.0151,
+      "karte": 2048
+     }
+    },
+    "boot_s": 0.7,
+    "fehler": []
+   }
+  }
+ }
+}

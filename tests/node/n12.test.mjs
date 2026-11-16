@@ -3,7 +3,7 @@
 // Seeds mit ?mitnahme=0 (Annahme wie 0.9.0). Aufruf: node tests/node/n12.test.mjs
 // n14: prüft das Verhalten dieser Etappe auf dem Stand 0.10.0 – alle n14-Regler aus (ausdrückliche Werte gewinnen)
 import { N14_AUS } from '../../src/sim/params.js';
-process.env.BK_BASIS = N14_AUS; // (Umgebung: gilt auch in den Mess-Prozessen)
+process.env.BK_BASIS = N14_AUS + '&ballfuehrung=0'; // (Umgebung: gilt auch in den Mess-Prozessen; n15: Annahme wie vor E10 – die prüft n15_annahme_probe)
 import { makeParams, AKRO0 } from '../../src/sim/params.js';
 import { Game, DT } from '../../src/sim/step.js';
 import { szenen, auswerten, laufpass, botProbe } from './n12_probe.mjs';
