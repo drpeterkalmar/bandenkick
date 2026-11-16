@@ -153,7 +153,8 @@ export const DEFAULTS = {
   // bei schnelleren Vorlagen (schirmRel 12 m/s) länger nach dem Kontakt (schirmT 1,5 s) ab, der Gegnerfuß muss klar näher sein
   // (schirmVor 0,9), und der Tormann greift nicht in einen Ball am Fuß des Dribblers (schirmHand 0,6). Bot-Spiel: −27 % Ballverluste,
   // Grätschen erobern weiter. ?magnet=2.4 = 0.9.1 (alte Schirm-Werte, MAGNET091)
-  magnet: 2.4,            // Stärke 0…3                                                             [?magnet=]
+  // Peter 16.11.2026: Standard magnet 3 (Maximum der Skala) statt 2,4 (Achtung: ?magnet=2.4 setzt zusätzlich die 0.9.1-Schirmwerte, MAGNET091)
+  magnet: 3,              // Stärke 0…3                                                             [?magnet=]
   magnetK: 112,           // 1/s² Federkonstante quer zur Stick-Richtung bei Stärke 1 (0,3 m daneben → 17 m/s² bei 0,5)
   magnetC: 30,            // 1/s Dämpfung (Tempo des Balls quer ans Tempo des Spielers angleichen); n7: 30 statt 20 – mit Stärke
                           // 1,8 schwang der Ball sonst quer nach (Skript-Parcours 9,5 → 12 s mit verpassten Slalom-Toren, mit 30: 8 s)
@@ -292,7 +293,8 @@ export const DEFAULTS = {
   aussenSpin: 1.0,        // Außenrist: Drall × 1 (n14: so stark wie die Innenseite; 0.10.0: 0,85, 0.8.0: 0,75) … [?aussen=]
   aussenNoise: 1.35,      // … und Streuung × 1,35
   // Luftbälle: Kopfball, Volley, Dropkick, Seitfallzieher, Fallrückzieher, Flugkopfball
-  luft: 1,                // Faktor auf alle Höhenfenster                                            [?luft=]
+  // Peter 16.11.2026: Standard luft 2 statt 1 (Höhenfenster × 2; kein Code-Maximum). ?luft=1 = Stand davor
+  luft: 2,                // Faktor auf alle Höhenfenster                                            [?luft=]
   airHorizon: 0.9,        // s Vorschau: Ball in dieser Zeit erreichbar → Luftball-Technik
   // n11 (Peter 02.11.: „ball springt höher und spieler auch“): 1,0 statt 0,6 m – Spektakel, nicht realistisch. Gilt für alle (auch
   // den Tormann: seine Fanghöhe catchHigh wächst um dieselbe Differenz). Seit-/Fallrückzieher, Flugkopfball, Salto-Hacke und hohe
