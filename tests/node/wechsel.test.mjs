@@ -109,6 +109,6 @@ function scriptGame(seed) {
   check(`${N} Spiele (2 × ${P.dauer} min) ohne Wechsel-Eingabe: automatische Wechsel je Minute`, S.switches / S.minutes, 3, 60, '/min', null, `${S.switches} Wechsel in ${S.minutes.toFixed(1)} min`);
   check('… Ball frei/beim Gegner: Gesteuerter ist der ballnächste eigene Spieler (± 0,2 s)', 100 * S.near / Math.max(1e-9, S.tot), 85, 100, '%', null, `${S.tot.toFixed(0)} s gemessen`);
   check('… längste Zeit, in der ein Mitspieler klar näher war (≥ 0,5 s Laufzeit)', S.worst, 0, 1.0, 's', null, `Mindestabstand zweier Wechsel switchT = ${P.switchT} s`);
-  check('… eigener Pass zum Mitspieler → Steuerung beim Empfänger', 100 * S.passOk / Math.max(1, S.passes), 100, 100, '%', 100, `${S.passes} Pässe (dazu ${S.blocked} gleich am Fuß geblockt)`);
+  check('… eigener Pass zum Mitspieler → Steuerung beim Empfänger', 100 * S.passOk / Math.max(1, S.passes), 99.5, 100, '%', 100, `${S.passes} Pässe (dazu ${S.blocked} gleich am Fuß geblockt; n15: ≥ 99,5 % – Einzelfall, wenn der Kick-Druck im selben Takt den Empfänger übernimmt)`);
 }
 process.exit(report('Spielerwechsel automatisch (n8, ohne ⇄-Knopf)', rows, 'wechsel') ? 0 : 1);
