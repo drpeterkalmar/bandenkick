@@ -194,11 +194,6 @@ export class Player {
       if (game.t > da.until || (game.lastTouch !== da.from && game.lastTouch !== this.id) || ball.held >= 0) this.direktAuf = null;
       else if (!this.air && !held && game.lastTouch === da.from && this.tryAir(game, game.t, 'shot')) { this.pending = null; this.air.direkt = true; }
     }
-    // n15 E1: Luftball aus dem Kick-Druck geplant, der Ball ist aber schon jetzt am Körper (Treffpunkt erst später) → gleich spielen (Not-Kontakt unten)
-    if (this.air && this.air.immer && !this.air.go && P.kickimmer && this.air.tc - game.t > 0.25 && ball.held < 0 && Math.hypot(ball.p.x - this.x, ball.p.z - this.z) < 0.9 && ball.p.y < P.headH + P.jumpMax) {
-      this.pending = { kind: this.air.purpose === 'pass' ? 'pass' : 'shot', mode: 'auto', power: null, stick: this.air.aim || null, dir: [Math.cos(this.face), Math.sin(this.face)], cx: 0, cy: 0, age: P.immerNot, t: game.t, locked: false, tap: true, btn: 'shot', immer: true, kein: true };
-      this.air = null;
-    }
     if (this.air) { // Anlauf, Absprung, Treffpunkt – die Hilfe steuert, deutliche Gegen-Eingabe bricht nach 0,3 s ab
       if (stepAir(this, dt, game, want, sx, sz)) { this.plant = 0; this.gait += this.speed * dt / 1.1; return; }
     }
@@ -348,9 +343,10 @@ export class Player {
     // Im Stemmschritt nimmt der Spieler den Ball mit (Sohle/Außenseite): Reichweite ab Körpermitte
     const cut = this.plant > 0.3 && want && bd < P.cutReach;
     // Tipp-Kick (Nacht 2c): ein langer Schritt reicht (+kickLunge), damit der Kick nicht auf die nächste Vorlage wartet
-    const lunge = this.pending && this.pending.tap && !this.pending.locked ? (this.pending.immer ? P.immerLunge : P.kickLunge) : 0;
-    // n15 E1: mit Kick-Druck auch höhere Bälle (Spitzel, Knie-Volley bis immerHoch m) und harte Bälle (Direktabnahme statt Abprallen)
-    const immer = !!(this.pending && this.pending.immer);
+    // n15 E1: mit Kick-Druck (ab 0,25 s – vorher bekommt die schönere Technik ihre Chance) auch mit Ausfallschritt, höhere Bälle (Spitzel,
+    // Knie-Volley bis immerHoch m) und harte Bälle (Direktabnahme statt Abprallen)
+    const immer = !!(this.pending && this.pending.immer && this.pending.age >= 0.25);
+    const lunge = this.pending && this.pending.tap && !this.pending.locked ? (immer ? P.immerLunge : P.kickLunge) : 0;
     // n8 Etappe 2 (Peter 26.10.: „Pässe gehen irgendwohin“): Reaktionszeit. Ein eben vom Gegner gespielter Ball (Pass, Schuss,
     // Befreiung, ≤ reaktion s) zählt für den Fuß nur, wenn er direkt auf ihn läuft (≤ reaktionR m) – niemand reagiert in 0,01 s auf
     // einen Pass. Gemessen in ganzen Spielen trat der pressende Gegner 80 % der Pässe im selben bis nächsten Takt weg, weil der Ball
