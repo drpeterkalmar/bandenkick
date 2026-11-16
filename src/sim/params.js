@@ -328,6 +328,11 @@ export const DEFAULTS = {
   // ein Hechtsprung oder Fang ≤ schusscamT s nach einem Schuss die Zeitlupe aus, beginnt sie mit dem Rückblick auf den Schuss (Schütze, Kontakt,
   // Ballflug), der Tormann kommt danach (0 = Tormann-Blick wie vorher)                       [?megafersecut=1, ?schusscam=0]
   megafersecut: 0, schusscam: 1, schusscamT: 0.9,
+  // n15 E6 (Peter 14.11.: „easy mode, der automatisch ohne kickbutton zum besser postierten mitspieler passt, der dann gleich spektakulär
+  // abschließt oder selbst schießt“): Pause-Menü „Einfach“, Standard aus. Am Ball prüft das Spiel alle easyTakt s, ob ein Mitspieler deutlich
+  // besser steht (≥ easyVorteil m näher am Tor, frei, sicherer Passweg) → Pass ohne Knopf; der Empfänger nimmt direkt ab (Luft-Technik bzw.
+  // Schuss beim Ankommen). Steht der Ballführer selbst gut (≤ easySchuss m, Tor vorn), schießt er. Kick-Knopf hat Vorrang.   [?easy=1]
+  easy: 0, easyTakt: 0.3, easyVorteil: 1.5, easySchuss: 7.5, easyFrei: 1.8, easySicher: 0.05,
   kickimmer: 1,
   // n15 E10 (Peter 16.11.: „Ballmagnet/Ballführung verstärken. Ich verliere den Ball bei Richtungswechsel und kann ihn aus der Luft nicht
   // mitnehmen“): Haltekraft +50 % (magnetK/Acc/C), Magnet lässt bei Wende/Kehrtwende weniger los, Reichweite +50 % (reach, cutReach, reachH),

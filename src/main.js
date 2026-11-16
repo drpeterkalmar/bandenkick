@@ -205,6 +205,11 @@ if (!qs.has('einknopf') && !P.kickimmer) { const s = localStorage.getItem('bk_ei
 const einBtn = hud.menu.querySelector('[data-act="einknopf"]');
 const einLabel = () => { einBtn.textContent = 'Ein Kick-Knopf: ' + (P.einknopf ? 'an' : 'aus'); einBtn.style.display = P.autotech && !P.kickimmer ? '' : 'none'; hud.setEinknopf(!!P.einknopf && !!P.autotech); input.einKick = !!(P.kickimmer && P.einknopf && P.autotech); };
 einLabel();
+// n15 E6: Einfach-Modus (Pause-Menü, localStorage bk_easy, ?easy=1; Standard aus)
+if (!qs.has('easy')) P.easy = localStorage.getItem('bk_easy') === '1' ? 1 : 0;
+const easyBtn = hud.menu.querySelector('[data-act="easy"]');
+const easyLabel = () => { easyBtn.textContent = 'Einfach: ' + (P.easy ? 'an' : 'aus'); };
+easyLabel();
 const lichtBtn = hud.menu.querySelector('[data-act="licht"]');
 function lichtLabel() { if (lichtBtn) lichtBtn.textContent = 'Licht: ' + (lichtPref === 'auto' ? `automatisch (${lichtMode() === 'abend' ? 'Abend' : 'Tag'})` : lichtPref === 'abend' ? 'Abend' : 'Tag'); }
 let helpBack = 'menu', helpThen = null;
@@ -260,6 +265,7 @@ hud.root.addEventListener('click', (e) => {
     localStorage.setItem('bk_replay_art13', replayArt); localStorage.setItem('bk_replay', replayOn ? '1' : '0'); replayLabel();
   }
   if (a === 'blitze') { blitzeSanft = !blitzeSanft; localStorage.setItem('bk_blitze', blitzeSanft ? '1' : '0'); blitzLabel(); }
+  if (a === 'easy') { P.easy = P.easy ? 0 : 1; localStorage.setItem('bk_easy', P.easy ? '1' : '0'); easyLabel(); }
   if (a === 'einknopf') { P.einknopf = P.einknopf ? 0 : 1; localStorage.setItem('bk_einknopf2', P.einknopf ? '1' : '0'); einLabel(); }
   if (a === 'cliphoch') { clipHoch = !clipHoch; localStorage.setItem('bk_cliphoch', clipHoch ? '1' : '0'); clipLabel(); }
   if (a === 'clipnochmal') clipNochmal();

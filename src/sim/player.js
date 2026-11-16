@@ -210,6 +210,9 @@ export class Player {
       }
     }
 
+    // n15 E6: Einfach-Modus (gesteuerter Spieler) – Abspiel/Abschluss ohne Knopf
+    if (P.easy && game.match && !game.challenge && game.human === this.id && !held) this.easyStep(game);
+
     // --- Ball-Lage ---
     const bx = ball.p.x - this.x, bz = ball.p.z - this.z;
     const bd = Math.hypot(bx, bz);
@@ -751,6 +754,42 @@ export class Player {
     return true;
   }
 
+  // n15 E6: Einfach-Modus. Ball am Fuß (selbst zuletzt berührt, ≤ 1 m, flach), kein Druck vorgemerkt: alle easyTakt s prüfen – Tor nah und vorn →
+  // Schuss; ein Mitspieler ≥ easyVorteil m näher am Tor, ≥ easyFrei m frei, sicherer Passweg → Pass (Empfänger nimmt direkt ab). Empfänger eines
+  // solchen Passes: Abschluss beim Ankommen (gemerkter Schuss-Druck).
+  easyStep(game) {
+    const P = this.P, b = game.ball, gx = goalX(game, this);
+    if (this.easyAb && (game.t > this.easyAb || game.lastTouch === this.id)) this.easyAb = 0;
+    if (this.easyAb && !this.pending && !this.air && game.lastTouch !== this.id && Math.hypot(b.p.x - this.x, b.p.z - this.z) < 3.5) {
+      this.pending = { kind: 'shot', mode: 'auto', power: null, stick: null, dir: [Math.cos(this.face), Math.sin(this.face)], cx: 0, cy: 0, age: 0, t: game.t, locked: false, tap: true, btn: 'shot', immer: !!P.kickimmer, easy: true };
+      this.easyAb = 0; return;
+    }
+    if (this.pending || this.air || game.lastTouch !== this.id || b.p.y > 0.4 || Math.hypot(b.p.x - this.x, b.p.z - this.z) > 1.0) return;
+    if (game.t < (this.easyT || 0)) return;
+    this.easyT = game.t + P.easyTakt;
+    const D = Math.hypot(gx - b.p.x, b.p.z), vorn = (gx - b.p.x) * Math.cos(this.face) - b.p.z * Math.sin(this.face) > 0.3 * D;
+    const R = game.rules;
+    if (D <= P.easySchuss && vorn) { this.easyKick(game, 'shot', -1); return; }
+    let best = null;
+    for (const m of game.players) {
+      if (m.team !== this.team || m.id === this.id || (R && R.keeper[this.team] === m.id && R.inBox(this.team, m.x, m.z))) continue;
+      const Dm = Math.hypot(gx - m.x, m.z);
+      if (Dm > D - P.easyVorteil || Dm > 11) continue;
+      let frei = 9; for (const o of game.players) if (o.team !== this.team) frei = Math.min(frei, Math.hypot(o.x - m.x, o.z - m.z));
+      if (frei < P.easyFrei) continue;
+      if (!best || Dm < best.Dm) best = { m, Dm };
+    }
+    if (!best) return;
+    const plan = planPass(game, this, { to: best.m.id });
+    if (!plan || plan.to !== best.m.id || plan.unsicher || (plan.hoch && (plan.slack ?? -1) < P.hochSicher + P.easySicher)) return;
+    this.easyKick(game, 'pass', best.m.id);
+  }
+  easyKick(game, kind, to) {
+    const m = to >= 0 ? game.players[to] : null, st = m ? [m.x - this.x, m.z - this.z] : null, l = st ? Math.hypot(st[0], st[1]) || 1 : 1;
+    this.pending = { kind, mode: 'auto', power: null, stick: st ? [st[0] / l, st[1] / l] : null, dir: st ? [st[0] / l, st[1] / l] : [Math.cos(this.face), Math.sin(this.face)], cx: 0, cy: 0, age: 0, t: game.t, locked: false, tap: true, btn: kind, easy: true, easyTo: to };
+    game.events.push({ type: 'easy', kind, player: this.id, to });
+  }
+
   // n15 E1: Kick-Druck bleibt vorgemerkt, solange der Ball frei ist (höchstens immerMax s)
   immerHalten(game) {
     return this.pending.age < this.P.immerMax && game.ball.held < 0;
@@ -1036,7 +1075,7 @@ export class Player {
       return this.applyPlan(plan, game, rel);
     }
     if (!pd.api && !this.P.treffpunkt) {
-      let plan = pd.kind === 'pass' ? planPass(game, this, { mode: pd.mode, power: pd.power, stick: pd.stick, prefer: pd.lock || null })
+      let plan = pd.kind === 'pass' ? planPass(game, this, pd.easyTo >= 0 ? { to: pd.easyTo } : { mode: pd.mode, power: pd.power, stick: pd.stick, prefer: pd.lock || null })
         : planShot(game, this, { ...shotOpts(pd.stick), power: pd.power, stick: pd.stick });
       if (plan.unsicher) {
         // n15 E1: Kick-Druck und kein freier Pass → nach immerSperre s trotzdem ein Kick (Schuss in der gegnerischen Hälfte, sonst Befreiung)
@@ -1048,6 +1087,11 @@ export class Player {
           if (!pd.sperre) { pd.sperre = true; game.events.push({ type: 'passsperre', player: this.id, human: game.human === this.id, x: this.x, z: this.z }); }
           return false;
         }
+      }
+      // n15 E6: Einfach-Pass – der Empfänger nimmt direkt ab (Luft-Technik, sonst Schuss beim Ankommen)
+      if (pd.easy && plan.kind === 'pass' && plan.to >= 0 && !plan.unsicher) {
+        const r = game.players[plan.to];
+        if (r) { r.direktAuf = { from: this.id, until: game.t + (plan.T || 1.2) + 0.6 }; r.easyAb = game.t + (plan.T || 1.2) + 1.0; }
       }
       // n15 E1: Kontakt über Fußhöhe (Spitzel/Knie) – als Volley gezeigt
       if (pd.immer && game.ball.p.y > this.P.reachH + 0.05 && !AIR_TECH[plan.tech]) plan.tech = game.ball.p.y > 1.4 ? (plan.kind === 'pass' ? 'kopfpass' : 'kopf') : plan.kind === 'pass' ? 'volleypass' : 'volley';
