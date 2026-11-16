@@ -14,6 +14,7 @@ import { newGestures, stepGestures, gestureView } from '../input/gesture.js';
 import { makeChallenge, challengeDef } from './challenges.js';
 
 export const HZ = 120;
+const P_immer = (P) => !!(P.kickimmer && P.einknopf && P.autotech);
 export const DT = 1 / HZ;
 
 export class Game {
@@ -308,6 +309,14 @@ export class Game {
         const rv = (c.vx - a.vx) * dx + (c.vz - a.vz) * dz;
         if (rv < 0) { const j2 = rv / 2; a.vx += dx * j2; a.vz += dz * j2; c.vx -= dx * j2; c.vz -= dz * j2; }
         if (rv < -3) this.events.push({ type: 'bump', a: a.id, b: c.id, speed: -rv });
+        // n15 E1: wer mit Kick-Druck zum Ball läuft, rutscht seitlich am Körper vorbei (statt am deckenden Gegner festzukleben)
+        if (this.P.kickimmer) for (const [p, s] of [[a, 1], [c, -1]]) {
+          if (!p.pending || !p.pending.immer) continue;
+          const vn = (p.vx * dx + p.vz * dz) * s;
+          if (vn <= 0) continue;
+          const tx = -dz, tz = dx, vt = p.vx * tx + p.vz * tz, sg = Math.abs(vt) > 0.2 ? Math.sign(vt) : ((this.ball.p.x - p.x) * tx + (this.ball.p.z - p.z) * tz >= 0 ? 1 : -1);
+          p.vx += -dx * s * vn + tx * sg * vn * 0.8; p.vz += -dz * s * vn + tz * sg * vn * 0.8;
+        }
       }
     }
     const lx = this.cage.hx - this.P.bodyR, lz = this.cage.hz - this.P.bodyR;
@@ -351,6 +360,16 @@ export class Game {
     // n8 (Peter 26.10.: „Pässe gehen irgendwohin“): Gemessen in ganzen Spielen holte der Auto-Wechsel 0,6 s nach dem Pass oft den
     // Passgeber zurück, weil er dem rollenden Ball näher war – der Daumen lenkte dann den Passgeber seinem eigenen Pass hinterher
     // (2/3 der Fälle „Passgeber spielt den Ball wieder selbst“). Solange niemand sonst den Ball berührt hat, bleibt der Empfänger.
+    // n15 E1: Kick-Druck, Ball weit weg → einmal je Druck zum Mitspieler wechseln, der den Ball klar schneller erreicht; er übernimmt den Druck
+    const pd0 = me.pending;
+    if (P.kickimmer && pd0 && pd0.immer && !(pd0.wechselT > this.t)) {
+      pd0.wechselT = this.t + 0.3;
+      if (Math.hypot(b.p.x - me.x, b.p.z - me.z) > P.immerWechsel) {
+        let best = null, bt = ttb(me) - (this.switchT < 1 ? 0.45 : 0.25); // (eben gewechselt: nicht hin und her)
+        for (const m of mates) { if (m.hand.mode !== 'none' || m.fall || m.slide) continue; const t = ttb(m); if (t < bt) { bt = t; best = m; } }
+        if (best) { this.setHuman(best.id); this.recvHold = null; return; }
+      }
+    }
     const rh = this.recvHold;
     if (rh) {
       if (rh.id === me.id && this.lastTouch === rh.from && this.t < rh.until && b.held < 0) return;
@@ -370,7 +389,11 @@ export class Game {
   setHuman(id) {
     if (id === this.human) return;
     const old = this.players[this.human];
+    const pd = old && old.pending && old.pending.immer && P_immer(this.P) ? old.pending : null;
     if (old) { old.pending = null; old.charging = false; old.charge = 0; }
+    // n15 E1: der neue Spieler übernimmt den Kick-Druck (er läuft zum Ball und spielt ihn)
+    const nw = this.players[id];
+    if (pd && nw && !nw.pending && nw.hand.mode === 'none') nw.pending = { ...pd, age: 0, t: this.t, weg: 0, lock: null, wechselT: this.t + 0.3 };
     this.human = id; this.switchT = 0;
     if (this.recvHold && this.recvHold.id !== id) this.recvHold = null;
     this.events.push({ type: 'switch', player: id });

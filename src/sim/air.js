@@ -40,6 +40,7 @@ export function planAir(game, pl, { tPress = game.t, purpose = 'shot', minScore 
   // Ballvorhersage einmal je Takt (mehrere Spieler prüfen im selben Takt)
   if (_predKey.g !== game || _predKey.tick !== game.tick) { predictBall(P, game.cage, b, P.airHorizon, 2, _pred); _predKey.g = game; _predKey.tick = game.tick; }
   const pred = _pred;
+  const eil = P.kickimmer && (pl._eilDruck || (pl.pending && pl.pending.immer)) ? P.immerEil : 0.12; // n15: Kick-Druck – früher Kontakt zählt mehr
   const gx = purpose === 'clear' ? -attackGoalX(game, pl) : attackGoalX(game, pl);
   const scale = P.luft || 1;
   const ext = P.akro ? Math.max(0, P.jumpMax - 0.6) : 0, hMax = Math.max(2.7, P.headH + P.jumpMax + 0.1), salto = !!P.salto;
@@ -92,7 +93,7 @@ export function planAir(game, pl, { tPress = game.t, purpose = 'shot', minScore 
       const tq = timingFit(tech, lead);
       const margin = clamp(1 - d / (reach + 0.01), 0, 1);
       if (sc[tech] > maxScore) maxScore = sc[tech];
-      const total = sc[tech] * (0.35 + 0.65 * tq) * (0.75 + 0.25 * margin) * (1 - 0.12 * s.t);
+      const total = sc[tech] * (0.35 + 0.65 * tq) * (0.75 + 0.25 * margin) * (1 - eil * s.t);
       const c = { tech, total, score: sc[tech], tq, t: s.t, tc: game.t + s.t, bx, bz, cx: s.x, cy: h, cz: s.z, sx, sz, fx: fr.fx, fz: fr.fz, foot: fr.foot, theta, h, bounced, lead, vin: Math.hypot(s.vx, s.vy, s.vz), purpose, goalX: attackGoalX(game, pl), takeoff, aim };
       if (!best || total > best.total) best = c;
       if (!byTech[tech] || total > byTech[tech].total) byTech[tech] = c;
@@ -168,7 +169,12 @@ export function stepAir(pl, dt, game, want, sx, sz) {
     if (want && d > 0.25) {
       const agree = (sx * dx + sz * dz) / (d || 1);
       a.against = agree < 0.3 ? (a.against || 0) + dt : 0;
-      if (a.against > 0.3) { pl.air = null; return false; }
+      if (a.against > 0.3) {
+        pl.air = null;
+        // n15 E1: Luftball aus einem Kick-Druck – der Stick zielt nur; der Druck bleibt vorgemerkt (dann eben Fuß/Kopf ohne Akrobatik)
+        if (a.immer && P.kickimmer && b.held < 0) pl.pending = { kind: a.purpose === 'pass' ? 'pass' : 'shot', mode: 'auto', power: null, stick: [sx, sz], dir: [sx, sz], cx: 0, cy: 0, age: 0.5, t: game.t, locked: false, tap: true, btn: 'shot', immer: true, kein: true };
+        return false;
+      }
     }
     if (tRem <= (a.takeoff ?? TAKEOFF[a.tech])) {
       a.go = true; a.t0 = game.t;
@@ -197,10 +203,14 @@ export function stepAir(pl, dt, game, want, sx, sz) {
   // Treffpunkt
   if (tRem <= dt * 0.5) {
     const err = Math.hypot(b.p.x - a.cx, b.p.y - a.cy, b.p.z - a.cz) + 0.6 * Math.hypot(pl.x - a.bx, pl.z - a.bz);
-    const tol = TOL[a.tech];
+    const tol = TOL[a.tech] * (a.immer && P.kickimmer ? 1.6 : 1); // n15 E1: Kick-Druck – lieber ein unsauberer Kontakt als keiner
     const tech = a.tech;
     if (b.held < 0 && err <= tol) airKick(pl, game, a, err / tol);
-    else game.events.push({ type: 'airmiss', tech, player: pl.id, x: pl.x, z: pl.z, err });
+    else {
+      game.events.push({ type: 'airmiss', tech, player: pl.id, x: pl.x, z: pl.z, err });
+      // n15 E1: Kick-Druck und verfehlt (Ball abgefälscht, zu weit) → weiter vorgemerkt, der nächste erreichbare Kontakt zählt
+      if (a.immer && P.kickimmer && b.held < 0) pl.pending = { kind: a.purpose === 'pass' ? 'pass' : 'shot', mode: 'auto', power: null, stick: a.aim || null, dir: [Math.cos(pl.face), Math.sin(pl.face)], cx: 0, cy: 0, age: 0.5, t: game.t, locked: false, tap: true, btn: 'shot', immer: true };
+    }
     pl.air = null;
     pl.tech = tech; pl.techT = 0; pl.kickT = 0;
     const g = AIR_PROPS[tech].ground;
@@ -297,5 +307,5 @@ export function stepFall(pl, dt, game) {
   const lx = game.cage.hx - pl.P.bodyR, lz = game.cage.hz - pl.P.bodyR;
   pl.x = clamp(pl.x, -lx, lx); pl.z = clamp(pl.z, -lz, lz);
   pl.speed = Math.hypot(pl.vx, pl.vz);
-  if (f.t >= f.dur) pl.fall = null;
+  if (f.t >= f.dur * (pl.pending && pl.pending.immer ? 0.5 : 1)) pl.fall = null; // (n15: mit Kick-Druck schneller auf)
 }

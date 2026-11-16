@@ -11,6 +11,7 @@ import { planShot } from './shot.js';
 import { autoShot, einKnopfArt } from './akro.js';
 import { planAir, planAirHelp, stepAir, stepFall } from './air.js';
 import { schussWahl, planMegaferse, jongliere, lupferGespielt } from './spektakel.js';
+import { AIR_TECH } from './technique.js';
 const DEG = Math.PI / 180;
 const wrap = (a) => { while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI; return a; };
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
@@ -138,12 +139,14 @@ export class Player {
     this.touchCd -= dt; this.mitT -= dt; this.kickT += dt; this.touchT += dt; this.clearT += dt; this.plantT += dt; this.techT += dt;
     // Sprung (Kopfball, Absprung beim Fallrückzieher): Füße über dem Boden
     if (this.jumpY > 0 || this.jumpV > 0) { this.jumpY += this.jumpV * dt; this.jumpV -= P.g * dt; if (this.jumpY <= 0) { this.jumpY = 0; this.jumpV = 0; } }
+    // n15 E1: Kick-Druck während Grätsche/Fallen (danach am Boden) geht nicht verloren – er wartet, bis der Spieler wieder steht
+    if (P.kickimmer && inp.gest && (this.slide || this.fall || this.hand.mode === 'dive' || this.hand.mode === 'ground') && P.einknopf && P.autotech && game.match) this.vorDruck(inp, game);
     if (this.hand.mode === 'dive' || this.hand.mode === 'ground') { this.stepDive(dt, game); return; }
     if (this.fall) { stepFall(this, dt, game); this.plant = 0; return; } // am Boden nach Seit-/Fallrückzieher
     if (this.slide) { this.stepSlide(dt, game); return; }                   // Grätsche (Nacht 2c)
     if (this.stumbleT > 0) this.stumbleT -= dt;
     const held = ball.held >= 0;
-    if (this.pending) { this.pending.age += dt; if (this.pending.age > (this.pending.tap ? P.tippPuffer : P.kickBuffer)) this.pending = null; }
+    if (this.pending) { this.pending.age += dt; if (this.pending.age > (this.pending.tap ? P.tippPuffer : P.kickBuffer) && !(this.pending.immer && this.immerHalten(game))) this.pending = null; }
 
     // --- Eingabe: Stick, Aktionen ---
     let mx = inp.mx || 0, mz = inp.mz || 0;
@@ -177,9 +180,13 @@ export class Player {
     const lw = {};
     if (!this.air && !held && !P.treffpunkt && (ball.p.y > P.reachH || ball.v.y > 1.5 || (P.autotech && this.pending && this.pending.tap && !ball.contact && (ball.p.y > ball.r + 0.03 || Math.abs(ball.v.y) > 0.3)))) {
       if (this.charging && this.chargeKind === 'shot' && !this.airPress) { if (this.tryAir(game, this.chargeT0 ?? game.t)) this.airPress = true; }
-      else if (this.pending && this.pending.kind === 'shot' && !this.pending.api) { if (this.tryAir(game, this.pending.t ?? game.t, 'shot', null, lw)) this.pending = null; }
-      else if (P.autotech && this.pending && this.pending.kind === 'pass' && this.pending.tap && !this.pending.api) { if (this.tryAir(game, this.pending.t ?? game.t, 'pass', this.pending.stick, lw)) this.pending = null; } // n11: Direktpass aus der Luft
+      else if (this.pending && this.pending.kein) { /* n15: Luftball vom Stick abgebrochen – Fuß/Kopf ohne Akrobatik */ }
+      else if (this.pending && this.pending.kind === 'shot' && !this.pending.api) { if (this.tryAir(game, this.pending.t ?? game.t, 'shot', null, lw) || this.notLuft(game, 'shot', null, lw)) this.pending = null; }
+      else if (P.autotech && this.pending && this.pending.kind === 'pass' && this.pending.tap && !this.pending.api) { if (this.tryAir(game, this.pending.t ?? game.t, 'pass', this.pending.stick, lw) || this.notLuft(game, 'pass', this.pending.stick, lw)) this.pending = null; } // n11: Direktpass aus der Luft
     }
+    // n15 E1: Kick-Druck vorgemerkt, ein Gegner führt den Ball → Grätsche (auch mit Anlauf: sobald er in Reichweite ist); ebenso ein freier,
+    // flacher Ball, dem der Spieler nicht näher kommt (Spitzel-Grätsche statt endlos hinterherlaufen)
+    if (this.pending && this.pending.immer && !held && (this.tackleOk(game) || this.spitzelOk(game))) { this.startTackle(game, this.pending.btn === 'pass' ? 'pass' : 'shot', this.pending.stick); return; }
     const luftWarten = !!lw.wait && P.autotech;
     // n13 Lupfer-Pass: der Empfänger nimmt den Ball direkt aus der Luft (Volley, Seitfall-, Fallrückzieher, Kopfball …)
     if (this.direktAuf) {
@@ -187,8 +194,25 @@ export class Player {
       if (game.t > da.until || (game.lastTouch !== da.from && game.lastTouch !== this.id) || ball.held >= 0) this.direktAuf = null;
       else if (!this.air && !held && game.lastTouch === da.from && this.tryAir(game, game.t, 'shot')) { this.pending = null; this.air.direkt = true; }
     }
+    // n15 E1: Luftball aus dem Kick-Druck geplant, der Ball ist aber schon jetzt am Körper (Treffpunkt erst später) → gleich spielen (Not-Kontakt unten)
+    if (this.air && this.air.immer && !this.air.go && P.kickimmer && this.air.tc - game.t > 0.25 && ball.held < 0 && Math.hypot(ball.p.x - this.x, ball.p.z - this.z) < 0.9 && ball.p.y < P.headH + P.jumpMax) {
+      this.pending = { kind: this.air.purpose === 'pass' ? 'pass' : 'shot', mode: 'auto', power: null, stick: this.air.aim || null, dir: [Math.cos(this.face), Math.sin(this.face)], cx: 0, cy: 0, age: P.immerNot, t: game.t, locked: false, tap: true, btn: 'shot', immer: true, kein: true };
+      this.air = null;
+    }
     if (this.air) { // Anlauf, Absprung, Treffpunkt – die Hilfe steuert, deutliche Gegen-Eingabe bricht nach 0,3 s ab
       if (stepAir(this, dt, game, want, sx, sz)) { this.plant = 0; this.gait += this.speed * dt / 1.1; return; }
+    }
+
+    // n15 E1: Not-Kontakt – der Kick-Druck wartet schon ≥ immerNot s, der Ball ist am Körper (≤ 1 m, bis Kopf- plus Sprunghöhe): jetzt spielen
+    // (Fuß, Knie-Volley oder Kopfball), auch wenn der „schönere“ Moment noch käme oder ein Gegner abschirmt
+    if (this.pending && this.pending.immer && !held && this.pending.age >= (ball.p.y > P.reachH + 0.2 && !luftWarten ? 0.1 : P.immerNot) && this.touchCd <= 0.1 && this.stumbleT <= 0) {
+      const d3 = Math.hypot(ball.p.x - this.x, ball.p.z - this.z);
+      if (d3 < 1.0 && ball.p.y < P.headH + P.jumpMax && !(game.match && (inp.hand || inp.autoCatch) && game.rules.handsFirst(this, inp))) {
+        if (ball.p.y > P.headH - 0.1) this.jumpV = Math.max(this.jumpV, Math.sqrt(2 * P.g * Math.max(0.05, ball.p.y - P.headH + 0.1)));
+        const pd = this.pending, rel = Math.hypot(ball.v.x - this.vx, ball.v.y, ball.v.z - this.vz);
+        this.face = Math.atan2(ball.p.z - this.z, ball.p.x - this.x) * 0.3 + this.face * 0.7;
+        if (this.kick(pd, game, Math.min(rel, P.ctrlRel)) !== false) { this.pending = null; game.events.push({ type: 'notkick', player: this.id, y: ball.p.y }); return; }
+      }
     }
 
     // --- Ball-Lage ---
@@ -214,10 +238,18 @@ export class Player {
         dirX = sx * (1 - w) + (ix / il) * w; dirZ = sz * (1 - w) + (iz / il) * w;
         const l = Math.hypot(dirX, dirZ) || 1; dirX /= l; dirZ /= l;
       }
-    } else if (!held && !want && this.pending && bd < 3) {
+    } else if (!held && !want && this.pending && (bd < 3 || this.pending.immer)) {
       // Pass/Schuss vorgemerkt, Stick los: zum Ball laufen (Hilfe)
       targetW = 1;
       dirX = bx / bd; dirZ = bz / bd;
+      if (this.pending.immer && bd > 1.2) { const [ix, iz] = this.immerZiel(game); const il = Math.hypot(ix - this.x, iz - this.z) || 1; dirX = (ix - this.x) / il; dirZ = (iz - this.z) / il; } // n15: dem rollenden Ball entgegen
+    }
+    // n15 E1: mit Stick läuft der Spieler zum Ball, solange der Stick grob dorthin zeigt (≤ 120°, der Stick zielt dann nur); zeigt er
+    // länger als 0,25 s deutlich weg, gilt der Druck als zurückgenommen (Hilfe ohne Kontrollverlust)
+    if (P.kickimmer && !held && want && this.pending && this.pending.immer && bd > 0.05 && !(P.passfix && this.pending.tap && bd < 3 && ball.p.y < 0.6 && (game.lastTouch === this.id || game.lastTouch < 0))) {
+      const [ix, iz] = bd > 1.2 ? this.immerZiel(game) : [ball.p.x, ball.p.z], ex = ix - this.x, ez = iz - this.z, il = Math.hypot(ex, ez) || 1;
+      if ((ex * sx + ez * sz) / il > Math.cos(120 * DEG)) { targetW = 1; dirX = ex / il; dirZ = ez / il; this.pending.weg = 0; }
+      else if ((this.pending.weg = (this.pending.weg || 0) + dt) > 0.25) this.pending = null;
     }
     // Nacht 2e: Tipp-Kick vorgemerkt, eigener Ball in ≤ 3 m → der Stick zielt nur, gelaufen wird zum Ball. Vorher lief der
     // Spieler beim Pass nach hinten (Stick gegen die Laufrichtung) in Stick-Richtung los und ließ den Ball liegen –
@@ -264,6 +296,7 @@ export class Player {
       // Vorgemerkter Kick ohne Stick: dem Ball mindestens so schnell nachlaufen, wie er rollt (bis Sprint bzw. n7 bis vTop).
       // Nacht 2c: auch mit Stick, wenn er grob zum Ball zeigt (Tipp-Kick: der Spieler legt einen Schritt zu)
       if (this.pending && !held && (!want || (this.pending.tap && targetW > 0))) vd = Math.max(vd, Math.min(P.vTop, Math.hypot(ball.v.x, ball.v.z) + 1.5));
+      if (this.pending && this.pending.immer && !held && targetW > 0 && bd > 1.2) vd = Math.max(vd, P.vTop); // n15: zum Ball mit vollem Tempo
       if (this.dribbling) vd *= P.dribbleSlow;
       if (this.charging && bd < 0.75) vd *= 0.8; // zum Schuss hin etwas verlangsamen – nur mit dem Ball am Fuß (sonst läuft er davon)
       if (this.hand.mode === 'hold') vd = Math.min(vd, P.vRun * 0.6); // mit Ball in der Hand nur gehen
@@ -315,14 +348,16 @@ export class Player {
     // Im Stemmschritt nimmt der Spieler den Ball mit (Sohle/Außenseite): Reichweite ab Körpermitte
     const cut = this.plant > 0.3 && want && bd < P.cutReach;
     // Tipp-Kick (Nacht 2c): ein langer Schritt reicht (+kickLunge), damit der Kick nicht auf die nächste Vorlage wartet
-    const lunge = this.pending && this.pending.tap && !this.pending.locked ? P.kickLunge : 0;
+    const lunge = this.pending && this.pending.tap && !this.pending.locked ? (this.pending.immer ? P.immerLunge : P.kickLunge) : 0;
+    // n15 E1: mit Kick-Druck auch höhere Bälle (Spitzel, Knie-Volley bis immerHoch m) und harte Bälle (Direktabnahme statt Abprallen)
+    const immer = !!(this.pending && this.pending.immer);
     // n8 Etappe 2 (Peter 26.10.: „Pässe gehen irgendwohin“): Reaktionszeit. Ein eben vom Gegner gespielter Ball (Pass, Schuss,
     // Befreiung, ≤ reaktion s) zählt für den Fuß nur, wenn er direkt auf ihn läuft (≤ reaktionR m) – niemand reagiert in 0,01 s auf
     // einen Pass. Gemessen in ganzen Spielen trat der pressende Gegner 80 % der Pässe im selben bis nächsten Takt weg, weil der Ball
     // beim Abspiel noch in seiner Reichweite (0,48 m) lag. Der Körper blockt weiter (bodyCollision), die Grätsche ist ausgenommen.
     const kk = P.reaktion > 0 && game.lastTouch >= 0 && game.lastTouch !== this.id ? game.players[game.lastTouch] : null;
     const frisch = kk && kk.team !== this.team && kk.kickT < P.reaktion && !kk.selfKick && !this.slide; // (Mitspieler erwarten den Ball)
-    const inReach = (frisch ? fd < P.reaktionR : (fd < P.reach + lunge || cut)) && ball.p.y < P.reachH && this.stumbleT <= 0;
+    const inReach = (frisch ? fd < P.reaktionR : (fd < P.reach + lunge || cut)) && ball.p.y < (immer ? P.immerHoch : P.reachH) && this.stumbleT <= 0;
     const rvx = ball.v.x - this.vx, rvz = ball.v.z - this.vz;
     const rel = Math.hypot(rvx, ball.v.y, rvz);
     let touched = false;
@@ -378,7 +413,9 @@ export class Player {
       const ahead = bx * fxf + bz * fzf, closing = (ball.v.x - this.vx) * fxf + (ball.v.z - this.vz) * fzf;
       settle = ahead > 0.6 && closing < -0.8 && this.pending.age < 0.25 && !oppNear(game, this, 1.4);
     }
-    if (!touched && !handsFirst && inReach && rel < P.ctrlRelMax && !settle && !this.shieldBlocked(game)) {
+    // n15 E1: Kick-Druck, Ball am Fuß des abschirmenden Gegners → Grätsche aus dem Stand (der Fuß käme nicht durch den Körper)
+    if (!touched && immer && !handsFirst && inReach && P.graetsche && game.match && ball.p.y < 0.6 && this.shieldBlocked(game)) { this.startTackle(game, this.pending.btn === 'pass' ? 'pass' : 'shot', this.pending.stick); return; }
+    if (!touched && !handsFirst && inReach && rel < (immer ? 2 * P.ctrlRelMax : P.ctrlRelMax) && !settle && !this.shieldBlocked(game)) {
       if (this.pending && this.pending.locked) {
         // Tipp: Modus steht noch nicht fest (≤ doppel s) – Ball nicht wegspielen, gleich kommt der Kick
       } else if (this.pending && luftWarten && this.pending.tap) {
@@ -708,6 +745,38 @@ export class Player {
   tryAir(game, tPress, purpose = 'shot', aim = null, out = null) {
     const plan = this.P.timinghilfe > 0 && !this.P.laden ? planAirHelp(game, this, this.P.timinghilfe, purpose, aim, out) : planAir(game, this, { tPress, purpose, aim });
     if (!plan) return false;
+    if (this.pending && this.pending.immer) plan.immer = true; // n15: Kick-Druck – Kontakt etwas großzügiger
+    this.air = plan; this.pending = null; this.charging = false;
+    return true;
+  }
+
+  // n15 E1: Kick-Druck bleibt vorgemerkt, solange der Ball frei ist (höchstens immerMax s)
+  immerHalten(game) {
+    return this.pending.age < this.P.immerMax && game.ball.held < 0;
+  }
+  // n15 E1: Druck während Grätsche/Fallen merken (Kick nach Lage, sobald er wieder steht)
+  vorDruck(inp, game) {
+    for (const e of inp.gest) {
+      if (e.type !== 'start' || e.mode !== 'std' || e.btn !== 'shot') continue;
+      const m = Math.hypot(inp.mx || 0, inp.mz || 0), st = m > 0.12 ? [inp.mx / m, inp.mz / m] : null;
+      this.pending = { kind: 'shot', mode: 'auto', power: null, stick: st, dir: st || [Math.cos(this.face), Math.sin(this.face)], cx: 0, cy: 0, age: 0, t: game.t, locked: false, tap: true, btn: 'shot', immer: true };
+      game.events.push({ type: 'kickvor', player: this.id, human: game.human === this.id });
+    }
+  }
+  // n15 E1: Laufziel zum Ball – Abfangpunkt auf der Rollbahn, sonst wo der Ball in ~0,3 s ist
+  immerZiel(game) {
+    const b = game.ball;
+    const ip = b.p.y < 0.5 && Math.hypot(b.v.x, b.v.z) > 2 ? this.interceptPoint(game) : null;
+    return ip ? [ip[0], ip[1]] : [b.p.x + b.v.x * 0.3, b.p.z + b.v.z * 0.3];
+  }
+  // n15 E1: kein guter Luftball für den Kick-Druck → lieber ein unsauberer Kontakt (Kopfball, Volley, … mit niedrigem Planwert) als keiner,
+  // genommen im letzten sinnvollen Moment; ohne Mitspieler für den Direktpass weggeschlagen
+  notLuft(game, purpose, aim, lw) {
+    if (!this.pending || !this.pending.immer || (lw && lw.wait) || this.P.treffpunkt) return false;
+    let plan = planAir(game, this, { tPress: game.t, purpose, aim, minScore: 0.03 });
+    if (!plan && purpose === 'pass') plan = planAir(game, this, { tPress: game.t, purpose: 'clear', minScore: 0.03 });
+    if (!plan || plan.t > AIR_TECH[plan.tech].lead[0] + 0.1) return false;
+    plan.tq = Math.max(plan.tq, 0.5); plan.immer = true;
     this.air = plan; this.pending = null; this.charging = false;
     return true;
   }
@@ -750,14 +819,19 @@ export class Player {
       const auto = this.P.autotech;
       if (e.type === 'start' && e.mode === 'std') {
         this.armed = null; this.charging = false; this.clearT = 0; this.airPress = false;
+        // n15 E1: jeder Druck wird sichtbar quittiert (Puls am Spieler), auch wenn der Kick erst beim Ankommen am Ball kommt
+        const immer = !!(this.P.kickimmer && this.P.einknopf && auto && game.match);
+        if (immer) game.events.push({ type: 'kickvor', player: this.id, human: game.human === this.id });
         // n11 Ein-Knopf-Kick (Standard seit Peter 13.11., ?einknopf=0 = aus): der Schuss-Knopf ist der Kick – Schuss oder Pass nach
         // Lage; nur mit autotech (sonst zeigt das HUD ohnehin zwei Knöpfe)
         const k2 = this.P.einknopf && auto && kind === 'shot' ? einKnopfArt(game, this, stick()) : kind;
-        if (k2 === 'shot' && this.tryAir(game, game.t)) { this.airPress = true; this.pending = null; continue; }
-        if (auto && k2 === 'pass' && this.tryAir(game, game.t, 'pass', stick())) { this.airPress = true; this.pending = null; continue; }
+        this._eilDruck = immer; // n15: Luftball aus dem Kick-Druck – früher Kontakt bevorzugt
+        if (k2 === 'shot' && this.tryAir(game, game.t)) { this._eilDruck = false; this.airPress = true; this.pending = null; if (immer) this.air.immer = true; continue; }
+        if (auto && k2 === 'pass' && this.tryAir(game, game.t, 'pass', stick())) { this._eilDruck = false; this.airPress = true; this.pending = null; if (immer) this.air.immer = true; continue; }
+        this._eilDruck = false;
         if (this.tackleOk(game)) { this.startTackle(game, k2, stick()); this.pending = null; continue; } // Grätsche
         // n11 (autotech): ein Tipp, alles automatisch – kein Warten auf einen Doppeltipp, der Kick ist sofort frei
-        this.pending = { kind: k2, mode: auto ? 'auto' : 'std', power: null, stick: stick(), dir: aimDir(), cx: 0, cy: 0, age: 0, t: game.t, locked: !auto, tap: true, btn: kind };
+        this.pending = { kind: k2, mode: auto ? 'auto' : 'std', power: null, stick: stick(), dir: aimDir(), cx: 0, cy: 0, age: 0, t: game.t, locked: !auto, tap: true, btn: kind, immer };
       } else if (e.type === 'start') { // zweiter Druck: Zweitfunktion
         if (mine && !auto) this.pending.mode = 'var';
       } else if (e.type === 'tap' || e.type === 'release') {
@@ -799,6 +873,19 @@ export class Player {
     }
     return false;
   }
+  // n15 E1: freier flacher Ball ≤ tackleReach, der Spieler läuft schon ≥ 0,3 s hin und kommt kaum näher (< 1,5 m/s) → Spitzel-Grätsche
+  spitzelOk(game) {
+    const P = this.P, b = game.ball, pd = this.pending;
+    if (!P.graetsche || !game.match || !pd || pd.age < 0.3 || b.held >= 0 || this.air || this.fall || this.slide || this.hand.mode !== 'none' || b.p.y > 0.5) return false;
+    if (game.rules.handsOk(this)) return false;
+    const dx = b.p.x - this.x, dz = b.p.z - this.z, d = Math.hypot(dx, dz);
+    const [fx, fz] = this.footPoint();
+    // (wartet der Druck schon ≥ 0,8 s, auch aus etwas weiterer Entfernung: lieber eine Grätsche zum Ball als nichts)
+    const spaet = pd.age >= 0.8;
+    if (d > P.tackleReach + (spaet ? 1 : 0) || d < (spaet ? 0.8 : 1.0) || Math.hypot(b.p.x - fx, b.p.z - fz) < P.reach + P.immerLunge) return false;
+    const closing = -((b.v.x - this.vx) * dx + (b.v.z - this.vz) * dz) / d;
+    return spaet || closing < 1.5;
+  }
   // Grätsche starten: Richtung auf den Ball in ~0,15 s, Tempo mindestens slideSpeed. kind = Knopf ('pass'|'shot').
   startTackle(game, kind = 'shot', stick = null) {
     const P = this.P, b = game.ball;
@@ -822,7 +909,7 @@ export class Player {
       if (sl.t >= P.slideT) { sl.phase = 'ground'; sl.t = 0; }
     } else {
       const f = Math.exp(-dt * 10); this.vx *= f; this.vz *= f;
-      if (sl.t >= P.slideGroundT) { this.slide = null; this.techT = 99; }
+      if (sl.t >= P.slideGroundT * (this.pending && this.pending.immer ? 0.5 : 1)) { this.slide = null; this.techT = 99; } // (n15: mit Kick-Druck schneller auf)
     }
     this.x += this.vx * dt; this.z += this.vz * dt;
     const lx = game.cage.hx - P.bodyR, lz = game.cage.hz - P.bodyR;
@@ -895,6 +982,8 @@ export class Player {
   // Gibt false zurück, wenn der Kick (noch) nicht gespielt wird – n11: kein freier Pass, der Spieler behält den Ball, der Tipp bleibt
   // vorgemerkt (geht, sobald ein Weg frei ist)
   kick(pd, game, rel) {
+    // n15 E1: der Druck liegt schon eine Weile zurück (Spieler ist erst hingelaufen) → Schuss oder Pass nach der Lage beim Kontakt
+    if (pd.immer && pd.btn === 'shot' && pd.age > 0.3 && this.P.einknopf) pd.kind = einKnopfArt(game, this, pd.stick);
     // n13 Schusskegel (spektakel.js): außerhalb ±schusskegel kein Vollspann/Innen-/Außenrist – Lupfer-Pass, Jonglier-Fallrückzieher,
     // Megaferse oder blitzschnelle Drehung zum Tor
     if (pd.kind === 'shot' && (pd.mode === 'auto' || (pd.api && this.P.autotech)) && game.ball.p.y < 0.6) {
@@ -931,12 +1020,21 @@ export class Player {
       return this.applyPlan(plan, game, rel);
     }
     if (!pd.api && !this.P.treffpunkt) {
-      const plan = pd.kind === 'pass' ? planPass(game, this, { mode: pd.mode, power: pd.power, stick: pd.stick, prefer: pd.lock || null })
+      let plan = pd.kind === 'pass' ? planPass(game, this, { mode: pd.mode, power: pd.power, stick: pd.stick, prefer: pd.lock || null })
         : planShot(game, this, { ...shotOpts(pd.stick), power: pd.power, stick: pd.stick });
       if (plan.unsicher) {
-        if (!pd.sperre) { pd.sperre = true; game.events.push({ type: 'passsperre', player: this.id, human: game.human === this.id, x: this.x, z: this.z }); }
-        return false;
+        // n15 E1: Kick-Druck und kein freier Pass → nach immerSperre s trotzdem ein Kick (Schuss in der gegnerischen Hälfte, sonst Befreiung)
+        if (pd.immer && pd.age >= this.P.immerSperre) {
+          const vorn = (goalX(game, this) > 0) === (game.ball.p.x > 0);
+          if (!vorn) return this.befreien(game, pd, rel);
+          plan = planShot(game, this, { ...shotOpts(pd.stick), power: null, stick: pd.stick });
+        } else {
+          if (!pd.sperre) { pd.sperre = true; game.events.push({ type: 'passsperre', player: this.id, human: game.human === this.id, x: this.x, z: this.z }); }
+          return false;
+        }
       }
+      // n15 E1: Kontakt über Fußhöhe (Spitzel/Knie) – als Volley gezeigt
+      if (pd.immer && game.ball.p.y > this.P.reachH + 0.05 && !AIR_TECH[plan.tech]) plan.tech = game.ball.p.y > 1.4 ? (plan.kind === 'pass' ? 'kopfpass' : 'kopf') : plan.kind === 'pass' ? 'volleypass' : 'volley';
       return this.applyPlan(plan, game, rel);
     }
     const P = this.P, ball = game.ball, rng = game.rng;
@@ -1024,6 +1122,28 @@ export class Player {
     if (game.match) { game.rules.touch(this); game.passTo = pd.kind === 'pass' ? to : -1; if (pd.to !== this.id) game.rules.markKick(this, dx, dz, to); }
     game.passPlan = null;
     game.events.push({ type: 'kick', kind: pd.kind, tech: techL, player: this.id, human: game.human === this.id, speed, x: ball.p.x, y: ball.p.y, z: ball.p.z, dx, dz, to });
+  }
+
+  // n15: hoher Befreiungsschlag ins mittlere Drittel (|x| ≤ ein Sechstel der Feldlänge, eher zur Angriffsseite), Landepunkt möglichst frei von
+  // Gegnern und nah bei Mitspielern; Abflug 55° (Scheitel bei 8–10 m Weite ≈ 3 m), der Körper dreht sich dafür kurz zum Ziel
+  befreien(game, pd, rel) {
+    const P = this.P, b = game.ball, s = goalX(game, this) > 0 ? 1 : -1, third = P.fieldL / 6;
+    let best = null;
+    for (const fx of [-0.6, -0.2, 0.2, 0.6, 0.9]) for (const fz of [-0.6, -0.3, 0, 0.3, 0.6]) {
+      const x = s * fx * third, z = fz * (game.cage.hz - 1), D = Math.hypot(x - b.p.x, z - b.p.z);
+      if (D < 4) continue;
+      let dO = 9, dM = 9;
+      for (const o of game.players) { const d = Math.hypot(o.x - x, o.z - z); if (o.team === this.team) { if (o.id !== this.id) dM = Math.min(dM, d); } else dO = Math.min(dO, d); }
+      const w = Math.min(dO, 5) - 0.3 * Math.min(dM, 5) + 0.15 * fx * 2 + 0.2 * game.rng.next();
+      if (!best || w > best.w) best = { w, x, z, D };
+    }
+    if (!best) best = { x: s * third * 0.5, z: -b.p.z * 0.3, D: Math.hypot(s * third * 0.5 - b.p.x, b.p.z) };
+    const el = 55, sp = clamp(Math.sqrt(best.D * P.g / Math.sin(2 * el * DEG)) * 1.12, 8, 20);
+    this.face = Math.atan2(best.z - b.p.z, best.x - b.p.x);
+    this.kick({ kind: 'clear', api: true, target: [best.x, best.z], technique: 'vollspann', speed: sp, elev: el, noise: 1, dir: [Math.cos(this.face), Math.sin(this.face)], age: 0 }, game, rel);
+    this.tech = 'vollspann'; this.techT = 0;
+    game.events.push({ type: 'befreiung', player: this.id, human: game.human === this.id, x: best.x, z: best.z });
+    return true;
   }
 
   // Geplanten Pass/Schuss/Luftball ausführen: Streuung (Richtung, Höhe, Tempo) aus dem Seed, Anfangsbedingungen per

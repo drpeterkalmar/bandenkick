@@ -309,6 +309,15 @@ export const DEFAULTS = {
   autotech: 1,            // 0 = Tipp/Doppeltipp wie 0.8.0                                            [?autotech=0]
   spektakel: 0.1,         // höchstens 10 % weniger Erfolgschance fürs Spektakel                     [?spektakel=]
   einknopf: 1,            // Peter 13.11.: Ein-Knopf-Kick ist Standard (Schuss oder Pass nach Lage); ?einknopf=0 = zwei Knöpfe [?einknopf=0]
+  // n15 E1 (Peter 14.11.: „der eine kick button ist die einzige option … und soll immer einen kick oder kopfball auslösen, sonst spamme
+  // ich den knopf und nichts passiert“): der Kick-Druck verfällt nicht mehr nach tippPuffer s, solange der Ball erreichbar ist (≤ immerNah m,
+  // höchstens immerMax s); ohne Stick läuft der Spieler hin (mit Stick, solange er grob zum Ball zeigt), Kontakt mit Ausfallschritt
+  // (+immerLunge m) auch bis immerHoch m Ballhöhe (Spitzel/Knie-Volley), Kopfball/Luftball auch als unsauberer Kontakt; führt ein Gegner
+  // den Ball → Grätsche (mit Anlauf, auch wenn er abschirmt); Ball weit (> immerWechsel m) → Wechsel zum Mitspieler, der ihn am schnellsten
+  // erreicht (übernimmt den Druck); kein freier Pass → nach immerSperre s Schuss bzw. Befreiung statt „Ball bleibt am Fuß“. Kein
+  // Pass-Knopf mehr (HUD, Menü), Tormann-Hechten/-Abwurf auf dem Kick-Knopf. 0 = Stand 6416fb8                       [?kickimmer=0]
+  kickimmer: 1,
+  immerNah: 10, immerMax: 3, immerLunge: 0.45, immerHoch: 1.05, immerWechsel: 6, immerSperre: 0.35, immerNot: 0.6, immerEil: 0.45,
   salto: 1,               // Salto-Hacke (Skorpion-Kick) als seltene Luft-Technik, Hackenschuss am Boden [?salto=0]
   // n13 (Peter 07.11.: „Vollspann und Innenrist Außenrist können nur max 120 Grad vom Tor abgefeuert werden …“, src/sim/spektakel.js):
   // Schuss-Tipp mit dem Tor außerhalb ±schusskegel° vor dem Schützen → Lupfer-Pass zum besser postierten Mitspieler (Direktabnahme),

@@ -1047,6 +1047,8 @@ export class Bots {
     // Kick vorgemerkt: loser, langsamer Ball wird gespielt, nicht gefangen (Schüsse aufs Tor fängt er trotzdem)
     const shot = br.shotSeen >= 0;
     if (!shot && b.held < 0 && (pl.pending || pl.charging || pl.armed) && Math.hypot(b.v.x, b.v.z) < 8) { out.hand = false; out.autoCatch = false; }
+    // n15 E1: Kick-Druck, kein Schuss aufs Tor → der Tormann läuft selbst zum Ball (Kick-Hilfe), statt sich nur zu stellen
+    if (!shot && b.held < 0 && !stick && pl.pending && pl.pending.immer && g.P.kickimmer) { out.mx = 0; out.mz = 0; out.speedCap = 0; }
     return out;
   }
 }

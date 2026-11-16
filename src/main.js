@@ -89,7 +89,7 @@ document.body.classList.toggle('solo', solo);
 
 const canvas = document.getElementById('c');
 const hud = buildHud(document.getElementById('ui'), canvas);
-hud.setHowto(isTouch, !!P.sprintfrei, !!P.wechsel, !!P.autotech);
+hud.setHowto(isTouch, !!P.sprintfrei, !!P.wechsel, !!P.autotech, !!(P.kickimmer && P.einknopf && P.autotech));
 const loadMsg = document.createElement('div');
 loadMsg.style.cssText = 'position:fixed;inset:0;display:grid;place-items:center;font:600 18px system-ui;color:#fff;background:#10251a';
 loadMsg.textContent = 'Bandenkick lädt …';
@@ -199,9 +199,11 @@ clipLabel();
 // n11 Ein-Knopf-Kick: Schalter im Pause-Menü, seit Peter 13.11. Standard an (?einknopf=0 = zwei Knöpfe). An: der Schuss-Knopf ist
 // der Kick (Schuss oder Pass nach Lage), der Pass-Knopf verschwindet. Neuer Speicher-Schlüssel bk_einknopf2, damit ein früher
 // gespeichertes „aus“ (bk_einknopf) den neuen Standard nicht überschreibt – es gilt nur, was ab jetzt im Menü umgeschaltet wird.
-if (!qs.has('einknopf')) { const s = localStorage.getItem('bk_einknopf2'); if (s === '0') P.einknopf = 0; else if (s === '1') P.einknopf = 1; }
+// n15 E1 (Peter 14.11.: „der eine kick button ist die einzige option (kein passknopf mehr)“): mit ?kickimmer=1 (Standard) gibt es keinen
+// Pass-Knopf und keinen Menü-Schalter mehr; ?einknopf=0 bleibt nur als versteckter Test-Regler, ein gespeichertes „aus“ zählt nicht mehr
+if (!qs.has('einknopf') && !P.kickimmer) { const s = localStorage.getItem('bk_einknopf2'); if (s === '0') P.einknopf = 0; else if (s === '1') P.einknopf = 1; }
 const einBtn = hud.menu.querySelector('[data-act="einknopf"]');
-const einLabel = () => { einBtn.textContent = 'Ein Kick-Knopf: ' + (P.einknopf ? 'an' : 'aus'); einBtn.style.display = P.autotech ? '' : 'none'; hud.setEinknopf(!!P.einknopf && !!P.autotech); };
+const einLabel = () => { einBtn.textContent = 'Ein Kick-Knopf: ' + (P.einknopf ? 'an' : 'aus'); einBtn.style.display = P.autotech && !P.kickimmer ? '' : 'none'; hud.setEinknopf(!!P.einknopf && !!P.autotech); input.einKick = !!(P.kickimmer && P.einknopf && P.autotech); };
 einLabel();
 const lichtBtn = hud.menu.querySelector('[data-act="licht"]');
 function lichtLabel() { if (lichtBtn) lichtBtn.textContent = 'Licht: ' + (lichtPref === 'auto' ? `automatisch (${lichtMode() === 'abend' ? 'Abend' : 'Tag'})` : lichtPref === 'abend' ? 'Abend' : 'Tag'); }
@@ -302,7 +304,7 @@ const me = () => game.players[Math.max(0, game.human)];
 }
 
 // ---------------- Szene aufbauen ----------------
-let field, ballMesh, blob, gran, marker, figs = [], capsule = null, figSlot = null, goldRing = null;
+let field, ballMesh, blob, gran, marker, figs = [], capsule = null, figSlot = null, goldRing = null, kickPuls = 0;
 async function boot() {
   const texLoader = new THREE.TextureLoader();
   const tl = (u) => texLoader.loadAsync(u);
@@ -442,11 +444,15 @@ function worldInput(inp) {
       const manual = !P.autoTorwart || game.challenge; // Nacht 2c: Abschlag auf Druck mit voller Weite, kein Aufladen
       o.throw = inp.passPress;
       o.punt = manual ? inp.shotRelease : inp.shotPress;
+      // n15 E1: ein Kick-Knopf – Druck = Abwurf zum freien Mitspieler (mit Stick: in Stick-Richtung), sonst Abschlag; halten (Training) = Abschlag
+      if (input.einKick && inp.shotPress && !manual) { const frei = st || game.rules.bestMate(pl, true); o.throw = !!frei; o.punt = !frei; }
+      else if (input.einKick && manual) { o.throw = inp.shotRelease && chargeHold < 0.25 && !!(st || game.rules.bestMate(pl, true)); o.punt = inp.shotRelease && !o.throw; }
       o.power = manual ? Math.min(1.15, 0.45 + chargeHold) : 1;
       if (st || o.aim) { o.aimX = pl.x + dirX / dl * 9; o.aimZ = pl.z + dirZ / dl * 9; } else { o.aimX = undefined; o.aimZ = undefined; }
     } else {
       o.dive = inp.passPress; o.diveX = st ? mx : 0; o.diveZ = st ? mz : 0;
       o.hand = inp.shotDown || inp.shotRelease;
+      if (input.einKick && inp.shotPress && st) o.dive = true; // n15 E1: Kick-Knopf mit Stick = Hechten in Stick-Richtung, ohne Stick = Fangen
       if (P.fanghilfe) { o.autoCatch = true; o.autoReach = 0.55; } // Ball auf den Körper fängt er von selbst
     }
     delete o.passDown; delete o.shotDown; // keine Gesten, der Feldspieler-Schuss lädt nicht nebenher
@@ -466,6 +472,7 @@ function handleEvents(ev) {
       const b = k ? bewerte(k, game) : null;
       if (b && !aktion.moment) { aktion.moment = { ...b, w: 1, art: 'ramp', grund: 'comic', t: 0, tSpiel: game.t, real: 0, rueck: 0.12, langsam: 0.2 }; aktion.zahl++; }
     }
+    if (e.type === 'kickvor' && e.human) { kickPuls = 1; hud.kickPuls(); } // n15 E1: Quittung für jeden Kick-Druck
     if (e.type === 'kick') {
       const k = game.players[e.player].lastKick;
       if (k && (e.player === game.human || e.human)) hud.kickInfo(k); // e.human: nach dem Pass wechselt die Steuerung sofort
@@ -1180,6 +1187,9 @@ function drawPlayers(dt, a, rf = null) {
   const mx = prev.px[pl.id] + (pl.x - prev.px[pl.id]) * a, mz = prev.pz[pl.id] + (pl.z - prev.pz[pl.id]) * a;
   marker.position.set(mx, 0, mz);
   marker.rotation.y = -pl.face;
+  // n15 E1: Kick-Druck vorgemerkt → Ring pulst kurz auf (danach leicht größer, solange der Druck wartet)
+  kickPuls = Math.max(0, kickPuls - dt * 4);
+  marker.scale.setScalar(1 + 0.6 * kickPuls * kickPuls + (pl.pending && pl.pending.immer ? 0.12 : 0));
   marker.visible = mode === 'play' && game.human >= 0;
   // n7 E3: Traumpass läuft → goldener Ring (pulsierend) unter dem Empfänger
   const pf = traumpass();

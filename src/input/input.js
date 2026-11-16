@@ -111,7 +111,9 @@ export class Input {
   // Pegel aus Touch/Tastatur/Maus (Gamepad wird je Bild abgefragt) → Flanke mit Zeitstempel festhalten
   levels() {
     const t = this.touch, k = this.keys;
-    return { pass: t.pass || k.has('KeyJ') || k.has('Enter') || this.mouse.l || !!this.padPass, shot: t.shoot || k.has('Space') || k.has('KeyK') || this.mouse.r || !!this.padShot };
+    const pass = t.pass || k.has('KeyJ') || k.has('Enter') || this.mouse.l || !!this.padPass, shot = t.shoot || k.has('Space') || k.has('KeyK') || this.mouse.r || !!this.padShot;
+    // n15 E1: nur noch ein Kick-Knopf – alle Pass-Eingaben (J/Enter, Maus links, Gamepad A) sind der Kick
+    return this.einKick ? { pass: false, shot: pass || shot } : { pass, shot };
   }
   note(e) {
     const tSec = (e && e.timeStamp > 0 ? e.timeStamp : performance.now()) / 1000;
@@ -157,6 +159,7 @@ export class Input {
       if (Math.hypot(rx, ry) > 0.25) { cx = rx; cy = -ry; }
       this.pad = p.id;
     }
+    if (this.einKick) { shoot = shoot || passDown; passDown = false; } // n15 E1 (siehe levels)
     if (this.sprintfrei) sprint = false;
     const release = this.shootWas && !shoot;
     this.shootWas = shoot;

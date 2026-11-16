@@ -342,6 +342,9 @@ body.quer:not(.cliphoch) .fe-stamp.wort.titel { top: 30% !important; left: 30% !
 .tb .auto.on { opacity: 1; }
 .tb .auto.warn { color: #ffb4a8; }
 body.einknopf #bPass { display: none; }
+/* n15 E1: Quittung für jeden Kick-Druck */
+#bShot.puls { animation: kickpuls 0.28s ease-out; }
+@keyframes kickpuls { 0% { box-shadow: 0 0 0 0 rgba(255, 230, 90, 0.85); } 100% { box-shadow: 0 0 0 18px rgba(255, 230, 90, 0); } }
 
 /* n13 Comic-Spektakel: Einblendung + Speed-Linien (kurz, 1,1 s) */
 .comic { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 30; display: none; }

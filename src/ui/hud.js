@@ -150,7 +150,16 @@ export function buildHud(root, canvas) {
 
   // n7: ohne Sprint (sprintfrei) kein Hinweis auf Sprint-Knopf, Stick-Rand, Shift oder LB/RB
   // n8: ohne ⇄-Knopf (Standard) wechselt der Spieler nur automatisch
-  const howto = (touchUI, frei, wechsel, akro = akro0) => touchUI
+  // n15 E1: ein Kick-Knopf (kein Pass-Knopf mehr)
+  const howtoEin = (touchUI, frei) => touchUI
+    ? `<li><b>Stick links:</b> laufen${frei ? ' (ein Tempo für alle, kein Sprint)' : ''} · du steuerst automatisch den Spieler am nächsten zum Ball, nach deinem Pass den Empfänger</li>
+       <li><b>Kick</b> – der einzige Knopf, jeder Druck zählt: am Ball Pass oder Schuss (das Spiel wählt Mitspieler, Technik, Höhe, Effet), Ball in der Luft Kopfball/Volley/Akrobatik, Gegner am Ball Grätsche, Ball weg: der Spieler läuft hin (bzw. es wechselt zum schnelleren Mitspieler) und spielt ihn beim Ankommen. Der Ring am Spieler pulst = Druck angekommen</li>
+       <li><b>Torwart</b>: fängt und hechtet von selbst. Mit Ball: Kick = <b>Abwurf</b> zum freien Mitspieler, sonst <b>Abschlag</b> – sonst wirft er nach 1 s selbst ab</li>`
+    : `<li><b>WASD / Pfeile:</b> laufen, <b>C / Tab:</b> Spieler wechseln</li>
+       <li><b>Leertaste / K / J / Enter / Maus:</b> Kick – jeder Druck zählt (Pass, Schuss, Kopfball, Grätsche oder hinlaufen und spielen); Maus zielt</li>
+       <li><b>Torwart:</b> fängt und hechtet von selbst; mit Ball Kick = Abwurf bzw. Abschlag (sonst nach 1 s von selbst)</li>
+       <li><b>Gamepad:</b> Stick laufen, A/X/RT Kick, Y Wechsel</li>`;
+  const howto = (touchUI, frei, wechsel, akro = akro0, ein = ein0) => ein ? howtoEin(touchUI, frei) : touchUI
     ? `<li><b>Stick links:</b> laufen${frei ? ' (ein Tempo für alle, kein Sprint)' : ' · ganz außen oder Knopf = Sprint'} · ${wechsel ? '<b>⇄</b> Spieler wechseln (sonst automatisch)' : 'du steuerst automatisch den Spieler am nächsten zum Ball, nach deinem Pass den Empfänger'}</li>
        <li>${akro ? '<b>Pass/Schuss:</b> <b>ein Tipp</b> – das Spiel wählt alles selbst: Mitspieler mit freiem Weg, Technik (Innen-/Außenrist, Volley, Kopfball, Fallrückzieher, Hacke, Salto-Hacke), Höhe und Effet. Über dem Knopf steht, was gerade käme; ✋ = kein freier Pass, der Ball bleibt am Fuß' : '<b>Pass/Schuss:</b> tippen = flach/Vollspann, <b>doppeltippen</b> = hoch/angeschnitten (Ring zeigt den Modus)'}</li>
        <li><b>Torwart</b> (letzte Hand im Torraum): fängt und hechtet von selbst. Mit Ball: Pass = <b>Abwurf</b>, Schuss = <b>Abschlag</b> – sonst wirft er nach 1 s selbst ab</li>`
@@ -158,8 +167,20 @@ export function buildHud(root, canvas) {
        <li><b>J / Enter / Linksklick:</b> Pass · <b>Leertaste / K / Rechtsklick:</b> Schuss – ${akro ? 'ein Tipp, Technik/Höhe/Effet wählt das Spiel' : 'tippen = flach/Vollspann, <b>doppeltippen</b> = hoch/angeschnitten'}; Maus zielt</li>
        <li><b>Torwart</b> (letzte Hand im Torraum): fängt und hechtet von selbst; mit Ball J = Abwurf, Leertaste = Abschlag (sonst nach 1 s von selbst)</li>
        <li><b>Gamepad:</b> Stick laufen, A Pass/Abwurf, X/RT Schuss/Abschlag, Y Wechsel${frei ? '' : ', LB/RB Sprint'}</li>`;
-  let frei0 = false, wechsel0 = false, akro0 = true;
-  const setHowto = (touchUI, frei = frei0, wechsel = wechsel0, akro = akro0) => { frei0 = frei; wechsel0 = wechsel; akro0 = akro; root.querySelectorAll('.howto').forEach((u) => { u.innerHTML = howto(touchUI, frei, wechsel, akro); }); };
+  let frei0 = false, wechsel0 = false, akro0 = true, ein0 = false;
+  const setHowto = (touchUI, frei = frei0, wechsel = wechsel0, akro = akro0, ein = ein0) => {
+    frei0 = frei; wechsel0 = wechsel; akro0 = akro; ein0 = ein;
+    root.querySelectorAll('.howto').forEach((u) => { u.innerHTML = howto(touchUI, frei, wechsel, akro, ein); });
+    // n15 E1: Gesten-Tabelle für den einen Kick-Knopf
+    const tb = help.querySelector('table.gest');
+    if (tb && ein) tb.innerHTML = `<tr><th></th><th>Kick (ein Knopf, jeder Druck zählt)</th></tr>
+      <tr><td><b>Ball am Fuß</b></td><td>Schuss, wenn das Tor nah und frei ist, sonst Pass zum besser postierten Mitspieler; in der eigenen Hälfte nie aufs Tor – lieber hoher Befreiungsschlag oder in die gegnerische Ecke</td></tr>
+      <tr><td><b>Ball in der Luft</b></td><td>Kopfball, Volley, Fallrückzieher und Akrobatik-Kicks – den Moment wählt das Spiel</td></tr>
+      <tr><td><b>Ball kommt / liegt frei</b></td><td>der Spieler läuft hin und spielt ihn direkt</td></tr>
+      <tr><td><b>Gegner hat den Ball</b></td><td>Grätsche zum Ball</td></tr>
+      <tr><td><b>Ball weit weg</b></td><td>Wechsel zum Mitspieler, der schneller hinkommt</td></tr>
+      <tr><td><b>gleich nach dem Schuss</b></td><td>Stick zur Seite = Kurve ↪ (Nachdrall)</td></tr>`;
+  };
 
   let bannerT = 0, kickT = 0, lastScore = '', lastKeeper = '', lastCharge = null, lastStatus = '', lastAuto = '';
   const clock = (sec) => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, '0')}`;
@@ -376,6 +397,8 @@ export function buildHud(root, canvas) {
       }
     },
     setEinknopf(on) { document.body.classList.toggle('einknopf', !!on); bShot.querySelector('.lbl').textContent = on ? 'Kick' : 'Schuss'; },
+    // n15 E1: jeder Kick-Druck quittiert (kurzer Puls am Knopf)
+    kickPuls() { bShot.classList.remove('puls'); void bShot.offsetWidth; bShot.classList.add('puls'); },
     setContact(cx, cy) {
       const dot = bShot.querySelector('.dot');
       dot.style.left = (50 + cx * 38) + '%'; dot.style.top = (50 - cy * 38) + '%';
