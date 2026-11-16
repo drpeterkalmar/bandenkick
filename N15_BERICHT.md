@@ -1,4 +1,4 @@
-# N15 – Ein Kick-Knopf, der auslöst · Skill-Moves · Akrobatik-Kicks · Einfach-Modus · Version VERSION_N15
+# N15 – Ein Kick-Knopf, der auslöst · Skill-Moves · Akrobatik-Kicks · Einfach-Modus · Version 0.11.0
 
 Auftrag: Peter 14.11.2026 (Brief n15) mit Nachträgen 1–5 vom 16.11. (Anspielstation, Ballführung, Peters Standardwerte magnet 3 /
 luft 1,1, keine Auto-Grätschen). Ausgangsstand 6416fb8 (0.10.0 + n14-Teilstand); dieser Release enthält n14 und n15 als **0.11.0**.
