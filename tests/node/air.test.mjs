@@ -2,6 +2,8 @@
 // Schuss-Knopf im passenden Moment drückt. Jede Technik wird gewählt und trifft; Timing zählt; Kopfball langsamer als
 // Fuß; nach Fall-/Seitfallzieher ~0,8 s am Boden; Kopfball mit Sprung; deutliche Stick-Eingabe bricht ab (≤ 0,3 s).
 // Aufruf: node tests/node/air.test.mjs
+// n15 E5: die Stationen prüfen die klassischen Luft-Techniken – ohne die 22 neuen Kontakte (die prüfen n15_akro_probe/n15_akro_bilder)
+globalThis.BK_BASIS ??= 'akro2=0';
 import { makeParams } from '../../src/sim/params.js';
 import { Game, DT } from '../../src/sim/step.js';
 import { EMPTY_INPUT } from '../../src/sim/player.js';
