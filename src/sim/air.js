@@ -259,13 +259,16 @@ function airKick(pl, game, a, errFrac) {
     }
     a.purpose = 'clear'; // kein Mitspieler erreichbar: wegschlagen
   }
+  // n15 E2: aus der eigenen Hälfte kein Torschuss aus der Luft – hoch weggeschlagen (Richtung gegnerische Hälfte)
+  let hoch = false;
+  if (a.purpose === 'shot' && P.eigenhaelfte && game.match && !game.challenge && Math.sign(attackGoalX(game, pl)) * b.p.x < 0) { a.purpose = 'clear'; hoch = true; }
   if (a.purpose === 'clear') {
     const gx = -attackGoalX(game, pl);
     const tx = -gx * 0.4 - b.p.x, tz = b.p.z * 0.5 - b.p.z, tl = Math.hypot(tx, tz) || 1;
     const e = (T.noise * (2 - qMul) * (pl.airNoise ?? 1)) * DEG * game.rng.gauss();
     const dx = tx / tl * Math.cos(e) - tz / tl * Math.sin(e), dz = tx / tl * Math.sin(e) + tz / tl * Math.cos(e);
     const speed = sp * (0.7 + 0.3 * qMul);
-    setKick(b, dx, dz, speed, (a.tech === 'kopf' ? 12 : 22) * DEG, 0, 0);
+    setKick(b, dx, dz, speed * (hoch ? 0.8 : 1), (a.tech === 'kopf' ? (hoch ? 30 : 12) : hoch ? 40 : 22) * DEG, 0, 0);
     b.contact = false; b.reseedKnuckle(game.rng);
     finishAir(pl, game, a, { kind: 'clear', tech: a.tech, speed, q: qMul, dir: [dx, dz] });
     return;

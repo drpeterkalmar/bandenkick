@@ -515,7 +515,8 @@ export class Bots {
     const empty = !kp || !R.inBox(1 - team, kp.x, kp.z) || kp.hand.mode === 'ground';
     const lose = this.loseVal(team, b.p.x, b.p.z);
     // Schuss: danach hat meist der Tormann den Ball (Wert ≈ 0)
-    if (Dg < L.shootMax && (this.xg(team, b.p.x, b.p.z) >= L.minXg || empty)) {
+    const eigen = g.P.eigenhaelfte && this.fwd(team, b.p.x) < 0; // n15 E2: aus der eigenen Hälfte kein Torschuss
+    if (!eigen && Dg < L.shootMax && (this.xg(team, b.p.x, b.p.z) >= L.minXg || empty)) {
       const zc = cage.gw - 0.38, kz = kp ? kp.z : 0;
       const tz = Math.abs(kz - zc) > Math.abs(kz + zc) ? zc : -zc;
       const lane = this.laneFree(team, b.p.x, b.p.z, gx, tz, kp ? kp.id : -1);

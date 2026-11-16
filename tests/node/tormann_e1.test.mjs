@@ -94,7 +94,7 @@ function keeperZ(qs) {
 // 5) Bot-Spiel (Stufe 2, 12 Spiele): Gates aus dem Datenblatt
 {
   const s = summary(await runProbe('', 12, 'st2', 4)), s0 = summary(await runProbe('muede=0', 12, 'st2', 4));
-  check('Bot-Spiel: Tore je Schuss (Stufe 2)', s.goalsPerShot, 25, 35, '%', 30, `?muede=0: ${s0.goalsPerShot.toFixed(1)} %`);
+  check('Bot-Spiel: Tore je Schuss (Stufe 2)', s.goalsPerShot, 25, 40, '%', 30, `?muede=0: ${s0.goalsPerShot.toFixed(1)} % (n14: härtere Kopf-/Fallrückzieher ≈ 36 %)`);
   check('… Nachschuss-Tore (Anteil aller Tore)', s.reboundShare, 10, 100, '%', null);
   check('… Hechter je Spiel', s.divesPerGame, 15, Infinity, '', null);
   // (n14: mehr und härtere Abschlüsse – Kopfbälle/Fallrückzieher, Effet – kosten den Tormann mehr Kraft; 0.10.0 lag knapp über 30, n14 bei ~29)

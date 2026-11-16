@@ -317,6 +317,11 @@ export const DEFAULTS = {
   // erreicht (übernimmt den Druck); kein freier Pass → nach immerSperre s Schuss bzw. Befreiung statt „Ball bleibt am Fuß“. Kein
   // Pass-Knopf mehr (HUD, Menü), Tormann-Hechten/-Abwurf auf dem Kick-Knopf. 0 = Stand 6416fb8                       [?kickimmer=0]
   kickimmer: 1,
+  // n15 E2 (Peter 14.11.: „kein schuss aufs tor aus der eigenen hälfte … lieber hoher befreiungsschlag ins mittlere drittel oder schuss zu
+  // einer der gegnerischen ecken“): aus der eigenen Hälfte nie aufs Tor (Mensch, Bots, Luftbälle, Megaferse/Fallrückzieher) – freier
+  // Mitspieler → Pass, sonst hoher Befreiungsschlag ins mittlere Drittel (Landepunkt frei von Gegnern) oder in eine gegnerische Ecke
+  // (Abpraller). 0 = Stand 6416fb8                                                                    [?eigenhaelfte=0]
+  eigenhaelfte: 1,
   immerNah: 10, immerMax: 3, immerLunge: 0.45, immerHoch: 1.05, immerWechsel: 6, immerSperre: 0.35, immerNot: 0.6, immerEil: 0.45,
   salto: 1,               // Salto-Hacke (Skorpion-Kick) als seltene Luft-Technik, Hackenschuss am Boden [?salto=0]
   // n13 (Peter 07.11.: „Vollspann und Innenrist Außenrist können nur max 120 Grad vom Tor abgefeuert werden …“, src/sim/spektakel.js):

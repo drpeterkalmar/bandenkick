@@ -49,10 +49,10 @@ const first = (ev, f) => ev.find(f) || null;
   const ev4 = tap(g4);
   check('?kickimmer=0: Gegner am Ball in 4,5 m → keine Grätsche (läuft hin)', first(ev4, (e) => e.type === 'tackle') ? 0 : 1, 1, 1, '', 1);
   // n15 E1: der Kick-Druck verfällt nicht – der Spieler läuft hin und grätscht, sobald er in Reichweite ist
-  const g4b = scene('', { me: [-4.5, 0], opp: [0.6, 0.3], ball: [0.2, 0.1] });
-  const ev4b = tap(g4b), st5 = first(ev4b, (e) => e.type === 'tackle' && e.phase === 'start');
+  const gN15 = scene('', { me: [-4.5, 0], opp: [0.6, 0.3], ball: [0.2, 0.1] });
+  const evN15 = tap(gN15), st5 = first(evN15, (e) => e.type === 'tackle' && e.phase === 'start');
   check('n15: Gegner am Ball in 4,5 m → hinlaufen, dann Grätsche (mit Anlauf)', st5 && st5.t > 0.15 ? 1 : 0, 1, 1, '', 1, st5 ? `nach ${st5.t.toFixed(2)} s` : '');
-  const g4b = scene('graetsche=0', { me: [-1.8, 0], opp: [0.6, 0.3], ball: [0.2, 0.1] });
+  const g5 = scene('graetsche=0', { me: [-1.8, 0], opp: [0.6, 0.3], ball: [0.2, 0.1] });
   check('?graetsche=0: aus', first(tap(g5), (e) => e.type === 'tackle') ? 0 : 1, 1, 1, '', 1);
 }
 // 2) Ball zuerst: Pass zum Mitspieler, Schuss aufs Tor (Tornähe), sonst klären

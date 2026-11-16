@@ -69,9 +69,16 @@ export function autoShot(game, pl, stick = null) {
 
 // Ein-Knopf-Kick (Standard seit Peter 13.11., ?einknopf=0 = zwei Knöpfe): Schuss, wenn die Torchance gut genug ist (nah, Tor in Stick-/Blickrichtung), sonst Pass zum
 // Mitspieler in dieser Richtung (falls einer da ist), sonst doch Schuss
+// n15 E2: Ball in der eigenen Hälfte (vom Angriffstor aus gesehen hinter der Mittellinie)?
+export const eigeneHaelfte = (game, pl) => game.match && !game.challenge && Math.sign(attackGoalX(game, pl)) * game.ball.p.x < 0;
 export function einKnopfArt(game, pl, stick = null) {
   const b = game.ball, gx = attackGoalX(game, pl), D = Math.hypot(gx - b.p.x, b.p.z);
   const a = stick || [Math.cos(pl.face), Math.sin(pl.face)];
+  // n15 E2: aus der eigenen Hälfte nie aufs Tor – freier Mitspieler (Stick-Kegel, sonst jeder) → Pass, sonst 'shot' = Befreiung (Player.kick)
+  if (game.P.eigenhaelfte && eigeneHaelfte(game, pl)) {
+    const c = passCandidates(game, pl, a, [b.p.x, b.p.z], stick ? 60 : 180).find((m) => !m.bank && !m.virtual && m.lane >= 0.6);
+    return c ? 'pass' : 'shot';
+  }
   const toGoal = ((gx - b.p.x) * a[0] - b.p.z * a[1]) / (D || 1);
   if (D < 11 && toGoal > 0.5) {
     const s = autoShot(game, pl, stick);

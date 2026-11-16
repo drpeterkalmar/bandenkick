@@ -8,7 +8,7 @@ import { perfektPass } from './perfekt.js';
 import { clampCorner } from './world.js';
 import { planPass, passCandidates } from './pass.js';
 import { planShot } from './shot.js';
-import { autoShot, einKnopfArt } from './akro.js';
+import { autoShot, einKnopfArt, eigeneHaelfte } from './akro.js';
 import { planAir, planAirHelp, stepAir, stepFall } from './air.js';
 import { schussWahl, planMegaferse, jongliere, lupferGespielt } from './spektakel.js';
 import { AIR_TECH } from './technique.js';
@@ -118,8 +118,8 @@ export class Player {
   //  - geplant wie beim Menschen (Nacht 2b): {kind: 'pass', to, lead: true, mode: 'std'|'var'} = Pass in den
   //    Laufweg (flach/Chip), {kind: 'shot', auto: true, mode, power} = Schuss mit automatischem Ziel und Qualität q
   //  - n11: minSlack = hoher Pass nur, wenn die Zeitreserve der Gegner beim Kontakt noch so groß ist (sonst Ball behalten)
-  kickAt({ kind = 'pass', target = [0, 0], technique = 'innen', speed, elev, spinY = 0, spinBack = 0, noise = 1, to = -1, lead = false, auto = false, mode = 'std', power = 0.8, skill = 1, minSlack = -Infinity } = {}) {
-    this.pending = { kind, api: true, target: [...target], technique, speed, elev, spinY, spinBack, noise, to, lead, auto, mode, power, skill, minSlack, dir: [1, 0], age: 0 };
+  kickAt({ kind = 'pass', target = [0, 0], technique = 'innen', speed, elev, spinY = 0, spinBack = 0, noise = 1, to = -1, lead = false, auto = false, mode = 'std', power = 0.8, skill = 1, minSlack = -Infinity, befreien = false } = {}) {
+    this.pending = { kind, api: true, target: [...target], technique, speed, elev, spinY, spinBack, noise, to, lead, auto, mode, power, skill, minSlack, befreien, dir: [1, 0], age: 0 };
   }
 
   place(x, z, face = 0) {
@@ -980,6 +980,8 @@ export class Player {
   kick(pd, game, rel) {
     // n15 E1: der Druck liegt schon eine Weile zurück (Spieler ist erst hingelaufen) → Schuss oder Pass nach der Lage beim Kontakt
     if (pd.immer && pd.btn === 'shot' && pd.age > 0.3 && this.P.einknopf) pd.kind = einKnopfArt(game, this, pd.stick);
+    // n15 E2: aus der eigenen Hälfte kein Torschuss (Mensch und Bots) – Befreiung ins mittlere Drittel bzw. in eine gegnerische Ecke
+    if (this.P.eigenhaelfte && ((pd.kind === 'shot' && !this.P.treffpunkt) || (pd.api && pd.befreien)) && eigeneHaelfte(game, this)) return this.befreien(game, pd, rel);
     // n13 Schusskegel (spektakel.js): außerhalb ±schusskegel kein Vollspann/Innen-/Außenrist – Lupfer-Pass, Jonglier-Fallrückzieher,
     // Megaferse oder blitzschnelle Drehung zum Tor
     if (pd.kind === 'shot' && (pd.mode === 'auto' || (pd.api && this.P.autotech)) && game.ball.p.y < 0.6) {
@@ -1125,20 +1127,24 @@ export class Player {
   befreien(game, pd, rel) {
     const P = this.P, b = game.ball, s = goalX(game, this) > 0 ? 1 : -1, third = P.fieldL / 6;
     let best = null;
-    for (const fx of [-0.6, -0.2, 0.2, 0.6, 0.9]) for (const fz of [-0.6, -0.3, 0, 0.3, 0.6]) {
-      const x = s * fx * third, z = fz * (game.cage.hz - 1), D = Math.hypot(x - b.p.x, z - b.p.z);
+    const cand = [];
+    for (const fx of [-0.6, -0.2, 0.2, 0.6, 0.9]) for (const fz of [-0.6, -0.3, 0, 0.3, 0.6]) cand.push({ x: s * fx * third, z: fz * (game.cage.hz - 1), ecke: false, fx });
+    // (oder in eine gegnerische Ecke – dort lauern die Abpraller; flacher und härter)
+    for (const sz of [-1, 1]) cand.push({ x: s * (game.cage.hx - 1.8), z: sz * (game.cage.hz - 1.6), ecke: true, fx: 1 });
+    for (const c of cand) {
+      const D = Math.hypot(c.x - b.p.x, c.z - b.p.z);
       if (D < 4) continue;
       let dO = 9, dM = 9;
-      for (const o of game.players) { const d = Math.hypot(o.x - x, o.z - z); if (o.team === this.team) { if (o.id !== this.id) dM = Math.min(dM, d); } else dO = Math.min(dO, d); }
-      const w = Math.min(dO, 5) - 0.3 * Math.min(dM, 5) + 0.15 * fx * 2 + 0.2 * game.rng.next();
-      if (!best || w > best.w) best = { w, x, z, D };
+      for (const o of game.players) { const d = Math.hypot(o.x - c.x, o.z - c.z); if (o.team === this.team) { if (o.id !== this.id) dM = Math.min(dM, d); } else dO = Math.min(dO, d); }
+      const w = Math.min(dO, 5) - 0.3 * Math.min(dM, 5) + 0.3 * c.fx + (c.ecke ? 0.4 - 0.08 * Math.max(0, D - 16) : 0) + 0.3 * game.rng.next();
+      if (!best || w > best.w) best = { w, x: c.x, z: c.z, D, ecke: c.ecke };
     }
     if (!best) best = { x: s * third * 0.5, z: -b.p.z * 0.3, D: Math.hypot(s * third * 0.5 - b.p.x, b.p.z) };
-    const el = 55, sp = clamp(Math.sqrt(best.D * P.g / Math.sin(2 * el * DEG)) * 1.12, 8, 20);
+    const el = best.ecke ? 32 : 55, sp = clamp(Math.sqrt(best.D * P.g / Math.sin(2 * el * DEG)) * (best.ecke ? 1.2 : 1.12), 8, best.ecke ? 26 : 20);
     this.face = Math.atan2(best.z - b.p.z, best.x - b.p.x);
     this.kick({ kind: 'clear', api: true, target: [best.x, best.z], technique: 'vollspann', speed: sp, elev: el, noise: 1, dir: [Math.cos(this.face), Math.sin(this.face)], age: 0 }, game, rel);
     this.tech = 'vollspann'; this.techT = 0;
-    game.events.push({ type: 'befreiung', player: this.id, human: game.human === this.id, x: best.x, z: best.z });
+    game.events.push({ type: 'befreiung', player: this.id, human: game.human === this.id, x: best.x, z: best.z, ecke: !!best.ecke });
     return true;
   }
 
