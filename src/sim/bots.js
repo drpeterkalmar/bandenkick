@@ -222,6 +222,8 @@ export class Bots {
     if (phase === 'kickoff') return this.kickoffInput(pl, br, inp, L);
     if (pl.air || pl.fall || pl.slide || this.airCheck(pl, br, L)) { inp.mx = 0; inp.mz = 0; return inp; } // Luftball/Grätsche läuft
     if (br.gg && (br.role === 'support' || br.role === 'cover') && this.gebenGehen(pl, br, inp)) return inp;
+    // n15 E9: eigener Tormann hält den Ball → einer stürmt vor (Anspielstation), der andere bietet sich kurz an
+    if (g.P.anspiel && br.role !== 'keeper' && this.anspielLauf(pl, inp)) return inp;
     switch (br.role) {
       case 'keeper': this.keeper(pl, br, inp, L, K); break;
       case 'carrier': this.carrier(pl, br, inp, L); break;
@@ -275,6 +277,81 @@ export class Bots {
     pl.air = plan; pl.pending = null; pl.airNoise = L.aimNoise * 1.3; pl.skill = L.skill;
     this.stats.air++;
     return true;
+  }
+
+  // n15 E9: Anspielstation beim Tormann-Ball. Einmal je gehaltenem Ball wählen: Vorstürmer = der Mitspieler, dessen bester Zielpunkt
+  // (Mittellinie … gegnerisches Drittel, seitlich, Seite mit weniger Gegnern, nicht im Deckungsschatten) am freiesten ist; der andere
+  // sichert kurz und seitlich versetzt ab. Gibt den Plan {team, key, runner, x, z, support, sx, sz} zurück oder null.
+  anspielPlan(team) {
+    const g = this.g, b = g.ball, R = g.rules, cage = g.cage;
+    if (b.held < 0) return null;
+    const kp = g.players[b.held];
+    if (kp.team !== team || R.keeper[team] !== kp.id) return null;
+    const key = kp.id + ':' + g.lastTouchT.toFixed(3);
+    if (this._ansp && this._ansp.team === team && this._ansp.key === key) return this._ansp;
+    const s = team === 0 ? 1 : -1, mates = g.players.filter((m) => m.team === team && m.id !== kp.id);
+    if (!mates.length) return null;
+    const opp = g.players.filter((o) => o.team !== team);
+    const zSeite = opp.reduce((a, o) => a + Math.sign(o.z || 0.01), 0); // > 0: mehr Gegner bei z > 0
+    let best = null;
+    for (const m of mates) for (const fx of [0.5, 2.5, 4.5, 6.5]) for (const fz of [-0.75, -0.45, 0.45, 0.75]) {
+      const x = s * fx, z = fz * (cage.hz - 1);
+      let dO = 9; for (const o of opp) dO = Math.min(dO, Math.hypot(o.x - x, o.z - z));
+      const lane = this.laneFree(team, kp.x, kp.z, x, z, kp.id);
+      const lauf = Math.hypot(x - m.x, z - m.z);
+      const w = Math.min(dO, 5) + 0.6 * Math.min(lane, 2.5) - 0.3 * lauf + (Math.sign(z) === -Math.sign(zSeite) ? 0.6 : 0) + 0.08 * fx;
+      if (!best || w > best.w) best = { w, runner: m.id, x, z };
+    }
+    const sup = mates.find((m) => m.id !== best.runner);
+    this._ansp = { team, key, runner: best.runner, x: best.x, z: best.z, t: g.t, support: sup ? sup.id : -1,
+      sx: R.goalX(team) + s * 5.5, sz: -Math.sign(best.z || 1) * Math.min(3, cage.hz - 1.5) };
+    return this._ansp;
+  }
+  anspielLauf(pl, inp) {
+    const A = this.anspielPlan(pl.team);
+    if (!A) return false;
+    if (A.runner === pl.id) { this.moveTo(inp, pl, A.x, A.z, true, 0.6); inp.speedCap = 1; return true; } // Sprint nach vorn
+    if (A.support === pl.id && this.g.P.anspielSicher) {
+      // kurz und sicher: freiester Punkt 4–7 m vor dem eigenen Tor, seitlich, alle 0,3 s neu (weg vom nächsten Gegner)
+      const g = this.g, R = g.rules, s = pl.team === 0 ? 1 : -1;
+      if (!A.supT || g.t - A.supT > 0.3) {
+        A.supT = g.t; let best = null;
+        for (const fx of [4, 5.5, 7]) for (const fz of [-4, -2.5, 2.5, 4]) {
+          const x = R.goalX(pl.team) + s * fx, z = Math.max(-g.cage.hz + 1, Math.min(g.cage.hz - 1, fz));
+          let dO = 9; for (const o of g.players) if (o.team !== pl.team) dO = Math.min(dO, Math.hypot(o.x - x, o.z - z));
+          const w = Math.min(dO, 5) - 0.1 * Math.hypot(x - pl.x, z - pl.z) - (Math.sign(z) === Math.sign(A.z) ? 0.8 : 0);
+          if (!best || w > best.w) best = { w, x, z };
+        }
+        A.sx = best.x; A.sz = best.z;
+      }
+      this.moveTo(inp, pl, A.sx, A.sz, true, 0.8); return true;
+    }
+    return false;
+  }
+  // n15 E9: Abwurf-Ziel in den Lauf des Vorstürmers (Treffpunkt nach der Flugzeit), wenn der Weg frei genug ist → [x, z, 'throw'|'punt'] | null
+  anspielZiel(kp) {
+    const g = this.g, P = g.P, A = this.anspielPlan(kp.team);
+    if (!A || A.runner < 0) return null;
+    const m = g.players[A.runner], vT = P.vTop;
+    // Treffpunkte auf dem Laufweg des Vorstürmers (nicht über sein Ziel hinaus): Ball schneller dort als jeder Gegner (+0,25 s Reserve),
+    // der Vorstürmer höchstens 0,3 s nach dem Ball
+    const ex = A.x - m.x, ez = A.z - m.z, L = Math.hypot(ex, ez) || 1;
+    let best = null;
+    for (const f of [0.2, 0.4, 0.6, 0.8, 1.0]) {
+      const tx = m.x + ex * Math.min(1, f), tz = m.z + ez * Math.min(1, f);
+      if (tx * (kp.team === 0 ? 1 : -1) < -g.cage.hx / 3) continue; // Anspielstation vorn: erst ab dem eigenen Drittel
+      const D = Math.hypot(tx - kp.x, tz - kp.z);
+      // (hoher Abwurf über die Gegner hinweg: Abschlag-Bogen 32°, Tempo nach der Weite wie rules.release)
+      const kind = 'punt', el = 32 * Math.PI / 180, sp = Math.max(10, Math.sqrt(D * P.g / Math.sin(2 * el)) * (P.puntZiel || 1.1));
+      const Tb = D / (sp * Math.cos(el)) + 0.1;
+      const Tm = (L * Math.min(1, f)) / vT;
+      if (Tm > Tb + 0.3) continue;
+      let ok = true;
+      for (const o of g.players) { if (o.team === kp.team) continue; const To = Math.max(0, Math.hypot(o.x - tx, o.z - tz) - 0.8) / vT + 0.15; if (To < Tb + 0.05) { ok = false; break; }
+      }
+      if (ok && (!best || f > best.f)) best = { f, tx, tz, kind };
+    }
+    return best ? [best.tx, best.tz, best.kind] : null;
   }
 
   // Challenges: Tormann-Bot (Elfmeter, Doppelpass) bzw. einzelner Stürmer (1 gegen 1)
@@ -986,7 +1063,18 @@ export class Bots {
     if (g.t < br.throwAt) return;
     const late = pl.holdT >= 0.75 * P.halten, last = pl.holdT >= P.halten + 0.8 || (human && br.idleT >= P.autoWurf + 1);
     const safe = L.catchSkill > 0.5;
-    const mate = R.bestMate(pl, true, late ? 1.2 : safe ? 1.6 : 1.4, late ? 1.5 : safe ? 2.0 : 1.7, true);
+    // n15 E9: bevorzugt in den Lauf des Vorstürmers (sobald er ≥ 0,5 s läuft), sonst wie bisher sicher kurz
+    // (wartet, bis der Vorstürmer über der Mittellinie ist – höchstens anspielWarten s Haltezeit)
+    if (P.anspiel && this._ansp && this._ansp.team === team && this._ansp.runner >= 0 && pl.holdT < P.anspielWarten && g.players[this._ansp.runner].x * side < 0.3) return;
+    const az = P.anspiel && this._ansp && this._ansp.team === team ? this.anspielZiel(pl) : null;
+    if (az) { inp.aimX = az[0]; inp.aimZ = az[1]; inp[az[2]] = true; br.throwAt = -1; this.stats.throws++; this.stats.anspiel = (this.stats.anspiel || 0) + 1; g.events.push({ type: 'anspiel', player: pl.id, to: this._ansp.runner, kind: az[2] }); return; }
+    let mate = R.bestMate(pl, true, late ? 1.2 : safe ? 1.6 : 1.4, late ? 1.5 : safe ? 2.0 : 1.7, true);
+    // n15 E9: kein Lauf-Abwurf möglich → sicher kurz zum Absichernden (nicht flach zum gedeckten Vorstürmer)
+    if (P.anspiel && mate && this._ansp && this._ansp.team === team && mate.id === this._ansp.runner && this._ansp.support >= 0) {
+      const su = g.players[this._ansp.support];
+      let dO = 9; for (const o of g.players) if (o.team !== team) dO = Math.min(dO, Math.hypot(o.x - su.x, o.z - su.z));
+      if (dO >= 1.5 && this.laneFree(team, pl.x, pl.z, su.x, su.z, pl.id) >= 1.2) mate = su;
+    }
     const far = mate ? Math.hypot(mate.x - pl.x, mate.z - pl.z) : 99;
     if (mate && far <= 13) {
       inp.aimX = mate.x + mate.vx * 0.5; inp.aimZ = mate.z + mate.vz * 0.5; inp.throw = true;

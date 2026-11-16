@@ -324,6 +324,13 @@ export const DEFAULTS = {
   // Annahme aus der Luft großzügiger (Abstand annahmeD/annahmeDPass m, Relativtempo annahmeRel m/s, auch leicht steigende Bälle bis
   // annahmeVy m/s, Blickwinkel annahmeBlick) und auch mit vorgemerktem Kick, wenn kein Luft-Kick ansteht. 0 = Stand vor Nachtrag 2 [?ballfuehrung=0]
   ballfuehrung: 1,
+  // n15 E9 (Peter 16.11.: „wenn torwart ball hält soll ein mitspieler vor stürmen als anspielstation“): hält der eigene Tormann den Ball,
+  // sprintet der Mitspieler mit dem freiesten Laufweg nach vorn in einen freien Raum (Mittellinie bis gegnerisches Drittel, Seite mit weniger
+  // Gegnern), der zweite bietet sich kurz und sicher an; Abwurf/Abschlag (Automatik und Kick-Knopf) bevorzugt in den Lauf des Vorstürmers,
+  // sonst sicher kurz. 0 = vorher                                                                    [?anspiel=0]
+  anspiel: 1,
+  anspielSicher: 1,       // der zweite Mitspieler bietet sich am freiesten Punkt kurz an (0 = bleibt bei seiner normalen Absicherung)
+  anspielWarten: 0.6,     // s: so lange wartet der Tormann höchstens, bis der Vorstürmer über der Mittellinie ist
   annahmeD: 1.1, annahmeDPass: 1.35, annahmeRel: 16, annahmeVy: 2, annahmeBlick: -0.5,
   // n15 E2 (Peter 14.11.: „kein schuss aufs tor aus der eigenen hälfte … lieber hoher befreiungsschlag ins mittlere drittel oder schuss zu
   // einer der gegnerischen ecken“): aus der eigenen Hälfte nie aufs Tor (Mensch, Bots, Luftbälle, Megaferse/Fallrückzieher) – freier

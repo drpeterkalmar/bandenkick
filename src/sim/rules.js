@@ -274,13 +274,17 @@ export class Rules {
     }
     if (inp.throw || inp.punt || auto) {
       let tx = inp.aimX, tz = inp.aimZ;
-      if (tx === undefined || (Math.hypot(tx - pl.x, tz - pl.z) < 1 && !inp.punt)) {
+      let kind = inp.punt ? 'punt' : 'throw';
+      // n15 E9: ohne Zielrichtung (Kick-Knopf ohne Stick) in den Lauf des Vorstürmers
+      const az = tx === undefined && P.anspiel && g.bots ? g.bots.anspielZiel(pl) : null;
+      if (az) { tx = az[0]; tz = az[1]; kind = az[2]; }
+      else if (tx === undefined || (Math.hypot(tx - pl.x, tz - pl.z) < 1 && !inp.punt)) {
         // Ziel-Hilfe: freiester Mitspieler, sonst geradeaus
         const mate = this.bestMate(pl);
         if (mate) { tx = mate.x + mate.vx * 0.6; tz = mate.z + mate.vz * 0.6; }
         else { tx = pl.x + side * 10; tz = pl.z; }
       }
-      this.release(pl, tx, tz, inp.punt ? 'punt' : 'throw', inp.power ?? 1);
+      this.release(pl, tx, tz, kind, inp.power ?? 1);
       if (auto) g.events.push({ type: 'sixsec', player: pl.id });
     }
   }
