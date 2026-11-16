@@ -393,6 +393,9 @@ export const DEFAULTS = {
   // Nacht 2d (Peter: „nach tor Actionreplay mit extrem zoom und effekt fan cam slo mo im moment des Ballkontaktes und im
   // Torbereich“): Wiederholung nach jedem Tor im Spiel (nicht im Training), nach replayDelay s Live-Jubel; Tippen überspringt
   replay: 1,              // 0 = aus (sonst im Pause-Menü umschaltbar)                              [?replay=0]
+  // Peter 13.11.: zur Halbzeit (max. 2) und nach dem Abpfiff (max. 3, das beste zuletzt) die schönsten Tore als Fan-Edit;
+  // 0 = nur der Knopf „Tor des Spiels“ nach dem Abpfiff wie n6                                [?highlights=0]
+  highlights: 1,
   replayDelay: 1.0,       // s Live-Jubel vor der Wiederholung
   // n13 (Peter 07.11.: „replayzoom weiter entfernt“): Abstand der nahen Replay-Kameras (Fan-Edit-Makro, Kontakt-Zoom) × replayweit,
   // Blick zur Körpermitte, damit Schütze und Ball ganz im Bild sind. 1 = 0.9.1                              [?replayweit=1]
