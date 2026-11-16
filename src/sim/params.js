@@ -357,7 +357,7 @@ export const DEFAULTS = {
   // Mitspieler → Pass, sonst hoher Befreiungsschlag ins mittlere Drittel (Landepunkt frei von Gegnern) oder in eine gegnerische Ecke
   // (Abpraller). 0 = Stand 6416fb8                                                                    [?eigenhaelfte=0]
   eigenhaelfte: 1,
-  immerNah: 10, immerMax: 3, immerLunge: 0.45, immerHoch: 1.05, immerWechsel: 6, immerSperre: 0.35, immerNot: 0.6, immerEil: 0.45,
+  immerNah: 10, immerMax: 3, immerLunge: 0.75, immerHoch: 1.05, immerWechsel: 6, immerSperre: 0.35, immerNot: 0.6, immerEil: 0.45,
   salto: 1,               // Salto-Hacke (Skorpion-Kick) als seltene Luft-Technik, Hackenschuss am Boden [?salto=0]
   // n13 (Peter 07.11.: „Vollspann und Innenrist Außenrist können nur max 120 Grad vom Tor abgefeuert werden …“, src/sim/spektakel.js):
   // Schuss-Tipp mit dem Tor außerhalb ±schusskegel° vor dem Schützen → Lupfer-Pass zum besser postierten Mitspieler (Direktabnahme),
@@ -587,6 +587,8 @@ export const DEFAULTS = {
 // n14: alle n14-Regler auf 0.10.0 (für Tests, die das Verhalten bis 0.10.0 prüfen, und den Vergleich im Bericht; ?tierform=2 zusätzlich
 // für die Figuren – das liest main.js)
 export const N14_AUS = 'effet=18&passhoch=1&passtempo=1&passraum=0&schirm=1&luftwucht=1&replayweit=2&botSicher=0.015';
+// n15: alle n15-Regler zurück auf 6416fb8 (Peters Standardwerte magnet 3 / luft 1,1 bleiben – die stellt ?magnet=2.4&luft=1 zurück)
+export const N15_AUS = 'kickimmer=0&graetschklug=0&eigenhaelfte=0&megafersecut=1&schusscam=0&skills=0&akro2=0&easy=0&effet2=0&flankehoch=1&anspiel=0&ballfuehrung=0';
 // Kurzformen für Peter (deutsch) → interne Namen
 export const ALIASES = {
   graetschklug: 'graetschKlug', dach: 'roof', sprint: 'vSprint', lauf: 'vRun', antritt: 'tauAcc0', wende: 'aLat', hilfe: 'assist',
