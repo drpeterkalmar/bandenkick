@@ -604,7 +604,7 @@ const EFFET0100 = { clSteig: 0.7, clMaxAkro: 0.6, aussenSpin: 0.85, passEffet: 0
 // n15 E10 ?ballfuehrung=0: Ballführung/Annahme wie vor Nachtrag 2, sofern nicht ausdrücklich übersteuert
 export const BF0 = { reach: 0.48, cutReach: 0.85, reachH: 0.40, magnetK: 112, magnetC: 30, magnetAcc: 42, magnetTurn0: 60, magnetTurnMin: 0.5, magnetKehr: 0.15, annahmeD: 0.75, annahmeDPass: 0.9, annahmeRel: 11, annahmeVy: 0.5, annahmeBlick: -0.15 };
 // n11 ?akro=0: alles wie 0.8.0, sofern nicht ausdrücklich übersteuert
-export const AKRO0 = { turfEn: 0.621, jumpMax: 0.6, sprungAkro: 1, spinMax: 10, backspinMax: 7, bananeSpinMax: 1.2, aussenSpin: 0.75, autotech: 0, einknopf: 0, salto: 0, hochpass: 0, kurvenpass: 0, passEffet: 0, passraum: 0, clSteig: 0, clMaxAkro: 0.6, mitnahme: 0, g: 9.81, schusskegel: 0 }; // (n12: Mitnahme gab es in 0.8.0 nicht; n13: Schwerkraft 9,81 wie bis 0.9.1)
+export const AKRO0 = { turfEn: 0.621, jumpMax: 0.6, sprungAkro: 1, spinMax: 10, backspinMax: 7, bananeSpinMax: 1.2, aussenSpin: 0.75, autotech: 0, einknopf: 0, salto: 0, hochpass: 0, kurvenpass: 0, passEffet: 0, passraum: 0, clSteig: 0, clMaxAkro: 0.6, mitnahme: 0, g: 9.81, schusskegel: 0, ballfuehrung: 0 }; // (n15: auch Ballführung/Reichweite wie vor Nachtrag 2) // (n12: Mitnahme gab es in 0.8.0 nicht; n13: Schwerkraft 9,81 wie bis 0.9.1)
 
 // Liest Overrides aus einem Query-String (oder Objekt) und gibt ein vollständiges Parameter-Objekt zurück.
 function parseQuery(s) {

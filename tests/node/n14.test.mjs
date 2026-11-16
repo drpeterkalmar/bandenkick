@@ -27,7 +27,7 @@ check('?aussen= ist der Außenrist-Drall, Standard = Innenseite', makeParams('au
 
 // ---------- Etappe 5: Effet ----------
 {
-  const a = physik(N14_AUS), b = physik('');
+  const a = physik(N14_AUS), b = physik('effet2=0'); // (n15 E7 legt noch einmal +28 % drauf – geprüft in n15_flanke/n11-physik, hier der n14-Schritt)
   check('Effet: Kurve eines Innenseit-Schusses (25 m/s) über 20 m ÷ 0.10.0', b.kurve20 / a.kurve20, 1.7, 2.2, '×', 1.9, `${a.kurve20.toFixed(1)} → ${b.kurve20.toFixed(1)} m (Ziel ~9–10 m)`);
 }
 
