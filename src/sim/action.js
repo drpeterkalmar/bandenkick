@@ -131,6 +131,8 @@ export class ActionRegie {
   }
   // nach jedem Spieltakt: evs = Ereignisse, game = Spiel; gibt den neuen Moment zurück (oder null)
   pruefe(evs, game) {
+    // n15 E3: letzten Schuss merken (auch unter der Schwelle) – eine Parade/ein Hechtsprung danach zeigt zuerst den Schuss
+    for (const e of evs) if (e.type === 'kick' && e.kind === 'shot') { const b = bewerte(e, game); if (b) this.letzterSchuss = { b, t: game.t }; }
     if (this.stufe === 'aus' || this.moment || !game.match) return null;
     const S = AKTION.stufen[this.stufe] || AKTION.stufen.selten;
     if (game.t - this.letzt < Math.max(AKTION.abkuehl, S.abk || 0)) return null;
@@ -141,11 +143,18 @@ export class ActionRegie {
     // Zufall: höhere Wertung → wahrscheinlicher; Spektakulärstes fast immer
     const p = S.p * (0.6 + 0.6 * best.w);
     if (this.rnd() > p) return null;
+    // n15 E3 (schusscam): Tormann-Moment kurz nach einem Schuss → Moment des Schusses (Schütze + Ball), Rückblick bis zum Kontakt
+    let rueckSchuss = 0;
+    const LS = this.letzterSchuss, P = game.P;
+    if (P && P.schusscam && LS && /parade|hechtsprung|fang/.test(best.grund) && game.t - LS.t <= (P.schusscamT ?? 0.9)) {
+      best = { ...LS.b, w: best.w, art: 'ramp', grund: 'schuss→' + best.grund };
+      rueckSchuss = Math.min(P.schusscamT ?? 0.9, game.t - LS.t + 0.2);
+    }
     if (best.art === 'bullet' && game.t - (this.letztBullet ?? -1e9) < AKTION.bulletAbkuehl) best = { ...best, art: 'ramp' };
     if (best.art === 'bullet') this.letztBullet = game.t;
     // Rückblick: die Zeitlupe zeigt die letzten Zehntel vor dem Auslösen aus der Aufzeichnung (Kontakt, Parade), die
     // Simulation steht so lange; der Hechtsprung beginnt erst – da braucht es keinen
-    const rueck = best.art === 'ramp' && best.grund !== 'hechtsprung' ? (best.grund === 'parade' || best.grund === 'fang' || best.grund === 'hechtfang' ? 0.16 : 0.25) : 0; // Schuss: Ausholen + Kontakt
+    const rueck = rueckSchuss || (best.art === 'ramp' && best.grund !== 'hechtsprung' ? (best.grund === 'parade' || best.grund === 'fang' || best.grund === 'hechtfang' ? 0.16 : 0.25) : 0); // Schuss: Ausholen + Kontakt
     this.moment = { ...best, t: 0, tSpiel: game.t, real: 0, rueck };
     this.letzt = game.t; this.zahl++;
     this.log.push({ t: game.t, grund: best.grund, art: best.art, w: +best.w.toFixed(2) });

@@ -318,6 +318,11 @@ export const DEFAULTS = {
   // den Ball → Grätsche (mit Anlauf, auch wenn er abschirmt); Ball weit (> immerWechsel m) → Wechsel zum Mitspieler, der ihn am schnellsten
   // erreicht (übernimmt den Druck); kein freier Pass → nach immerSperre s Schuss bzw. Befreiung statt „Ball bleibt am Fuß“. Kein
   // Pass-Knopf mehr (HUD, Menü), Tormann-Hechten/-Abwurf auf dem Kick-Knopf. 0 = Stand 6416fb8                       [?kickimmer=0]
+  // n15 E3 (Peter 14.11.: „megaferse-cutscene entfernen · die cutscene bei schuss aufs tor mit slomo zeigt am handy nicht den schuss, sondern nur
+  // einen hechtenden torwart“): keine Comic-Einblendung/Zeitlupe bei der Megaferse (die Technik bleibt; 1 = wieder an), und löst eine Parade,
+  // ein Hechtsprung oder Fang ≤ schusscamT s nach einem Schuss die Zeitlupe aus, beginnt sie mit dem Rückblick auf den Schuss (Schütze, Kontakt,
+  // Ballflug), der Tormann kommt danach (0 = Tormann-Blick wie vorher)                       [?megafersecut=1, ?schusscam=0]
+  megafersecut: 0, schusscam: 1, schusscamT: 0.9,
   kickimmer: 1,
   // n15 E10 (Peter 16.11.: „Ballmagnet/Ballführung verstärken. Ich verliere den Ball bei Richtungswechsel und kann ihn aus der Luft nicht
   // mitnehmen“): Haltekraft +50 % (magnetK/Acc/C), Magnet lässt bei Wende/Kehrtwende weniger los, Reichweite +50 % (reach, cutReach, reachH),

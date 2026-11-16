@@ -995,7 +995,7 @@ export class Player {
       if (w && w.art === 'megaferse') {
         const plan = this.applyPlan(planMegaferse(game, this), game, rel);
         game.ueberrascht = { team: this.team, bis: game.t + 0.6, dt: this.P.jonglUeberrascht }; // Fersenschuss rückwärts: Tormann überrascht
-        game.events.push({ type: 'comic', text: 'MEGAFERSE!', art: 'megaferse', player: this.id, human: game.human === this.id });
+        if (this.P.megafersecut) game.events.push({ type: 'comic', text: 'MEGAFERSE!', art: 'megaferse', player: this.id, human: game.human === this.id }); // n15 E3: Standard ohne Einblendung
         return plan;
       }
       if (w && w.art === 'lupfer') {
