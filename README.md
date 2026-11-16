@@ -334,6 +334,7 @@ Ball mit (Sohle/Außenseite). `?zack=0` = altes Gefühl aus Nacht 1 zum Vergleic
 | `?luft=0` | keine automatischen Luftball-Techniken (Volley, Kopfball …) |
 | `?action=0` / `1` / `2` | n6 **Action-Momente** live (Zoom-Punch, Speed-Ramp, Bullet-Time): aus / selten (Standard) / oft – im Pause-Menü „🎬 Action-Momente“; `?zeitlupe=0` = aus |
 | `?replay=0`, `?replayDelay=1` | keine Tor-Wiederholung (sonst im Pause-Menü umschaltbar); Sekunden Live-Jubel davor (Fan-Edit: mindestens 2 s) |
+| `?highlights=0` | keine Highlights (sonst zur Halbzeit die 2 schönsten Tore der 1. Halbzeit, nach dem Abpfiff die 3 schönsten des Spiels, das beste zuletzt als „🏆 Tor des Spiels“; Tippen/Schuss/Pass überspringt); nur der Knopf „Tor des Spiels“ wie n6 |
 | `?edit=0` / `?edit=1` | n6 Tor-Wiederholung **Klassisch** (ruhige TV-Wiederholung wie n5) / **Fan-Edit** (TikTok-Stil, Standard); im Pause-Menü „Tor-Wiederholung: Fan-Edit / Klassisch / Aus“ |
 | `?clip=hoch` / `quer` | n6 Fan-Edit auf Querformat-Bildschirmen als 9:16-Ausschnitt („Clip im Hochformat“) / Vollbild |
 | `?blitze=sanft` / `voll` | n6 „Blitze reduzieren“: Flashes → sanftes Aufhellen, kein RGB-Zucken, weniger Wackler (Standard nach Systemeinstellung „Bewegung reduzieren“) |
