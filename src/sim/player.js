@@ -186,7 +186,7 @@ export class Player {
     }
     // n15 E1: Kick-Druck vorgemerkt, ein Gegner führt den Ball → Grätsche (auch mit Anlauf: sobald er in Reichweite ist); ebenso ein freier,
     // flacher Ball, dem der Spieler nicht näher kommt (Spitzel-Grätsche statt endlos hinterherlaufen)
-    if (this.pending && this.pending.immer && !held && (this.tackleOk(game) || this.spitzelOk(game))) { this.startTackle(game, this.pending.btn === 'pass' ? 'pass' : 'shot', this.pending.stick); return; }
+    if (this.pending && this.pending.immer && !held && (!P.graetschKlug || game.human !== this.id || this.pending.age <= P.klugAlter) && (this.tackleOk(game) || this.spitzelOk(game))) { this.startTackle(game, this.pending.btn === 'pass' ? 'pass' : 'shot', this.pending.stick); return; }
     const luftWarten = !!lw.wait && P.autotech;
     // n13 Lupfer-Pass: der Empfänger nimmt den Ball direkt aus der Luft (Volley, Seitfall-, Fallrückzieher, Kopfball …)
     if (this.direktAuf) {
@@ -415,7 +415,7 @@ export class Player {
       settle = ahead > 0.6 && closing < -0.8 && this.pending.age < 0.25 && !oppNear(game, this, 1.4);
     }
     // n15 E1: Kick-Druck, Ball am Fuß des abschirmenden Gegners → Grätsche aus dem Stand (der Fuß käme nicht durch den Körper)
-    if (!touched && immer && !handsFirst && inReach && P.graetsche && game.match && ball.p.y < 0.6 && this.shieldBlocked(game)) { this.startTackle(game, this.pending.btn === 'pass' ? 'pass' : 'shot', this.pending.stick); return; }
+    if (!touched && immer && !handsFirst && inReach && P.graetsche && game.match && ball.p.y < 0.6 && this.shieldBlocked(game) && (!P.graetschKlug || game.human !== this.id || (this.pending.age <= P.klugAlter && this.klugOk(game, Math.hypot(ball.p.x - this.x, ball.p.z - this.z))))) { this.startTackle(game, this.pending.btn === 'pass' ? 'pass' : 'shot', this.pending.stick); return; }
     if (!touched && !handsFirst && inReach && rel < (immer ? 2 * P.ctrlRelMax : P.ctrlRelMax) && !settle && !this.shieldBlocked(game)) {
       if (this.pending && this.pending.locked) {
         // Tipp: Modus steht noch nicht fest (≤ doppel s) – Ball nicht wegspielen, gleich kommt der Kick
@@ -867,6 +867,7 @@ export class Player {
     if (P.passfix && game.lastTouch === this.id && game.t - this.lastTouchT < 1.5) return false;
     const d = Math.hypot(b.p.x - this.x, b.p.z - this.z);
     if (d > P.tackleReach) return false;
+    if (P.graetschKlug && game.human === this.id) return this.klugOk(game, d); // Peter 16.11.: gesteuerter Spieler nur noch, wenn sinnvoll
     for (const o of game.players) {
       if (o.team === this.team) continue;
       const od = Math.hypot(b.p.x - o.x, b.p.z - o.z);
@@ -875,8 +876,20 @@ export class Player {
     return false;
   }
   // n15 E1: freier flacher Ball ≤ tackleReach, der Spieler läuft schon ≥ 0,3 s hin und kommt kaum näher (< 1,5 m/s) → Spitzel-Grätsche
+  // Peter 16.11. („keine ständigen Auto-Grätschen“, ?graetschklug=0 = vorher): der gesteuerte Spieler grätscht nur, wenn ein Gegner den Ball
+  // führt (zuletzt berührt ≤ 1 s, Ball ≤ 1 m vor seinem Fuß), der Ball ≤ klugReach m entfernt ist und er nicht von hinten kommt (> 120° hinter
+  // der Blickrichtung des Führenden). Freier Ball → hinlaufen und kicken (keine Spitzel-Grätsche).
+  klugOk(game, d) {
+    const P = this.P, b = game.ball, o = game.lastTouch >= 0 ? game.players[game.lastTouch] : null;
+    if (d > P.klugReach || !o || o.team === this.team || game.t - o.lastTouchT > 1.0) return false;
+    const [ofx, ofz] = o.footPoint();
+    if (Math.hypot(b.p.x - ofx, b.p.z - ofz) > 1.0) return false;
+    const dx = this.x - o.x, dz = this.z - o.z, l = Math.hypot(dx, dz) || 1;
+    return (dx * Math.cos(o.face) + dz * Math.sin(o.face)) / l >= -0.5;
+  }
   spitzelOk(game) {
     const P = this.P, b = game.ball, pd = this.pending;
+    if (P.graetschKlug && game.human === this.id) return false;
     if (!P.graetsche || !game.match || !pd || pd.age < 0.3 || b.held >= 0 || this.air || this.fall || this.slide || this.hand.mode !== 'none' || b.p.y > 0.5) return false;
     if (game.rules.handsOk(this)) return false;
     const dx = b.p.x - this.x, dz = b.p.z - this.z, d = Math.hypot(dx, dz);

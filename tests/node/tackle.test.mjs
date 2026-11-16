@@ -13,7 +13,9 @@ const check = (name, value, lo, hi, unit, target, note = '') => { const ok = val
 const H = (o = {}) => ({ ...EMPTY_INPUT, mx: 0, mz: 0, passDown: false, shotDown: false, ...o });
 
 // Orange: Mensch (0) + Mitspieler (1); Blau: Gegner (2) mit Ball. Ohne Bots (alle stehen, außer dem Menschen).
+// (n15 Nachtrag 5: die Mechanik-Szenen laufen ohne die „kluge“ Grätsche – graetschklug=0; die neue Regel prüft Teil 0 unten)
 function scene(qs, { me, opp, ball, mate = [4, -4], oppFace = 0 }) {
+  if (!qs.includes('graetschklug')) qs = 'graetschklug=0' + (qs ? '&' + qs : '');
   const g = new Game(makeParams(qs), 5, { match: true, perTeam: [2, 1], human: 0, bots: false });
   g.rules.phase = 'play';
   const [h, m, o] = g.players;
@@ -33,6 +35,19 @@ function tap(g, btn = 'shot', T = 2, stick = [0, 0]) {
 }
 const first = (ev, f) => ev.find(f) || null;
 
+// 0) n15 Nachtrag 5: Grätsche nur, wenn sinnvoll – Gegner führt den Ball (Ball vor seinem Fuß), nah (≤ klugReach), von vorn/seitlich
+{
+  const K = 'graetschklug=1';
+  // Gegner bei (0,6 | 0,3) mit Blick zum Menschen (oppFace π), Ball 0,45 m vor seinem Fuß
+  const g1 = scene(K, { me: [-1.2, 0], opp: [0.6, 0.3], ball: [0.05, 0.25], oppFace: Math.PI }); g1.players[2].lastTouchT = g1.t; // (er hat den Ball eben berührt)
+  const e1 = tap(g1), s1 = first(e1, (e) => e.type === 'tackle' && e.phase === 'start'), h1 = first(e1, (e) => e.type === 'tackle' && e.phase === 'hit' && e.result === 'ball');
+  check('Nachtrag 5: Gegner führt, von vorn ≤ 1,8 m, Druck → Grätsche (Ball erobert)', s1 && h1 ? 1 : 0, 1, 1, '', 1, s1 ? `nach ${s1.t.toFixed(2)} s` : '');
+  const g2 = scene(K, { me: [-1.2, 0], opp: [5, 4], ball: [0.2, 0] }); g2.lastTouch = -1;
+  check('Nachtrag 5: freier Ball → keine Grätsche', first(tap(g2), (e) => e.type === 'tackle') ? 0 : 1, 1, 1, '', 1);
+  // von hinten: Mensch hinter dem Gegner, Ball vor dem Gegner (auf der abgewandten Seite)
+  const g3 = scene(K, { me: [-0.8, 0.3], opp: [0.4, 0.3], ball: [1.1, 0.3], oppFace: 0 }); g3.players[2].lastTouchT = g3.t;
+  check('Nachtrag 5: Gegner führt, Mensch von hinten → keine Grätsche', first(tap(g3), (e) => e.type === 'tackle' && e.phase === 'start') ? 0 : 1, 1, 1, '', 1);
+}
 // 1) Auslöser
 {
   const g = scene('', { me: [-1.8, 0], opp: [0.6, 0.3], ball: [0.2, 0.1], oppFace: 0 });
@@ -48,10 +63,13 @@ const first = (ev, f) => ev.find(f) || null;
   const g4 = scene('kickimmer=0', { me: [-4.5, 0], opp: [0.6, 0.3], ball: [0.2, 0.1] });
   const ev4 = tap(g4);
   check('?kickimmer=0: Gegner am Ball in 4,5 m → keine Grätsche (läuft hin)', first(ev4, (e) => e.type === 'tackle') ? 0 : 1, 1, 1, '', 1);
-  // n15 E1: der Kick-Druck verfällt nicht – der Spieler läuft hin und grätscht, sobald er in Reichweite ist
-  const gN15 = scene('', { me: [-4.5, 0], opp: [0.6, 0.3], ball: [0.2, 0.1] });
+  // n15 E1 + Nachtrag 5 (Peter 16.11.: „keine ständigen Auto-Grätschen“): der gemerkte Druck löst keine Grätsche mit Anlauf mehr aus
+  const gN15 = scene('graetschklug=1', { me: [-4.5, 0], opp: [0.6, 0.3], ball: [0.2, 0.1] });
   const evN15 = tap(gN15), st5 = first(evN15, (e) => e.type === 'tackle' && e.phase === 'start');
-  check('n15: Gegner am Ball in 4,5 m → hinlaufen, dann Grätsche (mit Anlauf)', st5 && st5.t > 0.15 ? 1 : 0, 1, 1, '', 1, st5 ? `nach ${st5.t.toFixed(2)} s` : '');
+  check('n15 Standard: Gegner am Ball in 4,5 m → hinlaufen, keine Grätsche aus dem alten Druck', st5 ? 0 : 1, 1, 1, '', 1, st5 ? `Grätsche nach ${st5.t.toFixed(2)} s` : '');
+  const gN15b = scene('graetschklug=0', { me: [-4.5, 0], opp: [0.6, 0.3], ball: [0.2, 0.1] });
+  const st5b = first(tap(gN15b), (e) => e.type === 'tackle' && e.phase === 'start');
+  check('?graetschklug=0 (n15 E1): Gegner am Ball in 4,5 m → hinlaufen, dann Grätsche', st5b && st5b.t > 0.15 ? 1 : 0, 1, 1, '', 1);
   const g5 = scene('graetsche=0', { me: [-1.8, 0], opp: [0.6, 0.3], ball: [0.2, 0.1] });
   check('?graetsche=0: aus', first(tap(g5), (e) => e.type === 'tackle') ? 0 : 1, 1, 1, '', 1);
 }

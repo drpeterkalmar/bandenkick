@@ -340,6 +340,12 @@ Ball mit (Sohle/Außenseite). `?zack=0` = altes Gefühl aus Nacht 1 zum Vergleic
 | `?blitze=sanft` / `voll` | n6 „Blitze reduzieren“: Flashes → sanftes Aufhellen, kein RGB-Zucken, weniger Wackler (Standard nach Systemeinstellung „Bewegung reduzieren“) |
 | `?challenge=torwand` | direkt in eine Übung (torwand, volley, bande, dribbel, elfmeter, doppelpass, tw_serie, tw_reaktion, tw_1gegen1) |
 | `?nohelp` | Hilfekarte beim ersten Start überspringen |
+| `?kickimmer=0` | n15 E1: Kick-Druck wie 6416fb8 (verfällt nach 1,5 s, Pass-Knopf/Menü-Schalter wieder da); Standard: ein Kick-Knopf, jeder Druck führt zu Kick, Kopfball, Grätsche oder Hinlaufen + Kontakt |
+| `?graetschklug=0` | n15 Nachtrag 5 (Peter 16.11.: „keine ständigen Auto-Grätschen“): gesteuerter Spieler grätscht wieder bei jedem näheren Gegner/freiem Ball; Standard: nur wenn ein Gegner den Ball führt, ≤ 1,8 m, nicht von hinten, ≤ 0,4 s nach dem Druck |
+| `?eigenhaelfte=0` | n15 E2: Torschuss auch aus der eigenen Hälfte; Standard: Pass, sonst hoher Befreiungsschlag ins mittlere Drittel oder in eine gegnerische Ecke |
+| `?ballfuehrung=0` | n15 E10: Ballführung/Annahme wie vor Nachtrag 2 (Reichweite, Magnet bei Wende, Luftannahme) |
+| `?anspiel=0` | n15 E9: keine Anspielstation beim Tormann-Ball |
+| `?megafersecut=1`, `?schusscam=0` | n15 E3: Megaferse wieder mit Comic-Einblendung; Tormann-Zeitlupe ohne Rückblick auf den Schuss |
 
 ## Technik
 - three.js r186 als ES-Module mit Import-Map (`lib/three/`), **kein Build-Schritt**; GitHub Pages; PWA mit
@@ -473,6 +479,10 @@ python3 tools/fetch_assets.py && python3 tools/make_assets.py   # Assets neu bau
 Browser-Tests laufen headless über die GPU (ANGLE/Metal), nie zwei Browser gleichzeitig.
 
 ## Änderungen
+- **n15 (14.–16.11.)** – ein Kick-Knopf, der immer auslöst (Druck → Ballaktion 44 → ~85–90 %), kein Torschuss aus der eigenen Hälfte,
+  Ballführung/Annahme (Nachtrag 2), Anspielstation beim Tormann-Ball (Nachtrag 1), Grätsche nur, wenn sinnvoll (Nachtrag 5: Grätschen des
+  gesteuerten Spielers 9,8 → 1,75 je Minute), Megaferse ohne Einblendung, Torschuss-Zeitlupe mit Rückblick auf den Schuss. Peters
+  Standardwerte magnet 3 / luft 1,1 (16.11.) bleiben. Details und Messungen: N15_BERICHT.md.
 - **n14 Spielgefühl (13.11., Version 0.11.0)** – Peter 13.11.: „mach die pässe alle höher und schneller. Der Passknopf soll immer in den
   freien Raum richtung tor gehen, am rand gerne über bande. Ballmagnet zum ballabschirmen verstärken. Fallrückzieher und Kopfbälle härter
   machen. Spielfiguren bekommen kürzeren Torso. Wiederholungen sind noch weiter herausgezoomt“ + „viel mehr effet … auch pässen“.

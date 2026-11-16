@@ -417,6 +417,9 @@ export const DEFAULTS = {
   // gedrückt, Ball bzw. ballführender Gegner ≤ tackleReach m und ein Gegner näher am Ball → Grätsche in Ballrichtung
   graetsche: 1,           // 0 = aus (dann läuft der Spieler wie bisher hin und merkt den Kick vor)    [?graetsche=0]
   tackleReach: 2.5,       // m Abstand Körper ↔ Ball, bis zu dem gegrätscht wird
+  graetschKlug: 1,        // Peter 16.11.: gesteuerter Spieler grätscht nur, wenn ein Gegner den Ball führt, nah, nicht von hinten; keine Spitzel-Grätsche [?graetschklug=0 = vorher]
+  klugReach: 1.8,         // m Abstand Körper ↔ Ball dafür
+  klugAlter: 0.4,         // s: nur so lange nach dem Druck (danach läuft er hin und kickt, keine Grätsche mehr aus dem gemerkten Druck)
   slideT: 0.5,            // s Rutschen
   slideGroundT: 0.6,      // s danach am Boden
   slideSpeed: 6.0,        // m/s Anfangstempo des Rutschens (mindestens, sonst das Lauftempo)
@@ -571,7 +574,7 @@ export const DEFAULTS = {
 export const N14_AUS = 'effet=18&passhoch=1&passtempo=1&passraum=0&schirm=1&luftwucht=1&replayweit=2&botSicher=0.015';
 // Kurzformen für Peter (deutsch) → interne Namen
 export const ALIASES = {
-  dach: 'roof', sprint: 'vSprint', lauf: 'vRun', antritt: 'tauAcc0', wende: 'aLat', hilfe: 'assist',
+  graetschklug: 'graetschKlug', dach: 'roof', sprint: 'vSprint', lauf: 'vRun', antritt: 'tauAcc0', wende: 'aLat', hilfe: 'assist',
   schuss: 'shotMax', pass: 'passSpeed', bande: 'boardEn', netz: 'netH', dachhoehe: 'roofH',
   abprall: 'turfEn', rollen: 'turfRoll0', effet: 'spinMax', torbreite: 'goalW', torhoehe: 'goalH',
   stemm: 'aPlant', bremse: 'aBrake', kurve: 'curveDeg', bots: 'botLevel',
