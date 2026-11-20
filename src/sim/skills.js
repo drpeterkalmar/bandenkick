@@ -57,8 +57,18 @@ export function skillCheck(game, pl) {
   const [fx, fz] = pl.footPoint();
   if (Math.hypot(b.p.x - fx, b.p.z - fz) > 1.0) return false;
   if (pl.pending && game.human === pl.id) return false; // Peter hat Kick gedrückt: der Kick hat Vorrang
-  const th = bedrohung(game, pl);
+  let th = bedrohung(game, pl);
+  if (!th && P.chaos) { // Chaos-Modus (Peter 20.11.): jede Sekunde am Ball ein zufälliger Trick, auch ohne Gegner [?chaos=0 = aus]
+    const fx2 = Math.cos(pl.face), fz2 = Math.sin(pl.face);
+    th = { o: { id: -1, x: pl.x + fx2 * 2, z: pl.z + fz2 * 2, stumbleT: 0, slide: null }, art: "frontal", chaos: true };
+  }
   if (!th) return false;
+  if (th.chaos) {
+    pl.skillNext = game.t + P.chaos;
+    const r = game.rng, id = SKILL_KEYS[Math.floor(r.next() * SKILL_KEYS.length) % SKILL_KEYS.length];
+    starte(game, pl, id, th, true);
+    return true;
+  }
   pl.skillNext = game.t + P.skillPause;
   const r = game.rng;
   if (r.next() > (game.human === pl.id ? P.skillChance : P.skillBot)) return false;
