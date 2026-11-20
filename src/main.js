@@ -675,7 +675,7 @@ function challengeFrame() {
 function aimFrame(pl, raw, km) {
   if (!markers) return;
   const tap = !P.laden && pl.pending && pl.pending.tap ? pl.pending : null;
-  if (mode !== 'play' || km || game.human < 0 || P.treffpunkt) { markers.hide(); return; }
+  if (mode !== 'play' || km || game.human < 0 || P.treffpunkt || !P.zielhilfe) { markers.hide(); return; } // Peter 20.11.: Zielmarker aus [?zielhilfe=1 = an]
   if (!(pl.charging || pl.armed || tap)) {
     // Nacht 2e (passfix): Pass unterwegs → Ring am Empfänger (pulsierend), bis er den Ball hat; eigener Ball am Fuß → schwacher
     // Ring an dem Mitspieler, der den Pass jetzt bekäme (wohin der Pass geht, sieht man vor dem Tippen)
