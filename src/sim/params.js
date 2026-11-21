@@ -343,6 +343,16 @@ export const DEFAULTS = {
   // Peter 21.11.: alle Boden-Markierungen im Spiel aus (Ring + Pfeil unter dem gesteuerten Spieler, goldener Traumpass-Ring,
   // Tormann-Bodenring). Wiederholungs-Effekte bleiben. 1 = Stand 0.11.1 [?marker=1]
   marker: 0,
+  // n16 B (Peter 21.11.: „aus der Ecke eher flanken als schießen“, src/sim/akro.js eckZone): Ball in der Eckzone (≤ eckX m vor der
+  // Grundlinie, seitlich neben dem Tor, Toröffnung < eckWinkel °) → Ein-Knopf (Mensch) spielt die Flanke (hoher Pass vor das Tor) statt
+  // zu schießen, Schuss nur bei Torchance ≥ eckSchuss bzw. leerem Tor; Bots: Schuss-Nutzen × eckBot, Pässe vor das Tor × eckPassBonus.
+  // 0 = Stand 0.11.1                                                                                   [?eckflanke=0]
+  // n16 C (Peter 21.11.: „Torabstoß/Abwurf/Abschlag des Tormanns darf nicht abgefangen werden können“, rules.js release/abstossSperre):
+  // Abwurf mit einem Gegner im Weg wird zum hohen Abschlag über ihn hinweg; bis zur ersten Berührung eines Mitspielers (höchstens
+  // abstossT s, Ball tot oder in der Hand) kommt kein Gegner an den Ball (Fuß, Kopf, Körper, Grätsche, Hände). Gilt für Mensch-Tormann,
+  // Auto-Torwart und Bots. 0 = Stand 0.11.1                                                              [?abstoss=0]
+  abstoss: 1, abstossT: 5,
+  eckflanke: 1, eckX: 5, eckRand: 0.8, eckWinkel: 20, eckSchuss: 0.45, eckBot: 0.2, eckPassBonus: 1.3,
   easy: 0, easyTakt: 0.3, easyVorteil: 1.5, easySchuss: 7.5, easyFrei: 1.8, easySicher: 0.05,
   kickimmer: 1,
   // n15 E10 (Peter 16.11.: „Ballmagnet/Ballführung verstärken. Ich verliere den Ball bei Richtungswechsel und kann ihn aus der Luft nicht

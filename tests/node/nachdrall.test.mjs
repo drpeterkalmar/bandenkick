@@ -64,7 +64,7 @@ function shot(qs, stickAfter, stickAt = [0, 0], v = 22, el = 7) {
   const s = summary(await runProbe('', 20, 'st2', 6)), s0 = summary(await runProbe('nachdrall=0', 20, 'st2', 6));
   check('Bot-Spiel: Nachdrall je Spiel (Stufe 2, 15 %)', s.nachdrallPerGame, 3, 15, '', null, `Schüsse/Spiel ${s.shotsPerGame.toFixed(1)}`);
   check('… Torquote mit − ohne Nachdrall', s.goalsPerShot - s0.goalsPerShot, -10, 10, 'Punkte', 0, `${s.goalsPerShot.toFixed(1)} % / ?nachdrall=0: ${s0.goalsPerShot.toFixed(1)} %`);
-  check('… Tore je Schuss im Ziel', s.goalsPerShot, 25, 35, '%', 30);
+  check('… Tore je Schuss im Ziel', s.goalsPerShot, 25, 42, '%', 30, 'n16 B: aus der Ecke Flanke statt Schuss – die Schüsse aus spitzem Winkel (Torquote 2–15 %) fallen zur Hälfte weg, die Quote je Schuss steigt um 3–5 Punkte (N16_BERICHT.md)');
   check('… Hänger / Numerik', s.stuck + s.faults, 0, 0, '', 0);
 }
 process.exit(report('Nachdrall (n7 Vorlagen E2)', rows, 'nachdrall') ? 0 : 1);

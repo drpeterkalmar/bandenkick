@@ -70,6 +70,13 @@ export function autoShot(game, pl, stick = null) {
 // Ein-Knopf-Kick (Standard seit Peter 13.11., ?einknopf=0 = zwei Knöpfe): Schuss, wenn die Torchance gut genug ist (nah, Tor in Stick-/Blickrichtung), sonst Pass zum
 // Mitspieler in dieser Richtung (falls einer da ist), sonst doch Schuss
 // n15 E2: Ball in der eigenen Hälfte (vom Angriffstor aus gesehen hinter der Mittellinie)?
+// n16 B (Peter 21.11.: „aus der Ecke eher flanken als schießen“): sichtbare Toröffnung (° zwischen den Pfosten) vom Punkt (x, z) aus,
+// und Eckzone = nah an der Grundlinie (≤ eckX m), seitlich neben dem Tor (|z| ≥ halbe Torbreite + eckRand m), spitzer Winkel (< eckWinkel °)
+export function torWinkel(P, gx, x, z) {
+  const dx = Math.max(0.05, Math.abs(gx - x)), gw = P.goalW / 2;
+  return Math.abs(Math.atan2(z + gw, dx) - Math.atan2(z - gw, dx)) / DEG;
+}
+export const eckZone = (P, gx, x, z) => Math.abs(gx - x) <= P.eckX && Math.abs(z) >= P.goalW / 2 + P.eckRand && torWinkel(P, gx, x, z) < P.eckWinkel;
 export const eigeneHaelfte = (game, pl) => game.match && !game.challenge && Math.sign(attackGoalX(game, pl)) * game.ball.p.x < 0;
 export function einKnopfArt(game, pl, stick = null) {
   const b = game.ball, gx = attackGoalX(game, pl), D = Math.hypot(gx - b.p.x, b.p.z);
@@ -78,6 +85,14 @@ export function einKnopfArt(game, pl, stick = null) {
   if (game.P.eigenhaelfte && eigeneHaelfte(game, pl)) {
     const c = passCandidates(game, pl, a, [b.p.x, b.p.z], stick ? 60 : 180).find((m) => !m.bank && !m.virtual && m.lane >= 0.6);
     return c ? 'pass' : 'shot';
+  }
+  // n16 B: Eckzone → Flanke (hoher Pass vor das Tor, Pass-Planer wählt Mitspieler/Raum Richtung Tor), Schuss nur bei guter Chance
+  // oder leerem Tor; kein Mitspieler anspielbar → wie bisher
+  if (game.P.eckflanke && eckZone(game.P, gx, b.p.x, b.p.z)) {
+    const R = game.match ? game.rules : null, kp = R ? game.players[R.keeper[1 - pl.team]] : null;
+    const leer = R && (!kp || !R.inBox(1 - pl.team, kp.x, kp.z) || kp.hand.mode === 'ground');
+    const c = passCandidates(game, pl, a, [b.p.x, b.p.z], 180).find((m) => !m.bank && !m.virtual && m.lane >= 0.4);
+    if (c && !leer && autoShot(game, pl, stick).chance < game.P.eckSchuss) return 'pass';
   }
   const toGoal = ((gx - b.p.x) * a[0] - b.p.z * a[1]) / (D || 1);
   if (D < 11 && toGoal > 0.5) {

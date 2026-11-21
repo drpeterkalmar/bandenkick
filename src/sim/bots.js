@@ -11,6 +11,7 @@ import { bankRatio } from './kickplan.js';
 import { shotFeatures, shotQuality } from './shot.js';
 import { planAir, airPassSlack } from './air.js';
 import { planPass } from './pass.js';
+import { eckZone } from './akro.js';
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 // nachdrall (n7 E2): Anteil der Schüsse mit Nachdrall vom Tormann weg
@@ -261,6 +262,8 @@ export class Bots {
     let purpose = Dg < (hochZuMir ? 10 : 9) && (Dg < 6 || press < 2.5 || hochZuMir) && !fromOwnKeeper ? 'shot'
       : ownGoalD < 8 && press < 2.5 && lt && lt.team !== pl.team ? 'clear' : null;
     if (!purpose && hochZuMir) purpose = 'pass';
+    // n16 B: Luftball in der Eckzone (spitzer Winkel) → direkt quer vor das Tor weiterleiten statt draufhalten
+    if (purpose === 'shot' && g.P.eckflanke && eckZone(g.P, gx, b.p.x, b.p.z)) purpose = 'pass';
     if (!purpose) return false;
     const plan = planAir(g, pl, { tPress: g.t, purpose, minScore: 0.4, minSpeed: purpose === 'pass' ? 2 : 4 });
     if (!plan) return false;
@@ -602,7 +605,8 @@ export class Bots {
       const pressure = this.space(pl), rushed = pressure < 1.3;
       // Schussqualität q wie beim Menschen (Lage, Körper, Ball am Fuß, Druck): schlechte Lage = langsamer, zentraler
       const q = Math.pow(shotQuality(shotFeatures(g, pl, [gx, 0.35, 0], pl.strong), g.P).qEff, 1 / L.skill);
-      const u = this.xg(team, b.p.x, b.p.z) * (lane > 0.8 ? 1 : 0.2) * (0.7 + 0.5 * kpOff) * (empty ? 2.2 : 1) * (rushed ? 0.6 : 1) * (0.55 + 0.45 * q);
+      const eck = g.P.eckflanke && !empty && eckZone(g.P, gx, b.p.x, b.p.z) ? g.P.eckBot : 1; // n16 B: aus der Ecke seltener schießen
+      const u = eck * this.xg(team, b.p.x, b.p.z) * (lane > 0.8 ? 1 : 0.2) * (0.7 + 0.5 * kpOff) * (empty ? 2.2 : 1) * (rushed ? 0.6 : 1) * (0.55 + 0.45 * q);
       // Schuss wie beim Menschen (Nacht 2b): Ziel automatisch am Tormann vorbei, Qualität q aus der Lage, Vollspann
       // oder angeschnitten (Innen-/Außenrist); Stärke-Streuung der Bots über noise
       opts.push({ kind: 'shot', u, act: () => { pl.kickAt({ kind: 'shot', auto: true, mode: rng.next() < 0.4 ? 'var' : 'std', power: Math.min(1, (rushed ? 0.55 : 0.7) + L.shotPow + 0.3 * rng.next()), noise: L.aimNoise * (rushed ? 1.5 : 1), skill: L.skill }); this.stats.shots++; } });
@@ -633,7 +637,9 @@ export class Bots {
         if (sl < thr) continue; // n11: Weg zu → kein Pass (schwache Bots wagen mehr)
         const sc = clamp(0.5 + sl * 1.8, 0.03, 0.97) * clamp(open / 1.6, 0.4, 1) * (1 - D0 / 40);
         const vh = sc * val + (1 - sc) * mid;
-        opts.push({ kind: 'pass', u: vh * (vh > 0 ? back : 1), act: () => { pl.kickAt({ kind: 'pass', lead: true, to: m.id, noise: L.noise / 1.3, minSlack: thr - 0.04 }); this.stats.passes++; } });
+        // n16 B: aus der Eckzone Flanke vor das Tor (Treffpunkt ≤ 9 m vor dem Tor) bevorzugen
+        const fl = g.P.eckflanke && vh > 0 && eckZone(g.P, gx, b.p.x, b.p.z) && Math.hypot(gx - hp.meet[0], hp.meet[1]) < 9 ? g.P.eckPassBonus : 1;
+        opts.push({ kind: 'pass', u: vh * (vh > 0 ? back : 1) * fl, act: () => { pl.kickAt({ kind: 'pass', lead: true, to: m.id, noise: L.noise / 1.3, minSlack: thr - 0.04 }); this.stats.passes++; } });
         continue;
       }
       if (lane > 1.0) opts.push({ kind: 'pass', u: (succ * val + (1 - succ) * mid) * (succ * val + (1 - succ) * mid > 0 ? back : 1), act: () => { pl.kickAt({ kind: 'pass', lead: true, to: m.id, noise: L.noise / 1.3 }); this.stats.passes++; } });

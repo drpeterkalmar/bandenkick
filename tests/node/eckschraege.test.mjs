@@ -76,7 +76,7 @@ function corner(qs, v = 8) {
   // n13: im Standard-Käfig ohne Dach (Gummiwände) gemessen 0,75 – Ziel neu gesetzt: ≤ 0,8 (mit Dach war es ≤ 0,73)
   check('Bot-Spiel: Ballkontakte in den Ecken (2,5 × 2,5 m) je Spiel ÷ eckig', s.cornerTouchesPerGame / s0.cornerTouchesPerGame, 0, 0.8, '×', 0.7, `${s.cornerTouchesPerGame.toFixed(1)} / eckig ${s0.cornerTouchesPerGame.toFixed(1)}`);
   check('… Ball in der Ecke eingeklemmt', s.cornerStuck, 0, 0, '×', 0);
-  check('… Tore je Schuss', s.goalsPerShot, 25, 35, '%', 30, `eckig ${s0.goalsPerShot.toFixed(1)} %`);
+  check('… Tore je Schuss', s.goalsPerShot, 25, 42, '%', 30, `eckig ${s0.goalsPerShot.toFixed(1)} % · n16 B: aus der Ecke Flanke statt Schuss – die Schüsse aus spitzem Winkel (Torquote 2–15 %) fallen zur Hälfte weg, die Quote je Schuss steigt um 3–5 Punkte (N16_BERICHT.md)`);
   check('… Hänger / Numerik', s.stuck + s.faults, 0, 0, '', 0);
 }
 process.exit(report('Abgeschrägte Käfig-Ecken (n7 Vorlagen E5)', rows, 'eckschraege') ? 0 : 1);
