@@ -349,6 +349,9 @@ export const DEFAULTS = {
   // Peter 21.11.: alle Boden-Markierungen im Spiel aus (Ring + Pfeil unter dem gesteuerten Spieler, goldener Traumpass-Ring,
   // Tormann-Bodenring). Wiederholungs-Effekte bleiben. 1 = Stand 0.11.1 [?marker=1]
   marker: 0,
+  // Peter 21.11. abends: der farbige Ring unter der gesteuerten Spielfigur soll bleiben (zeigt, wen man steuert) – nur der Ring,
+  // ohne Richtungspfeil. 0 = auch der Ring aus (Stand 0.12.0) [?spielerring=0]
+  spielerring: 1,
   // n16 B (Peter 21.11.: „aus der Ecke eher flanken als schießen“, src/sim/akro.js eckZone): Ball in der Eckzone (≤ eckX m vor der
   // Grundlinie, seitlich neben dem Tor, Toröffnung < eckWinkel °) → Ein-Knopf (Mensch) spielt die Flanke (hoher Pass vor das Tor) statt
   // zu schießen, Schuss nur bei Torchance ≥ eckSchuss bzw. leerem Tor; Bots: Schuss-Nutzen × eckBot, Pässe vor das Tor × eckPassBonus.

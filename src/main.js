@@ -1198,7 +1198,8 @@ function drawPlayers(dt, a, rf = null) {
   // n15 E1: Kick-Druck vorgemerkt → Ring pulst kurz auf (danach leicht größer, solange der Druck wartet)
   kickPuls = Math.max(0, kickPuls - dt * 4);
   marker.scale.setScalar(1 + 0.6 * kickPuls * kickPuls + (pl.pending && pl.pending.immer ? 0.12 : 0));
-  marker.visible = !!P.marker && mode === 'play' && game.human >= 0; // Peter 21.11.: Marker aus [?marker=1 = an]
+  marker.visible = (!!P.marker || !!P.spielerring) && mode === 'play' && game.human >= 0; // Peter 21.11.: Marker aus [?marker=1 = an]; Spieler-Ring bleibt [?spielerring=0 = aus]
+  if (marker.children[1]) marker.children[1].visible = !!P.marker; // Richtungspfeil nur mit ?marker=1
   // n7 E3: Traumpass läuft → goldener Ring (pulsierend) unter dem Empfänger
   const pf = traumpass();
   if (goldRing) {
@@ -1389,6 +1390,7 @@ Object.assign(G, {
   human(i) { game.setHuman(i); },
   bots(on) { if (game.match) game.bots = on ? (game._bots || game.bots) : ((game._bots = game.bots), null); },
   freeze(f = true) { frozen = f; },
+  markerPfeil() { return !!(marker && marker.visible && marker.children[1] && marker.children[1].visible); }, // Peter 21.11. abends: Test ?spielerring
   markerSicht() { return { spieler: !!(marker && marker.visible), traumpass: !!(goldRing && goldRing.visible), tormann: figs.filter((f) => f.ring && f.ring.visible).length }; }, // Peter 21.11.: Test ?marker
   handschuh(i) { const f = figs[i]; return f && f.gloveMat ? { e: f.gloveMat.emissiveIntensity, c: f.gloveMat.color.getHexString(), gloveE: f.gloveE } : null; }, // n7 E1: Test der Müdigkeits-Anzeige
   frozen() { return frozen; },
