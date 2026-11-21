@@ -337,17 +337,18 @@ export const DEFAULTS = {
   akro2: 1,               // n15 E5: 22 Akrobatik-/Tricking-/Kampfsport-Kontakte (technique.js AKRO2); 0 = aus [?akro2=0]
   skills: 1, skillQuote: 0.5, skillChance: 0.7, skillBot: 0.15, skillPause: 1.2,
   // Chaos-Modus (Peter 20.11.): alle chaos s (Standard 3) am Ball ein zufälliger Trick, auch ohne Druck. 0 = aus [?chaos=0]
-  chaos: 3,
+  // n16: der Chaos-Modus ist durch die freien Dribbeltricks (dribbel) ersetzt – er startete am Ball bei 3 von 4 Ballbesitzen einen Trick (auch
+  // bei Bots), blockierte währenddessen den Kick und halbierte die Tore im Selbstspiel (26 → 13 je Spiel). ?chaos=3 = Stand 0.11.1
+  chaos: 0,
+  // n16 (Peter 18.11.: „Bandenkick fehlen mir die Dribbeltricks“, src/sim/skills.js FREI): freie Dribbeltricks beim Laufen mit Ball, ohne
+  // Knopf – einmal je Ballbesitz gewürfelt (Mensch dribbelMensch, Bots dribbelBot, beides × dribbel), ausgelöst bei der Annahme (≤ dribbelAnnahme s)
+  // oder sobald ein Gegner ≤ dribbelNah m ist; Kick bricht ab. 0 = aus, 2 = doppelt so oft                         [?dribbel=]
+  dribbel: 1, dribbelMensch: 0.9, dribbelBot: 0.03, dribbelAnnahme: 0.5, dribbelNah: 4, dribbelFrei: 2.5, dribbelAbbruch: 1.6, dribbelTorD: 11,
   // Peter 20.11.: Zielmarker für Pass und Torschuss aus (bringen nichts). 1 = wieder an [?zielhilfe=1]
   zielhilfe: 0,
   // Peter 21.11.: alle Boden-Markierungen im Spiel aus (Ring + Pfeil unter dem gesteuerten Spieler, goldener Traumpass-Ring,
   // Tormann-Bodenring). Wiederholungs-Effekte bleiben. 1 = Stand 0.11.1 [?marker=1]
   marker: 0,
-  // n16 C (Peter 21.11.: „Torabstoß/Abwurf/Abschlag des Tormanns darf nicht abgefangen werden können“, rules.js release/abstossSperre):
-  // Abwurf mit einem Gegner im Weg wird zum hohen Abschlag über ihn hinweg; bis zur ersten Berührung eines Mitspielers (höchstens
-  // abstossT s, Ball tot oder in der Hand) kommt kein Gegner an den Ball (Fuß, Kopf, Körper, Grätsche, Hände). Gilt für Mensch-Tormann,
-  // Auto-Torwart und Bots. 0 = Stand 0.11.1                                                              [?abstoss=0]
-  abstoss: 1, abstossT: 5,
   // n16 B (Peter 21.11.: „aus der Ecke eher flanken als schießen“, src/sim/akro.js eckZone): Ball in der Eckzone (≤ eckX m vor der
   // Grundlinie, seitlich neben dem Tor, Toröffnung < eckWinkel °) → Ein-Knopf (Mensch) spielt die Flanke (hoher Pass vor das Tor) statt
   // zu schießen, Schuss nur bei Torchance ≥ eckSchuss bzw. leerem Tor; Bots: Schuss-Nutzen × eckBot, Pässe vor das Tor × eckPassBonus.

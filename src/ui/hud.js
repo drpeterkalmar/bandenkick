@@ -11,6 +11,7 @@ export function buildHud(root, canvas) {
   const menuBtn = h('button', 'iconbtn', '☰'); menuBtn.setAttribute('aria-label', 'Menü');
   top.append(score, kick, h('div', 'spacer'), menuBtn);
   const banner = h('div', 'banner');
+  const trick = h('div', 'trickname'); // n16: Trickname groß, kurz eingeblendet
   // Desktop: Aufladebalken mit Modus (Symbol + Name + Stärke)
   const charge = h('div', 'charge', '<i></i><span></span>');
   const chargeFill = charge.firstChild, chargeLbl = charge.lastChild;
@@ -145,7 +146,7 @@ export function buildHud(root, canvas) {
   const warm = h('div', 'fe-warm', '<i class="w1"></i><i class="w2"></i><b>GOLAZO! 10/10</b>');
   // n13 Comic-Spektakel: große Einblendung („MEGAFERSE!“, „FALLRÜCKZIEHER!“, „WUMMS!“) mit Speed-Linien, reines CSS
   const comic = h('div', 'comic', '<i class="comic-lines"></i><b></b>');
-  root.append(amEl, top, banner, charge, hold, touch, dbg, start, menu, credits, train, hint, result, help, replay, clipAgain, tds, warm, comic);
+  root.append(amEl, top, banner, trick, charge, hold, touch, dbg, start, menu, credits, train, hint, result, help, replay, clipAgain, tds, warm, comic);
   let comicT = 0;
 
   // n7: ohne Sprint (sprintfrei) kein Hinweis auf Sprint-Knopf, Stick-Rand, Shift oder LB/RB
@@ -182,7 +183,7 @@ export function buildHud(root, canvas) {
       <tr><td><b>gleich nach dem Schuss</b></td><td>Stick zur Seite = Kurve ↪ (Nachdrall)</td></tr>`;
   };
 
-  let bannerT = 0, kickT = 0, lastScore = '', lastKeeper = '', lastCharge = null, lastStatus = '', lastAuto = '';
+  let bannerT = 0, trickT = 0, kickT = 0, lastScore = '', lastKeeper = '', lastCharge = null, lastStatus = '', lastAuto = '';
   const clock = (sec) => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, '0')}`;
   const rpLabel = replay.querySelector('.rp-label span'), rpFlash = replay.querySelector('.flash');
   const F = Object.fromEntries(['frame', 'lines', 'puls', 'flash', 'spot', 'ring', 'pov', 'big', 'kmh', 'stamp', 'name', 'gag', 'emoji', 'prog', 'fade', 'again'].map((k) => [k, fe.querySelector('.fe-' + k)]));
@@ -353,6 +354,8 @@ export function buildHud(root, canvas) {
     },
     // n15 E4: Name des Skill-Moves klein einblenden (ohne Zeitlupe)
     skillInfo(text) { kick.textContent = text; kick.classList.add('on'); kickT = 1.4; },
+    // n16: Trickname groß in der oberen Bildhälfte (0,9 s, keine Zeitlupe)
+    trickName(text) { trick.textContent = text; trick.classList.remove('on'); void trick.offsetWidth; trick.classList.add('on'); trickT = 0.9; },
     kickInfo(k) {
       const kmh = Math.round(k.speed * 3.6);
       const names = { vollspann: 'Vollspann', innenrist: 'Innenrist', aussenrist: 'Außenrist', innen: 'Innenseite', aussen: 'Außenrist', ferse: 'Hacke', chip: 'Chip',
@@ -407,6 +410,7 @@ export function buildHud(root, canvas) {
     },
     tick(dt) {
       if (bannerT > 0) { bannerT -= dt; if (bannerT <= 0) banner.classList.remove('on'); }
+      if (trickT > 0) { trickT -= dt; if (trickT <= 0) trick.classList.remove('on'); }
       if (kickT > 0) { kickT -= dt; if (kickT <= 0) kick.classList.remove('on'); }
     },
   };

@@ -1,0 +1,14 @@
+{
+ "marker=0": {
+  "spieler": 0,
+  "traumpass": 0,
+  "tormann": 0,
+  "proben": 12
+ },
+ "marker=1": {
+  "spieler": 12,
+  "traumpass": 0,
+  "tormann": 12,
+  "proben": 12
+ }
+}

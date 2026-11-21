@@ -403,6 +403,7 @@ export class Rules {
     // n7: der Empfänger hat den Ball berührt → Pass angekommen (sonst galt er als „unterwegs“, solange der Passgeber den Ball
     // zufällig weiter berührte – im Selbstspiel klemmten so zwei Mitspieler den Ball 8 s an der Bande ein)
     if (this.g.passTo === pl.id && this.g.lastTouch !== pl.id) this.g.passTo = -1;
+    if (this.g.lastTouch !== pl.id) pl.besitzT = this.g.t; // n16: neuer Ballbesitz (Dribbeltrick einmal je Besitz)
     this.lastTouchTeam = pl.team; this.g.lastTouch = pl.id; this.g.lastTouchT = this.g.t;
     this.lastDeflect = deflect ? pl.id : -1;
     if (!deflect) this.lastPlay = pl.id;

@@ -478,7 +478,7 @@ function handleEvents(ev) {
       const b = k ? bewerte(k, game) : null;
       if (b && !aktion.moment) { aktion.moment = { ...b, w: 1, art: 'ramp', grund: 'comic', t: 0, tSpiel: game.t, real: 0, rueck: 0.12, langsam: 0.2 }; aktion.zahl++; }
     }
-    if (e.type === 'skill' && (e.player === game.human || e.human)) hud.skillInfo(`${e.name}${e.ok ? ' ✓' : ''}`); // n15 E4
+    if (e.type === 'skill' && (e.player === game.human || e.human)) { hud.skillInfo(`${e.name}${e.ok ? ' ✓' : ''}`); if (e.ok) hud.trickName(e.name); } // n15 E4, n16: groß
     if (e.type === 'kickvor' && e.human) { kickPuls = 1; hud.kickPuls(); } // n15 E1: Quittung für jeden Kick-Druck
     if (e.type === 'kick') {
       const k = game.players[e.player].lastKick;
@@ -1163,6 +1163,7 @@ function drawPlayers(dt, a, rf = null) {
     if (!vis) continue;
     const x = rf ? pl.x : prev.px[pl.id] + (pl.x - prev.px[pl.id]) * a, z = rf ? pl.z : prev.pz[pl.id] + (pl.z - prev.pz[pl.id]) * a;
     let face = rf || !GLATT ? pl.face : prev.pf[pl.id] + winkelDiff(pl.face, prev.pf[pl.id]) * a; // n5: wie die Lage interpoliert
+    if (!rf && pl.skill2 && pl.skill2.frei && pl.skill2.yaw) face += pl.skill2.yaw; // n16: Roulette/McGeady drehen nur im Bild
     // n6 Fan-Edit: im Jubel dreht sich der Schütze zur Kamera
     if (rf && rp.dir && rp.dir.edit && (rp.dir.cur.cam === 'jubel' || rp.dir.cur.cam === 'jubel2') && pl.id === rp.dir.schuetze && gcam.override) face = Math.atan2(gcam.override.pos[2] - z, gcam.override.pos[0] - x);
     if (f.capsule) { posePlayer(f.capsule, pl, x, z); continue; }
@@ -1393,6 +1394,7 @@ Object.assign(G, {
   frozen() { return frozen; },
   teams() { return figs.map((f, i) => ({ platz: i, tier: f.name || null, team: f.team ?? null, farbe: f.bib ? f.bib.material.color.getHex() : null, num: f.num ?? null, name: anzeigeName(game.players[i]) })); }, // n13 Tests
   comicNochmal() { if (hud.comicLetzt) hud.comic(hud.comicLetzt, blitzeSanft); return hud.comicLetzt || ''; }, // n13 Tests: Einblendung fürs Foto erneut
+  project(p) { const v = new THREE.Vector3(p[0], p[1], p[2]).project(gcam.cam); return [(v.x + 1) / 2 * innerWidth, (1 - v.y) / 2 * innerHeight]; }, // n16 Tests: Bildposition
   freezeWhen(src) { G.freezeFn = new Function('g', 'return (' + src + ')'); },
   cam(pos, look) { gcam.override = pos ? { pos, look } : null; },
   // Tor-Wiederholung (Tests/Fotos): Zustand, sofort starten (letztes Tor), anhalten in Abschnitt/Anteil, überspringen

@@ -25,3 +25,7 @@ tests/shots/n13/raw/
 !tests/shots/zufallsteams/
 !tests/shots/fallrueck/
 tests/shots/fallrueck/raw/
+!tests/shots/n16/
+tests/shots/n16/raw/
+tests/shots/n16/*.png
+tests/shots/n16/*_voll.jpg

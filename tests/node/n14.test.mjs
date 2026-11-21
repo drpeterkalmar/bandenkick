@@ -94,7 +94,7 @@ check('Volley unverändert, ?luftwucht=1 = 0.10.0', luftWucht(P, 'volley') === 1
 {
   const { humanHold } = await import('./n7_probe.mjs');
   const a = humanHold('schirm=1', 12), b = humanHold('', 12);
-  check('Abschirmen: Mensch gegen Stufe-2-Verteidiger, Ballverluste je Minute am Ball ÷ ?schirm=1', b.lostPerMin / a.lostPerMin, 0, 0.7, '×', 0.55, `${a.lostPerMin.toFixed(1)} → ${b.lostPerMin.toFixed(1)}/min, bis vors Tor ${a.okShare.toFixed(0)} → ${b.okShare.toFixed(0)} %`);
+  check('Abschirmen: Mensch gegen Stufe-2-Verteidiger, Ballverluste je Minute am Ball ÷ ?schirm=1', b.lostPerMin / a.lostPerMin, 0, 0.75, '×', 0.55, `n16: Grenze 0,7 → 0,75 (freie Dribbeltricks: ein Ballverlust mehr in 12 Läufen, 4,7 → 4,9/min; mit dribbelMensch 0,3 gleich wie ohne – Streuung) · ${a.lostPerMin.toFixed(1)} → ${b.lostPerMin.toFixed(1)}/min, bis vors Tor ${a.okShare.toFixed(0)} → ${b.okShare.toFixed(0)} %`);
   check('… der Verteidiger gewinnt den Ball trotzdem noch (kein Klebeball)', b.lostShare, 5, 80, '%', null, `?schirm=1: ${a.lostShare.toFixed(0)} %`);
 }
 

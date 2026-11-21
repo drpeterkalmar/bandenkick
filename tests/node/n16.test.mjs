@@ -3,6 +3,8 @@
 import { makeParams } from '../../src/sim/params.js';
 import { Game } from '../../src/sim/step.js';
 import { einKnopfArt, eckZone, torWinkel } from '../../src/sim/akro.js';
+import { EMPTY_INPUT } from '../../src/sim/player.js';
+import { FREI } from '../../src/sim/skills.js';
 import { report } from './report.mjs';
 
 const rows = [];
@@ -51,6 +53,31 @@ yes('C: Standard abstoss 1, ?abstoss=0 = aus', P.abstoss === 1 && makeParams('ab
   };
   const a = lauf('', 0), b = lauf('', -1), c = lauf('abstoss=0', -1);
   yes('C: Gegner im Wurfweg → Abschlag über ihn, erste Berührung beim Mitspieler (Mensch-Tormann und Bot-Tormann)', a.team === 0 && b.team === 0 && a.art === 'punt', `Mensch ${a.art} → Team ${a.team}, Bot ${b.art} → Team ${b.team}; ?abstoss=0: ${c.art} → Team ${c.team}`);
+}
+// Dribbeltricks
+yes('D: Standard dribbel 1, chaos 0 (ersetzt), ?dribbel=0 = aus', P.dribbel === 1 && P.chaos === 0 && makeParams('dribbel=0').dribbel === 0);
+yes('D: freie Tricks dauern 0,45 … 0,8 s', Object.values(FREI).every((f) => f.dur >= 0.45 && f.dur <= 0.8));
+{
+  // Mensch läuft mit Ball (Stick vorwärts), Gegner weit weg, Trick sicher ausgelöst (dribbelMensch 1); optional Kick-Druck während des Tricks
+  const lauf = (kickBei = -1) => {
+    const g = new Game(makeParams('dribbelMensch=1'), 21, { match: true, human: 1 }); g.rules.phase = 'play'; g.bots = null;
+    const me = g.players[g.human];
+    let k = 0; for (const p of g.players) if (p !== me) p.place(p.team === me.team ? -10 : 9, -5 + 3.3 * (k++ % 4), Math.PI);
+    me.place(-6, 0, 0); g.ball.place(-5.6, g.ball.r, 0); g.lastTouch = me.id; me.besitzT = g.t; me.vx = 4; me.speed = 4;
+    let start = -1, v0 = 0, vMin = 99, dMax = 0, kick = -1;
+    for (let i = 0; i < 240; i++) {
+      const ins = []; ins[g.human] = { ...EMPTY_INPUT, mx: 1, mz: 0, passDown: false, shotDown: kickBei >= 0 && start >= 0 && g.t >= start + kickBei && g.t < start + kickBei + 0.07 };
+      const ev = g.step(ins);
+      if (start < 0 && me.skill2 && me.skill2.frei) { start = g.t; v0 = me.speed; }
+      if (start >= 0 && me.skill2) { vMin = Math.min(vMin, me.speed); dMax = Math.max(dMax, Math.hypot(g.ball.p.x - me.x, g.ball.p.z - me.z)); }
+      if (kick < 0 && ev.some((e) => e.type === 'kick' && e.player === me.id)) kick = g.t;
+    }
+    return { start, v0, vMin, dMax, kick, lt: g.lastTouch === me.id };
+  };
+  const a = lauf();
+  yes('D: freier Trick beim Laufen mit Ball ausgelöst, Tempo bleibt (≥ 90 %), Ball ≤ 1,1 m am Fuß', a.start >= 0 && a.vMin >= 0.9 * a.v0 && a.dMax <= 1.1, `Start ${a.start.toFixed(2)} s, Tempo ${a.v0.toFixed(2)} → min ${a.vMin.toFixed(2)} m/s, Ball bis ${a.dMax.toFixed(2)} m`);
+  const b = lauf(0.12);
+  check('D: Kick-Druck während des Tricks → Kick sofort (Abstand Druck → Kick)', b.kick >= 0 ? b.kick - (b.start + 0.12) : 9, 0, 0.25, 's', 0.1);
 }
 
 process.exit(report('n16 Marker, Ecke, Abstoß, Dribbeltricks', rows, 'n16') ? 0 : 1);

@@ -12,7 +12,7 @@ import { autoShot, einKnopfArt, eigeneHaelfte } from './akro.js';
 import { planAir, planAirHelp, stepAir, stepFall } from './air.js';
 import { schussWahl, planMegaferse, jongliere, lupferGespielt } from './spektakel.js';
 import { AIR_TECH } from './technique.js';
-import { skillCheck, skillStep } from './skills.js';
+import { skillCheck, skillStep, freiStep } from './skills.js';
 const DEG = Math.PI / 180;
 const wrap = (a) => { while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI; return a; };
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
@@ -145,7 +145,8 @@ export class Player {
     if (this.hand.mode === 'dive' || this.hand.mode === 'ground') { this.stepDive(dt, game); return; }
     if (this.fall) { stepFall(this, dt, game); this.plant = 0; return; } // am Boden nach Seit-/Fallrückzieher
     if (this.slide) { this.stepSlide(dt, game); return; }                   // Grätsche (Nacht 2c)
-    if (this.skill2 && skillStep(this, dt, game)) return;                   // n15 E4: Skill-Move läuft
+    if (this.skill2 && this.skill2.frei) { if (this.pending) { this.skill2 = null; this.touchCd = 0; } else freiStep(this, dt, game); } // n16: freier Dribbeltrick – läuft normal weiter, Kick bricht ab
+    else if (this.skill2 && skillStep(this, dt, game)) return;              // n15 E4: Skill-Move läuft
     if (this.stumbleT > 0) this.stumbleT -= dt;
     const held = ball.held >= 0;
     // n16 C: gegnerischer Abstoß unterwegs → kein Ballkontakt (Fuß, Annahme, Körper; Luftball/Grätsche in tryAir/stepAir/tackleContact)
@@ -170,6 +171,7 @@ export class Player {
     };
     const stick = () => (inp.aim && (inp.aimX || inp.aimZ) ? aimDir() : zw ? [zx, zz] : inp.recvAim || null);
     if (inp.gest) this.gestures(inp, game, aimDir, stick);
+    if (this.pending && this.skill2 && this.skill2.frei) { this.skill2 = null; this.touchCd = 0; } // n16: Kick hat immer Vorrang vor dem Trick
     else { // Flanken (Tests, alte Eingabe): Pass = Einzeltipp, Schuss halten/loslassen = Standard
       if (inp.pass) { this.pending = { kind: 'pass', mode: inp.mode || 'std', power: null, stick: stick(), dir: aimDir(), age: 0 }; this.clearT = 0; }
       if (inp.shootHeld) { this.charging = true; this.chargeKind = 'shot'; this.chargeMode = inp.mode || 'std'; this.charge = Math.min(this.charge + dt, P.chargeT * 1.25); }
@@ -987,7 +989,7 @@ export class Player {
     const bs = b.held < 0 && b.p.y < 0.45 && !(game.match && game.abstoss && game.rules.abstossSperre(this)) ? seg(b.p.x, b.p.z) : null; // (n16 C)
     let opp = null;
     for (const o of game.players) {
-      if (o.team === this.team || o.slide || (o.skill2 && o.skill2.ok)) continue; // (n15 E4: ausgewichen)
+      if (o.team === this.team || o.slide || (o.skill2 && o.skill2.ok && !o.skill2.frei)) continue; // (n15 E4: ausgewichen; n16: freier Trick schützt nicht)
       const s = seg(o.x, o.z);
       if (s.d < 0.45 && (!opp || s.t < opp.s.t)) opp = { o, s };
     }

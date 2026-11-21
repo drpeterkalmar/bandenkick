@@ -25,6 +25,23 @@ export const SKILLS = {
 };
 export const SKILL_KEYS = Object.keys(SKILLS);
 
+// n16 (Peter 18.11.: „Bandenkick fehlen mir die Dribbeltricks“): freie Dribbeltricks ohne Gegnerdruck – bei der Ballannahme bzw. sobald ein
+// Gegner ≤ dribbelNah m ist, höchstens einer je Ballbesitz (Mensch: Chance dribbelMensch × dribbel, Bots: dribbelBot × dribbel). Der Spieler
+// läuft normal weiter (Stick, Tempo), nur der Ball folgt dem Fuß nach einer Choreografie (seitlich lat m, vor/zurück vor m über u = 0 … 1),
+// dazu die Pose (avatars.js) und bei Roulette/McGeady eine Drehung nur im Bild (yaw). Gelingt immer (kein Gegner im Zweikampf), kostet kein
+// Tempo; der Kick-Knopf bricht sofort ab (Player.step). Dauer dur s (0,45 … 0,8).
+const glatt = (u) => u * u * (3 - 2 * u);
+export const FREI = {
+  uebersteiger: { dur: 0.55, ball: (u) => [0.12 * Math.sin(Math.PI * u), 0], yaw: (u) => 0.5 * Math.sin(Math.PI * u) },
+  croqueta: { dur: 0.45, ball: (u) => [0.36 * (2 * glatt(u) - 1), 0] },
+  elastico: { dur: 0.5, ball: (u) => [u < 0.55 ? 0.42 * Math.sin(0.5 * Math.PI * u / 0.55) : 0.42 - 0.8 * glatt((u - 0.55) / 0.45), 0] },
+  sohle: { name: 'Ball Roll', dur: 0.6, ball: (u) => [0.55 * Math.sin(Math.PI * u), -0.15 * Math.sin(Math.PI * u)] },
+  hackehacke: { name: 'Heel-to-Heel', dur: 0.5, ball: (u) => [0.1 * Math.sin(2 * Math.PI * u), -0.75 * Math.sin(Math.PI * Math.min(1, u * 1.25))] },
+  roulette: { dur: 0.75, ball: (u) => [0.38 * Math.sin(2 * Math.PI * u), -0.45 * (1 - Math.cos(2 * Math.PI * u)) / 2], yaw: (u) => 2 * Math.PI * glatt(u) },
+  mcgeady: { dur: 0.6, ball: (u) => [0.4 * Math.sin(Math.PI * u), -0.2 * Math.sin(Math.PI * u)], yaw: (u) => Math.PI * Math.sin(Math.PI * u) },
+};
+export const FREI_KEYS = Object.keys(FREI);
+
 // Erfolgsquote: Mensch skillQuote, Bots je Stufe (Können L.skill 1 / 1,15 / 1,5 → 40 / 50 / 60 %)
 function quote(game, pl) {
   const P = game.P;
@@ -58,6 +75,7 @@ export function skillCheck(game, pl) {
   if (Math.hypot(b.p.x - fx, b.p.z - fz) > 1.0) return false;
   if (pl.pending && game.human === pl.id) return false; // Peter hat Kick gedrückt: der Kick hat Vorrang
   let th = bedrohung(game, pl);
+  if (!th && P.dribbel > 0 && dribbelFrei(game, pl)) return true; // n16: freier Dribbeltrick
   if (!th && P.chaos) { // Chaos-Modus (Peter 20.11.): alle 3 s am Ball ein zufälliger Trick, auch ohne Gegner [?chaos=0 = aus]
     const fx2 = Math.cos(pl.face), fz2 = Math.sin(pl.face);
     th = { o: { id: -1, x: pl.x + fx2 * 2, z: pl.z + fz2 * 2, stumbleT: 0, slide: null }, art: "frontal", chaos: true };
@@ -79,6 +97,53 @@ export function skillCheck(game, pl) {
   return true;
 }
 
+// n16: einmal je Ballbesitz würfeln (pl.besitzT setzt rules.touch, wenn der Ball von einem anderen kommt); Auslösung bei der Annahme
+// (Ball ≤ dribbelAnnahme s am Fuß) oder sobald ein Gegner ≤ dribbelNah m ist
+function dribbelFrei(game, pl) {
+  const P = game.P, mensch = game.human === pl.id;
+  if (pl.dribbelEp === pl.besitzT) return false;
+  // nur mit dem Ball unter Kontrolle: nicht gleich nach dem eigenen Kick (der Ball fliegt noch am Fuß vorbei) und nicht, solange er schnell ist
+  const b = game.ball;
+  if (game.t - ((pl.lastKick && pl.lastKick.t) ?? -9) < 0.4 || Math.hypot(b.v.x - pl.vx, b.v.z - pl.vz) > 3) return false;
+  const tb = game.t - (pl.besitzT ?? -99);
+  let nah = 99;
+  for (const o of game.players) if (o.team !== pl.team && o.hand.mode === 'none') nah = Math.min(nah, Math.hypot(o.x - pl.x, o.z - pl.z));
+  if (tb > P.dribbelAnnahme && nah > P.dribbelNah) return false;
+  if (game.match && Math.hypot(game.rules.goalX(1 - pl.team) - pl.x, pl.z) < P.dribbelTorD) return false; // in Schussnähe: abschließen statt Trick
+  pl.dribbelEp = pl.besitzT; // (je Ballbesitz nur ein Wurf)
+  const r = game.rng;
+  if (r.next() >= Math.min(1, (mensch ? P.dribbelMensch : P.dribbelBot) * P.dribbel)) return false;
+  if (nah < P.dribbelFrei) return false; // Gegner schon (fast) im Zweikampf: dafür sind die Ausweich-Tricks da
+  const id = FREI[globalThis.BK_TRICK_NUR] ? globalThis.BK_TRICK_NUR : FREI_KEYS[Math.floor(r.next() * FREI_KEYS.length) % FREI_KEYS.length], F = FREI[id]; // (BK_TRICK_NUR: Tests/Fotos)
+  const quer = r.next() < 0.5 ? -1 : 1;
+  pl.skill2 = { id, t: 0, dur: F.dur, ok: true, frei: true, seite: quer, yaw: 0 };
+  pl.skillDur = F.dur; pl.tech = 'skill_' + id; pl.techT = 0;
+  game.events.push({ type: 'skill', id, name: F.name || SKILLS[id].name, ok: true, frei: true, player: pl.id, human: mensch, gegner: -1, art: 'frei', dur: F.dur });
+  return true;
+}
+
+// n16: Takt des freien Tricks nach der normalen Bewegung (Player.step): Ball folgt dem Fuß nach der Choreografie, der Spieler berührt ihn
+// sonst nicht (touchCd). Gibt false zurück, wenn der Trick endet oder der Ball weg ist.
+export function freiStep(pl, dt, game) {
+  const s = pl.skill2, b = game.ball, P = game.P, F = FREI[s.id];
+  s.t += dt;
+  const u = clamp(s.t / s.dur, 0, 1);
+  if (game.lastTouch !== pl.id || b.held >= 0 || b.p.y > 0.5 || Math.hypot(b.p.x - pl.x, b.p.z - pl.z) > 1.6) { pl.skill2 = null; return false; }
+  // Gegner kommt heran (≤ dribbelAbbruch m) → Trick abbrechen, normal abschirmen bzw. Ausweich-Trick (ohne Druck kein Ballverlust durch den Trick)
+  for (const o of game.players) if (o.team !== pl.team && o.hand.mode === 'none' && Math.hypot(o.x - pl.x, o.z - pl.z) < P.dribbelAbbruch) { pl.skill2 = null; pl.touchCd = 0; return false; }
+  const fx = Math.cos(pl.face), fz = Math.sin(pl.face), qx = -fz * s.seite, qz = fx * s.seite;
+  const [lat, vor] = F.ball(u);
+  const a = P.footAhead * 0.8 + vor;
+  const tx = pl.x + fx * a + qx * lat + pl.vx * 0.1, tz = pl.z + fz * a + qz * lat + pl.vz * 0.1;
+  b.v.x = pl.vx + (tx - b.p.x) / 0.07; b.v.z = pl.vz + (tz - b.p.z) / 0.07;
+  if (b.p.y < b.r + 0.02 && b.v.y > 0) b.v.y = 0;
+  b.w.set(b.v.z / b.r, 0, -b.v.x / b.r);
+  pl.lastTouchT = game.t; pl.touchCd = Math.max(pl.touchCd, 0.05); pl.bodyOffT = Math.max(pl.bodyOffT, 0.05);
+  s.yaw = F.yaw ? s.seite * F.yaw(u) : 0;
+  if (s.t >= s.dur) { pl.skill2 = null; pl.touchCd = 0; return false; }
+  return true;
+}
+
 function starte(game, pl, id, th, ok) {
   const S = SKILLS[id], o = th.o, b = game.ball;
   // Ausweichrichtung: quer zur Richtung Gegner → ich, zur Seite weg vom Gegner (bzw. zur Feldmitte an der Bande), dazu vorn
@@ -89,6 +154,7 @@ function starte(game, pl, id, th, ok) {
   qx *= seite; qz *= seite;
   if (Math.abs(pl.z + qz * 1.5) > game.cage.hz - 0.6) { qx = -qx; qz = -qz; }
   let dx = qx * S.seit + fx * S.vor, dz = qz * S.seit + fz * S.vor; const dl = Math.hypot(dx, dz) || 1; dx /= dl; dz /= dl;
+  pl.skillDur = S.dur;
   pl.skill2 = { id, t: 0, dur: S.dur, ok, dx, dz, v: Math.max(3.2, pl.speed * 0.8), dreh: S.dreh || 0, gegner: o.id, seite };
   pl.tech = 'skill_' + id; pl.techT = 0;
   if (ok) {

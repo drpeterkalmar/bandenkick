@@ -989,8 +989,10 @@ function techPose(pl, t, beinF = 1) {
   const k = pl.techT ?? 9;
   // n15 E4: Skill-Moves (prozedural): Übersteiger = Bein kreist über den Ball, Elastico/Croqueta = Außen-/Innenrist-Wechsel (Hüfte dreht),
   // Roulette/McGeady/Zieher = Sohle zieht, Körper dreht, Regenbogen/Hacke-Hacke = Ferse schlägt hinten hoch, Tunnel/Sohlenroller = Sohle rollt quer
-  if (pl.tech && pl.tech.startsWith('skill_') && k < 0.6) {
-    const id = pl.tech.slice(6), u = Math.min(1, k / 0.55), w = Math.sin(u * Math.PI), osz = Math.sin(u * Math.PI * 2);
+  // n16: Pose über die ganze Trickdauer (freie Dribbeltricks 0,45 … 0,8 s) und ausladender (× 1,4), damit sie aus der Handy-Kamera erkennbar ist
+  const skD = pl.skillDur || 0.55;
+  if (pl.tech && pl.tech.startsWith('skill_') && k < skD + 0.05) {
+    const id = pl.tech.slice(6), u = Math.min(1, k / skD), w = 1.4 * Math.sin(u * Math.PI), osz = 1.4 * Math.sin(u * Math.PI * 2);
     switch (id) {
       case 'uebersteiger': return { pitch: 0.1 * w, roll: side * 0.25 * osz, drop: -0.08 * w, legs: true, thigh: -0.7 * w, calf: 0.6 * w, twist: 0.7 * osz, arms: 0.5 * w };
       case 'elastico': case 'croqueta': return { pitch: 0.08 * w, roll: side * 0.18 * osz, drop: -0.06 * w, legs: true, thigh: -0.45 * w, calf: 0.25 * w, twist: 0.8 * osz, arms: 0.45 * w };

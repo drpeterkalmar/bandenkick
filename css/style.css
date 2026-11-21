@@ -39,6 +39,10 @@ body.solo #bSwitch { display: none; }
   text-shadow: 0 3px 16px rgba(0,0,0,.55); opacity: 0; transition: opacity .25s, transform .25s; text-align: center; white-space: nowrap; }
 .banner small { display: block; font-size: 18px; font-weight: 600; letter-spacing: 0; }
 .banner.on { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+/* n16: Trickname der Dribbeltricks – groß, kurz, über dem Spielgeschehen (pointer-events aus) */
+.trickname { position: absolute; left: 50%; top: 22%; transform: translate(-50%, -50%) scale(0.7); font-size: 34px; font-weight: 900; color: #fff; text-shadow: 0 2px 8px rgba(0,0,0,.75), 0 0 2px #000; opacity: 0; pointer-events: none; white-space: nowrap; transition: opacity .18s, transform .18s; z-index: 6; }
+.trickname.on { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+body.hoch .trickname { top: 30%; font-size: 30px; }
 body.quer .banner { top: 21%; font-size: 46px; }
 
 /* --- Touch-Steuerung --- */
