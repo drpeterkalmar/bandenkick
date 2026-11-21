@@ -1186,7 +1186,7 @@ function drawPlayers(dt, a, rf = null) {
     // n5: Wiederholung – nächster Ballkontakt dieses Spielers (≤ 0,12 s), damit der Fuß schon vorher zum Ball greift
     const kickBald = rf && GLATT && VORGRIFF && rp.rec ? rp.rec.naechsterKick(pl.id, rf.t, 0.12, KICKBALD[i] || (KICKBALD[i] = {})) : null;
     if (kickBald) kickBald.rate = rp.rate;
-    f.update(dt, pl, { x, z, keeper, energie: !rf && R && R.energy && P.muede ? R.energy[pl.team] / 100 : 1, holding: b.held === pl.id, ready, special, specialZeit, armeHoch, t: rf ? rf.t : game.t, face, kickBald, sparen: sparen && !CULL.f.intersectsSphere(CULL.s), ball: BALLPOS });
+    f.update(dt, pl, { x, z, keeper, energie: !rf && R && R.energy && P.muede ? R.energy[pl.team] / 100 : 1, holding: b.held === pl.id, ring: !!P.marker, ready, special, specialZeit, armeHoch, t: rf ? rf.t : game.t, face, kickBald, sparen: sparen && !CULL.f.intersectsSphere(CULL.s), ball: BALLPOS });
   }
   if (rf) { marker.visible = false; return; }
   void n;
@@ -1197,11 +1197,11 @@ function drawPlayers(dt, a, rf = null) {
   // n15 E1: Kick-Druck vorgemerkt → Ring pulst kurz auf (danach leicht größer, solange der Druck wartet)
   kickPuls = Math.max(0, kickPuls - dt * 4);
   marker.scale.setScalar(1 + 0.6 * kickPuls * kickPuls + (pl.pending && pl.pending.immer ? 0.12 : 0));
-  marker.visible = mode === 'play' && game.human >= 0;
+  marker.visible = !!P.marker && mode === 'play' && game.human >= 0; // Peter 21.11.: Marker aus [?marker=1 = an]
   // n7 E3: Traumpass läuft → goldener Ring (pulsierend) unter dem Empfänger
   const pf = traumpass();
   if (goldRing) {
-    goldRing.visible = !!pf;
+    goldRing.visible = !!P.marker && !!pf;
     if (pf) {
       const r = game.players[pf.to], rx = prev.px[r.id] + (r.x - prev.px[r.id]) * a, rz = prev.pz[r.id] + (r.z - prev.pz[r.id]) * a;
       goldRing.position.set(rx, 0.03, rz); goldRing.scale.setScalar(1 + 0.12 * Math.sin(performance.now() / 90));
@@ -1388,6 +1388,7 @@ Object.assign(G, {
   human(i) { game.setHuman(i); },
   bots(on) { if (game.match) game.bots = on ? (game._bots || game.bots) : ((game._bots = game.bots), null); },
   freeze(f = true) { frozen = f; },
+  markerSicht() { return { spieler: !!(marker && marker.visible), traumpass: !!(goldRing && goldRing.visible), tormann: figs.filter((f) => f.ring && f.ring.visible).length }; }, // Peter 21.11.: Test ?marker
   handschuh(i) { const f = figs[i]; return f && f.gloveMat ? { e: f.gloveMat.emissiveIntensity, c: f.gloveMat.color.getHexString(), gloveE: f.gloveE } : null; }, // n7 E1: Test der Müdigkeits-Anzeige
   frozen() { return frozen; },
   teams() { return figs.map((f, i) => ({ platz: i, tier: f.name || null, team: f.team ?? null, farbe: f.bib ? f.bib.material.color.getHex() : null, num: f.num ?? null, name: anzeigeName(game.players[i]) })); }, // n13 Tests

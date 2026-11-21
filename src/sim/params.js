@@ -340,6 +340,9 @@ export const DEFAULTS = {
   chaos: 3,
   // Peter 20.11.: Zielmarker für Pass und Torschuss aus (bringen nichts). 1 = wieder an [?zielhilfe=1]
   zielhilfe: 0,
+  // Peter 21.11.: alle Boden-Markierungen im Spiel aus (Ring + Pfeil unter dem gesteuerten Spieler, goldener Traumpass-Ring,
+  // Tormann-Bodenring). Wiederholungs-Effekte bleiben. 1 = Stand 0.11.1 [?marker=1]
+  marker: 0,
   easy: 0, easyTakt: 0.3, easyVorteil: 1.5, easySchuss: 7.5, easyFrei: 1.8, easySicher: 0.05,
   kickimmer: 1,
   // n15 E10 (Peter 16.11.: „Ballmagnet/Ballführung verstärken. Ich verliere den Ball bei Richtungswechsel und kann ihn aus der Luft nicht

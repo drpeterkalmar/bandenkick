@@ -622,8 +622,8 @@ export class Avatar {
       const en = st.energie ?? 1, k = en >= 0.6 ? 0.6 + 0.4 * (en - 0.6) / 0.4 : 0.02 + 0.58 * (en / 0.6) ** 1.5, u = 1 - k; this.gloveE = st.energie;
       this.gloveMat.emissiveIntensity = 1.25 * k; this.gloveMat.color.setHex(0xe8ff6a).lerp(GLOVE_GRAU, u); // matt grau statt gelb
     }
-    this.ring.visible = !!st.keeper;
-    if (st.keeper) this.ring.material.opacity = 0.55 + 0.25 * Math.sin(performance.now() / 180);
+    this.ring.visible = !!st.keeper && st.ring !== false; // Peter 21.11.: Tormann-Bodenring nur mit ?marker=1
+    if (this.ring.visible) this.ring.material.opacity = 0.55 + 0.25 * Math.sin(performance.now() / 180);
     this.blob.scale.setScalar(1 + this.dive * 0.8);
     if (this.shadowYaw !== null) { this.blob.rotation.y = this.shadowYaw - this.root.rotation.y; this.blob.position.y = 0.006 - this.root.position.y; }
     if (this.wackel.length) this.wackeln(dt, vEff);
