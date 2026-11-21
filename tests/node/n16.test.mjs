@@ -28,4 +28,29 @@ yes('B: Standard eckflanke 1, ?eckflanke=0 = aus', P.eckflanke === 1 && makePara
   };
   yes('B: Ein-Knopf aus der Ecke (Mitspieler vor dem Tor frei) → Flanke statt Schuss; ?eckflanke=0 → Schuss', art('') === 'pass' && art('eckflanke=0') === 'shot', `neu ${art('')}, alt ${art('eckflanke=0')}`);
 }
+// C: Abstoß
+yes('C: Standard abstoss 1, ?abstoss=0 = aus', P.abstoss === 1 && makeParams('abstoss=0').abstoss === 0);
+{
+  // Tormann (Mensch-Team bzw. Bot-Team) wirft zum Mitspieler 9 m vor ihm, ein Gegner steht mitten im Weg und läuft zum Ball
+  const lauf = (qs, human) => {
+    const g = new Game(makeParams(qs), 11, { match: true, human }); g.rules.phase = 'play'; g.bots = null;
+    const R = g.rules, kp = g.players[R.keeper[0]], gx = R.goalX(0);
+    const m = g.players.find((p) => p.team === 0 && p.id !== kp.id), o = g.players.find((p) => p.team === 1 && p.id !== R.keeper[1]);
+    for (const p of g.players) if (p !== kp && p !== m && p !== o) p.place(p.team === 0 ? -2 : 8, p.team === 0 ? -6 : 6, 0);
+    kp.place(gx + 1.2, 0, 0); m.place(gx + 10.2, 0.5, Math.PI); o.place(gx + 5.5, 0.3, Math.PI);
+    g.ball.held = kp.id; kp.hand.mode = 'hold';
+    R.release(kp, m.x, m.z, 'throw', 1);
+    const art = g.events.find((e) => e.type === 'throw' || e.type === 'punt');
+    let erst = -1;
+    for (let i = 0; i < 600 && erst < 0; i++) {
+      const ins = []; ins[o.id] = { mx: Math.sign(g.ball.p.x - o.x) || 0, mz: Math.sign(g.ball.p.z - o.z) * 0.5, shotDown: i % 20 < 2 };
+      g.step(ins);
+      if (g.lastTouch >= 0 && g.lastTouch !== kp.id) erst = g.lastTouch;
+    }
+    return { art: art && art.type, team: erst >= 0 ? g.players[erst].team : -1 };
+  };
+  const a = lauf('', 0), b = lauf('', -1), c = lauf('abstoss=0', -1);
+  yes('C: Gegner im Wurfweg → Abschlag über ihn, erste Berührung beim Mitspieler (Mensch-Tormann und Bot-Tormann)', a.team === 0 && b.team === 0 && a.art === 'punt', `Mensch ${a.art} → Team ${a.team}, Bot ${b.art} → Team ${b.team}; ?abstoss=0: ${c.art} → Team ${c.team}`);
+}
+
 process.exit(report('n16 Marker, Ecke, Abstoß, Dribbeltricks', rows, 'n16') ? 0 : 1);

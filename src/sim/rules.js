@@ -130,6 +130,7 @@ export class Rules {
         if (H.d < P.catchReach + 0.3 && b.p.y < H.hi) { this.bpTold = true; g.events.push({ type: 'rueckpass', team, player: pl.id, from: this.backPassFrom }); }
       }
       if (b.held >= 0 || !ok || g.t < pl.catchCd) continue;
+      if (this.abstossSperre(pl)) continue; // n16 C: gegnerischer Abstoß – nicht fangen
       // Fangen: Ball in Reichweite der Hände
       const want = inp.hand || pl.hand.mode === 'dive' || inp.autoCatch;
       if (!want) continue;
@@ -347,6 +348,8 @@ export class Rules {
     const g = this.g, P = g.P, b = g.ball;
     let dx = tx - pl.x, dz = tz - pl.z;
     const D = Math.hypot(dx, dz) || 1; dx /= D; dz /= D;
+    // n16 C: flacher Abwurf, den ein Gegner abfangen könnte → hoher Abschlag über ihn hinweg zum selben Ziel
+    if (P.abstoss && kind === 'throw' && D > 3 && this.interceptable(pl, { x: tx, z: tz })) kind = 'punt';
     b.held = -1;
     const hx = pl.x + dx * 0.45, hz = pl.z + dz * 0.45;
     if (kind === 'punt') {
@@ -369,6 +372,7 @@ export class Rules {
     pl.catchCd = g.t + 1.0; // den eigenen Abwurf nicht gleich wieder fangen
     pl.lastKick = { kind, speed: Math.hypot(b.v.x, b.v.y, b.v.z), spinRps: 0, sideRps: 0, elevDeg: 0, t: g.t };
     this.touch(pl);
+    g.abstoss = P.abstoss ? { team: pl.team, keeper: pl.id, t: g.t } : null; // n16 C: Schutz bis zur ersten Mitspieler-Berührung
     g.events.push({ type: kind, player: pl.id, speed: Math.hypot(b.v.x, b.v.z), x: b.p.x, y: b.p.y, z: b.p.z, dx, dz });
   }
 
@@ -385,7 +389,16 @@ export class Rules {
   // deflect = Tormann-Parade (Fingerspitzen/Abwehren): zählt für „letzte Hand“ und Aus, macht den Tormann aber nicht
   // zum Torschützen. Geht der Ball trotzdem rein, bekommt der Schütze das Tor (Peter 30.09.: „es steht Eigentor, wenn
   // ich ein reguläres Tor schieße“ – vorher war jedes 3. Tor im Selbstspiel so ein falsches Eigentor).
+  // n16 C: läuft ein geschützter Abstoß und gehört pl zum Gegner → kein Ballkontakt (Schutz endet mit der ersten Berührung eines
+  // Mitspielers, Ball tot/in der Hand oder nach abstossT s)
+  abstossSperre(pl) {
+    const g = this.g, a = g.abstoss;
+    if (!a) return false;
+    if (this.phase !== 'play' || g.ball.held >= 0 || g.t - a.t > g.P.abstossT) { g.abstoss = null; return false; }
+    return pl.team !== a.team;
+  }
   touch(pl, deflect = false) {
+    if (this.g.abstoss && pl.id !== this.g.abstoss.keeper) this.g.abstoss = null; // n16 C: erste Berührung nach dem Abstoß
     if (this.backPass >= 0 && this.keeper[this.backPass] !== pl.id) this.clearBackPass(); // (ein Kick setzt ihn danach neu)
     // n7: der Empfänger hat den Ball berührt → Pass angekommen (sonst galt er als „unterwegs“, solange der Passgeber den Ball
     // zufällig weiter berührte – im Selbstspiel klemmten so zwei Mitspieler den Ball 8 s an der Bande ein)

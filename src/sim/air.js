@@ -172,6 +172,7 @@ export function planAirHelp(game, pl, help = 1, purpose = 'shot', aim = null, ou
 // dadurch gesteuert wird (Anlauf mit Hilfe, Absprung, Flug, Treffpunkt).
 export function stepAir(pl, dt, game, want, sx, sz) {
   const P = pl.P, a = pl.air, b = game.ball;
+  if (game.match && game.abstoss && game.rules.abstossSperre(pl)) { pl.air = null; return false; } // n16 C: gegnerischer Abstoß
   const tRem = a.tc - game.t;
   // n13 Jonglier-Fallrückzieher: hat ein anderer den hochgelupften Ball vor dem Absprung berührt, sauber abbrechen (Ball frei)
   if (a.jongl && !a.go && game.lastTouch !== pl.id) { pl.air = null; game.events.push({ type: 'jonglab', player: pl.id }); return false; }

@@ -148,6 +148,8 @@ export class Player {
     if (this.skill2 && skillStep(this, dt, game)) return;                   // n15 E4: Skill-Move läuft
     if (this.stumbleT > 0) this.stumbleT -= dt;
     const held = ball.held >= 0;
+    // n16 C: gegnerischer Abstoß unterwegs → kein Ballkontakt (Fuß, Annahme, Körper; Luftball/Grätsche in tryAir/stepAir/tackleContact)
+    if (game.match && game.abstoss && game.rules.abstossSperre(this)) { this.touchCd = Math.max(this.touchCd, 0.15); this.bodyOffT = Math.max(this.bodyOffT, 0.1); }
     if (this.pending) { this.pending.age += dt; if (this.pending.age > (this.pending.tap ? P.tippPuffer : P.kickBuffer) && !(this.pending.immer && this.immerHalten(game))) this.pending = null; }
 
     // --- Eingabe: Stick, Aktionen ---
@@ -751,6 +753,7 @@ export class Player {
 
   // Luftball versuchen (Schuss gedrückt): Plan aus air.js übernehmen → true
   tryAir(game, tPress, purpose = 'shot', aim = null, out = null) {
+    if (game.match && game.abstoss && game.rules.abstossSperre(this)) return false; // n16 C
     const plan = this.P.timinghilfe > 0 && !this.P.laden ? planAirHelp(game, this, this.P.timinghilfe, purpose, aim, out) : planAir(game, this, { tPress, purpose, aim });
     if (!plan) return false;
     if (this.pending && this.pending.immer) plan.immer = true; // n15: Kick-Druck – Kontakt etwas großzügiger
@@ -981,7 +984,7 @@ export class Player {
   tackleContact(game) {
     const P = this.P, sl = this.slide, b = game.ball;
     const seg = (px, pz) => { const rx = px - this.x, rz = pz - this.z, t = clamp(rx * sl.dx + rz * sl.dz, 0, 0.95); return { t, d: Math.hypot(rx - sl.dx * t, rz - sl.dz * t) }; };
-    const bs = b.held < 0 && b.p.y < 0.45 ? seg(b.p.x, b.p.z) : null;
+    const bs = b.held < 0 && b.p.y < 0.45 && !(game.match && game.abstoss && game.rules.abstossSperre(this)) ? seg(b.p.x, b.p.z) : null; // (n16 C)
     let opp = null;
     for (const o of game.players) {
       if (o.team === this.team || o.slide || (o.skill2 && o.skill2.ok)) continue; // (n15 E4: ausgewichen)

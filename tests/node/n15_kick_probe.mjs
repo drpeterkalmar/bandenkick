@@ -45,7 +45,7 @@ const erreichbar = (g, team) => {
 };
 export function spam(qs = '', presses = 300, seed0 = 1) {
   const P = makeParams('dauer=3&' + qs);
-  const r = { presses: 0, ok: 0, lagen: {}, ausgelassen: { hand: 0, ruht: 0, hoch: 0, gefangen: 0, weg: 0, aktion: 0 }, arten: {}, dt: [] };
+  const r = { presses: 0, ok: 0, lagen: {}, ausgelassen: { hand: 0, ruht: 0, hoch: 0, gefangen: 0, weg: 0, aktion: 0, abstoss: 0 }, arten: {}, dt: [] };
   for (let s = 0; r.presses < presses && s < 80; s++) {
     const g = new Game(P, 'ks' + (seed0 + s), { match: true, human: 1, botLevel: 2 });
     const R = new Rng('ksr' + (seed0 + s));
@@ -80,6 +80,7 @@ export function spam(qs = '', presses = 300, seed0 = 1) {
       if (press) {
         press.ids.add(g.human);
         if (g.ball.held >= 0 && !press.ids.has(g.ball.held)) press.gefangen = true;
+        if (g.abstoss && g.abstoss.team !== press.team) press.abstoss = true; // n16 C: geschützter Abstoß des Gegners – absichtlich nicht spielbar
         { const m2 = g.players[g.human]; press.dMin = Math.min(press.dMin, Math.hypot(g.ball.p.x - m2.x, g.ball.p.z - m2.z)); press.vSum += m2.speed; press.n++; press.pd = !!m2.pending; press.air = !!m2.air; press.sl = !!m2.slide; press.stick = stickMode; }
         for (const e of ev) if (e.type === 'airmiss' && press.ids.has(e.player)) press.miss++;
         if (TRACE && TRACE[0] === s && Math.abs(TRACE[1] - press.t) < 0.06 && g.tick % 6 === 0) { const m2 = g.players[g.human], pd = m2.pending; console.log(`t+${(g.t - press.t).toFixed(2)} h${g.human} me(${m2.x.toFixed(2)},${m2.z.toFixed(2)}) f${m2.face.toFixed(2)} v${m2.speed.toFixed(1)} ball(${g.ball.p.x.toFixed(2)},${g.ball.p.y.toFixed(2)},${g.ball.p.z.toFixed(2)}) bv${g.ball.v.len().toFixed(1)} lt${g.lastTouch} pd${pd ? pd.kind + '/' + pd.age.toFixed(2) + (pd.kein ? 'k' : '') : '-'} air${m2.air ? m2.air.tech : '-'} cd${m2.touchCd.toFixed(2)} st${m2.stumbleT.toFixed(2)} sl${m2.slide ? 1 : 0} fa${m2.fall ? 1 : 0} ` + ev.map((e) => e.type).join(',')); }
@@ -96,6 +97,7 @@ export function spam(qs = '', presses = 300, seed0 = 1) {
         if (press && (g.t - press.t > 1.5 || (g.rules.phase !== 'play' && g.rules.phase !== 'kickoff'))) {
           if (g.rules.phase !== 'play' && g.rules.phase !== 'kickoff' && g.t - press.t < 1.5) { r.presses--; r.lagen[press.lage].n--; r.ausgelassen.ruht++; } // Tor/Aus mitten im Fenster
           else if (press.gefangen) { r.presses--; r.lagen[press.lage].n--; r.ausgelassen.gefangen++; } // ein anderer hat den Ball in die Hand genommen
+          else if (press.abstoss) { r.presses--; r.lagen[press.lage].n--; r.ausgelassen.abstoss++; }
           else (r.fehl || (r.fehl = [])).push({ lage: press.lage, t: +press.t.toFixed(1), seed: s, d0: +press.d0.toFixed(1), dMin: +press.dMin.toFixed(1), y0: +press.y0.toFixed(1), v: +(press.vSum / press.n).toFixed(1), miss: press.miss, pd: press.pd, air: press.air, sl: press.sl, ohneStick: press.stick });
           press = null;
         }

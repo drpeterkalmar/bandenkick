@@ -343,6 +343,11 @@ export const DEFAULTS = {
   // Peter 21.11.: alle Boden-Markierungen im Spiel aus (Ring + Pfeil unter dem gesteuerten Spieler, goldener Traumpass-Ring,
   // Tormann-Bodenring). Wiederholungs-Effekte bleiben. 1 = Stand 0.11.1 [?marker=1]
   marker: 0,
+  // n16 C (Peter 21.11.: „Torabstoß/Abwurf/Abschlag des Tormanns darf nicht abgefangen werden können“, rules.js release/abstossSperre):
+  // Abwurf mit einem Gegner im Weg wird zum hohen Abschlag über ihn hinweg; bis zur ersten Berührung eines Mitspielers (höchstens
+  // abstossT s, Ball tot oder in der Hand) kommt kein Gegner an den Ball (Fuß, Kopf, Körper, Grätsche, Hände). Gilt für Mensch-Tormann,
+  // Auto-Torwart und Bots. 0 = Stand 0.11.1                                                              [?abstoss=0]
+  abstoss: 1, abstossT: 5,
   // n16 B (Peter 21.11.: „aus der Ecke eher flanken als schießen“, src/sim/akro.js eckZone): Ball in der Eckzone (≤ eckX m vor der
   // Grundlinie, seitlich neben dem Tor, Toröffnung < eckWinkel °) → Ein-Knopf (Mensch) spielt die Flanke (hoher Pass vor das Tor) statt
   // zu schießen, Schuss nur bei Torchance ≥ eckSchuss bzw. leerem Tor; Bots: Schuss-Nutzen × eckBot, Pässe vor das Tor × eckPassBonus.

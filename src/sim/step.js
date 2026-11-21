@@ -32,7 +32,7 @@ export class Game {
     this.state = 'play'; this.stateT = 0;
     this.lastGoal = 0;
     this.faults = 0;                // Numerik-Notbremsen (muss 0 bleiben)
-    this.lastTouch = -1; this.lastTouchT = -99; this.passTo = -1;
+    this.lastTouch = -1; this.lastTouchT = -99; this.passTo = -1; this.abstoss = null; // (n16 C: geschützter Abstoß)
     this.passPlan = null;           // laufender Pass in den Laufweg {to, from, x, z, t} (Empfänger-Hilfe)
     this.perfekt = null;            // n7 E3: laufender Traumpass {from, to, t, T, x, z, w, used}
     this.lastPass = null;           // n7 E3: letzter Pass {from, to, t} (Geben und Gehen)
@@ -95,7 +95,7 @@ export class Game {
       else pl.place(own * (att ? 2.6 : 4.2), (k % 2 ? 1 : -1) * (att ? 2.4 : 1.6) + (k > 2 ? 2 : 0), face);
     }
     void n;
-    this.lastTouch = -1; this.passTo = -1;
+    this.lastTouch = -1; this.passTo = -1; this.abstoss = null;
   }
 
   step(inputs = []) {
